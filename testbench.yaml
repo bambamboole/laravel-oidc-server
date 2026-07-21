@@ -1,0 +1,16 @@
+laravel: '@testbench'
+
+providers:
+  - Laravel\Passport\PassportServiceProvider
+  - Laravel\Passkeys\PasskeysServiceProvider
+  - Bambamboole\LaravelOidc\OidcServiceProvider
+  - Workbench\App\Providers\WorkbenchServiceProvider
+
+workbench:
+  welcome: false
+  discovers:
+    web: false
+    api: false
+    commands: false
+    components: false
+    views: false

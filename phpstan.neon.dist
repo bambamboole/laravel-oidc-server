@@ -1,0 +1,58 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/mrpunyapal/peststan/extension.neon
+
+parameters:
+    paths:
+        - src
+        - tests
+        - workbench/app
+    level: 6
+    peststan:
+        testCaseClass: Bambamboole\LaravelOidc\Tests\TestCase
+    ignoreErrors:
+        # AuthorizationController::parseScopes() intentionally returns our richer Scope VO
+        # (carries `hidden` for the OIDC consent page) instead of Passport's Scope. This is a
+        # type-incompatible override, but it is safe because Passport only ever consumes the
+        # result structurally, via ->id/->description (hasGrantedScopes()'s pluck('id') and the
+        # authorization view params), never via the concrete Laravel\Passport\Scope type.
+        -
+            identifier: return.type
+            message: '#Method Bambamboole\\LaravelOidc\\Http\\Controllers\\AuthorizationController::parseScopes\(\) should return array<Laravel\\Passport\\Scope>#'
+            path: src/Http/Controllers/AuthorizationController.php
+        # InteractsWithOidc ships for consumers to `use` in their own test suites; it is never
+        # composed via a literal `use TraitName;` statement inside this repo (only via Pest's dynamic
+        # uses() in tests/Testing/Pest.php and tests/Testing/InteractsWithOidcTest.php), so PHPStan's
+        # static trait-usage scanner cannot see it being applied. It is exercised by the 5 tests in
+        # tests/Testing/InteractsWithOidcTest.php.
+        -
+            identifier: trait.unused
+            message: '#Trait Bambamboole\\LaravelOidc\\Testing\\InteractsWithOidc is used zero times#'
+            path: src/Testing/InteractsWithOidc.php
+        # peststan resolves this file's `$this` type as an intersection of TestCase and the
+        # InteractsWithOidc trait (via tests/Testing/Pest.php). PHPStan's generic-template resolution
+        # collapses to *NEVER* when a method call is dispatched through an intersection type that
+        # includes a bare trait, even though `pkce(): PkcePair` and `actingAsIdentity(): static` both
+        # have concrete, unambiguous return types. This is a known rough edge of intersecting trait
+        # types in PHPStan's type system, not a bug in the trait — the runtime assertions pass.
+        -
+            identifier: argument.templateType
+            message: '#Unable to resolve the template type TValue in call to function expect#'
+            path: tests/Testing/InteractsWithOidcTest.php
+        # These three files compose InteractsWithOidc via a file-local uses() call (Pest's dynamic
+        # trait composition), so actingAsIdentity()/authorizeAndApprove()/pkce() are genuinely
+        # available on $this and on the `TestCase $test` helper parameter at runtime. Unlike
+        # tests/Testing/, tests/Flow/ mostly holds files that do NOT use the trait, so a directory-wide
+        # Pest.php shim (the mechanism tests/Testing/Pest.php uses) is the wrong fix here: peststan
+        # would then resolve `$this` as the TestCase&InteractsWithOidc intersection for every file in
+        # the directory, and that intersection triggers PHPStan's *NEVER*-collapse bug (see the
+        # argument.templateType entry above) on ordinary Pest matcher chains in sibling files that never
+        # touch the trait (confirmed against tests/Flow/TokenExchangeFlowTest.php). Scoped ignores are
+        # the narrower, correct fix.
+        -
+            identifier: method.notFound
+            message: '#Call to an undefined method Bambamboole\\LaravelOidc\\Tests\\TestCase::(actingAsIdentity|authorizeAndApprove|pkce)\(\)#'
+            paths:
+                - tests/Flow/AuthorizationCodeFlowTest.php
+                - tests/Flow/Rfc9068FlowTest.php
+                - tests/Flow/MaxAgeTest.php

@@ -1,0 +1,87 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "bambamboole/laravel-oidc-server",
+    "description": "OpenID Connect provider (server) for Laravel Passport — the engine behind bambamboole/laravel-oidc",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["laravel", "passport", "oidc", "openid-connect", "oauth2"],
+    "authors": [
+        {
+            "name": "Manuel Christlieb",
+            "email": "manuel@christlieb.eu"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "bacon/bacon-qr-code": "^3.1",
+        "laravel/passkeys": "^0.2",
+        "laravel/passport": "^13.4",
+        "lcobucci/clock": "^3.2",
+        "lcobucci/jwt": "^5.0",
+        "phpseclib/phpseclib": "^3.0.15",
+        "pragmarx/google2fa": "^9.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/boost": "^2.4",
+        "laravel/pint": "^1.16",
+        "mockery/mockery": "^1.6",
+        "mrpunyapal/peststan": "^0.2.10",
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "pestphp/pest": "^4.0",
+        "pestphp/pest-plugin-laravel": "^4.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Bambamboole\\LaravelOidc\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Bambamboole\\LaravelOidc\\Tests\\": "tests/",
+            "Workbench\\App\\": "workbench/app/"
+        }
+    },
+    "homepage": "https://github.com/bambamboole/laravel-oidc-server",
+    "support": {
+        "issues": "https://github.com/bambamboole/laravel-oidc/issues",
+        "source": "https://github.com/bambamboole/laravel-oidc-server"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-main": "0.6-dev"
+        },
+        "laravel": {
+            "providers": [
+                "Bambamboole\\LaravelOidc\\OidcServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "analyse": "./vendor/bin/phpstan analyse",
+        "check": [
+            "@test:lint",
+            "@analyse",
+            "@test"
+        ],
+        "lint": "./vendor/bin/pint",
+        "test:lint": "./vendor/bin/pint --test",
+        "test": "./vendor/bin/pest",
+        "post-autoload-dump": [
+            "@clear",
+            "@prepare"
+        ],
+        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
+        "prepare": "@php vendor/bin/testbench package:discover --ansi",
+        "boost:refresh": "@php vendor/bin/testbench boost:update --no-interaction"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
