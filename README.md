@@ -35,7 +35,7 @@ views and actions.
 ## Requirements
 
 - PHP `^8.4`
-- Laravel 11, 12, or 13
+- Laravel 12 or 13
 - `laravel/passport` `^13.4` — the OAuth2 core the package builds on
 
 ## Installation
@@ -91,7 +91,7 @@ npm run docs:dev
 composer check   # pint --test, phpstan (level 6), and the pest suite
 ```
 
-CI runs the suite across Laravel 11/12/13 on every push and pull request.
+CI runs the suite across Laravel 12/13 on every push and pull request.
 
 ## License
 
