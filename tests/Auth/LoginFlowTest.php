@@ -2,13 +2,21 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Auth\Views\LoginPrompt;
+use Bambamboole\LaravelOidc\Auth\Views\LoginView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
 it('renders the login view through the package seam', function () {
-    Oidc::loginView(fn (Request $request) => response('login-view'));
+    app()->bind(LoginView::class, fn () => new class implements LoginView
+    {
+        public function respond(LoginPrompt $prompt, Request $request): Response
+        {
+            return response('login-view');
+        }
+    });
 
     $this->get('/auth/login')->assertOk()->assertSee('login-view');
 });

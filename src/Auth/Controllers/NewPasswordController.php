@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Auth\Controllers;
 
-use Bambamboole\LaravelOidc\Auth\AuthViewManager;
 use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Auth\UserActionManager;
+use Bambamboole\LaravelOidc\Auth\Views\PasswordResetPrompt;
+use Bambamboole\LaravelOidc\Auth\Views\PasswordResetView;
 use Bambamboole\LaravelOidc\Routing\Handler;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,19 +21,31 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\Response;
 
 class NewPasswordController
 {
     use ResolvesIdentityGuard;
 
     public function __construct(
-        private readonly AuthViewManager $views,
         private readonly UserActionManager $actions,
     ) {}
 
-    public function create(Request $request): mixed
+    /**
+     * PasswordResetView is resolved here (not via the constructor) so
+     * store() — which shares this class — never eagerly resolves a view the
+     * request doesn't render.
+     */
+    public function create(Request $request): Responsable|Response
     {
-        return $this->views->render(AuthViewManager::ResetPassword, $request);
+        $email = $request->input('email');
+        $status = $request->session()->get('status');
+
+        return app(PasswordResetView::class)->respond(new PasswordResetPrompt(
+            token: (string) $request->route('token'),
+            email: is_string($email) ? $email : null,
+            status: is_string($status) ? $status : null,
+        ), $request);
     }
 
     public function store(Request $request): JsonResponse|RedirectResponse

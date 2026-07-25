@@ -2,13 +2,21 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Auth\Views\PasswordConfirmationPrompt;
+use Bambamboole\LaravelOidc\Auth\Views\PasswordConfirmationView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
 it('renders the confirm password view through the package seam', function () {
-    Oidc::confirmPasswordView(fn (Request $request) => response('confirm-password-view'));
+    app()->bind(PasswordConfirmationView::class, fn () => new class implements PasswordConfirmationView
+    {
+        public function respond(PasswordConfirmationPrompt $prompt, Request $request): Response
+        {
+            return response('confirm-password-view');
+        }
+    });
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 

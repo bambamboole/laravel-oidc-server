@@ -4,20 +4,30 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Auth\Controllers;
 
-use Bambamboole\LaravelOidc\Auth\AuthViewManager;
+use Bambamboole\LaravelOidc\Auth\Views\PasswordResetRequestPrompt;
+use Bambamboole\LaravelOidc\Auth\Views\PasswordResetRequestView;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class PasswordResetLinkController
 {
-    public function __construct(private readonly AuthViewManager $views) {}
-
-    public function create(Request $request): mixed
+    /**
+     * PasswordResetRequestView is resolved here (not via the constructor) so
+     * store() — which shares this class — never eagerly resolves a view the
+     * request doesn't render.
+     */
+    public function create(Request $request): Responsable|Response
     {
-        return $this->views->render(AuthViewManager::RequestPasswordResetLink, $request);
+        $status = $request->session()->get('status');
+
+        return app(PasswordResetRequestView::class)->respond(new PasswordResetRequestPrompt(
+            status: is_string($status) ? $status : null,
+        ), $request);
     }
 
     public function store(Request $request): JsonResponse|RedirectResponse

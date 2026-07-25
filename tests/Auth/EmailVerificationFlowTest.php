@@ -2,17 +2,25 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Auth\Views\EmailVerificationPrompt;
+use Bambamboole\LaravelOidc\Auth\Views\EmailVerificationView;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
+use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
 it('renders the verification notice for an unverified user', function () {
-    Oidc::verifyEmailView(fn (Request $request) => response('verify-email-view'));
+    app()->bind(EmailVerificationView::class, fn () => new class implements EmailVerificationView
+    {
+        public function respond(EmailVerificationPrompt $prompt, Request $request): Response
+        {
+            return response('verify-email-view');
+        }
+    });
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
@@ -20,7 +28,13 @@ it('renders the verification notice for an unverified user', function () {
 });
 
 it('redirects verified users away from the verification notice', function () {
-    Oidc::verifyEmailView(fn (Request $request) => response('verify-email-view'));
+    app()->bind(EmailVerificationView::class, fn () => new class implements EmailVerificationView
+    {
+        public function respond(EmailVerificationPrompt $prompt, Request $request): Response
+        {
+            return response('verify-email-view');
+        }
+    });
 
     $user = User::create([
         'name' => 'M',

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Auth\MultiFactor\Models\TotpFactor;
 use Bambamboole\LaravelOidc\Auth\MultiFactor\TwoFactorManager;
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengePrompt;
+use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengeView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;
+use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
 /**
@@ -23,7 +25,13 @@ function confirmedTotpUser(): array
 }
 
 it('renders the two-factor challenge through the package view seam', function () {
-    Oidc::twoFactorChallengeView(fn (Request $request) => response('two-factor-view'));
+    app()->bind(TwoFactorChallengeView::class, fn () => new class implements TwoFactorChallengeView
+    {
+        public function respond(TwoFactorChallengePrompt $prompt, Request $request): Response
+        {
+            return response('two-factor-view');
+        }
+    });
     [$user] = confirmedTotpUser();
 
     $this->withSession(['login.id' => $user->getAuthIdentifier()])

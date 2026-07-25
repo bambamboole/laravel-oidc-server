@@ -29,6 +29,13 @@ parameters:
             identifier: trait.unused
             message: '#Trait Bambamboole\\LaravelOidc\\Testing\\InteractsWithOidc is used zero times#'
             path: src/Testing/InteractsWithOidc.php
+        # Same rationale as the InteractsWithOidc entry above: FakesAuthViews ships for consumers'
+        # test suites and is only ever composed via Pest's dynamic uses() (tests/Testing/FakesAuthViewsTest.php),
+        # never a literal `use TraitName;` inside this repo.
+        -
+            identifier: trait.unused
+            message: '#Trait Bambamboole\\LaravelOidc\\Testing\\FakesAuthViews is used zero times#'
+            path: src/Testing/FakesAuthViews.php
         # peststan resolves this file's `$this` type as an intersection of TestCase and the
         # InteractsWithOidc trait (via tests/Testing/Pest.php). PHPStan's generic-template resolution
         # collapses to *NEVER* when a method call is dispatched through an intersection type that

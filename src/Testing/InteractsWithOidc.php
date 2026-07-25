@@ -5,18 +5,21 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Testing;
 
 use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
+use Bambamboole\LaravelOidc\Auth\Views\ConsentPrompt;
+use Bambamboole\LaravelOidc\Auth\Views\ConsentView;
+use Bambamboole\LaravelOidc\Auth\Views\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
 use DateInterval;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Contracts\AuthorizationViewResponse;
-use Laravel\Passport\Passport;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -168,8 +171,8 @@ trait InteractsWithOidc
      *
      * URLs come from the named routes (`oidc.authorize`, `oidc.approve`,
      * `oidc.token`) so configured path overrides are honored. A minimal JSON
-     * authorization view is registered unless the test already registered one
-     * via `Passport::authorizationView()`.
+     * `ConsentView` is bound unless the test (or `FakesAuthViews`, or the ui
+     * package) already bound one.
      *
      * Note: the CSRF middleware exemption applied here persists for the
      * remainder of the calling test method (`withoutMiddleware()` has no
@@ -187,10 +190,14 @@ trait InteractsWithOidc
         $client ??= $this->oidcDefaultClient ??= $this->createOidcClient();
         $pkce ??= PkcePair::generate();
 
-        if (! app()->bound(AuthorizationViewResponse::class)) {
-            Passport::authorizationView(
-                fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]),
-            );
+        if (! $this->consentViewIsBound()) {
+            app()->bind(ConsentView::class, fn () => new class implements ConsentView
+            {
+                public function respond(ConsentPrompt $prompt, Request $request): JsonResponse
+                {
+                    return response()->json(['authToken' => $prompt->authToken]);
+                }
+            });
         }
 
         // The `web` group binds PreventRequestForgery on Laravel 13+ but
@@ -227,7 +234,7 @@ trait InteractsWithOidc
             $authToken = is_array($decoded) ? ($decoded['authToken'] ?? null) : null;
 
             if (! is_string($authToken) || $authToken === '') {
-                Assert::fail('The authorization view did not return an authToken. If your app binds a custom authorization view, register a JSON view for this test via Passport::authorizationView() before calling authorizeAndApprove().');
+                Assert::fail('The consent view did not return an authToken. If your app binds a custom ConsentView, bind a JSON ConsentView for this test (or use FakesAuthViews) before calling authorizeAndApprove().');
             }
 
             $approve = $this->post(route('oidc.approve'), ['auth_token' => $authToken]);
@@ -253,5 +260,22 @@ trait InteractsWithOidc
         }
 
         return AuthorizationCodeResult::fromResponse($this->post(route('oidc.token'), $tokenRequest));
+    }
+
+    /**
+     * The server package always binds `ConsentView` (as a default that throws
+     * `MissingAuthViewException`), so `app()->bound()` can't tell "no real
+     * view yet" from "the throwing default". Resolving it does: the default
+     * binding's resolver closure throws immediately on `make()`.
+     */
+    private function consentViewIsBound(): bool
+    {
+        try {
+            app()->make(ConsentView::class);
+
+            return true;
+        } catch (MissingAuthViewException) {
+            return false;
+        }
     }
 }

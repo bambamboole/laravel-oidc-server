@@ -5,35 +5,42 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\AuthViewManager;
 use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorEnrollment;
 use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorRegistry;
 use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorResponse;
+use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengePrompt;
+use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengeView;
 use Bambamboole\LaravelOidc\Routing\Handler;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class TwoFactorChallengeController
 {
     use ResolvesIdentityGuard;
 
     public function __construct(
-        private readonly AuthViewManager $views,
         private readonly FactorRegistry $factors,
         private readonly AuthenticationMethods $context,
     ) {}
 
-    public function create(Request $request): mixed
+    /**
+     * TwoFactorChallengeView is resolved here (not via the constructor) so
+     * store() — which shares this class — never eagerly resolves a view the
+     * request doesn't render.
+     */
+    public function create(Request $request): Responsable|RedirectResponse|Response
     {
         if ($this->challengedUser($request) === null) {
             return redirect()->route(Handler::Login->value);
         }
 
-        return $this->views->render(AuthViewManager::TwoFactorChallenge, $request);
+        return app(TwoFactorChallengeView::class)->respond(new TwoFactorChallengePrompt, $request);
     }
 
     public function store(Request $request): JsonResponse|RedirectResponse

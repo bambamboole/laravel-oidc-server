@@ -5,19 +5,22 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\AuthViewManager;
 use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesPendingAuthorization;
 use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorRegistry;
 use Bambamboole\LaravelOidc\Auth\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Auth\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Auth\Views\LoginPrompt;
+use Bambamboole\LaravelOidc\Auth\Views\LoginView;
 use Bambamboole\LaravelOidc\Contracts\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Routing\Handler;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticatedSessionController
 {
@@ -25,16 +28,24 @@ class AuthenticatedSessionController
     use ResolvesPendingAuthorization;
 
     public function __construct(
-        private readonly AuthViewManager $views,
         private readonly FactorRegistry $factors,
         private readonly AuthenticationMethods $context,
         private readonly PostLoginPipeline $pipeline,
         private readonly DeviceRecognizer $deviceRecognizer,
     ) {}
 
-    public function create(Request $request): mixed
+    /**
+     * LoginView is resolved here (not via the constructor) so store() —
+     * which shares this class — never eagerly resolves a view the request
+     * doesn't render.
+     */
+    public function create(Request $request): Responsable|Response
     {
-        return $this->views->render(AuthViewManager::Login, $request);
+        $status = $request->session()->get('status');
+
+        return app(LoginView::class)->respond(new LoginPrompt(
+            status: is_string($status) ? $status : null,
+        ), $request);
     }
 
     public function store(Request $request): JsonResponse|RedirectResponse

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc;
 
-use Bambamboole\LaravelOidc\Auth\AuthViewManager;
 use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Auth\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Auth\Social\Contracts\SocialProvider;
@@ -28,7 +27,6 @@ class OidcManager
     public function __construct(
         private readonly SessionTokenProvider $sessionTokens,
         private readonly TokenExchanger $exchanger,
-        private readonly AuthViewManager $authViews,
         private readonly UserActionManager $userActions,
         private readonly PostLoginPipeline $pipeline,
         private readonly AccessTokenPipeline $accessTokenPipeline,
@@ -51,41 +49,6 @@ class OidcManager
     public function handlerConfig(Handler $handler): HandlerConfig|false
     {
         return $handler->config();
-    }
-
-    public function loginView(Closure $view): void
-    {
-        $this->authViews->bind(AuthViewManager::Login, $view);
-    }
-
-    public function confirmPasswordView(Closure $view): void
-    {
-        $this->authViews->bind(AuthViewManager::ConfirmPassword, $view);
-    }
-
-    public function registerView(Closure $view): void
-    {
-        $this->authViews->bind(AuthViewManager::Register, $view);
-    }
-
-    public function requestPasswordResetLinkView(Closure $view): void
-    {
-        $this->authViews->bind(AuthViewManager::RequestPasswordResetLink, $view);
-    }
-
-    public function resetPasswordView(Closure $view): void
-    {
-        $this->authViews->bind(AuthViewManager::ResetPassword, $view);
-    }
-
-    public function verifyEmailView(Closure $view): void
-    {
-        $this->authViews->bind(AuthViewManager::VerifyEmail, $view);
-    }
-
-    public function twoFactorChallengeView(Closure $view): void
-    {
-        $this->authViews->bind(AuthViewManager::TwoFactorChallenge, $view);
     }
 
     public function createUsersUsing(callable|string $action): void
