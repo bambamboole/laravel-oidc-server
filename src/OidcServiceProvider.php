@@ -58,6 +58,7 @@ use Bambamboole\LaravelOidc\Session\ForgetSessionToken;
 use Bambamboole\LaravelOidc\Session\SessionMintTokenProvider;
 use Bambamboole\LaravelOidc\Session\StartOidcSession;
 use Bambamboole\LaravelOidc\Support\EnvironmentFile;
+use Bambamboole\LaravelOidc\Support\PassportConfigurator;
 use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Token\OidcAccessToken;
 use Bambamboole\LaravelOidc\Token\OidcAccessTokenRepository;
@@ -234,6 +235,8 @@ class OidcServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->app->make(PassportConfigurator::class)();
+
         Passport::useAuthorizationServerResponseType($this->app->make(IdTokenResponse::class));
 
         // The only Passport view seam the package wires: every consent

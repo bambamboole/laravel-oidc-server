@@ -32,6 +32,20 @@ return [
 
     'api_guard' => env('OIDC_API_GUARD', 'api'),
 
+    'passport' => [
+        // Eloquent token model handed to Passport::useTokenModel(); a
+        // class-string of a Laravel\Passport\Token subclass. Null keeps
+        // Passport's default model.
+        'token_model' => null,
+
+        // API scope catalog fed into Passport::tokensCan(): an inline
+        // [scope => description] map, or the class-string of a ScopeCatalog
+        // implementation resolved from the container. A catalog's scopes()
+        // may hit the database — failures are rescued so key- and db-less
+        // artisan runs never break.
+        'scopes' => [],
+    ],
+
     'claims_supported' => [
         'iss', 'sub', 'aud', 'exp', 'iat', 'auth_time', 'nonce', 'at_hash', 'azp',
         'name', 'email', 'email_verified', 'locale', 'zoneinfo', 'updated_at',

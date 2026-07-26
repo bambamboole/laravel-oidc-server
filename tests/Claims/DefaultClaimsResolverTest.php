@@ -37,3 +37,25 @@ it('marks email unverified when email_verified_at is null', function () {
     expect((new DefaultClaimsResolver)->resolve($user)->forScopes(['email']))
         ->toBe(['email' => 'm@example.com', 'email_verified' => false]);
 });
+
+it('maps locale and timezone attributes when present', function () {
+    $user = (new User)->forceFill([
+        'name' => 'Manuel',
+        'locale' => 'de',
+        'timezone' => 'Europe/Berlin',
+    ]);
+
+    $claims = (new DefaultClaimsResolver)->resolve($user)->forScopes(['profile']);
+
+    expect($claims)->toHaveKey('locale', 'de')
+        ->and($claims)->toHaveKey('zoneinfo', 'Europe/Berlin');
+});
+
+it('omits locale and zoneinfo for users without those attributes', function () {
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+
+    $claims = (new DefaultClaimsResolver)->resolve($user)->forScopes(['profile']);
+
+    expect(array_keys($claims))->not->toContain('locale')
+        ->and(array_keys($claims))->not->toContain('zoneinfo');
+});

@@ -19,6 +19,8 @@ class DefaultClaimsResolver implements ClaimsResolver
         return new ClaimSet([
             'profile' => [
                 'name' => $user->getAttribute('name'),
+                'locale' => $user->getAttribute('locale'),
+                'zoneinfo' => $user->getAttribute('timezone'),
                 'updated_at' => $user->getAttribute('updated_at')?->getTimestamp(),
             ],
             'email' => [
