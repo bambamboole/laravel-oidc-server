@@ -70,6 +70,38 @@ it('confirms an enrollment and backfills recovery codes', function () {
         ->and($user->recoveryCodes()->count())->toBeGreaterThan(0);
 });
 
+it('returns the existing pending enrollment instead of stacking rows', function () {
+    $user = enrollmentUser();
+
+    $first = actingAsEnrollmentUser($this, $user)
+        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->json();
+
+    $second = actingAsEnrollmentUser($this, $user)
+        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->assertCreated()
+        ->json();
+
+    expect($user->totpFactors()->count())->toBe(1)
+        ->and($second['id'])->toBe($first['id'])
+        ->and($second['metadata']['secret'])->toBe($first['metadata']['secret']);
+});
+
+it('begins a fresh pending enrollment alongside a confirmed factor', function () {
+    $user = enrollmentUser();
+    $confirmed = $user->totpFactors()->create(['name' => 'Authenticator app', 'secret' => 'SECRET']);
+    $confirmed->forceFill(['confirmed_at' => now()])->save();
+
+    $enrollment = actingAsEnrollmentUser($this, $user)
+        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->assertCreated()
+        ->json();
+
+    expect($user->totpFactors()->count())->toBe(2)
+        ->and($enrollment['id'])->not->toBe((string) $confirmed->getKey())
+        ->and($confirmed->refresh()->confirmed_at)->not->toBeNull();
+});
+
 it('rejects an enrollment confirmation with an invalid code', function () {
     $user = enrollmentUser();
 

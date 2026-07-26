@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TwoFactorManager;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,11 +13,11 @@ class ShowTwoFactorSecretKeyController
 {
     use ResolvesIdentityGuard;
 
-    public function __construct(private readonly TwoFactorManager $twoFactor) {}
+    public function __construct(private readonly TotpFactorProvider $totp) {}
 
     public function __invoke(Request $request): JsonResponse
     {
-        $factor = $this->twoFactor->currentFactor($this->currentUser($request));
+        $factor = $this->totp->latestFactor($this->currentUser($request));
 
         abort_if($factor === null, 404, 'Two factor authentication has not been enabled.');
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TwoFactorManager;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
@@ -48,7 +48,7 @@ it('denies when requireMfa is requested but the user has no factor', function ()
 });
 
 it('forces the two-factor challenge when requireMfa is requested and a factor is enrolled', function () {
-    $factor = app(TwoFactorManager::class)->enable($this->user);
+    $factor = app(TotpFactorProvider::class)->enroll($this->user);
     $factor->forceFill(['confirmed_at' => now()])->save();
 
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());

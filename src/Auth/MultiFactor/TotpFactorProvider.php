@@ -43,9 +43,16 @@ class TotpFactorProvider implements EnrollableFactorProvider
         ]);
     }
 
+    /**
+     * An existing unconfirmed enrollment is returned as-is (same factor, same
+     * secret) instead of stacking a new row per request, so a repeated enroll
+     * call — e.g. a twice-clicked enable button — stays on one pending factor.
+     * Confirmed factors are never touched; enrolling alongside one creates a
+     * fresh pending row (re-enrollment), which revoke cleans up.
+     */
     public function beginEnrollment(Authenticatable $user, ?string $name = null): FactorEnrollment
     {
-        $factor = $this->enroll($user, $name);
+        $factor = $this->latestPendingFactor($user) ?? $this->enroll($user, $name);
         $enrollment = $this->toEnrollment($factor);
 
         // The setup payload only exists at enrollment time; enrollments()
@@ -87,6 +94,16 @@ class TotpFactorProvider implements EnrollableFactorProvider
     public function disableAll(Authenticatable $user): void
     {
         $this->factorUser($user)->totpFactors()->delete();
+    }
+
+    public function latestFactor(Authenticatable $user): ?TotpFactor
+    {
+        return $this->factorUser($user)->totpFactors()->latest('id')->first();
+    }
+
+    public function latestPendingFactor(Authenticatable $user): ?TotpFactor
+    {
+        return $this->factorUser($user)->totpFactors()->whereNull('confirmed_at')->latest('id')->first();
     }
 
     /**

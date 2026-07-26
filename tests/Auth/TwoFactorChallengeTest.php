@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\TotpFactor;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TwoFactorManager;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\RecoveryCodeProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengePrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
 use Illuminate\Http\Request;
@@ -18,8 +19,9 @@ use Workbench\App\Models\User;
 function confirmedTotpUser(): array
 {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
-    $factor = app(TwoFactorManager::class)->enable($user);
+    $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
+    app(RecoveryCodeProvider::class)->generate($user);
 
     return [$user, $factor];
 }

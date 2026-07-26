@@ -9,7 +9,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TwoFactorManager;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
@@ -182,7 +182,7 @@ it('records amr swk for passkey logins', function () {
 
 it('does not challenge an enrolled second factor after a passkey login', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
-    $factor = app(TwoFactorManager::class)->enable($user);
+    $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
 
     finalizationPasskeyLogin($this, $user);
@@ -192,7 +192,7 @@ it('does not challenge an enrolled second factor after a passkey login', functio
 
 it('still requires a challenge after passkey login when the pipeline demands MFA', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
-    $factor = app(TwoFactorManager::class)->enable($user);
+    $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
 
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());

@@ -15,7 +15,7 @@ it('registers package authentication under the identity guard and auth prefix', 
         ->and(route('identity.password.reset', ['token' => 'token'], absolute: false))->toBe('/auth/reset-password/token')
         ->and(route('identity.two-factor.login', absolute: false))->toBe('/auth/two-factor-challenge')
         ->and(config('oidc.auth.two_factor'))->not->toHaveKeys(['requires_password_confirmation', 'throttle'])
-        ->and(app('router')->getRoutes()->getByName('identity.two-factor.enable')->middleware())
+        ->and(app('router')->getRoutes()->getByName('identity.two-factor.enroll')->middleware())
         ->toContain('Illuminate\Auth\Middleware\RequirePassword:identity.password.confirm')
         ->and(app('router')->getRoutes()->getByName('identity.two-factor.login.store')->middleware())
         ->toContain('throttle:5,1')

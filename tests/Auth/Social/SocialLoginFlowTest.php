@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TwoFactorManager;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\Social\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
@@ -152,7 +152,7 @@ it('denies the login when a postLogin hook rejects it', function () {
 
 it('sends an MFA-enrolled user to the two-factor challenge instead of logging in', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
-    $factor = app(TwoFactorManager::class)->enable($user);
+    $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
 
     completeSocialLogin($this)->assertRedirect(route(Handler::TwoFactorLogin->value));

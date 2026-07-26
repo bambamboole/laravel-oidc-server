@@ -6,10 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Routing;
 
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\AuthenticatedSessionController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\ConfirmablePasswordController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\ConfirmTwoFactorAuthenticationController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\DisableTwoFactorAuthenticationController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\EmailVerificationPromptController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\EnableTwoFactorAuthenticationController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\FactorEnrollmentController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\LinkedAccountController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\NewPasswordController;
@@ -76,9 +73,6 @@ enum Handler: string
     case TwoFactorLogin = 'identity.two-factor.login';
     case TwoFactorLoginStore = 'identity.two-factor.login.store';
     case TwoFactorChallengeOptions = 'identity.two-factor.login.options';
-    case TwoFactorEnable = 'identity.two-factor.enable';
-    case TwoFactorConfirm = 'identity.two-factor.confirm';
-    case TwoFactorDisable = 'identity.two-factor.disable';
     case TwoFactorQrCode = 'identity.two-factor.qr-code';
     case TwoFactorSecretKey = 'identity.two-factor.secret-key';
     case TwoFactorRecoveryCodes = 'identity.two-factor.recovery-codes';
@@ -243,21 +237,6 @@ enum Handler: string
                 route: 'auth/two-factor-challenge/options',
                 controller: [TwoFactorChallengeController::class, 'options'],
                 middleware: ['web', $guest, 'throttle:5,1'],
-            ),
-            self::TwoFactorEnable => new HandlerConfig(
-                route: 'auth/user/two-factor-authentication',
-                controller: EnableTwoFactorAuthenticationController::class,
-                middleware: ['web', $authenticated, $passwordConfirmed],
-            ),
-            self::TwoFactorConfirm => new HandlerConfig(
-                route: 'auth/user/confirmed-two-factor-authentication',
-                controller: ConfirmTwoFactorAuthenticationController::class,
-                middleware: ['web', $authenticated, $passwordConfirmed],
-            ),
-            self::TwoFactorDisable => new HandlerConfig(
-                route: 'auth/user/two-factor-authentication',
-                controller: DisableTwoFactorAuthenticationController::class,
-                middleware: ['web', $authenticated, $passwordConfirmed],
             ),
             self::TwoFactorQrCode => new HandlerConfig(
                 route: 'auth/user/two-factor-qr-code',
@@ -433,8 +412,6 @@ enum Handler: string
             self::PasswordConfirmStore,
             self::VerificationSend,
             self::TwoFactorLoginStore,
-            self::TwoFactorEnable,
-            self::TwoFactorConfirm,
             self::TwoFactorRegenerateRecoveryCodes,
             self::TwoFactorEnroll,
             self::TwoFactorEnrollConfirm,
@@ -446,7 +423,7 @@ enum Handler: string
             self::IssueToken,
             self::TokenRefresh,
             self::Approve => 'post',
-            self::Deny, self::TwoFactorDisable, self::TwoFactorRevoke, self::PasskeyDestroy, self::SocialDestroy => 'delete',
+            self::Deny, self::TwoFactorRevoke, self::PasskeyDestroy, self::SocialDestroy => 'delete',
             self::Userinfo, self::Logout, self::SocialCallback => ['get', 'post'],
             default => 'get',
         };

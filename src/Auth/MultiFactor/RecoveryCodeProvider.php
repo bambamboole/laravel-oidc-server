@@ -48,6 +48,19 @@ class RecoveryCodeProvider implements FactorProvider
     }
 
     /**
+     * The user's unused recovery codes.
+     *
+     * @return list<string>
+     */
+    public function codes(Authenticatable $user): array
+    {
+        return $this->factorUser($user)->recoveryCodes()
+            ->whereNull('used_at')
+            ->pluck('code')
+            ->all();
+    }
+
+    /**
      * @return list<FactorEnrollment>
      */
     public function enrollments(Authenticatable $user): array

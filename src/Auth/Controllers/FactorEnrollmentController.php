@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Concerns\InteractsWithFactorUser;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\EnrollmentPolicy;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorResponse;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\RecoveryCodeProvider;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,12 +23,11 @@ use Illuminate\Validation\ValidationException;
  */
 class FactorEnrollmentController
 {
-    use InteractsWithFactorUser;
     use ResolvesIdentityGuard;
 
     public function __construct(
         private readonly FactorRegistry $factors,
-        private readonly RecoveryCodeProvider $recoveryCodes,
+        private readonly EnrollmentPolicy $policy,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -73,11 +71,7 @@ class FactorEnrollmentController
             throw ValidationException::withMessages(['code' => __('The provided two factor authentication code was invalid.')]);
         }
 
-        // Backup codes cover every factor type; ensure they exist once any
-        // factor is confirmed.
-        if ($this->recoveryCodes->enrollments($user) === []) {
-            $this->recoveryCodes->generate($user);
-        }
+        $this->policy->factorConfirmed($user);
 
         return new JsonResponse('', 200);
     }
@@ -93,11 +87,7 @@ class FactorEnrollmentController
         }
 
         $enrollable->revoke($user, $pending);
-
-        // Backup codes only make sense while a challengeable factor remains.
-        if ($this->factors->challengeableEnrollments($user) === []) {
-            $this->factorUser($user)->recoveryCodes()->delete();
-        }
+        $this->policy->factorRevoked($user);
 
         return new JsonResponse('', 204);
     }
