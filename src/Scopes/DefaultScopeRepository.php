@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Scopes;
 
+use Bambamboole\LaravelOidc\Contracts\ScopeCatalog;
 use Bambamboole\LaravelOidc\Contracts\ScopeRepository;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
 use Laravel\Passport\Passport;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
+use LogicException;
 
 class DefaultScopeRepository implements ScopeRepository
 {
@@ -19,16 +22,46 @@ class DefaultScopeRepository implements ScopeRepository
         'phone' => 'Access your phone number',
     ];
 
+    /** @var array<string, string>|null */
+    private ?array $catalog = null;
+
+    public function __construct(private readonly Application $app) {}
+
     public function all(): Collection
     {
-        $passportScopes = collect(Passport::$scopes)
-            ->map(fn (string $description, string $id) => new Scope($id, $description));
+        return collect($this->catalog())
+            ->union(Passport::$scopes)
+            ->union(self::OIDC_SCOPES)
+            ->map(fn (string $description, string $id) => new Scope($id, $description))
+            ->values();
+    }
 
-        $oidcScopes = collect(self::OIDC_SCOPES)
-            ->reject(fn (string $description, string $id) => $passportScopes->has($id))
-            ->map(fn (string $description, string $id) => new Scope($id, $description));
+    /**
+     * The configured catalog, resolved once per instance. A catalog may query
+     * the database, so failures fall back to an empty catalog (fail-closed:
+     * unknown scopes are stripped at issuance) instead of breaking the flow.
+     *
+     * @return array<string, string>
+     */
+    private function catalog(): array
+    {
+        if ($this->catalog !== null) {
+            return $this->catalog;
+        }
 
-        return $passportScopes->merge($oidcScopes)->values();
+        $configured = config('oidc.passport.scopes', []);
+
+        if (is_string($configured)) {
+            $catalog = $this->app->make($configured);
+
+            if (! $catalog instanceof ScopeCatalog) {
+                throw new LogicException("The configured scope catalog [{$configured}] must implement ScopeCatalog.");
+            }
+
+            $configured = rescue(fn (): array => $catalog->scopes(), [], report: false);
+        }
+
+        return $this->catalog = is_array($configured) ? $configured : [];
     }
 
     public function find(string $identifier): ?Scope

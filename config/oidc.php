@@ -38,11 +38,13 @@ return [
         // Passport's default model.
         'token_model' => null,
 
-        // API scope catalog fed into Passport::tokensCan(): an inline
+        // API scope catalog consulted by the scope repository at
+        // enumeration time (consent, discovery, issuance): an inline
         // [scope => description] map, or the class-string of a ScopeCatalog
         // implementation resolved from the container. A catalog's scopes()
-        // may hit the database — failures are rescued so key- and db-less
-        // artisan runs never break.
+        // may hit the database — failures fall back to an empty catalog so
+        // key- and db-less artisan runs never break; an invalid class-string
+        // fails loudly at first enumeration.
         'scopes' => [],
     ],
 
