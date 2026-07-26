@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http\Controllers\Concerns;
+namespace Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns;
 
-use Bambamboole\LaravelOidc\Http\ClientCredentials;
-use Bambamboole\LaravelOidc\Http\OAuthError;
+use Bambamboole\LaravelOidc\Server\Http\ClientCredentials;
+use Bambamboole\LaravelOidc\Server\Http\OAuthError;
 use Illuminate\Http\Request;
 
 trait AuthenticatesConfidentialClient

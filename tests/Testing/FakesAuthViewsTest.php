@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Testing\FakesAuthViews;
+use Bambamboole\LaravelOidc\Server\Testing\FakesAuthViews;
 use Workbench\App\Models\User;
 
 uses(FakesAuthViews::class);

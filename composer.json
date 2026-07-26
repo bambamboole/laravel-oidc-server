@@ -33,12 +33,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Bambamboole\\LaravelOidc\\": "src/"
+            "Bambamboole\\LaravelOidc\\Server\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Bambamboole\\LaravelOidc\\Tests\\": "tests/",
+            "Bambamboole\\LaravelOidc\\Server\\Tests\\": "tests/",
             "Workbench\\App\\": "workbench/app/"
         }
     },
@@ -50,7 +50,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Bambamboole\\LaravelOidc\\OidcServiceProvider"
+                "Bambamboole\\LaravelOidc\\Server\\OidcServiceProvider"
             ]
         }
     },

@@ -6,10 +6,10 @@ declare(strict_types=1);
  * RFC 8693 (OAuth 2.0 Token Exchange); RFC 6749 §5.2 (error responses)
  */
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Auth\Pipeline\TokenExchangeEvent;
-use Bambamboole\LaravelOidc\Exchange\TokenExchanger;
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
+use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use Workbench\App\Models\User;

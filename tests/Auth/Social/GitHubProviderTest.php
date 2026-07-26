@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\GitHubProvider;
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Auth\Social\SocialAuthenticationException;
+use Bambamboole\LaravelOidc\Server\Auth\Social\GitHubProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 

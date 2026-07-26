@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Session;
+namespace Bambamboole\LaravelOidc\Server\Session;
 
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Contracts\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
 use Illuminate\Auth\Events\Login;
 use Throwable;
 

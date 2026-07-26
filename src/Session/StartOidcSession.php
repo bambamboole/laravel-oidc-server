@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Session;
+namespace Bambamboole\LaravelOidc\Server\Session;
 
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Illuminate\Auth\Events\Login;
 
 class StartOidcSession
 {
-    public function __construct(private readonly SessionRegistry $registry) {}
+    public function __construct(
+        private readonly OidcSessionRepository $registry,
+        private readonly AuthSessionState $sessionState,
+    ) {}
 
     public function handle(Login $event): void
     {
@@ -20,10 +23,7 @@ class StartOidcSession
         $sid = $this->registry->start((string) $event->user->getAuthIdentifier());
 
         if (app()->bound('session.store')) {
-            app('session.store')->put([
-                'oidc.auth_time' => time(),
-                'oidc.sid' => $sid,
-            ]);
+            $this->sessionState->startOidcSession($sid);
         }
     }
 }

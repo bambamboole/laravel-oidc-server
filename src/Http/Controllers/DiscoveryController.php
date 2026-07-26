@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
-use Bambamboole\LaravelOidc\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Facades\Oidc;
-use Bambamboole\LaravelOidc\Routing\Handler;
-use Bambamboole\LaravelOidc\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Illuminate\Http\JsonResponse;
 use Laravel\Passport\Passport;
 

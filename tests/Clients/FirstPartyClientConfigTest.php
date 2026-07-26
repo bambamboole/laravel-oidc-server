@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 
 it('resolves the new first-party client configuration', function () {
     config([

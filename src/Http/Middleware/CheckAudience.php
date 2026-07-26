@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http\Middleware;
+namespace Bambamboole\LaravelOidc\Server\Http\Middleware;
 
-use Bambamboole\LaravelOidc\Http\OAuthError;
-use Bambamboole\LaravelOidc\Token\ResolvesTokenUser;
-use Bambamboole\LaravelOidc\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Http\OAuthError;
+use Bambamboole\LaravelOidc\Server\Token\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Closure;
 use DateTimeInterface;
 use Illuminate\Http\Request;

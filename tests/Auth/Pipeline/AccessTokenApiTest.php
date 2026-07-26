@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
 
 it('records denial state and reason', function () {
     $api = new AccessTokenApi;

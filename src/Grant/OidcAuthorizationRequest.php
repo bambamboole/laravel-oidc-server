@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Grant;
+namespace Bambamboole\LaravelOidc\Server\Grant;
 
 use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
 

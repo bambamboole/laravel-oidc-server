@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Support\EnvironmentFile;
-use Bambamboole\LaravelOidc\Support\EnvironmentWriteException;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
 
 function envFixture(string $contents): string
 {

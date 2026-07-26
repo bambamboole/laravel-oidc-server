@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Console;
+namespace Bambamboole\LaravelOidc\Server\Console;
 
-use Bambamboole\LaravelOidc\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\BackChannel\BackChannelLogoutNotifier;
+use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelLogoutNotifier;
 use Illuminate\Console\Command;
 
 class DispatchExpiredSessionLogoutsCommand extends Command

@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Support;
-
-use Bambamboole\LaravelOidc\Contracts\EnvironmentStore;
+namespace Bambamboole\LaravelOidc\Server\Support;
 
 final class EnvironmentFile implements EnvironmentStore
 {

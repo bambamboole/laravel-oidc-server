@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
-use Bambamboole\LaravelOidc\Http\ClientCredentials;
-use Bambamboole\LaravelOidc\Http\Controllers\Concerns\AuthenticatesConfidentialClient;
-use Bambamboole\LaravelOidc\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Http\ClientCredentials;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\AuthenticatesConfidentialClient;
+use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

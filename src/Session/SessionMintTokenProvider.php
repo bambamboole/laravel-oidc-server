@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Session;
+namespace Bambamboole\LaravelOidc\Server\Session;
 
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Contracts\SessionTokenProvider;
-use Bambamboole\LaravelOidc\Scopes\Scope;
-use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use DateInterval;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;

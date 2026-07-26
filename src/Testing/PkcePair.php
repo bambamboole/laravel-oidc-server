@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Testing;
+namespace Bambamboole\LaravelOidc\Server\Testing;
 
 use Illuminate\Support\Str;
 

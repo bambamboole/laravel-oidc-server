@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioningException;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioningOutcome;
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 
 it('provisions through the public facade', function () {
     $result = Oidc::provisionFirstPartyClient(
@@ -14,7 +13,7 @@ it('provisions through the public facade', function () {
         allowedExchangeAudiences: ['https://api.test/orders'],
     );
 
-    expect($result->outcome)->toBe(FirstPartyClientProvisioningOutcome::Created)
+    expect($result->wasCreated)->toBeTrue()
         ->and($result->clientId)->toBe((string) $result->client->getKey())
         ->and($result->clientSecret)->toBeString();
 });
@@ -31,7 +30,7 @@ it('reconciles a verified client credential through the public facade', function
         existingClientSecret: $created->clientSecret,
     );
 
-    expect($result->outcome)->toBe(FirstPartyClientProvisioningOutcome::Reconciled)
+    expect($result->wasCreated)->toBeFalse()
         ->and($result->clientId)->toBe($created->clientId)
         ->and($result->clientSecret)->toBe($created->clientSecret);
 });

@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Exchange\IssuedToken;
-use Bambamboole\LaravelOidc\Exchange\TokenExchanger;
-use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Exchange\IssuedToken;
+use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Laravel\Passport\ClientRepository;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;

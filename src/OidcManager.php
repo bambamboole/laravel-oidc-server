@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc;
+namespace Bambamboole\LaravelOidc\Server;
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Auth\Pipeline\PostLoginPipeline;
-use Bambamboole\LaravelOidc\Auth\Social\Contracts\SocialProvider;
-use Bambamboole\LaravelOidc\Auth\Social\SocialProviderRegistry;
-use Bambamboole\LaravelOidc\Auth\UserActionManager;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioningResult;
-use Bambamboole\LaravelOidc\Contracts\SessionTokenProvider;
-use Bambamboole\LaravelOidc\Exchange\IssuedToken;
-use Bambamboole\LaravelOidc\Exchange\TokenExchanger;
-use Bambamboole\LaravelOidc\Routing\Handler;
-use Bambamboole\LaravelOidc\Routing\HandlerConfig;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialProviderRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningResult;
+use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Exchange\IssuedToken;
+use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Routing\HandlerConfig;
 use Closure;
 use Laravel\Passport\Passport;
 use RuntimeException;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\LoginApi;
-use Bambamboole\LaravelOidc\Auth\Pipeline\LoginEvent;
-use Bambamboole\LaravelOidc\Auth\Pipeline\NullDeviceRecognizer;
-use Bambamboole\LaravelOidc\Auth\Pipeline\PostLoginPipeline;
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\NullDeviceRecognizer;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Illuminate\Http\Request;
 use Workbench\App\Models\User;
 

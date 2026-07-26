@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Token;
+namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Bambamboole\LaravelOidc\Auth\ProtocolClaims;
-use Bambamboole\LaravelOidc\Issuer;
+use Bambamboole\LaravelOidc\Server\Issuer;
 use DateTimeImmutable;
 use Laravel\Passport\Bridge\AccessToken;
 use Lcobucci\JWT\Token;

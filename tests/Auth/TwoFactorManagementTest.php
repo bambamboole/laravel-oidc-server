@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Models\TotpFactor;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\TotpFactor;
 use Illuminate\Support\Facades\DB;
 use PragmaRX\Google2FA\Google2FA;
 use Workbench\App\Models\User;
@@ -70,6 +70,25 @@ it('lists regenerates and disables recovery credentials', function () {
 
     expect($user->totpFactors()->count())->toBe(0)
         ->and($user->recoveryCodes()->count())->toBe(0);
+});
+
+it('returns 404 from all two-factor read endpoints when 2FA is not enabled', function () {
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
+
+    $this->actingAs($user, 'identity')
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->getJson(route('identity.two-factor.qr-code'))
+        ->assertNotFound();
+
+    $this->actingAs($user, 'identity')
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->getJson(route('identity.two-factor.secret-key'))
+        ->assertNotFound();
+
+    $this->actingAs($user, 'identity')
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->getJson(route('identity.two-factor.recovery-codes'))
+        ->assertNotFound();
 });
 
 it('allows multiple TOTP enrollments per user', function () {

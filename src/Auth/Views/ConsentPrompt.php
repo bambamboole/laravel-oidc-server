@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Views;
+namespace Bambamboole\LaravelOidc\Server\Auth\Views;
 
-use Bambamboole\LaravelOidc\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Laravel\Passport\Client;
 

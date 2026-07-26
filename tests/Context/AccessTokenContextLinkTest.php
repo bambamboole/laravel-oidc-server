@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\AccessTokenContextLink;
+use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
 
 it('stores and resolves a token→context link', function () {
     $link = app(AccessTokenContextLink::class);

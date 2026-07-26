@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Controllers\Concerns;
+namespace Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns;
 
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;

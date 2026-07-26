@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Pipeline;
+namespace Bambamboole\LaravelOidc\Server\Auth\Pipeline;
 
-use Bambamboole\LaravelOidc\Contracts\DeviceRecognizer;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\Contracts\DeviceRecognizer;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 

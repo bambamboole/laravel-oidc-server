@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Token\IdTokenBuilder;
-use Bambamboole\LaravelOidc\Token\Jwk;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Laravel\Passport\Bridge\AccessToken;
 use Laravel\Passport\Bridge\Client;
 use Laravel\Passport\Bridge\Scope;

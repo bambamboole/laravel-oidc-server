@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\LoginApi;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
 
 it('records deny with a reason', function () {
     $api = new LoginApi;

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Testing;
+namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\Views\ConsentPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\ConsentView;
-use Bambamboole\LaravelOidc\Auth\Views\MissingAuthViewException;
-use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\MissingAuthViewException;
+use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use DateInterval;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -71,7 +71,7 @@ trait InteractsWithOidc
      * `oidc.id_token_claims`, `oidc.access_token_claims`.
      *
      * `acr` is intentionally not a parameter: the grant derives it from
-     * `$amr` via {@see AuthenticationMethods::deriveAcr()}.
+     * `$amr` via {@see AuthSessionState::deriveAcr()}.
      *
      * @param  array<string, mixed>  $idTokenClaims
      * @param  array<string, mixed>  $accessTokenClaims
@@ -87,21 +87,15 @@ trait InteractsWithOidc
     ): static {
         $this->actingAs($user, $guard ?? (string) config('oidc.auth.guard', 'identity'));
 
-        $session = ['oidc.auth_time' => $authTime ?? time()];
+        // withSession() starts the session store the typed writers below target.
+        $this->withSession($amr === [] ? [] : [AuthSessionState::AMR_KEY => $amr]);
 
-        if ($amr !== []) {
-            $session[AuthenticationMethods::SESSION_KEY] = $amr;
+        $state = app(AuthSessionState::class);
+        $state->putAuthTime($authTime ?? time());
+
+        if ($idTokenClaims !== [] || $accessTokenClaims !== []) {
+            $state->putClaims($idTokenClaims, $accessTokenClaims);
         }
-
-        if ($idTokenClaims !== []) {
-            $session['oidc.id_token_claims'] = $idTokenClaims;
-        }
-
-        if ($accessTokenClaims !== []) {
-            $session['oidc.access_token_claims'] = $accessTokenClaims;
-        }
-
-        $this->withSession($session);
 
         return $this;
     }

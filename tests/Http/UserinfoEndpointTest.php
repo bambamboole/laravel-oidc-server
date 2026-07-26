@@ -5,8 +5,8 @@ declare(strict_types=1);
  * OpenID Connect Core 1.0 §5.3 (UserInfo endpoint)
  */
 
-use Bambamboole\LaravelOidc\Claims\ClaimSet;
-use Bambamboole\LaravelOidc\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimSet;
+use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Laravel\Passport\Passport;
 use Workbench\App\Models\User;

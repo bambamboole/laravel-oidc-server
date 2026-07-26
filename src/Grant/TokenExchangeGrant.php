@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Grant;
+namespace Bambamboole\LaravelOidc\Server\Grant;
 
-use Bambamboole\LaravelOidc\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use DateInterval;
 use Laravel\Passport\Passport;
 use League\OAuth2\Server\Exception\OAuthServerException;

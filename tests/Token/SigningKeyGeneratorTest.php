@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Token\Jwk;
-use Bambamboole\LaravelOidc\Token\SigningKeyGenerator;
+use Bambamboole\LaravelOidc\Server\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
 use Laravel\Passport\Passport;
 
 it('generates a usable keypair with a matching kid', function () {

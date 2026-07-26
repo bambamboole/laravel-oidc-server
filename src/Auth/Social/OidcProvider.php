@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Social;
+namespace Bambamboole\LaravelOidc\Server\Auth\Social;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Clients;
+namespace Bambamboole\LaravelOidc\Server\Clients;
 
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\QueryException;
@@ -158,14 +158,10 @@ final readonly class FirstPartyClientProvisioner
                 'oidc_provisioning_key' => self::ProvisioningKey,
             ])->save();
 
-            $outcome = $created
-                ? FirstPartyClientProvisioningOutcome::Created
-                : FirstPartyClientProvisioningOutcome::Reconciled;
             $secret = $created ? $client->plainSecret : $existingClientSecret;
 
             if ($rotateSecret) {
                 $this->clients->regenerateSecret($client);
-                $outcome = FirstPartyClientProvisioningOutcome::Rotated;
                 $secret = $client->plainSecret;
             }
 
@@ -173,8 +169,8 @@ final readonly class FirstPartyClientProvisioner
                 client: $client->refresh(),
                 clientId: (string) $client->getKey(),
                 clientSecret: $secret,
-                outcome: $outcome,
-                created: $created,
+                wasCreated: $created,
+                secretRotated: $rotateSecret,
             );
         });
     }

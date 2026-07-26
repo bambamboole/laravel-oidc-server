@@ -2,7 +2,7 @@
 // tests/Session/StartOidcSessionTest.php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
 use Illuminate\Support\Facades\Auth;
 use Workbench\App\Models\User;
 

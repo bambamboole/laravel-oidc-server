@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Contracts;
+namespace Bambamboole\LaravelOidc\Server\Contracts;
 
-use Bambamboole\LaravelOidc\Claims\ClaimSet;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimSet;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 interface ClaimsResolver

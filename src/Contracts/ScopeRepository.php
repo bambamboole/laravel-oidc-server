@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Contracts;
+namespace Bambamboole\LaravelOidc\Server\Contracts;
 
-use Bambamboole\LaravelOidc\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Illuminate\Support\Collection;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 

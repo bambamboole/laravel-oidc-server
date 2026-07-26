@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Session;
+namespace Bambamboole\LaravelOidc\Server\Session;
 
 /**
  * Names the single guard that owns the first-party session token. The mint

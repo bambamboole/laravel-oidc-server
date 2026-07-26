@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Auth\Pipeline\AuthorizationCodeEvent;
-use Bambamboole\LaravelOidc\Auth\Pipeline\ClientCredentialsEvent;
-use Bambamboole\LaravelOidc\Auth\Pipeline\PersonalAccessTokenEvent;
-use Bambamboole\LaravelOidc\Auth\Pipeline\TokenExchangeEvent;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AuthorizationCodeEvent;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\ClientCredentialsEvent;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PersonalAccessTokenEvent;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
 use Laravel\Passport\Bridge\Client;
 use Workbench\App\Models\User;
 

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\Contracts\SocialProvider;
-use Bambamboole\LaravelOidc\Auth\Social\GoogleProvider;
-use Bambamboole\LaravelOidc\Auth\Social\OidcProvider;
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Auth\Social\SocialProviderRegistry;
-use Bambamboole\LaravelOidc\Auth\Social\SocialUser;
-use Bambamboole\LaravelOidc\Auth\UserActionManager;
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\GoogleProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\OidcProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialProviderRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
+use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;

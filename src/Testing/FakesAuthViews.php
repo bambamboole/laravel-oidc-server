@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Testing;
+namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Auth\Views\ConsentPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\ConsentView;
-use Bambamboole\LaravelOidc\Auth\Views\EmailVerificationPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\EmailVerificationView;
-use Bambamboole\LaravelOidc\Auth\Views\LoginPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\LoginView;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordConfirmationPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordConfirmationView;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordResetPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordResetRequestPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordResetRequestView;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordResetView;
-use Bambamboole\LaravelOidc\Auth\Views\RegisterPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\RegisterView;
-use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengePrompt;
-use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\LoginPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\LoginView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengePrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

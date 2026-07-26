@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Pipeline;
+namespace Bambamboole\LaravelOidc\Server\Auth\Pipeline;
 
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 

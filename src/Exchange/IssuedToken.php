@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Exchange;
+namespace Bambamboole\LaravelOidc\Server\Exchange;
 
-use Bambamboole\LaravelOidc\Token\OidcAccessToken;
+use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 
 final readonly class IssuedToken

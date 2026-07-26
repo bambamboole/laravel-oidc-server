@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace Workbench\App\Models;
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Concerns\HasAuthenticationFactors;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Contracts\FactorAuthenticatable;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Concerns\HasAuthenticationFactors;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorAuthenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;

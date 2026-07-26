@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Routing;
+namespace Bambamboole\LaravelOidc\Server\Routing;
 
 use Illuminate\Support\Facades\Route;
 

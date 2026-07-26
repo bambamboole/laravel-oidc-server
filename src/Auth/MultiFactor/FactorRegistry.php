@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\MultiFactor;
+namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor;
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Contracts\FactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorProvider;
 use Illuminate\Contracts\Auth\Authenticatable;
 use LogicException;
 
@@ -28,6 +29,18 @@ class FactorRegistry
     {
         return $this->providers[$key]
             ?? throw new LogicException("No factor provider is registered for [{$key}].");
+    }
+
+    /**
+     * The provider for $key when it supports enrollment through the generic
+     * endpoints, null otherwise (unknown key, or a provider like webauthn
+     * whose enrollment runs through its own ceremony routes).
+     */
+    public function enrollable(string $key): ?EnrollableFactorProvider
+    {
+        $provider = $this->providers[$key] ?? null;
+
+        return $provider instanceof EnrollableFactorProvider ? $provider : null;
     }
 
     /**

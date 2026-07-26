@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Exchange\DefaultExchangePolicy;
-use Bambamboole\LaravelOidc\Exchange\ExchangeRequest;
+use Bambamboole\LaravelOidc\Server\Exchange\DefaultExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Exchange\ExchangeRequest;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 use League\OAuth2\Server\Exception\OAuthServerException;

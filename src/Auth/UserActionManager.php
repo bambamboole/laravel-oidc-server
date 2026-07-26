@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth;
+namespace Bambamboole\LaravelOidc\Server\Auth;
 
-use Bambamboole\LaravelOidc\Auth\Social\SocialUser;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use RuntimeException;
@@ -31,7 +31,14 @@ class UserActionManager
      */
     public function createUsersUsing(callable|string $action): void
     {
+        $this->assertRegistrable($action, 'create user');
+
         $this->createUsersUsing = $action;
+    }
+
+    public function hasCreateUserAction(): bool
+    {
+        return $this->createUsersUsing !== null;
     }
 
     /**
@@ -57,6 +64,8 @@ class UserActionManager
      */
     public function resetUserPasswordsUsing(callable|string $action): void
     {
+        $this->assertRegistrable($action, 'reset user password');
+
         $this->resetUserPasswordsUsing = $action;
     }
 
@@ -81,6 +90,8 @@ class UserActionManager
      */
     public function createUsersFromSocialUsing(callable|string $action): void
     {
+        $this->assertRegistrable($action, 'create user from social');
+
         $this->createUsersFromSocialUsing = $action;
     }
 
@@ -105,6 +116,21 @@ class UserActionManager
         }
 
         return $user;
+    }
+
+    /**
+     * Fail at registration time (boot) instead of first use, so a
+     * misconfigured action surfaces to the developer rather than as a public
+     * 500. Class-strings stay lazy: they are container-resolved and
+     * method-checked on first use.
+     */
+    private function assertRegistrable(callable|string $action, string $name): void
+    {
+        if (! is_string($action) || is_callable($action) || class_exists($action)) {
+            return;
+        }
+
+        throw new RuntimeException("The OIDC {$name} action [{$action}] is neither a class name nor a callable.");
     }
 
     private function resolveAction(mixed $action, string $name, string $method): mixed

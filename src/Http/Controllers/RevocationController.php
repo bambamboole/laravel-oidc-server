@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
-use Bambamboole\LaravelOidc\Http\ClientCredentials;
-use Bambamboole\LaravelOidc\Http\Controllers\Concerns\AuthenticatesConfidentialClient;
-use Bambamboole\LaravelOidc\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Http\ClientCredentials;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\AuthenticatesConfidentialClient;
+use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Laravel\Passport\Passport;

@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Tests;
+namespace Bambamboole\LaravelOidc\Server\Tests;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;

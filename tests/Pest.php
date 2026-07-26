@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Issuer;
-use Bambamboole\LaravelOidc\Tests\TestCase;
-use Bambamboole\LaravelOidc\Token\Jwk;
-use Bambamboole\LaravelOidc\Token\OidcAccessToken;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Issuer;
+use Bambamboole\LaravelOidc\Server\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Illuminate\Contracts\Encryption\Encrypter as EncrypterContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;

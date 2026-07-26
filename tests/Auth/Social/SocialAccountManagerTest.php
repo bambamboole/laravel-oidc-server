@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\Models\SocialAccount;
-use Bambamboole\LaravelOidc\Auth\Social\SocialAccountManager;
-use Bambamboole\LaravelOidc\Auth\Social\SocialUser;
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Models\SocialAccount;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAccountManager;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\UserProvider;

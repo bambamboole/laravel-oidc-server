@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Token;
+namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Bambamboole\LaravelOidc\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\Issuer;
+use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Issuer;
 use DateTimeImmutable;
 
 class LogoutTokenBuilder

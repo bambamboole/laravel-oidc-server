@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\MultiFactor;
+namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor;
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Contracts\FactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorProvider;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Laravel\Passkeys\Actions\GenerateVerificationOptions;
 use Laravel\Passkeys\Actions\VerifyPasskey;

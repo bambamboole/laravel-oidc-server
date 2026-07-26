@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Console;
+namespace Bambamboole\LaravelOidc\Server\Console;
 
-use Bambamboole\LaravelOidc\Auth\Models\AccessTokenContext;
-use Bambamboole\LaravelOidc\Auth\Models\AuthenticationContext;
-use Bambamboole\LaravelOidc\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\Auth\Models\SessionParticipant;
+use Bambamboole\LaravelOidc\Server\Auth\Models\AccessTokenContext;
+use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Auth\Models\SessionParticipant;
 use DateTimeImmutable;
 use Illuminate\Console\Command;
 use Laravel\Passport\Passport;

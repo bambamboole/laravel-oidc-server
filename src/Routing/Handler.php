@@ -2,38 +2,39 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Routing;
+namespace Bambamboole\LaravelOidc\Server\Routing;
 
-use Bambamboole\LaravelOidc\Auth\Controllers\AuthenticatedSessionController;
-use Bambamboole\LaravelOidc\Auth\Controllers\ConfirmablePasswordController;
-use Bambamboole\LaravelOidc\Auth\Controllers\ConfirmTwoFactorAuthenticationController;
-use Bambamboole\LaravelOidc\Auth\Controllers\DisableTwoFactorAuthenticationController;
-use Bambamboole\LaravelOidc\Auth\Controllers\EmailVerificationPromptController;
-use Bambamboole\LaravelOidc\Auth\Controllers\EnableTwoFactorAuthenticationController;
-use Bambamboole\LaravelOidc\Auth\Controllers\LinkedAccountController;
-use Bambamboole\LaravelOidc\Auth\Controllers\NewPasswordController;
-use Bambamboole\LaravelOidc\Auth\Controllers\PasskeyAuthenticatedSessionController;
-use Bambamboole\LaravelOidc\Auth\Controllers\PasswordResetLinkController;
-use Bambamboole\LaravelOidc\Auth\Controllers\RegenerateRecoveryCodesController;
-use Bambamboole\LaravelOidc\Auth\Controllers\RegisteredUserController;
-use Bambamboole\LaravelOidc\Auth\Controllers\SendEmailVerificationNotificationController;
-use Bambamboole\LaravelOidc\Auth\Controllers\ShowConfirmedPasswordStatusController;
-use Bambamboole\LaravelOidc\Auth\Controllers\ShowRecoveryCodesController;
-use Bambamboole\LaravelOidc\Auth\Controllers\ShowTwoFactorQrCodeController;
-use Bambamboole\LaravelOidc\Auth\Controllers\ShowTwoFactorSecretKeyController;
-use Bambamboole\LaravelOidc\Auth\Controllers\SocialAuthenticationController;
-use Bambamboole\LaravelOidc\Auth\Controllers\TwoFactorChallengeController;
-use Bambamboole\LaravelOidc\Auth\Controllers\VerifyEmailController;
-use Bambamboole\LaravelOidc\Auth\Middleware\AuthenticateIdentity;
-use Bambamboole\LaravelOidc\Http\Controllers\ApproveAuthorizationController;
-use Bambamboole\LaravelOidc\Http\Controllers\AuthorizationController;
-use Bambamboole\LaravelOidc\Http\Controllers\DenyAuthorizationController;
-use Bambamboole\LaravelOidc\Http\Controllers\DiscoveryController;
-use Bambamboole\LaravelOidc\Http\Controllers\EndSessionController;
-use Bambamboole\LaravelOidc\Http\Controllers\IntrospectionController;
-use Bambamboole\LaravelOidc\Http\Controllers\JwksController;
-use Bambamboole\LaravelOidc\Http\Controllers\RevocationController;
-use Bambamboole\LaravelOidc\Http\Controllers\UserinfoController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\AuthenticatedSessionController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\ConfirmablePasswordController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\ConfirmTwoFactorAuthenticationController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\DisableTwoFactorAuthenticationController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\EmailVerificationPromptController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\EnableTwoFactorAuthenticationController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\FactorEnrollmentController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\LinkedAccountController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\NewPasswordController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\PasskeyAuthenticatedSessionController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\PasswordResetLinkController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\RegenerateRecoveryCodesController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\RegisteredUserController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\SendEmailVerificationNotificationController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowConfirmedPasswordStatusController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowRecoveryCodesController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowTwoFactorQrCodeController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowTwoFactorSecretKeyController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\SocialAuthenticationController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\TwoFactorChallengeController;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\VerifyEmailController;
+use Bambamboole\LaravelOidc\Server\Auth\Middleware\AuthenticateIdentity;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\ApproveAuthorizationController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\DenyAuthorizationController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\DiscoveryController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\EndSessionController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\IntrospectionController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\JwksController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\RevocationController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\UserinfoController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -82,6 +83,10 @@ enum Handler: string
     case TwoFactorSecretKey = 'identity.two-factor.secret-key';
     case TwoFactorRecoveryCodes = 'identity.two-factor.recovery-codes';
     case TwoFactorRegenerateRecoveryCodes = 'identity.two-factor.regenerate-recovery-codes';
+    case TwoFactorFactors = 'identity.two-factor.factors';
+    case TwoFactorEnroll = 'identity.two-factor.enroll';
+    case TwoFactorEnrollConfirm = 'identity.two-factor.enroll.confirm';
+    case TwoFactorRevoke = 'identity.two-factor.revoke';
     case PasskeyLoginOptions = 'identity.passkey.login-options';
     case PasskeyLogin = 'identity.passkey.login';
     case PasskeyConfirmOptions = 'identity.passkey.confirm-options';
@@ -274,6 +279,26 @@ enum Handler: string
                 controller: RegenerateRecoveryCodesController::class,
                 middleware: ['web', $authenticated, $passwordConfirmed],
             ),
+            self::TwoFactorFactors => new HandlerConfig(
+                route: 'auth/user/two-factor/factors',
+                controller: [FactorEnrollmentController::class, 'index'],
+                middleware: ['web', $authenticated, $passwordConfirmed],
+            ),
+            self::TwoFactorEnroll => new HandlerConfig(
+                route: 'auth/user/two-factor/{provider}',
+                controller: [FactorEnrollmentController::class, 'store'],
+                middleware: ['web', $authenticated, $passwordConfirmed],
+            ),
+            self::TwoFactorEnrollConfirm => new HandlerConfig(
+                route: 'auth/user/two-factor/{provider}/confirm',
+                controller: [FactorEnrollmentController::class, 'confirm'],
+                middleware: ['web', $authenticated, $passwordConfirmed],
+            ),
+            self::TwoFactorRevoke => new HandlerConfig(
+                route: 'auth/user/two-factor/{provider}/{enrollment}',
+                controller: [FactorEnrollmentController::class, 'destroy'],
+                middleware: ['web', $authenticated, $passwordConfirmed],
+            ),
             self::PasskeyLoginOptions => new HandlerConfig(
                 route: 'auth/passkeys/login/options',
                 controller: [PasskeyLoginController::class, 'index'],
@@ -411,6 +436,8 @@ enum Handler: string
             self::TwoFactorEnable,
             self::TwoFactorConfirm,
             self::TwoFactorRegenerateRecoveryCodes,
+            self::TwoFactorEnroll,
+            self::TwoFactorEnrollConfirm,
             self::PasskeyLogin,
             self::PasskeyConfirm,
             self::PasskeyStore,
@@ -419,7 +446,7 @@ enum Handler: string
             self::IssueToken,
             self::TokenRefresh,
             self::Approve => 'post',
-            self::Deny, self::TwoFactorDisable, self::PasskeyDestroy, self::SocialDestroy => 'delete',
+            self::Deny, self::TwoFactorDisable, self::TwoFactorRevoke, self::PasskeyDestroy, self::SocialDestroy => 'delete',
             self::Userinfo, self::Logout, self::SocialCallback => ['get', 'post'],
             default => 'get',
         };

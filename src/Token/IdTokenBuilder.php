@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Token;
+namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\ProtocolClaims;
-use Bambamboole\LaravelOidc\Contracts\ClaimsResolver;
-use Bambamboole\LaravelOidc\Issuer;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Issuer;
 use DateTimeImmutable;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
@@ -62,7 +61,7 @@ class IdTokenBuilder
             $amr = array_values($amr);
             $builder = $builder->withClaim('amr', $amr);
 
-            $acr = AuthenticationMethods::deriveAcr($amr);
+            $acr = AuthSessionState::deriveAcr($amr);
             if ($acr !== null) {
                 $builder = $builder->withClaim('acr', $acr);
             }

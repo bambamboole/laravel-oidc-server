@@ -7,8 +7,8 @@ declare(strict_types=1);
  * request (options persisted server-side) and verified in the next.
  */
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Passkeys\Actions\VerifyPasskey;
 use Laravel\Passkeys\Contracts\PasskeyUser;
@@ -107,7 +107,7 @@ it('completes a webauthn second-factor challenge end to end', function () {
     ])->assertRedirect('/dashboard');
 
     $this->assertAuthenticatedAs($user, 'identity');
-    expect(session(AuthenticationMethods::SESSION_KEY))->toContain('webauthn');
+    expect(session(AuthSessionState::AMR_KEY))->toContain('webauthn');
 });
 
 it('rejects a webauthn assertion when no challenge was issued', function () {

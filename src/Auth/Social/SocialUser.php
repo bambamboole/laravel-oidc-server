@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Social;
+namespace Bambamboole\LaravelOidc\Server\Auth\Social;
 
 /**
  * The normalized identity a social provider hands back after a successful

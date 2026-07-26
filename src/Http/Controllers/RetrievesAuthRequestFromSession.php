@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
-use Bambamboole\LaravelOidc\Grant\OidcAuthorizationRequest;
+use Bambamboole\LaravelOidc\Server\Grant\OidcAuthorizationRequest;
 use Exception;
 use Illuminate\Http\Request;
 use Laravel\Passport\Bridge\Client;

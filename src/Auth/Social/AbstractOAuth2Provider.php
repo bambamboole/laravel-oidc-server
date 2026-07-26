@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Social;
+namespace Bambamboole\LaravelOidc\Server\Auth\Social;
 
-use Bambamboole\LaravelOidc\Auth\Social\Contracts\SocialProvider;
-use Bambamboole\LaravelOidc\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;

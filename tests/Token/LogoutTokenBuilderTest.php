@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\Token\LogoutTokenBuilder;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Token\LogoutTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -26,7 +26,7 @@ function parseUnencryptedLogoutToken(string $jwt): UnencryptedToken
 }
 
 it('mints a spec-shaped, signed logout token', function () {
-    $sid = app(SessionRegistry::class)->start('99');
+    $sid = app(OidcSessionRepository::class)->start('99');
     $session = OidcSession::query()->find($sid);
 
     $jwt = app(LogoutTokenBuilder::class)->build($session, 'client-xyz');
@@ -44,7 +44,7 @@ it('mints a spec-shaped, signed logout token', function () {
 });
 
 it('serialises the events claim as a nested empty JSON object', function () {
-    $sid = app(SessionRegistry::class)->start('99');
+    $sid = app(OidcSessionRepository::class)->start('99');
     $session = OidcSession::query()->find($sid);
 
     $jwt = app(LogoutTokenBuilder::class)->build($session, 'client-xyz');

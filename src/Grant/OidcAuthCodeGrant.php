@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Grant;
+namespace Bambamboole\LaravelOidc\Server\Grant;
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationContextStore;
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\Models\AuthenticationContext;
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\Grant\Concerns\HasAuthenticationContextIssuance;
-use Bambamboole\LaravelOidc\Responses\IdTokenResponse;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
+use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
+use Bambamboole\LaravelOidc\Server\Grant\Concerns\HasAuthenticationContextIssuance;
+use Bambamboole\LaravelOidc\Server\Responses\IdTokenResponse;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use DateInterval;
 use DateTimeImmutable;
 use League\OAuth2\Server\Entities\UserEntityInterface;
@@ -37,9 +39,16 @@ class OidcAuthCodeGrant extends AuthCodeGrant
         AuthCodeRepositoryInterface $authCodeRepository,
         RefreshTokenRepositoryInterface $refreshTokenRepository,
         DateInterval $authCodeTTL,
+        AccessTokenContextLink $contextLink,
+        AccessTokenPipeline $accessTokenPipeline,
+        private readonly AuthenticationContextStore $contextStore,
+        private readonly OidcSessionRepository $sessions,
+        private readonly AuthSessionState $sessionState,
     ) {
         parent::__construct($authCodeRepository, $refreshTokenRepository, $authCodeTTL);
         $this->authCodeTTL = $authCodeTTL;
+        $this->contextLink = $contextLink;
+        $this->accessTokenPipeline = $accessTokenPipeline;
     }
 
     protected function createAuthorizationRequest(): AuthorizationRequestInterface
@@ -86,7 +95,7 @@ class OidcAuthCodeGrant extends AuthCodeGrant
                     $responseType->setNonce($payload->nonce ?? null);
                     $responseType->setAuthTime(isset($payload->auth_time) ? (int) $payload->auth_time : null);
 
-                    $context = $this->context(app(AuthenticationContextStore::class), $payload->context_id ?? null);
+                    $context = $this->context($payload->context_id ?? null);
                     if ($context !== null) {
                         $this->pendingContext = $context;
                         $responseType->setAmr($context->amr);
@@ -141,9 +150,9 @@ class OidcAuthCodeGrant extends AuthCodeGrant
                 'context_id' => $this->finalizeContext($authorizationRequest->getUser()->getIdentifier()),
             ];
 
-            $sid = $this->currentSid();
+            $sid = $this->sessionState->sid();
             if ($sid !== null) {
-                app(SessionRegistry::class)->recordParticipant($sid, $authorizationRequest->getClient()->getIdentifier());
+                $this->sessions->recordParticipant($sid, $authorizationRequest->getClient()->getIdentifier());
             }
 
             $jsonPayload = json_encode($payload);
@@ -175,76 +184,36 @@ class OidcAuthCodeGrant extends AuthCodeGrant
         );
     }
 
-    private function sessionValue(string $key, mixed $default): mixed
-    {
-        if (app()->bound('session.store') && app('session.store')->isStarted()) {
-            return app('session.store')->get($key, $default);
-        }
-
-        return $default;
-    }
-
     private function currentAuthTime(): int
     {
-        return (int) $this->sessionValue('oidc.auth_time', time());
+        return $this->sessionState->authTime() ?? time();
     }
 
     private function finalizeContext(string $userId): string
     {
-        $amr = $this->currentAmr();
-        $sid = $this->currentSid();
-        $session = is_string($sid) ? app(SessionRegistry::class)->find($sid) : null;
+        $amr = $this->sessionState->amr();
+        $sid = $this->sessionState->sid();
+        $session = $sid !== null ? $this->sessions->find($sid) : null;
 
         $expiresAt = $session?->expires_at?->toDateTimeImmutable()
             ?? (new DateTimeImmutable)->add(
                 new DateInterval('PT'.(int) config('oidc.session.absolute_lifetime').'S'),
             );
 
-        return app(AuthenticationContextStore::class)->create([
+        return $this->contextStore->create([
             'user_id' => $userId,
             'sid' => $sid,
             'amr' => $amr,
-            'acr' => AuthenticationMethods::deriveAcr($amr),
+            'acr' => AuthSessionState::deriveAcr($amr),
             'auth_time' => $this->currentAuthTime(),
-            'id_token_claims' => $this->currentIdTokenClaims(),
-            'access_token_claims' => $this->currentAccessTokenClaims(),
+            'id_token_claims' => $this->sessionState->idTokenClaims(),
+            'access_token_claims' => $this->sessionState->accessTokenClaims(),
             'expires_at' => $expiresAt,
         ]);
     }
 
-    private function currentSid(): ?string
+    private function context(mixed $id): ?AuthenticationContext
     {
-        $sid = $this->sessionValue('oidc.sid', null);
-
-        return is_string($sid) && $sid !== '' ? $sid : null;
-    }
-
-    /** @return array<string, mixed> */
-    private function currentAccessTokenClaims(): array
-    {
-        $claims = $this->sessionValue('oidc.access_token_claims', []);
-
-        return is_array($claims) ? $claims : [];
-    }
-
-    private function context(AuthenticationContextStore $store, mixed $id): ?AuthenticationContext
-    {
-        return is_string($id) && $id !== '' ? $store->find($id) : null;
-    }
-
-    /** @return list<string> */
-    private function currentAmr(): array
-    {
-        $amr = $this->sessionValue(AuthenticationMethods::SESSION_KEY, []);
-
-        return is_array($amr) ? array_values(array_filter($amr, is_string(...))) : [];
-    }
-
-    /** @return array<string, mixed> */
-    private function currentIdTokenClaims(): array
-    {
-        $claims = $this->sessionValue('oidc.id_token_claims', []);
-
-        return is_array($claims) ? $claims : [];
+        return is_string($id) && $id !== '' ? $this->contextStore->find($id) : null;
     }
 }

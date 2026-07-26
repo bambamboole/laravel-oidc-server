@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorChallenge;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorEnrollment;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorRegistry;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorResponse;
-use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengePrompt;
-use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengeView;
-use Bambamboole\LaravelOidc\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorChallenge;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorEnrollment;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorResponse;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\PendingMfaChallenge;
+use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengePrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,7 @@ class TwoFactorChallengeController
 
     public function __construct(
         private readonly FactorRegistry $factors,
-        private readonly AuthenticationMethods $context,
+        private readonly AuthSessionState $sessionState,
     ) {}
 
     /**
@@ -37,14 +38,14 @@ class TwoFactorChallengeController
      */
     public function create(Request $request): Responsable|RedirectResponse|Response
     {
-        if ($this->challengedUser($request) === null) {
+        $pending = PendingMfaChallenge::find();
+
+        if ($pending === null || $this->challengedUser($pending) === null) {
             return redirect()->route(Handler::Login->value);
         }
 
-        $factor = $request->session()->get('login.factor');
-
         return app(TwoFactorChallengeView::class)->respond(new TwoFactorChallengePrompt(
-            factor: is_string($factor) ? $factor : null,
+            factor: $pending->factor,
         ), $request);
     }
 
@@ -57,22 +58,22 @@ class TwoFactorChallengeController
      */
     public function options(Request $request): JsonResponse
     {
-        $user = $this->challengedUser($request);
+        $pending = PendingMfaChallenge::find();
+        $user = $pending === null ? null : $this->challengedUser($pending);
 
-        if ($user === null) {
+        if ($pending === null || $user === null) {
             return new JsonResponse(['message' => 'No pending two-factor challenge.'], 401);
         }
 
-        $providerKey = (string) $request->session()->get('login.factor', 'totp');
-        $enrollment = $this->pendingEnrollment($user, $providerKey, (string) $request->session()->get('login.factor_id'));
+        $enrollment = $this->pendingEnrollment($user, $pending->factor, $pending->factorId);
 
         if (! $enrollment instanceof FactorEnrollment) {
             return new JsonResponse(['message' => 'No pending two-factor challenge.'], 401);
         }
 
-        $challenge = $this->factors->get($providerKey)->beginChallenge($user, $enrollment);
+        $challenge = $this->factors->get($pending->factor)->beginChallenge($user, $enrollment);
 
-        $request->session()->put('login.challenge_state', $challenge->privateState);
+        PendingMfaChallenge::storeChallengeState($challenge->privateState);
 
         return new JsonResponse($challenge->publicData);
     }
@@ -85,27 +86,25 @@ class TwoFactorChallengeController
             'credential' => ['nullable', 'array'],
         ]);
 
-        $user = $this->challengedUser($request);
+        $pending = PendingMfaChallenge::find();
+        $user = $pending === null ? null : $this->challengedUser($pending);
 
-        if ($user === null) {
+        if ($pending === null || $user === null) {
             return redirect()->route(Handler::Login->value);
         }
 
         $usesRecoveryCode = $request->filled('recovery_code');
-        $providerKey = $usesRecoveryCode ? 'recovery_code' : (string) $request->session()->get('login.factor', 'totp');
+        $providerKey = $usesRecoveryCode ? 'recovery_code' : $pending->factor;
         $provider = $this->factors->get($providerKey);
         $enrollment = $usesRecoveryCode
             ? $provider->enrollments($user)[0] ?? null
-            : $this->pendingEnrollment($user, $providerKey, (string) $request->session()->get('login.factor_id'));
+            : $this->pendingEnrollment($user, $providerKey, $pending->factorId);
 
         if (! $enrollment instanceof FactorEnrollment) {
             throw ValidationException::withMessages(['code' => __('The provided two factor authentication code was invalid.')]);
         }
 
-        // The challenge was issued by options(); its private state is pulled
-        // (consumed) so every verification attempt needs a fresh challenge.
-        $state = $request->session()->pull('login.challenge_state');
-        $challenge = new FactorChallenge($enrollment, privateState: is_array($state) ? $state : []);
+        $challenge = new FactorChallenge($enrollment, privateState: PendingMfaChallenge::pullChallengeState());
         $verification = $provider->verify($user, $challenge, new FactorResponse($request->only('code', 'recovery_code', 'credential')));
 
         if (! $verification->verified) {
@@ -114,11 +113,10 @@ class TwoFactorChallengeController
             throw ValidationException::withMessages([$field => __('The provided two factor authentication code was invalid.')]);
         }
 
-        $this->context->add(...$verification->amr);
+        $this->sessionState->add(...$verification->amr);
 
-        $remember = (bool) $request->session()->pull('login.remember', false);
-        $request->session()->forget(['login.id', 'login.factor', 'login.factor_id']);
-        $this->sessionGuard()->login($user, $remember);
+        PendingMfaChallenge::forget();
+        $this->sessionGuard()->login($user, $pending->remember);
 
         if ($request->hasSession()) {
             $request->session()->regenerate();
@@ -135,11 +133,9 @@ class TwoFactorChallengeController
         return redirect()->intended($this->homeUrl());
     }
 
-    private function challengedUser(Request $request): ?Authenticatable
+    private function challengedUser(PendingMfaChallenge $pending): ?Authenticatable
     {
-        $id = $request->session()->get('login.id');
-
-        return $id === null ? null : $this->sessionGuard()->getProvider()->retrieveById($id);
+        return $this->sessionGuard()->getProvider()->retrieveById($pending->userId);
     }
 
     private function pendingEnrollment(Authenticatable $user, string $providerKey, string $id): ?FactorEnrollment

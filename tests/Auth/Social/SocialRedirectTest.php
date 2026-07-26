@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Support\Facades\Http;
 
 function enableCorpProvider(): void

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Support\PassportConfigurator;
+use Bambamboole\LaravelOidc\Server\Support\PassportConfigurator;
 use Laravel\Passport\Passport;
 use Laravel\Passport\Token;
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
  * RFC 7517 §5 (JWK Set) + RFC 7518 §6.3 (RSA params); RFC 7638 (JWK thumbprint / kid)
  */
 
-use Bambamboole\LaravelOidc\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Token\Jwk;
 
 it('serves the public key as a JWKS document', function () {
     $expected = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));

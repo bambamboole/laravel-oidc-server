@@ -8,12 +8,12 @@ declare(strict_types=1);
  * the postLogin policy and amr tracking apply uniformly.
  */
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\TwoFactorManager;
-use Bambamboole\LaravelOidc\Auth\Pipeline\LoginApi;
-use Bambamboole\LaravelOidc\Auth\Pipeline\LoginEvent;
-use Bambamboole\LaravelOidc\Facades\Oidc;
-use Bambamboole\LaravelOidc\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TwoFactorManager;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -120,7 +120,7 @@ it('records amr for registration logins', function () {
         'password_confirmation' => 'password',
     ])->assertRedirect('/dashboard');
 
-    expect(session(AuthenticationMethods::SESSION_KEY))->toContain('pwd');
+    expect(session(AuthSessionState::AMR_KEY))->toContain('pwd');
 });
 
 it('applies the postLogin policy to password resets', function () {
@@ -159,7 +159,7 @@ it('records amr for password-reset logins', function () {
     ]);
 
     $this->assertAuthenticatedAs($user->fresh(), 'identity');
-    expect(session(AuthenticationMethods::SESSION_KEY))->toContain('pwd');
+    expect(session(AuthSessionState::AMR_KEY))->toContain('pwd');
 });
 
 it('applies the postLogin policy to passkey logins', function () {
@@ -177,7 +177,7 @@ it('records amr swk for passkey logins', function () {
     finalizationPasskeyLogin($this, $user);
 
     $this->assertAuthenticatedAs($user, 'identity');
-    expect(session(AuthenticationMethods::SESSION_KEY))->toContain('swk');
+    expect(session(AuthSessionState::AMR_KEY))->toContain('swk');
 });
 
 it('does not challenge an enrolled second factor after a passkey login', function () {

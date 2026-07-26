@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Tests;
+namespace Bambamboole\LaravelOidc\Server\Tests;
 
-use Bambamboole\LaravelOidc\Facades\Oidc;
-use Bambamboole\LaravelOidc\OidcManager;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\OidcManager;
 use Illuminate\Encryption\MissingAppKeyException;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as BaseTestCase;

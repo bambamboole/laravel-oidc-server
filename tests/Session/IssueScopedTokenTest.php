@@ -5,8 +5,8 @@ declare(strict_types=1);
  * RFC 8693 (token exchange) + RFC 9068 (issued access token) — session-token → browser-token issuance
  */
 
-use Bambamboole\LaravelOidc\Facades\Oidc;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Laravel\Passport\ClientRepository;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;

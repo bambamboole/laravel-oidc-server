@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\AppleProvider;
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\AppleProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Lcobucci\JWT\Encoding\JoseEncoder;

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Grant;
+namespace Bambamboole\LaravelOidc\Server\Grant;
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Auth\Pipeline\ClientCredentialsEvent;
-use Bambamboole\LaravelOidc\Token\OidcAccessToken;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\ClientCredentialsEvent;
+use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use DateInterval;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;

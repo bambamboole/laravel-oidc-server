@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Controllers\AuthenticatedSessionController;
-use Bambamboole\LaravelOidc\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Facades\Oidc;
-use Bambamboole\LaravelOidc\Http\Controllers\DiscoveryController;
-use Bambamboole\LaravelOidc\Http\Controllers\JwksController;
-use Bambamboole\LaravelOidc\Routing\Handler;
-use Bambamboole\LaravelOidc\Routing\HandlerConfig;
-use Bambamboole\LaravelOidc\Routing\HandlerRegistrar;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\AuthenticatedSessionController;
+use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\DiscoveryController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\JwksController;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Routing\HandlerConfig;
+use Bambamboole\LaravelOidc\Server\Routing\HandlerRegistrar;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;

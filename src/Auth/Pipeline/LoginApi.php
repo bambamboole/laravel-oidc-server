@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Pipeline;
+namespace Bambamboole\LaravelOidc\Server\Auth\Pipeline;
 
-use Bambamboole\LaravelOidc\Auth\ProtocolClaims;
+use Bambamboole\LaravelOidc\Server\Token\ProtocolClaims;
 use Illuminate\Support\Facades\Log;
 
 class LoginApi extends AccessTokenApi

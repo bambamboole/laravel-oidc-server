@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Contracts\FactorProvider;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorChallenge;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorEnrollment;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorRegistry;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorResponse;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorVerification;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorChallenge;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorEnrollment;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorResponse;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorVerification;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Workbench\App\Models\User;
 

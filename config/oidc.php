@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\RecoveryCodeProvider;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\WebAuthnFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\RecoveryCodeProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\WebAuthnFactorProvider;
 
 return [
     'issuer' => env('OIDC_ISSUER'),

@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
-use Bambamboole\LaravelOidc\Auth\LoginDestination;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\LoginDestination;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\StatefulGuard;
@@ -32,6 +33,7 @@ class AuthorizationController extends PassportAuthorizationController
         protected ScopeRepository $scopeRepository,
         private readonly LoginDestination $loginDestination,
         private readonly FirstPartyClientConfig $firstPartyClient,
+        private readonly AuthSessionState $sessionState,
     ) {
         parent::__construct($server, $guard, $clients);
     }
@@ -43,6 +45,7 @@ class AuthorizationController extends PassportAuthorizationController
         AuthorizationViewResponse $viewResponse
     ): Response|AuthorizationViewResponse {
         $this->removeConsentPromptForTrustedClient($request);
+        $this->rememberRequestedAcrValues($request);
         $this->enforceMaxAge($request);
 
         return parent::authorize($psrRequest, $request, $psrResponse, $viewResponse);
@@ -98,7 +101,7 @@ class AuthorizationController extends PassportAuthorizationController
             return;
         }
 
-        $authTime = (int) $request->session()->get('oidc.auth_time', 0);
+        $authTime = $this->sessionState->authTime() ?? 0;
 
         if (time() - $authTime >= (int) $maxAge) {
             $this->guard->logout();
@@ -107,6 +110,21 @@ class AuthorizationController extends PassportAuthorizationController
 
             $this->promptForLogin($request);
         }
+    }
+
+    /**
+     * The pending authorize request is stashed by Passport only at consent
+     * time — after login — so acr_values must be persisted here for the
+     * post-login pipeline to see it. Synced on every authorize request so a
+     * flow without acr_values clears an earlier flow's leftovers.
+     */
+    private function rememberRequestedAcrValues(Request $request): void
+    {
+        $acrValues = $request->query('acr_values');
+
+        $this->sessionState->putRequestedAcrValues(is_string($acrValues)
+            ? array_values(array_filter(explode(' ', $acrValues), static fn (string $value): bool => $value !== ''))
+            : []);
     }
 
     private function removeConsentPromptForTrustedClient(Request $request): void

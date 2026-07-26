@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
-use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
-use Bambamboole\LaravelOidc\Auth\Views\EmailVerificationPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\EmailVerificationView;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationView;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\RedirectResponse;

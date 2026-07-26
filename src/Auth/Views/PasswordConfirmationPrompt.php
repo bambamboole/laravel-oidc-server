@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Views;
+namespace Bambamboole\LaravelOidc\Server\Auth\Views;
 
 /**
  * No page-specific data today — kept as a DTO (rather than dropping the

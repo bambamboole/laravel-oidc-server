@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Facades;
+namespace Bambamboole\LaravelOidc\Server\Facades;
 
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioningResult;
-use Bambamboole\LaravelOidc\OidcManager;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningResult;
+use Bambamboole\LaravelOidc\Server\OidcManager;
 use Closure;
 use Illuminate\Support\Facades\Facade;
 use RuntimeException;
@@ -20,11 +20,11 @@ use SensitiveParameter;
  * @method static void createUsersUsing(callable|string $action)
  * @method static void resetUserPasswordsUsing(callable|string $action)
  * @method static void createUsersFromSocialUsing(callable|string $action)
- * @method static array<string, \Bambamboole\LaravelOidc\Auth\Social\Contracts\SocialProvider> socialProviders()
+ * @method static array<string, \Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider> socialProviders()
  * @method static void extendSocialProvider(string $driver, Closure $creator)
- * @method static \Bambamboole\LaravelOidc\Exchange\IssuedToken issueScopedToken(string $audience, string[] $scopes)
+ * @method static \Bambamboole\LaravelOidc\Server\Exchange\IssuedToken issueScopedToken(string $audience, string[] $scopes)
  * @method static string issuer()
- * @method static \Bambamboole\LaravelOidc\Routing\HandlerConfig|false handlerConfig(\Bambamboole\LaravelOidc\Routing\Handler $handler)
+ * @method static \Bambamboole\LaravelOidc\Server\Routing\HandlerConfig|false handlerConfig(\Bambamboole\LaravelOidc\Server\Routing\Handler $handler)
  *
  * @see OidcManager
  */

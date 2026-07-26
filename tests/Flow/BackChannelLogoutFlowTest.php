@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\BackChannel\SendBackChannelLogout;
-use Bambamboole\LaravelOidc\Session\EndOidcSession;
-use Bambamboole\LaravelOidc\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\BackChannel\SendBackChannelLogout;
+use Bambamboole\LaravelOidc\Server\Session\EndOidcSession;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
@@ -19,16 +19,16 @@ it('revokes the session and fans out on the Logout event', function () {
     Bus::fake();
     $this->startSession();
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
-    $sid = app(SessionRegistry::class)->start((string) $user->id);
+    $sid = app(OidcSessionRepository::class)->start((string) $user->id);
     session()->put('oidc.sid', $sid);
 
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
     $client->forceFill(['backchannel_logout_uri' => 'https://a.test/bclo'])->save();
-    app(SessionRegistry::class)->recordParticipant($sid, (string) $client->id);
+    app(OidcSessionRepository::class)->recordParticipant($sid, (string) $client->id);
 
     app(EndOidcSession::class)->handle(new Logout(config('passport.guard'), $user));
 
-    expect(app(SessionRegistry::class)->find($sid)->revoked_at)->not->toBeNull();
+    expect(app(OidcSessionRepository::class)->find($sid)->revoked_at)->not->toBeNull();
     Bus::assertDispatchedTimes(SendBackChannelLogout::class, 1);
 });
 
@@ -84,8 +84,8 @@ describe('via /oauth/logout', function () {
     it('revokes the session and fans out when a valid id_token_hint carries the sid', function () {
         Bus::fake();
 
-        $sid = app(SessionRegistry::class)->start((string) $this->user->id);
-        app(SessionRegistry::class)->recordParticipant($sid, (string) $this->client->id);
+        $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
+        app(OidcSessionRepository::class)->recordParticipant($sid, (string) $this->client->id);
 
         $idToken = completeBackChannelLogoutAuthorization($this, $sid)->assertOk()->json('id_token');
 
@@ -93,7 +93,7 @@ describe('via /oauth/logout', function () {
             ->post('/oauth/logout', ['id_token_hint' => $idToken])
             ->assertRedirect();
 
-        expect(app(SessionRegistry::class)->find($sid)->revoked_at)->not->toBeNull();
+        expect(app(OidcSessionRepository::class)->find($sid)->revoked_at)->not->toBeNull();
         Bus::assertDispatchedTimes(SendBackChannelLogout::class, 1);
     });
 });

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\Models\SocialAccount;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Models\SocialAccount;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Workbench\App\Models\User;

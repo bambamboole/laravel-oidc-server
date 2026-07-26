@@ -13,7 +13,7 @@ use Workbench\App\Models\User;
 it('is bound over passport\'s bridge scope repository', function () {
     $resolved = app(PassportBridgeScopeRepository::class);
 
-    expect(get_class($resolved))->toBe('Bambamboole\\LaravelOidc\\Scopes\\BridgeScopeRepository');
+    expect(get_class($resolved))->toBe('Bambamboole\\LaravelOidc\\Server\\Scopes\\BridgeScopeRepository');
 });
 
 it('resolves oidc scopes that passport does not know', function () {

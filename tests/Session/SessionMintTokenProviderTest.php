@@ -5,9 +5,9 @@ declare(strict_types=1);
  * RFC 9068 (access token) + RFC 7009 (revocation) — session root-token lifecycle (package two-token model)
  */
 
-use Bambamboole\LaravelOidc\Contracts\SessionTokenProvider;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
-use Bambamboole\LaravelOidc\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use Lcobucci\JWT\Encoding\JoseEncoder;

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Contracts\SessionTokenProvider;
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
 

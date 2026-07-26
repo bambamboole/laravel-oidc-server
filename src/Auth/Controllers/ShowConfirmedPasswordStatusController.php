@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

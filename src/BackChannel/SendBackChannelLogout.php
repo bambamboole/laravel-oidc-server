@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\BackChannel;
+namespace Bambamboole\LaravelOidc\Server\BackChannel;
 
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\Token\LogoutTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Token\LogoutTokenBuilder;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,7 +26,7 @@ class SendBackChannelLogout implements ShouldQueue
         public readonly string $clientId,
     ) {}
 
-    public function handle(SessionRegistry $registry, LogoutTokenBuilder $builder): void
+    public function handle(OidcSessionRepository $registry, LogoutTokenBuilder $builder): void
     {
         $session = $registry->find($this->sid);
         $client = Passport::client()->newQuery()->find($this->clientId);

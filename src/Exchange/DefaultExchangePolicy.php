@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Exchange;
+namespace Bambamboole\LaravelOidc\Server\Exchange;
 
-use Bambamboole\LaravelOidc\Contracts\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Laravel\Passport\Client;
 use League\OAuth2\Server\Exception\OAuthServerException;
 

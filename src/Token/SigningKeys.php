@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Token;
+namespace Bambamboole\LaravelOidc\Server\Token;
 
 use Laravel\Passport\Passport;
 use Lcobucci\JWT\Configuration;

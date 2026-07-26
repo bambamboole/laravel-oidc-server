@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http;
+namespace Bambamboole\LaravelOidc\Server\Http;
 
 use Illuminate\Http\Request;
 use Laravel\Passport\Bridge\ClientRepository;

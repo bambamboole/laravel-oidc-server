@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Pipeline;
+namespace Bambamboole\LaravelOidc\Server\Auth\Pipeline;
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
-use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesPendingAuthorization;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorRegistry;
-use Bambamboole\LaravelOidc\Contracts\DeviceRecognizer;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesPendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\PendingMfaChallenge;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\Contracts\DeviceRecognizer;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -27,7 +28,7 @@ final class InteractiveLoginFinalizer
 
     public function __construct(
         private readonly FactorRegistry $factors,
-        private readonly AuthenticationMethods $context,
+        private readonly AuthSessionState $sessionState,
         private readonly PostLoginPipeline $pipeline,
         private readonly DeviceRecognizer $deviceRecognizer,
     ) {}
@@ -45,13 +46,13 @@ final class InteractiveLoginFinalizer
         bool $remember = false,
         bool $challengeEnrolledFactors = true,
     ): LoginOutcome {
-        $this->context->start($method);
+        $this->sessionState->start($method);
 
         $api = $this->pipeline->run(new LoginEvent(
             user: $user,
             client: $this->pendingClient($request),
             scopes: $this->pendingScopes($request),
-            requestedAcrValues: [],
+            requestedAcrValues: $this->sessionState->requestedAcrValues(),
             ip: $request->ip(),
             userAgent: $request->userAgent(),
             amr: [$method],
@@ -62,30 +63,29 @@ final class InteractiveLoginFinalizer
 
         if ($api->isDenied()) {
             Log::warning('oidc: login denied by postLogin', ['method' => $method, 'reason' => $api->denyReason()]);
-            $this->context->forget();
+            $this->sessionState->forget();
 
             return LoginOutcome::Denied;
         }
 
-        $request->session()->put('oidc.id_token_claims', $api->idTokenClaims());
-        $request->session()->put('oidc.access_token_claims', $api->accessTokenClaims());
+        $this->sessionState->putClaims($api->idTokenClaims(), $api->accessTokenClaims());
 
         $enrollments = $this->factors->challengeableEnrollments($user, $this->challengeProviders());
 
         if ($api->mfaRequired() && $enrollments === []) {
             Log::warning('oidc: login denied, MFA required but no challengeable factor', ['method' => $method]);
-            $this->context->forget();
+            $this->sessionState->forget();
 
             return LoginOutcome::Denied;
         }
 
         if ($enrollments !== [] && ($challengeEnrolledFactors || $api->mfaRequired())) {
-            $request->session()->put([
-                'login.id' => $user->getAuthIdentifier(),
-                'login.remember' => $remember,
-                'login.factor' => $enrollments[0]->providerKey,
-                'login.factor_id' => $enrollments[0]->id,
-            ]);
+            (new PendingMfaChallenge(
+                userId: $user->getAuthIdentifier(),
+                remember: $remember,
+                factor: $enrollments[0]->providerKey,
+                factorId: $enrollments[0]->id,
+            ))->store();
 
             return LoginOutcome::MfaChallenge;
         }

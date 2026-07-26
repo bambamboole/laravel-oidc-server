@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Contracts;
+namespace Bambamboole\LaravelOidc\Server\Contracts;
 
 interface ScopeCatalog
 {

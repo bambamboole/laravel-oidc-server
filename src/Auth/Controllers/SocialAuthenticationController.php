@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
-use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
-use Bambamboole\LaravelOidc\Auth\Pipeline\InteractiveLoginFinalizer;
-use Bambamboole\LaravelOidc\Auth\Pipeline\LoginOutcome;
-use Bambamboole\LaravelOidc\Auth\Social\Contracts\SocialProvider;
-use Bambamboole\LaravelOidc\Auth\Social\InvalidStateException;
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Auth\Social\SocialAccountManager;
-use Bambamboole\LaravelOidc\Auth\Social\SocialAuthenticationException;
-use Bambamboole\LaravelOidc\Auth\Social\SocialProviderRegistry;
-use Bambamboole\LaravelOidc\Auth\Social\SocialUser;
-use Bambamboole\LaravelOidc\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\InvalidStateException;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAccountManager;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAuthenticationException;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialProviderRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;

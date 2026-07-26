@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Contracts\ScopeCatalog;
-use Bambamboole\LaravelOidc\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Scopes\DefaultScopeRepository;
-use Bambamboole\LaravelOidc\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Contracts\ScopeCatalog;
+use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Laravel\Passport\Passport;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 

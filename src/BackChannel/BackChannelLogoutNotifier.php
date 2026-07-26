@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\BackChannel;
+namespace Bambamboole\LaravelOidc\Server\BackChannel;
 
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Laravel\Passport\Passport;
 
 class BackChannelLogoutNotifier
 {
-    public function __construct(private readonly SessionRegistry $registry) {}
+    public function __construct(private readonly OidcSessionRepository $registry) {}
 
     public function notify(string $sid): void
     {

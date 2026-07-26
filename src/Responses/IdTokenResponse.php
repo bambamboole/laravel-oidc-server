@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Responses;
+namespace Bambamboole\LaravelOidc\Server\Responses;
 
-use Bambamboole\LaravelOidc\Support\ResolvesRequestGrantType;
-use Bambamboole\LaravelOidc\Token\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Support\ResolvesRequestGrantType;
+use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;

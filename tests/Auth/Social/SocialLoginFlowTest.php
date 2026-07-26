@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\TwoFactorManager;
-use Bambamboole\LaravelOidc\Auth\Social\Models\SocialAccount;
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Auth\Social\SocialUser;
-use Bambamboole\LaravelOidc\Facades\Oidc;
-use Bambamboole\LaravelOidc\Routing\Handler;
-use Bambamboole\LaravelOidc\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TwoFactorManager;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Models\SocialAccount;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -110,7 +110,7 @@ it('logs in an existing user via verified email link and records the provider am
     completeSocialLogin($this)->assertRedirect('/dashboard');
 
     $this->assertAuthenticatedAs($user, 'identity');
-    expect(session(AuthenticationMethods::SESSION_KEY))->toBe(['corp'])
+    expect(session(AuthSessionState::AMR_KEY))->toBe(['corp'])
         ->and(SocialAccount::query()->where('provider', 'corp')->where('provider_user_id', 'upstream-1')->exists())->toBeTrue();
 });
 

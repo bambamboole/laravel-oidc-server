@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Exchange;
+namespace Bambamboole\LaravelOidc\Server\Exchange;
 
 final readonly class ExchangeGrantResult
 {

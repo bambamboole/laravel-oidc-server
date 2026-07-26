@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Claims;
+namespace Bambamboole\LaravelOidc\Server\Claims;
 
 final readonly class ClaimSet
 {

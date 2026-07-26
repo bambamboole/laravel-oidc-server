@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Facades\Oidc;
-use Bambamboole\LaravelOidc\Testing\InteractsWithOidc;
-use Bambamboole\LaravelOidc\Testing\PkcePair;
-use Bambamboole\LaravelOidc\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
+use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
+use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
@@ -31,7 +31,7 @@ it('authenticates on the identity guard and seeds the auth context session keys'
     expect($result)->toBe($this)
         ->and(auth('identity')->id())->toBe($this->user->id)
         ->and(session('oidc.auth_time'))->toBe(1234567890)
-        ->and(session(AuthenticationMethods::SESSION_KEY))->toBe(['pwd', 'otp'])
+        ->and(session(AuthSessionState::AMR_KEY))->toBe(['pwd', 'otp'])
         ->and(session('oidc.id_token_claims'))->toBe(['locale' => 'de'])
         ->and(session('oidc.access_token_claims'))->toBe(['tenant' => 't1']);
 });
@@ -40,7 +40,7 @@ it('defaults auth_time to now and leaves optional context keys unset', function 
     $this->actingAsIdentity($this->user);
 
     expect(session('oidc.auth_time'))->toBeGreaterThanOrEqual(time() - 5)
-        ->and(session()->has(AuthenticationMethods::SESSION_KEY))->toBeFalse()
+        ->and(session()->has(AuthSessionState::AMR_KEY))->toBeFalse()
         ->and(session()->has('oidc.id_token_claims'))->toBeFalse()
         ->and(session()->has('oidc.access_token_claims'))->toBeFalse();
 });

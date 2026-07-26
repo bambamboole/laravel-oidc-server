@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\MultiFactor\Concerns;
+namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Concerns;
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Models\RecoveryCode;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Models\TotpFactor;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\RecoveryCode;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\TotpFactor;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Laravel\Passkeys\PasskeyAuthenticatable;

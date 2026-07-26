@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Claims;
+namespace Bambamboole\LaravelOidc\Server\Claims;
 
-use Bambamboole\LaravelOidc\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 

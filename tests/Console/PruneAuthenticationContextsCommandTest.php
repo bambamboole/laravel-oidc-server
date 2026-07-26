@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Models\AccessTokenContext;
-use Bambamboole\LaravelOidc\Auth\Models\AuthenticationContext;
-use Bambamboole\LaravelOidc\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\Auth\Models\SessionParticipant;
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\Models\AccessTokenContext;
+use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Auth\Models\SessionParticipant;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 
 it('prunes expired contexts and keeps live ones', function () {
     $live = new AuthenticationContext;
@@ -44,7 +44,7 @@ it('prunes expired contexts and keeps live ones', function () {
     $freshLink->created_at = now();
     $freshLink->save();
 
-    $registry = app(SessionRegistry::class);
+    $registry = app(OidcSessionRepository::class);
 
     $oldUnnotifiedSid = $registry->start('3');
     OidcSession::query()->whereKey($oldUnnotifiedSid)->update([

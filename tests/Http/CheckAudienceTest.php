@@ -5,7 +5,7 @@ declare(strict_types=1);
  * RFC 9068 §4 (validating at+jwt at the resource server); RFC 6750 §3.1 (401 vs 403)
  */
 
-use Bambamboole\LaravelOidc\Http\Middleware\CheckAudience;
+use Bambamboole\LaravelOidc\Server\Http\Middleware\CheckAudience;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\ClientRepository;

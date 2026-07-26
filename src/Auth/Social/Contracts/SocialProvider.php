@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Social\Contracts;
+namespace Bambamboole\LaravelOidc\Server\Auth\Social\Contracts;
 
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Auth\Social\SocialAuthenticationException;
-use Bambamboole\LaravelOidc\Auth\Social\SocialUser;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAuthenticationException;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 

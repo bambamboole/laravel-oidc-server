@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
-use Bambamboole\LaravelOidc\Auth\Views\PasswordResetRequestPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordResetRequestView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestView;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;

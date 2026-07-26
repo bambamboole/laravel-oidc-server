@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Social;
+namespace Bambamboole\LaravelOidc\Server\Auth\Social;
 
-use Bambamboole\LaravelOidc\Auth\Social\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider;
 use Closure;
 
 /**

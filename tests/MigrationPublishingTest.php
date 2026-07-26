@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\OidcServiceProvider;
+use Bambamboole\LaravelOidc\Server\OidcServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passkeys\Passkeys;

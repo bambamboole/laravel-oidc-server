@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\InteractiveLoginFinalizer;
-use Bambamboole\LaravelOidc\Auth\Pipeline\LoginOutcome;
-use Bambamboole\LaravelOidc\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Passkeys\Actions\VerifyPasskey;

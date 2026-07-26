@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
-use Bambamboole\LaravelOidc\Token\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
-use Bambamboole\LaravelOidc\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
 

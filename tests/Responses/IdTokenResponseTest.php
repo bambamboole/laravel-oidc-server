@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Responses\IdTokenResponse;
+use Bambamboole\LaravelOidc\Server\Responses\IdTokenResponse;
 use Laravel\Passport\Bridge\AccessToken;
 use Laravel\Passport\Bridge\Client as BridgeClient;
 use Laravel\Passport\Bridge\Scope as BridgeScope;

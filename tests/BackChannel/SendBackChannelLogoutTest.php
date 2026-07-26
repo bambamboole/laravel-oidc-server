@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\BackChannel\SendBackChannelLogout;
+use Bambamboole\LaravelOidc\Server\BackChannel\SendBackChannelLogout;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Laravel\Passport\ClientRepository;
 
 it('posts a logout_token to the client backchannel_logout_uri', function () {
     Http::fake();
-    $sid = app(SessionRegistry::class)->start('9');
+    $sid = app(OidcSessionRepository::class)->start('9');
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
     $client->forceFill(['backchannel_logout_uri' => 'https://rp.test/bclo'])->save();
 
@@ -35,7 +35,7 @@ it('does not post when the session is missing', function () {
 
 it('does not post when the client is missing', function () {
     Http::fake();
-    $sid = app(SessionRegistry::class)->start('9');
+    $sid = app(OidcSessionRepository::class)->start('9');
 
     SendBackChannelLogout::dispatchSync($sid, 'nonexistent-client-id');
 
@@ -44,7 +44,7 @@ it('does not post when the client is missing', function () {
 
 it('does not post when the client has no backchannel_logout_uri', function () {
     Http::fake();
-    $sid = app(SessionRegistry::class)->start('9');
+    $sid = app(OidcSessionRepository::class)->start('9');
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
 
     SendBackChannelLogout::dispatchSync($sid, (string) $client->id);

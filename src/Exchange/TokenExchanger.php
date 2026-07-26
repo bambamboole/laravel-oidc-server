@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Exchange;
+namespace Bambamboole\LaravelOidc\Server\Exchange;
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Auth\Pipeline\TokenExchangeEvent;
-use Bambamboole\LaravelOidc\Contracts\ExchangePolicy;
-use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
-use Bambamboole\LaravelOidc\Token\OidcAccessToken;
-use Bambamboole\LaravelOidc\Token\ResolvesTokenUser;
-use Bambamboole\LaravelOidc\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
+use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
+use Bambamboole\LaravelOidc\Server\Token\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\Models\SocialAccount;
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Auth\Social\SocialAccountManager;
-use Bambamboole\LaravelOidc\Auth\Social\SocialUser;
-use Bambamboole\LaravelOidc\Routing\Handler;
-use Bambamboole\LaravelOidc\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Auth\Social\Models\SocialAccount;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAccountManager;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;

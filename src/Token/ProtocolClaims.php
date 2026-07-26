@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth;
+namespace Bambamboole\LaravelOidc\Server\Token;
 
 final class ProtocolClaims
 {

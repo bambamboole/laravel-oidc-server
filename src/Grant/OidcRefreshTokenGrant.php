@@ -2,16 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Grant;
+namespace Bambamboole\LaravelOidc\Server\Grant;
 
-use Bambamboole\LaravelOidc\Auth\AccessTokenContextLink;
-use Bambamboole\LaravelOidc\Auth\AuthenticationContextStore;
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\Grant\Concerns\HasAuthenticationContextIssuance;
-use Bambamboole\LaravelOidc\Responses\IdTokenResponse;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
+use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
+use Bambamboole\LaravelOidc\Server\Grant\Concerns\HasAuthenticationContextIssuance;
+use Bambamboole\LaravelOidc\Server\Responses\IdTokenResponse;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use DateInterval;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Grant\RefreshTokenGrant;
+use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
 use League\OAuth2\Server\RequestAccessTokenEvent;
 use League\OAuth2\Server\RequestEvent;
 use League\OAuth2\Server\RequestRefreshTokenEvent;
@@ -26,6 +28,18 @@ use Psr\Http\Message\ServerRequestInterface;
 class OidcRefreshTokenGrant extends RefreshTokenGrant
 {
     use HasAuthenticationContextIssuance;
+
+    public function __construct(
+        RefreshTokenRepositoryInterface $refreshTokenRepository,
+        AccessTokenContextLink $contextLink,
+        AccessTokenPipeline $accessTokenPipeline,
+        private readonly AuthenticationContextStore $contextStore,
+        private readonly OidcSessionRepository $sessions,
+    ) {
+        parent::__construct($refreshTokenRepository);
+        $this->contextLink = $contextLink;
+        $this->accessTokenPipeline = $accessTokenPipeline;
+    }
 
     public function respondToAccessTokenRequest(
         ServerRequestInterface $request,
@@ -90,21 +104,21 @@ class OidcRefreshTokenGrant extends RefreshTokenGrant
 
     private function applyAuthenticationContext(string $oldAccessTokenId, ResponseTypeInterface $responseType): void
     {
-        $contextId = app(AccessTokenContextLink::class)->contextIdFor($oldAccessTokenId);
+        $contextId = $this->contextLink->contextIdFor($oldAccessTokenId);
 
         if ($contextId === null) {
             // No context ever attached (non-interactive flow): refresh as a plain token.
             return;
         }
 
-        $context = app(AuthenticationContextStore::class)->find($contextId);
+        $context = $this->contextStore->find($contextId);
 
         if ($context === null) {
             throw OAuthServerException::invalidRefreshToken('The authentication session has expired; re-authentication is required.');
         }
 
         if ($context->sid !== null) {
-            $session = app(SessionRegistry::class)->find($context->sid);
+            $session = $this->sessions->find($context->sid);
             if ($session === null || ! $session->isActive()) {
                 throw OAuthServerException::invalidRefreshToken('The authentication session has ended; re-authentication is required.');
             }

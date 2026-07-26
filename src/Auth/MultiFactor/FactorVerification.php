@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\MultiFactor;
+namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor;
 
 final readonly class FactorVerification
 {

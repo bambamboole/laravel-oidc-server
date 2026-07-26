@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Token;
+namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Auth\Pipeline\PersonalAccessTokenEvent;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PersonalAccessTokenEvent;
 use Illuminate\Contracts\Events\Dispatcher;
 use Laravel\Passport\Bridge\AccessTokenRepository;
 use Laravel\Passport\Passport;

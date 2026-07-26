@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Auth\Pipeline\PersonalAccessTokenEvent;
-use Bambamboole\LaravelOidc\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PersonalAccessTokenEvent;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use League\OAuth2\Server\Exception\OAuthServerException;

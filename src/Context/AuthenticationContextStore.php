@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth;
+namespace Bambamboole\LaravelOidc\Server\Context;
 
-use Bambamboole\LaravelOidc\Auth\Models\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
 use Illuminate\Support\Carbon;
 
 class AuthenticationContextStore

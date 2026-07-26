@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Console;
+namespace Bambamboole\LaravelOidc\Server\Console;
 
-use Bambamboole\LaravelOidc\Contracts\EnvironmentStore;
-use Bambamboole\LaravelOidc\Support\EnvironmentWriteException;
-use Bambamboole\LaravelOidc\Token\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentStore;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Illuminate\Console\Command;
 use Throwable;
 

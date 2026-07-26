@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Http\Controllers;
+namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
-use Bambamboole\LaravelOidc\Contracts\ClaimsResolver;
-use Bambamboole\LaravelOidc\Http\OAuthError;
+use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Http\OAuthError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Laravel\Passport\AccessToken;

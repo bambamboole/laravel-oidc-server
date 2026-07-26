@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Support;
+namespace Bambamboole\LaravelOidc\Server\Support;
 
 use Laravel\Passport\Passport;
 

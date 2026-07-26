@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Auth\Controllers\Concerns;
+namespace Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns;
 
 use Illuminate\Http\Request;
 use League\OAuth2\Server\Entities\ClientEntityInterface;

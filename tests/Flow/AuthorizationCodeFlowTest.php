@@ -5,20 +5,20 @@ declare(strict_types=1);
  * OAuth 2.1 §4.1 authorization code grant + RFC 7636 PKCE (S256); OpenID Connect Core 1.0 §3.1.3 (id_token issuance/validation)
  */
 
-use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
-use Bambamboole\LaravelOidc\Auth\Models\AccessTokenContext;
-use Bambamboole\LaravelOidc\Auth\Models\AuthenticationContext;
-use Bambamboole\LaravelOidc\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Auth\Pipeline\AuthorizationCodeEvent;
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\Facades\Oidc;
-use Bambamboole\LaravelOidc\Http\Controllers\ApproveAuthorizationController;
-use Bambamboole\LaravelOidc\Http\Controllers\AuthorizationController;
-use Bambamboole\LaravelOidc\Http\Controllers\DenyAuthorizationController;
-use Bambamboole\LaravelOidc\Testing\InteractsWithOidc;
-use Bambamboole\LaravelOidc\Tests\TestCase;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\Models\AccessTokenContext;
+use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AuthorizationCodeEvent;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\ApproveAuthorizationController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\DenyAuthorizationController;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
+use Bambamboole\LaravelOidc\Server\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Testing\TestResponse;
@@ -66,11 +66,11 @@ function completeAuthorization(TestCase $test, array $overrides = [], array $ses
 {
     $test->actingAsIdentity(
         $test->user,
-        amr: $session[AuthenticationMethods::SESSION_KEY] ?? [],
+        amr: $session[AuthSessionState::AMR_KEY] ?? [],
         authTime: $session['oidc.auth_time'] ?? time() - 60,
     );
 
-    $extra = array_diff_key($session, array_flip(['oidc.auth_time', AuthenticationMethods::SESSION_KEY]));
+    $extra = array_diff_key($session, array_flip(['oidc.auth_time', AuthSessionState::AMR_KEY]));
 
     if ($extra !== []) {
         $test->withSession($extra);
@@ -433,7 +433,7 @@ it('issues a short-lived access token matching the configured lifetime', functio
 
 it('pins the context to the login session and its expires_at', function () {
     // seed an oidc session + sid (completeAuthorization acts as the logged-in user)
-    $sid = app(SessionRegistry::class)->start((string) $this->user->id);
+    $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
     $session = OidcSession::query()->find($sid);
 
     completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
@@ -444,7 +444,7 @@ it('pins the context to the login session and its expires_at', function () {
 });
 
 it('emits the sid claim on fresh issuance and on refresh', function () {
-    $sid = app(SessionRegistry::class)->start((string) $this->user->id);
+    $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
 
     $response = completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
     expect(parseIdToken($response->json('id_token'))->claims()->get('sid'))->toBe($sid);
@@ -459,20 +459,20 @@ it('emits the sid claim on fresh issuance and on refresh', function () {
 });
 
 it('records one participant per session-client on authorization', function () {
-    $sid = app(SessionRegistry::class)->start((string) $this->user->id);
+    $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
 
     completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
     completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk(); // same client again
 
-    expect(app(SessionRegistry::class)->participantClientIds($sid))
+    expect(app(OidcSessionRepository::class)->participantClientIds($sid))
         ->toBe([$this->client->id]);
 });
 
 it('denies refresh after the session is revoked', function () {
-    $sid = app(SessionRegistry::class)->start((string) $this->user->id);
+    $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
     $refreshToken = completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->json('refresh_token');
 
-    app(SessionRegistry::class)->revoke($sid);
+    app(OidcSessionRepository::class)->revoke($sid);
 
     $this->post('/oauth/token', [
         'grant_type' => 'refresh_token',

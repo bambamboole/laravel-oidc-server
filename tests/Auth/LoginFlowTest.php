@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Views\LoginPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\LoginView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\LoginPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\LoginView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Symfony\Component\HttpFoundation\Response;

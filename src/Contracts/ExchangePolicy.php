@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Contracts;
+namespace Bambamboole\LaravelOidc\Server\Contracts;
 
-use Bambamboole\LaravelOidc\Exchange\ExchangeGrantResult;
-use Bambamboole\LaravelOidc\Exchange\ExchangeRequest;
+use Bambamboole\LaravelOidc\Server\Exchange\ExchangeGrantResult;
+use Bambamboole\LaravelOidc\Server\Exchange\ExchangeRequest;
 
 interface ExchangePolicy
 {

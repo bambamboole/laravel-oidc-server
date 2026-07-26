@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Token\Jwk;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Illuminate\Support\Facades\File;
 use Laravel\Passport\Passport;
 

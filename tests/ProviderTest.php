@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-use Bambamboole\LaravelOidc\OidcServiceProvider;
+use Bambamboole\LaravelOidc\Server\OidcServiceProvider;
 
 it('registers the oidc config', function () {
     expect(config('oidc.token_lifetimes.id_token'))->toBe(3600)

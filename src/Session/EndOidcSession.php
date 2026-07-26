@@ -2,17 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Session;
+namespace Bambamboole\LaravelOidc\Server\Session;
 
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\BackChannel\BackChannelLogoutNotifier;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelLogoutNotifier;
 use Illuminate\Auth\Events\Logout;
 
 class EndOidcSession
 {
     public function __construct(
-        private readonly SessionRegistry $registry,
+        private readonly OidcSessionRepository $registry,
         private readonly BackChannelLogoutNotifier $notifier,
+        private readonly AuthSessionState $sessionState,
     ) {}
 
     public function handle(Logout $event): void
@@ -25,8 +26,8 @@ class EndOidcSession
             return;
         }
 
-        $sid = session()->get('oidc.sid');
-        if (! is_string($sid) || $sid === '') {
+        $sid = $this->sessionState->sid();
+        if ($sid === null) {
             return;
         }
 

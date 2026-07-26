@@ -2,66 +2,67 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc;
+namespace Bambamboole\LaravelOidc\Server;
 
-use Bambamboole\LaravelOidc\Auth\AccessTokenContextLink;
-use Bambamboole\LaravelOidc\Auth\AuthenticationContextStore;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Contracts\FactorProvider;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorRegistry;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\RecoveryCodeProvider;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\WebAuthnFactorProvider;
-use Bambamboole\LaravelOidc\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Auth\Pipeline\NullDeviceRecognizer;
-use Bambamboole\LaravelOidc\Auth\Pipeline\PostLoginPipeline;
-use Bambamboole\LaravelOidc\Auth\SessionRegistry;
-use Bambamboole\LaravelOidc\Auth\Social\SocialProviderRegistry;
-use Bambamboole\LaravelOidc\Auth\UserActionManager;
-use Bambamboole\LaravelOidc\Auth\Views\ConsentPrompt;
-use Bambamboole\LaravelOidc\Auth\Views\ConsentView;
-use Bambamboole\LaravelOidc\Auth\Views\EmailVerificationView;
-use Bambamboole\LaravelOidc\Auth\Views\LoginView;
-use Bambamboole\LaravelOidc\Auth\Views\MissingAuthViewException;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordConfirmationView;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordResetRequestView;
-use Bambamboole\LaravelOidc\Auth\Views\PasswordResetView;
-use Bambamboole\LaravelOidc\Auth\Views\RegisterView;
-use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengeView;
-use Bambamboole\LaravelOidc\BackChannel\BackChannelLogoutNotifier;
-use Bambamboole\LaravelOidc\Claims\DefaultClaimsResolver;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Console\DispatchExpiredSessionLogoutsCommand;
-use Bambamboole\LaravelOidc\Console\InstallSelfCommand;
-use Bambamboole\LaravelOidc\Console\ProvisionClientCommand;
-use Bambamboole\LaravelOidc\Console\PruneAuthenticationContextsCommand;
-use Bambamboole\LaravelOidc\Console\RotateKeysCommand;
-use Bambamboole\LaravelOidc\Contracts\ClaimsResolver;
-use Bambamboole\LaravelOidc\Contracts\DeviceRecognizer;
-use Bambamboole\LaravelOidc\Contracts\EnvironmentStore;
-use Bambamboole\LaravelOidc\Contracts\ExchangePolicy;
-use Bambamboole\LaravelOidc\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Contracts\SessionTokenProvider;
-use Bambamboole\LaravelOidc\Exchange\DefaultExchangePolicy;
-use Bambamboole\LaravelOidc\Exchange\TokenExchanger;
-use Bambamboole\LaravelOidc\Grant\OidcAuthCodeGrant;
-use Bambamboole\LaravelOidc\Grant\OidcClientCredentialsGrant;
-use Bambamboole\LaravelOidc\Grant\OidcRefreshTokenGrant;
-use Bambamboole\LaravelOidc\Grant\TokenExchangeGrant;
-use Bambamboole\LaravelOidc\Http\Controllers\AuthorizationController;
-use Bambamboole\LaravelOidc\Responses\IdTokenResponse;
-use Bambamboole\LaravelOidc\Scopes\BridgeScopeRepository;
-use Bambamboole\LaravelOidc\Scopes\DefaultScopeRepository;
-use Bambamboole\LaravelOidc\Session\EndOidcSession;
-use Bambamboole\LaravelOidc\Session\EstablishSessionToken;
-use Bambamboole\LaravelOidc\Session\ForgetSessionToken;
-use Bambamboole\LaravelOidc\Session\SessionMintTokenProvider;
-use Bambamboole\LaravelOidc\Session\StartOidcSession;
-use Bambamboole\LaravelOidc\Support\EnvironmentFile;
-use Bambamboole\LaravelOidc\Support\PassportConfigurator;
-use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
-use Bambamboole\LaravelOidc\Token\OidcAccessToken;
-use Bambamboole\LaravelOidc\Token\OidcAccessTokenRepository;
+use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\RecoveryCodeProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\WebAuthnFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\Contracts\DeviceRecognizer;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\NullDeviceRecognizer;
+use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialProviderRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
+use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\LoginView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\MissingAuthViewException;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterView;
+use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelLogoutNotifier;
+use Bambamboole\LaravelOidc\Server\Claims\DefaultClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
+use Bambamboole\LaravelOidc\Server\Console\DispatchExpiredSessionLogoutsCommand;
+use Bambamboole\LaravelOidc\Server\Console\InstallSelfCommand;
+use Bambamboole\LaravelOidc\Server\Console\ProvisionClientCommand;
+use Bambamboole\LaravelOidc\Server\Console\PruneAuthenticationContextsCommand;
+use Bambamboole\LaravelOidc\Server\Console\RotateKeysCommand;
+use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
+use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
+use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Exchange\DefaultExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Grant\OidcAuthCodeGrant;
+use Bambamboole\LaravelOidc\Server\Grant\OidcClientCredentialsGrant;
+use Bambamboole\LaravelOidc\Server\Grant\OidcRefreshTokenGrant;
+use Bambamboole\LaravelOidc\Server\Grant\TokenExchangeGrant;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;
+use Bambamboole\LaravelOidc\Server\Responses\IdTokenResponse;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScopeRepository;
+use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
+use Bambamboole\LaravelOidc\Server\Session\EndOidcSession;
+use Bambamboole\LaravelOidc\Server\Session\EstablishSessionToken;
+use Bambamboole\LaravelOidc\Server\Session\ForgetSessionToken;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Session\SessionMintTokenProvider;
+use Bambamboole\LaravelOidc\Server\Session\StartOidcSession;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentStore;
+use Bambamboole\LaravelOidc\Server\Support\PassportConfigurator;
+use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
+use Bambamboole\LaravelOidc\Server\Token\OidcAccessTokenRepository;
 use DateInterval;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -155,7 +156,7 @@ class OidcServiceProvider extends ServiceProvider
         $this->app->bind(PassportBridgeAccessTokenRepository::class, OidcAccessTokenRepository::class);
         $this->app->singleton(PostLoginPipeline::class);
         $this->app->singleton(AuthenticationContextStore::class);
-        $this->app->singleton(SessionRegistry::class);
+        $this->app->singleton(OidcSessionRepository::class);
         $this->app->singleton(BackChannelLogoutNotifier::class);
         $this->app->singleton(AccessTokenContextLink::class);
         $this->app->singleton(DeviceRecognizer::class, NullDeviceRecognizer::class);
@@ -185,12 +186,23 @@ class OidcServiceProvider extends ServiceProvider
                 $app->make(AuthCodeRepository::class),
                 $app->make(RefreshTokenRepository::class),
                 new DateInterval('PT10M'),
+                $app->make(AccessTokenContextLink::class),
+                $app->make(AccessTokenPipeline::class),
+                $app->make(AuthenticationContextStore::class),
+                $app->make(OidcSessionRepository::class),
+                $app->make(AuthSessionState::class),
             );
             $grant->setRefreshTokenTTL(Passport::refreshTokensExpireIn());
 
             $server->enableGrantType($grant, $accessTokenTtl);
 
-            $refreshGrant = new OidcRefreshTokenGrant($app->make(RefreshTokenRepository::class));
+            $refreshGrant = new OidcRefreshTokenGrant(
+                $app->make(RefreshTokenRepository::class),
+                $app->make(AccessTokenContextLink::class),
+                $app->make(AccessTokenPipeline::class),
+                $app->make(AuthenticationContextStore::class),
+                $app->make(OidcSessionRepository::class),
+            );
             $refreshGrant->setRefreshTokenTTL(Passport::refreshTokensExpireIn());
             $server->enableGrantType($refreshGrant, $accessTokenTtl);
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
  * RFC 9068 (JWT profile for OAuth 2.0 access tokens); RFC 6750 §2.1 (bearer usage)
  */
 
-use Bambamboole\LaravelOidc\Testing\InteractsWithOidc;
+use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;

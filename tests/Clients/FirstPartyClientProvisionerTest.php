@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioningException;
-use Bambamboole\LaravelOidc\Clients\FirstPartyClientProvisioningOutcome;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +23,7 @@ it('creates a confidential managed client and returns its plain secret once', fu
         allowedExchangeAudiences: ['https://api.test/orders'],
     );
 
-    expect($result->outcome)->toBe(FirstPartyClientProvisioningOutcome::Created)
+    expect($result->wasCreated)->toBeTrue()
         ->and($result->clientSecret)->toBeString()->not->toBeEmpty()
         ->and(Hash::check($result->clientSecret, (string) $result->client->getRawOriginal('secret')))->toBeTrue()
         ->and($result->client->getRawOriginal('oidc_provisioning_key'))->toBe('first-party')
@@ -33,7 +32,21 @@ it('creates a confidential managed client and returns its plain secret once', fu
         ->and(json_decode((string) $result->client->getRawOriginal('allowed_exchange_audiences'), true, flags: JSON_THROW_ON_ERROR))->toBe(['https://api.test/orders'])
         ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token', TOKEN_EXCHANGE_GRANT]);
 
-    expect($result->created)->toBeTrue();
+    expect($result->wasCreated)->toBeTrue()
+        ->and($result->secretRotated)->toBeFalse();
+});
+
+it('reports both creation and rotation on the create-then-rotate path so rollback still deletes', function () {
+    $result = app(FirstPartyClientProvisioner::class)->provision(
+        name: 'First-party app',
+        redirectUris: ['https://app.test/login/callback'],
+        rotateSecret: true,
+    );
+
+    expect($result->wasCreated)->toBeTrue()
+        ->and($result->secretRotated)->toBeTrue()
+        ->and($result->rollback())->toBeTrue()
+        ->and(Passport::client()->newQuery()->find($result->clientId))->toBeNull();
 });
 
 it('reconciles the managed client without rotating its secret', function () {
@@ -47,7 +60,7 @@ it('reconciles the managed client without rotating its secret', function () {
         ['https://new.test'],
     );
 
-    expect($result->outcome)->toBe(FirstPartyClientProvisioningOutcome::Reconciled)
+    expect($result->wasCreated)->toBeFalse()
         ->and($result->clientId)->toBe($created->clientId)
         ->and($result->clientSecret)->toBeNull()
         ->and($result->client->getAttribute('name'))->toBe('New name')
@@ -55,7 +68,8 @@ it('reconciles the managed client without rotating its secret', function () {
         ->and($result->client->getRawOriginal('secret'))->toBe($storedSecret)
         ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token']);
 
-    expect($result->created)->toBeFalse();
+    expect($result->wasCreated)->toBeFalse()
+        ->and($result->secretRotated)->toBeFalse();
 });
 
 it('reconciles the managed client with a matching credential and returns the verified secret', function () {
@@ -72,7 +86,7 @@ it('reconciles the managed client with a matching credential and returns the ver
     );
 
     expect($created->clientSecret)->toBeString()->not->toBeEmpty()
-        ->and($result->outcome)->toBe(FirstPartyClientProvisioningOutcome::Reconciled)
+        ->and($result->wasCreated)->toBeFalse()
         ->and($result->clientId)->toBe($created->clientId)
         ->and($result->clientSecret)->toBe($created->clientSecret)
         ->and($result->client->getAttribute('name'))->toBe('New name')
@@ -110,7 +124,7 @@ it('creates a managed client with a new credential when a stale existing credent
         existingClientSecret: 'stale-secret',
     );
 
-    expect($result->outcome)->toBe(FirstPartyClientProvisioningOutcome::Created)
+    expect($result->wasCreated)->toBeTrue()
         ->and($result->clientSecret)->toBeString()->not->toBeEmpty()->not->toBe('stale-secret')
         ->and(Hash::check($result->clientSecret, (string) $result->client->getRawOriginal('secret')))->toBeTrue();
 });
@@ -134,7 +148,7 @@ it('adopts an explicit eligible client and then rotates only when requested', fu
 
     expect($adopted->clientId)->toBe((string) $legacy->getKey())
         ->and($adopted->clientSecret)->toBeNull()
-        ->and($rotated->outcome)->toBe(FirstPartyClientProvisioningOutcome::Rotated)
+        ->and($rotated->secretRotated)->toBeTrue()
         ->and($rotated->clientSecret)->toBeString()->not->toBeEmpty()
         ->and($rotated->client->getRawOriginal('secret'))->not->toBe($oldHash);
 });
@@ -151,7 +165,7 @@ it('adopts an explicit eligible client after verifying its credential', function
         existingClientSecret: $legacy->plainSecret,
     );
 
-    expect($result->outcome)->toBe(FirstPartyClientProvisioningOutcome::Reconciled)
+    expect($result->wasCreated)->toBeFalse()
         ->and($result->clientId)->toBe((string) $legacy->getKey())
         ->and($result->clientSecret)->toBe($legacy->plainSecret)
         ->and($result->client->getRawOriginal('secret'))->toBe($storedSecret)
@@ -195,7 +209,7 @@ it('verifies the existing credential before rotating it', function () {
         existingClientSecret: $created->clientSecret,
     );
 
-    expect($rotated->outcome)->toBe(FirstPartyClientProvisioningOutcome::Rotated)
+    expect($rotated->secretRotated)->toBeTrue()
         ->and($rotated->clientSecret)->toBeString()->not->toBeEmpty()->not->toBe($created->clientSecret)
         ->and(Hash::check($rotated->clientSecret, (string) $rotated->client->getRawOriginal('secret')))->toBeTrue();
 });
@@ -509,7 +523,7 @@ it('revalidates the winning credential when recovering from a provisioning key r
             existingClientSecret: $winningSecret,
         );
 
-        expect($result->outcome)->toBe(FirstPartyClientProvisioningOutcome::Reconciled)
+        expect($result->wasCreated)->toBeFalse()
             ->and($result->clientId)->toBe((string) $winner->getKey())
             ->and($result->clientSecret)->toBe($winningSecret)
             ->and($winner->refresh()->getAttribute('name'))->toBe('Reconciled winner')

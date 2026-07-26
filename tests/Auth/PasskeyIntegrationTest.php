@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorRegistry;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
 use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
 

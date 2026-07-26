@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Testing\InteractsWithOidc;
-use Bambamboole\LaravelOidc\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
+use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 
 /*
  * peststan only reads uses() declarations from files named Pest.php; this one

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc;
+namespace Bambamboole\LaravelOidc\Server;
 
 final class Issuer
 {

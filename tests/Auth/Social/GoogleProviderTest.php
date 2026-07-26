@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\GoogleProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\GoogleProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 

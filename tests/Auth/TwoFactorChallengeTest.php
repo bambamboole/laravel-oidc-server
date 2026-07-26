@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\MultiFactor\Models\TotpFactor;
-use Bambamboole\LaravelOidc\Auth\MultiFactor\TwoFactorManager;
-use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengePrompt;
-use Bambamboole\LaravelOidc\Auth\Views\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\TotpFactor;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TwoFactorManager;
+use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengePrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use PragmaRX\Google2FA\Google2FA;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Auth\Social\OidcProvider;
-use Bambamboole\LaravelOidc\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Auth\Social\SocialAuthenticationException;
-use Bambamboole\LaravelOidc\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Auth\Social\OidcProvider;
+use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAuthenticationException;
+use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Lcobucci\JWT\Configuration;
