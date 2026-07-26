@@ -6,14 +6,13 @@ use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Illuminate\Support\Facades\File;
 use Laravel\Passport\Passport;
 
-function tempEnv(string $contents = "APP_NAME=Testing\n"): string
+function rotateKeysEnv(string $contents = "APP_NAME=Testing\n"): string
 {
-    $dir = sys_get_temp_dir().'/laravel-oidc-env-'.uniqid();
-    File::makeDirectory($dir, 0755, true, true);
-    File::put($dir.'/.env', $contents);
-    app()->useEnvironmentPath($dir);
+    $directory = temporaryTestDirectory('rotate-keys');
+    File::put($directory.'/.env', $contents);
+    app()->useEnvironmentPath($directory);
 
-    return $dir.'/.env';
+    return $directory.'/.env';
 }
 
 function decodeEnvKey(string $envContents, string $name): string
@@ -24,7 +23,7 @@ function decodeEnvKey(string $envContents, string $name): string
 }
 
 it('writes a new keypair and the previous public key to .env', function () {
-    $env = tempEnv();
+    $env = rotateKeysEnv();
     $currentKid = Jwk::fromPem(SigningKeys::publicKey())['kid'];
 
     $this->artisan('oidc:rotate-keys', ['--force' => true])->assertSuccessful();
@@ -40,7 +39,7 @@ it('writes a new keypair and the previous public key to .env', function () {
 });
 
 it('upserts existing keys instead of duplicating them', function () {
-    $env = tempEnv("APP_NAME=Testing\nOIDC_PRIVATE_KEY=\"stale\"\nOTHER=keep\n");
+    $env = rotateKeysEnv("APP_NAME=Testing\nOIDC_PRIVATE_KEY=\"stale\"\nOTHER=keep\n");
 
     $this->artisan('oidc:rotate-keys', ['--force' => true])->assertSuccessful();
 
@@ -52,7 +51,7 @@ it('upserts existing keys instead of duplicating them', function () {
 });
 
 it('prints the env variables without touching .env when --print is given', function () {
-    $env = tempEnv();
+    $env = rotateKeysEnv();
     $before = (string) file_get_contents($env);
 
     $this->artisan('oidc:rotate-keys', ['--print' => true])
@@ -64,7 +63,7 @@ it('prints the env variables without touching .env when --print is given', funct
 });
 
 it('aborts without writing when the confirmation is declined', function () {
-    $env = tempEnv();
+    $env = rotateKeysEnv();
     $before = (string) file_get_contents($env);
 
     $this->artisan('oidc:rotate-keys')
@@ -76,8 +75,8 @@ it('aborts without writing when the confirmation is declined', function () {
 
 it('omits the previous key on a first-time generation with no current key', function () {
     config(['passport.private_key' => null, 'passport.public_key' => null]);
-    Passport::loadKeysFrom(sys_get_temp_dir().'/laravel-oidc-nokeys-'.uniqid());
-    $env = tempEnv();
+    Passport::loadKeysFrom(temporaryTestDirectory('nokeys'));
+    $env = rotateKeysEnv();
 
     $this->artisan('oidc:rotate-keys', ['--force' => true])->assertSuccessful();
 

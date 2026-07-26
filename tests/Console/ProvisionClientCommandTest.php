@@ -10,8 +10,7 @@ use Laravel\Passport\Passport;
 
 function clientCommandEnv(string $contents = "APP_NAME=Testing\n"): string
 {
-    $directory = sys_get_temp_dir().'/laravel-oidc-client-command-'.uniqid();
-    File::makeDirectory($directory, 0755, true, true);
+    $directory = temporaryTestDirectory('client-command');
     File::put($directory.'/.env', $contents);
     app()->useEnvironmentPath($directory);
 

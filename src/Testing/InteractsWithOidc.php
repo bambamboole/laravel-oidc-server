@@ -15,6 +15,7 @@ use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
@@ -91,7 +92,7 @@ trait InteractsWithOidc
         $this->withSession($amr === [] ? [] : [AuthSessionState::AMR_KEY => $amr]);
 
         $state = app(AuthSessionState::class);
-        $state->putAuthTime($authTime ?? time());
+        $state->putAuthTime($authTime ?? Carbon::now()->getTimestamp());
 
         if ($idTokenClaims !== [] || $accessTokenClaims !== []) {
             $state->putClaims($idTokenClaims, $accessTokenClaims);
@@ -168,9 +169,9 @@ trait InteractsWithOidc
      * `ConsentView` is bound unless the test (or `FakesAuthViews`, or the ui
      * package) already bound one.
      *
-     * Note: the CSRF middleware exemption applied here persists for the
-     * remainder of the calling test method (`withoutMiddleware()` has no
-     * revert scope).
+     * The CSRF middleware exemption applied here is scoped to this call: any
+     * exemption this method added is lifted again before returning, while
+     * exemptions the calling test set up itself are left in place.
      *
      * @param  array<string, mixed>  $params  overrides for the authorize query (state, nonce, max_age, redirect_uri, ...)
      */
@@ -196,64 +197,75 @@ trait InteractsWithOidc
 
         // The `web` group binds PreventRequestForgery on Laravel 13+ but
         // ValidateCsrfToken on older versions — both must be exempted.
-        $this->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class]);
+        // withoutMiddleware() binds no-op container instances, so "not bound
+        // yet" identifies the exemptions this call owns and must lift again.
+        $csrfMiddleware = [ValidateCsrfToken::class, PreventRequestForgery::class];
+        $ownedExemptions = array_filter($csrfMiddleware, fn (string $middleware): bool => ! app()->bound($middleware));
 
-        $guard = (string) config('oidc.auth.guard', 'identity');
+        $this->withoutMiddleware($csrfMiddleware);
 
-        if (! Auth::guard($guard)->check()) {
-            $this->actingAsIdentity($user, guard: $guard);
-        }
+        try {
+            $guard = (string) config('oidc.auth.guard', 'identity');
 
-        $query = array_merge([
-            'client_id' => (string) $client->getKey(),
-            'redirect_uri' => $client->redirect_uris[0] ?? 'https://rp.test/callback',
-            'response_type' => 'code',
-            'scope' => $scopes,
-            'state' => Str::random(16),
-            'nonce' => Str::random(16),
-            'code_challenge' => $pkce->challenge,
-            'code_challenge_method' => 'S256',
-        ], $params);
-
-        $authorize = $this->get(route('oidc.authorize').'?'.http_build_query($query));
-
-        // Trusted clients and already-granted scopes skip consent entirely.
-        if ($authorize->isRedirect()) {
-            $approve = $authorize;
-        } else {
-            $authorize->assertOk();
-
-            // json() would throw on a non-JSON view before the failure below can fire.
-            $decoded = json_decode((string) $authorize->getContent(), true);
-            $authToken = is_array($decoded) ? ($decoded['authToken'] ?? null) : null;
-
-            if (! is_string($authToken) || $authToken === '') {
-                Assert::fail('The consent view did not return an authToken. If your app binds a custom ConsentView, bind a JSON ConsentView for this test (or use FakesAuthViews) before calling authorizeAndApprove().');
+            if (! Auth::guard($guard)->check()) {
+                $this->actingAsIdentity($user, guard: $guard);
             }
 
-            $approve = $this->post(route('oidc.approve'), ['auth_token' => $authToken]);
-            $approve->assertRedirect();
+            $query = array_merge([
+                'client_id' => (string) $client->getKey(),
+                'redirect_uri' => $client->redirect_uris[0] ?? 'https://rp.test/callback',
+                'response_type' => 'code',
+                'scope' => $scopes,
+                'state' => Str::random(16),
+                'nonce' => Str::random(16),
+                'code_challenge' => $pkce->challenge,
+                'code_challenge_method' => 'S256',
+            ], $params);
+
+            $authorize = $this->get(route('oidc.authorize').'?'.http_build_query($query));
+
+            // Trusted clients and already-granted scopes skip consent entirely.
+            if ($authorize->isRedirect()) {
+                $approve = $authorize;
+            } else {
+                $authorize->assertOk();
+
+                // json() would throw on a non-JSON view before the failure below can fire.
+                $decoded = json_decode((string) $authorize->getContent(), true);
+                $authToken = is_array($decoded) ? ($decoded['authToken'] ?? null) : null;
+
+                if (! is_string($authToken) || $authToken === '') {
+                    Assert::fail('The consent view did not return an authToken. If your app binds a custom ConsentView, bind a JSON ConsentView for this test (or use FakesAuthViews) before calling authorizeAndApprove().');
+                }
+
+                $approve = $this->post(route('oidc.approve'), ['auth_token' => $authToken]);
+                $approve->assertRedirect();
+            }
+
+            parse_str((string) parse_url((string) $approve->headers->get('Location'), PHP_URL_QUERY), $callback);
+
+            if (! isset($callback['code'])) {
+                Assert::fail('Authorization did not yield a code. Redirected to: '.$approve->headers->get('Location'));
+            }
+
+            $tokenRequest = [
+                'grant_type' => 'authorization_code',
+                'client_id' => (string) $client->getKey(),
+                'redirect_uri' => $query['redirect_uri'],
+                'code' => $callback['code'],
+                'code_verifier' => $pkce->verifier,
+            ];
+
+            if ($client->plainSecret !== null) {
+                $tokenRequest['client_secret'] = $client->plainSecret;
+            }
+
+            return AuthorizationCodeResult::fromResponse($this->post(route('oidc.token'), $tokenRequest));
+        } finally {
+            foreach ($ownedExemptions as $middleware) {
+                app()->forgetInstance($middleware);
+            }
         }
-
-        parse_str((string) parse_url((string) $approve->headers->get('Location'), PHP_URL_QUERY), $callback);
-
-        if (! isset($callback['code'])) {
-            Assert::fail('Authorization did not yield a code. Redirected to: '.$approve->headers->get('Location'));
-        }
-
-        $tokenRequest = [
-            'grant_type' => 'authorization_code',
-            'client_id' => (string) $client->getKey(),
-            'redirect_uri' => $query['redirect_uri'],
-            'code' => $callback['code'],
-            'code_verifier' => $pkce->verifier,
-        ];
-
-        if ($client->plainSecret !== null) {
-            $tokenRequest['client_secret'] = $client->plainSecret;
-        }
-
-        return AuthorizationCodeResult::fromResponse($this->post(route('oidc.token'), $tokenRequest));
     }
 
     /**

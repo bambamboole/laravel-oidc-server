@@ -17,7 +17,7 @@ use Lcobucci\JWT\Validation\Validator;
 /**
  * @return array{0: string, 1: string} [privatePem, publicPem]
  */
-function generateEcKeypair(): array
+function appleEcKeypair(): array
 {
     $key = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => 'prime256v1']);
     openssl_pkey_export($key, $privatePem);
@@ -36,7 +36,7 @@ function appleProvider(string $privatePem): AppleProvider
 }
 
 it('requests form_post and name/email scopes without PKCE', function () {
-    [$privatePem] = generateEcKeypair();
+    [$privatePem] = appleEcKeypair();
 
     $request = Request::create('/auth/social/apple');
     $request->setLaravelSession(app('session.store'));
@@ -51,7 +51,7 @@ it('requests form_post and name/email scopes without PKCE', function () {
 })->skip(fn (): bool => ! function_exists('openssl_pkey_new'), 'requires openssl');
 
 it('signs the client secret as an ES256 JWT with Apple claims', function () {
-    [$privatePem, $publicPem] = generateEcKeypair();
+    [$privatePem, $publicPem] = appleEcKeypair();
 
     Http::fake(function ($httpRequest) {
         expect($httpRequest->url())->toBe('https://appleid.apple.com/auth/token');
@@ -82,7 +82,7 @@ it('signs the client secret as an ES256 JWT with Apple claims', function () {
 })->skip(fn (): bool => ! function_exists('openssl_pkey_new'), 'requires openssl');
 
 it('uses the first-consent user payload for the name', function () {
-    [$privatePem] = generateEcKeypair();
+    [$privatePem] = appleEcKeypair();
     $provider = new class('apple', ['client_id' => 'com.example.app', 'team_id' => 'TEAM123', 'key_id' => 'KEY456', 'private_key' => $privatePem]) extends AppleProvider
     {
         protected function verifiedIdTokenClaims(string $idToken, ?string $nonce): array

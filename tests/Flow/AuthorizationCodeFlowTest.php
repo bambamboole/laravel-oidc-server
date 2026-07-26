@@ -24,11 +24,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Testing\TestResponse;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
-use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
-use Lcobucci\JWT\Token\Parser;
-use Lcobucci\JWT\UnencryptedToken;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
@@ -46,23 +43,12 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
 });
 
-function parseIdToken(string $jwt): UnencryptedToken
-{
-    $token = (new Parser(new JoseEncoder))->parse($jwt);
-
-    if (! $token instanceof UnencryptedToken) {
-        throw new RuntimeException('Expected an unencrypted JWT.');
-    }
-
-    return $token;
-}
-
 /**
  * @param  array<string, mixed>  $overrides
  * @param  array<string, mixed>  $session
  * @return TestResponse<JsonResponse>
  */
-function completeAuthorization(TestCase $test, array $overrides = [], array $session = []): TestResponse
+function completeAuthorizationCodeFlow(TestCase $test, array $overrides = [], array $session = []): TestResponse
 {
     $test->actingAsIdentity(
         $test->user,
@@ -85,7 +71,7 @@ function completeAuthorization(TestCase $test, array $overrides = [], array $ses
 it('issues an id_token through the full code + pkce flow', function () {
     config(['app.url' => 'https://op.test', 'oidc.issuer' => null]);
 
-    $response = completeAuthorization($this)->assertOk();
+    $response = completeAuthorizationCodeFlow($this)->assertOk();
 
     expect($response->json())->toHaveKeys(['access_token', 'refresh_token', 'id_token']);
 
@@ -121,7 +107,7 @@ it('merges authorization-code trigger claims into issued and refreshed access to
         $api->setAccessTokenClaim('via', $event->grantType);
     });
 
-    $response = completeAuthorization($this)->assertOk();
+    $response = completeAuthorizationCodeFlow($this)->assertOk();
     $accessToken = parseAccessToken((string) $response->json('access_token'));
 
     expect($accessToken->claims()->get('project_id'))->toBe('p-1')
@@ -147,7 +133,7 @@ it('denies authorization-code issuance before persisting when a trigger denies',
         $api->deny('user_blocked');
     });
 
-    completeAuthorization($this)
+    completeAuthorizationCodeFlow($this)
         ->assertStatus(401)
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
@@ -157,7 +143,7 @@ it('denies authorization-code issuance before persisting when a trigger denies',
 
 // OIDC Core §3.1.2.1 / §5.4 (openid scope)
 it('omits the id_token without the openid scope', function () {
-    $response = completeAuthorization($this, ['scope' => 'email'])->assertOk();
+    $response = completeAuthorizationCodeFlow($this, ['scope' => 'email'])->assertOk();
 
     expect($response->json())->toHaveKey('access_token')
         ->and($response->json())->not->toHaveKey('id_token');
@@ -165,7 +151,7 @@ it('omits the id_token without the openid scope', function () {
 
 // OAuth 2.1 §4.3 (refresh) + OIDC Core §12.2 — refresh REISSUES the persisted context
 it('reissues amr/acr and claims on refresh, without a fresh nonce', function () {
-    $refreshToken = completeAuthorization($this, [], [
+    $refreshToken = completeAuthorizationCodeFlow($this, [], [
         'oidc.amr' => ['pwd', 'otp'],
         'oidc.id_token_claims' => ['groups' => ['admin']],
         'oidc.access_token_claims' => ['tier' => 'gold'],
@@ -189,7 +175,7 @@ it('reissues amr/acr and claims on refresh, without a fresh nonce', function () 
 });
 
 it('denies refresh once the context is gone', function () {
-    $refreshToken = completeAuthorization($this, [], ['oidc.amr' => ['pwd']])->json('refresh_token');
+    $refreshToken = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd']])->json('refresh_token');
 
     AuthenticationContext::query()->delete();
 
@@ -202,7 +188,7 @@ it('denies refresh once the context is gone', function () {
 });
 
 it('denies refresh once the session absolute lifetime is exceeded', function () {
-    $refreshToken = completeAuthorization($this, [], ['oidc.amr' => ['pwd']])->json('refresh_token');
+    $refreshToken = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd']])->json('refresh_token');
 
     AuthenticationContext::query()->update(['expires_at' => now()->subMinute()]);
 
@@ -218,7 +204,7 @@ it('does not leak a denied refresh context into the next refresh on the same gra
     // Octane-safety: the grant is a container singleton, so a stale pendingContext from one
     // request must never survive into the next. Deny one refresh, then reissue a different
     // one on the same AuthorizationServer/grant instance and assert its claims are its own.
-    $deniedRefreshToken = completeAuthorization($this, [], ['oidc.amr' => ['pwd']])->json('refresh_token');
+    $deniedRefreshToken = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd']])->json('refresh_token');
 
     AuthenticationContext::query()->delete();
 
@@ -230,10 +216,10 @@ it('does not leak a denied refresh context into the next refresh on the same gra
     ])->assertStatus(400);
 
     // A different user avoids Passport's "already granted these scopes" consent skip,
-    // which would otherwise short-circuit completeAuthorization() with a redirect.
+    // which would otherwise short-circuit completeAuthorizationCodeFlow() with a redirect.
     $this->user = User::create(['name' => 'N', 'email' => 'n@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 
-    $validRefreshToken = completeAuthorization($this, [], [
+    $validRefreshToken = completeAuthorizationCodeFlow($this, [], [
         'oidc.amr' => ['pwd', 'otp'],
         'oidc.id_token_claims' => ['groups' => ['ops']],
     ])->json('refresh_token');
@@ -253,7 +239,7 @@ it('does not leak a denied refresh context into the next refresh on the same gra
 
 // OIDC Core §3.1.3.6 / RFC 8176 (amr) + §2 (acr derived from amr method count)
 it('carries amr from the session into the auth_code id_token with derived acr', function () {
-    $response = completeAuthorization($this, [], ['oidc.amr' => ['pwd', 'otp']])->assertOk();
+    $response = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd', 'otp']])->assertOk();
 
     $idToken = parseIdToken($response->json('id_token'));
     expect($idToken->claims()->get('amr'))->toBe(['pwd', 'otp'])
@@ -261,7 +247,7 @@ it('carries amr from the session into the auth_code id_token with derived acr', 
 });
 
 it('emits acr "1" for a single-method session', function () {
-    $response = completeAuthorization($this, [], ['oidc.amr' => ['pwd']])->assertOk();
+    $response = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd']])->assertOk();
 
     $idToken = parseIdToken($response->json('id_token'));
     expect($idToken->claims()->get('amr'))->toBe(['pwd'])
@@ -269,7 +255,7 @@ it('emits acr "1" for a single-method session', function () {
 });
 
 it('omits amr and acr when the session held no methods', function () {
-    $idToken = parseIdToken(completeAuthorization($this)->assertOk()->json('id_token'));
+    $idToken = parseIdToken(completeAuthorizationCodeFlow($this)->assertOk()->json('id_token'));
 
     expect($idToken->claims()->has('amr'))->toBeFalse()
         ->and($idToken->claims()->has('acr'))->toBeFalse();
@@ -293,7 +279,7 @@ it('rejects an authorization request without PKCE even for a confidential client
 });
 
 it('emits postLogin-buffered id_token claims via the context store', function () {
-    $response = completeAuthorization($this, [], [
+    $response = completeAuthorizationCodeFlow($this, [], [
         'oidc.amr' => ['pwd', 'otp'],
         'oidc.id_token_claims' => ['groups' => ['admin']],
     ])->assertOk();
@@ -306,7 +292,7 @@ it('emits postLogin-buffered id_token claims via the context store', function ()
 
 // §8.3 — every interactive session is capped
 it('always persists a context row with a future expires_at', function () {
-    completeAuthorization($this, [], [
+    completeAuthorizationCodeFlow($this, [], [
         'oidc.amr' => ['pwd'],
         'oidc.access_token_claims' => ['tier' => 'gold'],
     ])->assertOk();
@@ -320,7 +306,7 @@ it('always persists a context row with a future expires_at', function () {
 
 // §5/§7 — access-token custom claims on fresh issuance
 it('emits postLogin access-token claims onto the access token and links it', function () {
-    $response = completeAuthorization($this, [], [
+    $response = completeAuthorizationCodeFlow($this, [], [
         'oidc.amr' => ['pwd'],
         'oidc.access_token_claims' => ['tier' => 'gold', 'amr' => ['hax']],
     ])->assertOk();
@@ -424,7 +410,7 @@ it('owns the oauth routes with package controllers', function () {
 it('issues a short-lived access token matching the configured lifetime', function () {
     config(['oidc.token_lifetimes.access_token' => 900]);
 
-    $response = completeAuthorization($this)->assertOk();
+    $response = completeAuthorizationCodeFlow($this)->assertOk();
 
     // expires_in reflects the interactive access-token TTL, not Passport's long default
     expect($response->json('expires_in'))->toBeLessThanOrEqual(900)
@@ -436,7 +422,7 @@ it('pins the context to the login session and its expires_at', function () {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
     $session = OidcSession::query()->find($sid);
 
-    completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
+    completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
 
     $context = AuthenticationContext::query()->sole();
     expect($context->sid)->toBe($sid)
@@ -446,7 +432,7 @@ it('pins the context to the login session and its expires_at', function () {
 it('emits the sid claim on fresh issuance and on refresh', function () {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
 
-    $response = completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
+    $response = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
     expect(parseIdToken($response->json('id_token'))->claims()->get('sid'))->toBe($sid);
 
     $refreshed = $this->post('/oauth/token', [
@@ -461,8 +447,8 @@ it('emits the sid claim on fresh issuance and on refresh', function () {
 it('records one participant per session-client on authorization', function () {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
 
-    completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
-    completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk(); // same client again
+    completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
+    completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk(); // same client again
 
     expect(app(OidcSessionRepository::class)->participantClientIds($sid))
         ->toBe([$this->client->id]);
@@ -470,7 +456,7 @@ it('records one participant per session-client on authorization', function () {
 
 it('denies refresh after the session is revoked', function () {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
-    $refreshToken = completeAuthorization($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->json('refresh_token');
+    $refreshToken = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->json('refresh_token');
 
     app(OidcSessionRepository::class)->revoke($sid);
 

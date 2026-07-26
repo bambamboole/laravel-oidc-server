@@ -7,8 +7,7 @@ use Laravel\Passport\Passport;
 
 function installSelfEnv(string $contents = "APP_NAME=Testing\n"): string
 {
-    $directory = sys_get_temp_dir().'/laravel-oidc-install-self-'.uniqid();
-    File::makeDirectory($directory, 0755, true, true);
+    $directory = temporaryTestDirectory('install-self');
     File::put($directory.'/.env', $contents);
     app()->useEnvironmentPath($directory);
 

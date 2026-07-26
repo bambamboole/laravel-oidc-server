@@ -7,6 +7,10 @@ use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Route;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
@@ -34,6 +38,14 @@ it('authenticates on the identity guard and seeds the auth context session keys'
         ->and(session(AuthSessionState::AMR_KEY))->toBe(['pwd', 'otp'])
         ->and(session('oidc.id_token_claims'))->toBe(['locale' => 'de'])
         ->and(session('oidc.access_token_claims'))->toBe(['tenant' => 't1']);
+});
+
+it('seeds auth_time from the Carbon test clock', function () {
+    Carbon::setTestNow(Carbon::parse('2031-01-02 03:04:05'));
+
+    $this->actingAsIdentity($this->user);
+
+    expect(session('oidc.auth_time'))->toBe(Carbon::parse('2031-01-02 03:04:05')->getTimestamp());
 });
 
 it('defaults auth_time to now and leaves optional context keys unset', function () {
@@ -125,6 +137,40 @@ it('handles the skip-consent redirect for already-approved clients', function ()
     $second = $this->authorizeAndApprove($this->user, $client);
 
     expect($second->accessToken)->toBeString();
+});
+
+it('scopes the CSRF exemption to the authorizeAndApprove flow', function () {
+    Route::post('/csrf-probe', fn () => response()->noContent())->middleware('web');
+
+    // Both CSRF middlewares short-circuit under the `testing` env, so the
+    // probe only enforces once the app stops reporting unit tests. Restored
+    // before teardown: confirmable commands would prompt under `production`.
+    $this->app->instance('env', 'production');
+
+    try {
+        // The flow's own POSTs (approve + token) only succeed here because
+        // the scoped exemption is active while they run.
+        $this->authorizeAndApprove($this->user)->response->assertOk();
+
+        $this->post('/csrf-probe')->assertStatus(419);
+    } finally {
+        $this->app->instance('env', 'testing');
+    }
+});
+
+it('leaves a test-owned CSRF exemption in place after authorizeAndApprove', function () {
+    Route::post('/csrf-probe', fn () => response()->noContent())->middleware('web');
+    $this->app->instance('env', 'production');
+
+    try {
+        $this->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class]);
+
+        $this->authorizeAndApprove($this->user)->response->assertOk();
+
+        $this->post('/csrf-probe')->assertNoContent();
+    } finally {
+        $this->app->instance('env', 'testing');
+    }
 });
 
 it('returns the raw token error response for a broken token leg', function () {

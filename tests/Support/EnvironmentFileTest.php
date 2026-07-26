@@ -5,18 +5,16 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
 
-function envFixture(string $contents): string
+function environmentFileFixture(string $contents): string
 {
-    $dir = sys_get_temp_dir().'/laravel-oidc-envfile-'.uniqid();
-    mkdir($dir);
-    $path = $dir.'/.env';
+    $path = temporaryTestDirectory('envfile').'/.env';
     file_put_contents($path, $contents);
 
     return $path;
 }
 
 it('upserts an existing key and appends a new one in a single write', function () {
-    $path = envFixture("APP_NAME=Testing\nOIDC_FIRST_PARTY_CLIENT=stale\n");
+    $path = environmentFileFixture("APP_NAME=Testing\nOIDC_FIRST_PARTY_CLIENT=stale\n");
 
     (new EnvironmentFile($path))->write([
         'OIDC_FIRST_PARTY_CLIENT' => 'abc-123',
@@ -32,7 +30,7 @@ it('upserts an existing key and appends a new one in a single write', function (
 });
 
 it('applies the encoder to every written value', function () {
-    $path = envFixture("APP_NAME=Testing\n");
+    $path = environmentFileFixture("APP_NAME=Testing\n");
 
     (new EnvironmentFile($path))->write(
         ['OIDC_PRIVATE_KEY' => "line1\nline2"],
@@ -43,7 +41,7 @@ it('applies the encoder to every written value', function () {
 });
 
 it('replaces the target atomically without leaving a temp file behind', function () {
-    $path = envFixture("APP_NAME=Testing\n");
+    $path = environmentFileFixture("APP_NAME=Testing\n");
 
     (new EnvironmentFile($path))->write(['OIDC_FIRST_PARTY_CLIENT' => 'abc-123']);
 
@@ -54,7 +52,7 @@ it('replaces the target atomically without leaving a temp file behind', function
 });
 
 it('preserves the target file permissions across the atomic write', function () {
-    $path = envFixture("APP_NAME=Testing\n");
+    $path = environmentFileFixture("APP_NAME=Testing\n");
     chmod($path, 0600);
 
     (new EnvironmentFile($path))->write(['OIDC_PRIVATE_KEY' => 'secret']);
@@ -67,7 +65,7 @@ it('throws when the environment file cannot be read', function () {
 })->throws(EnvironmentWriteException::class);
 
 it('reads a plain value back and returns null for absent keys', function () {
-    $path = envFixture("APP_NAME=Testing\nOIDC_FIRST_PARTY_CLIENT=abc-123\nEMPTY=\n");
+    $path = environmentFileFixture("APP_NAME=Testing\nOIDC_FIRST_PARTY_CLIENT=abc-123\nEMPTY=\n");
     $store = new EnvironmentFile($path);
 
     expect($store->value('OIDC_FIRST_PARTY_CLIENT'))->toBe('abc-123')
@@ -77,7 +75,7 @@ it('reads a plain value back and returns null for absent keys', function () {
 });
 
 it('reads quoted values without their quotes', function () {
-    $path = envFixture("SINGLE='with spaces'\nDOUBLE=\"quo # ted\"\n");
+    $path = environmentFileFixture("SINGLE='with spaces'\nDOUBLE=\"quo # ted\"\n");
     $store = new EnvironmentFile($path);
 
     expect($store->value('SINGLE'))->toBe('with spaces')
@@ -85,7 +83,7 @@ it('reads quoted values without their quotes', function () {
 });
 
 it('ignores comment lines and strips inline comments from unquoted values', function () {
-    $path = envFixture("# OIDC_ISSUER=commented\nOIDC_ISSUER=https://op.test # the provider\n");
+    $path = environmentFileFixture("# OIDC_ISSUER=commented\nOIDC_ISSUER=https://op.test # the provider\n");
 
     expect((new EnvironmentFile($path))->value('OIDC_ISSUER'))->toBe('https://op.test');
 });
@@ -95,7 +93,7 @@ it('returns null when the environment file does not exist', function () {
 });
 
 it('round-trips values written through write()', function () {
-    $path = envFixture("APP_NAME=Testing\n");
+    $path = environmentFileFixture("APP_NAME=Testing\n");
     $store = new EnvironmentFile($path);
 
     $store->write(['OIDC_RP_CLIENT_SECRET' => 'plain-secret']);

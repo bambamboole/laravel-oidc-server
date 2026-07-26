@@ -18,6 +18,8 @@ abstract class TestCase extends BaseTestCase
     use WithLaravelMigrations;
     use WithWorkbench;
 
+    public const string TOKEN_EXCHANGE_GRANT = 'urn:ietf:params:oauth:grant-type:token-exchange';
+
     protected function getEnvironmentSetUp($app): void
     {
         $token = ParallelTesting::token();

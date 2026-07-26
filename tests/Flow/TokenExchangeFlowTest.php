@@ -10,11 +10,11 @@ use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
-const EXCHANGE_URN = 'urn:ietf:params:oauth:grant-type:token-exchange';
 const ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
 
 beforeEach(function () {
@@ -28,7 +28,7 @@ beforeEach(function () {
 
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
     $this->client->forceFill([
-        'grant_types' => [...(array) $this->client->getAttribute('grant_types'), EXCHANGE_URN],
+        'grant_types' => [...(array) $this->client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
         'allowed_exchange_audiences' => json_encode(['https://api.internal/orders']),
     ])->save();
     $this->secret = $this->client->plainSecret;
@@ -40,7 +40,7 @@ it('exchanges a reciprocal token for a narrowed, audience-scoped access token', 
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read', 'orders:write']);
 
     $response = $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -80,7 +80,7 @@ it('runs the token-exchange trigger once with finalized context and applies its 
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read', 'orders:write']);
 
     $response = $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -104,7 +104,7 @@ it('denies token exchange before persisting an access token', function () {
     });
 
     $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -131,7 +131,7 @@ it('keeps the package-owned actor chain when a token-exchange trigger attempts t
     });
 
     $response = $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -153,7 +153,7 @@ it('inherits the subject token full scope set when the scope param is omitted', 
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read', 'orders:write']);
 
     $response = $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -172,7 +172,7 @@ it('inherits the subject token full scope set when the scope param is omitted', 
 it('rejects an unlisted audience with invalid_target', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
     $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN, 'client_id' => $this->client->id, 'client_secret' => $this->secret,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT, 'client_id' => $this->client->id, 'client_secret' => $this->secret,
         'subject_token' => $subject, 'subject_token_type' => ACCESS_TOKEN_URN, 'audience' => 'https://evil/api',
     ])->assertStatus(400)->assertJsonPath('error', 'invalid_target');
 });
@@ -187,7 +187,7 @@ it('rejects an expired subject token with invalid_grant', function () {
     );
 
     $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -203,7 +203,7 @@ it('rejects a revoked subject token with invalid_grant', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid'], revoked: true);
 
     $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -219,7 +219,7 @@ it('rejects a subject token not bound to a user with invalid_grant', function ()
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid'], userless: true);
 
     $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -234,7 +234,7 @@ it('never mints an id_token even when the exchange requests scope openid', funct
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
 
     $response = $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -251,13 +251,13 @@ it('never mints an id_token even when the exchange requests scope openid', funct
 it('rejects a public client with invalid_client', function () {
     $public = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Public', ['https://p/cb'], confidential: false);
     $public->forceFill([
-        'grant_types' => [...(array) $public->getAttribute('grant_types'), EXCHANGE_URN],
+        'grant_types' => [...(array) $public->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
         'allowed_exchange_audiences' => json_encode(['https://api.internal/orders']),
     ])->save();
     $subject = mintExchangeSubjectToken((string) $public->id, (string) $this->user->id, ['openid']);
 
     $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $public->id,
         'subject_token' => $subject,
         'subject_token_type' => ACCESS_TOKEN_URN,
@@ -271,7 +271,7 @@ it('rejects a wrong subject_token_type with invalid_request', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
 
     $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'subject_token' => $subject,
@@ -285,7 +285,7 @@ it('rejects a client without the grant', function () {
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://o/cb']);
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
     $this->post('/oauth/token', [
-        'grant_type' => EXCHANGE_URN, 'client_id' => $other->id, 'client_secret' => $other->plainSecret,
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT, 'client_id' => $other->id, 'client_secret' => $other->plainSecret,
         'subject_token' => $subject, 'subject_token_type' => ACCESS_TOKEN_URN, 'audience' => 'https://api.internal/orders',
     ])->assertStatus(400);
 });
@@ -293,12 +293,12 @@ it('rejects a client without the grant', function () {
 // RFC 8414 §2 (grant_types_supported)
 it('advertises the grant in discovery when enabled', function () {
     expect($this->getJson('/.well-known/openid-configuration')->json('grant_types_supported'))
-        ->toContain(EXCHANGE_URN);
+        ->toContain(TestCase::TOKEN_EXCHANGE_GRANT);
 });
 
 it('omits the grant from discovery when disabled', function () {
     config(['oidc.token_exchange.enabled' => false]);
 
     expect($this->getJson('/.well-known/openid-configuration')->json('grant_types_supported'))
-        ->not->toContain(EXCHANGE_URN);
+        ->not->toContain(TestCase::TOKEN_EXCHANGE_GRANT);
 });

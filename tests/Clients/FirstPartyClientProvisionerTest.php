@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
+use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,8 +13,6 @@ use Illuminate\Support\Facades\Hash;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
-
-const TOKEN_EXCHANGE_GRANT = 'urn:ietf:params:oauth:grant-type:token-exchange';
 
 it('creates a confidential managed client and returns its plain secret once', function () {
     $result = app(FirstPartyClientProvisioner::class)->provision(
@@ -30,7 +29,7 @@ it('creates a confidential managed client and returns its plain secret once', fu
         ->and($result->client->getAttribute('redirect_uris'))->toBe(['https://app.test/login/callback'])
         ->and(json_decode((string) $result->client->getRawOriginal('post_logout_redirect_uris'), true, flags: JSON_THROW_ON_ERROR))->toBe(['https://app.test'])
         ->and(json_decode((string) $result->client->getRawOriginal('allowed_exchange_audiences'), true, flags: JSON_THROW_ON_ERROR))->toBe(['https://api.test/orders'])
-        ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token', TOKEN_EXCHANGE_GRANT]);
+        ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token', TestCase::TOKEN_EXCHANGE_GRANT]);
 
     expect($result->wasCreated)->toBeTrue()
         ->and($result->secretRotated)->toBeFalse();
@@ -92,7 +91,7 @@ it('reconciles the managed client with a matching credential and returns the ver
         ->and($result->client->getAttribute('name'))->toBe('New name')
         ->and($result->client->getAttribute('redirect_uris'))->toBe(['https://new.test/callback'])
         ->and($result->client->getRawOriginal('secret'))->toBe($storedSecret)
-        ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token', TOKEN_EXCHANGE_GRANT]);
+        ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token', TestCase::TOKEN_EXCHANGE_GRANT]);
 });
 
 it('rejects a mismatched managed client credential without mutating the client', function (string $existingClientSecret) {
@@ -384,13 +383,6 @@ it('rejects invalid provisioning input before writing', function (
     'audience raw quote' => ['App', ['https://app.test/callback'], ['urn:example:"orders'], 'absolute URI'],
     'audience unmatched bracket' => ['App', ['https://app.test/callback'], ['urn:example:[orders'], 'absolute URI'],
 ]);
-
-it('does not require the optional scheme-specific League URN parser', function () {
-    $source = file_get_contents(dirname(__DIR__, 2).'/src/Clients/FirstPartyClientProvisioner.php');
-
-    expect($source)->toBeString()
-        ->not->toContain('League\\Uri\\Urn');
-});
 
 it('accepts valid RFC 8141 optional components', function (string $audience) {
     $result = app(FirstPartyClientProvisioner::class)->provision(

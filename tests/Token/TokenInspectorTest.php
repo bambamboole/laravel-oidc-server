@@ -46,6 +46,27 @@ it('rejects tokens signed by a key that is neither current nor retained', functi
     expect(app(TokenInspector::class)->parse($jwt))->toBeNull();
 });
 
+function tokenInspectorBase64Url(string $data): string
+{
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+
+it('rejects an unsigned token with header alg none', function () {
+    $jwt = tokenInspectorBase64Url((string) json_encode(['typ' => 'at+jwt', 'alg' => 'none']))
+        .'.'.tokenInspectorBase64Url((string) json_encode(['jti' => 'forged', 'sub' => '1', 'exp' => time() + 3600]))
+        .'.';
+
+    expect(app(TokenInspector::class)->parse($jwt))->toBeNull();
+});
+
+it('rejects an HS256 token signed with the server public key as the HMAC secret', function () {
+    $header = tokenInspectorBase64Url((string) json_encode(['typ' => 'at+jwt', 'alg' => 'HS256']));
+    $payload = tokenInspectorBase64Url((string) json_encode(['jti' => 'forged', 'sub' => '1', 'exp' => time() + 3600]));
+    $signature = tokenInspectorBase64Url(hash_hmac('sha256', $header.'.'.$payload, SigningKeys::publicKey(), true));
+
+    expect(app(TokenInspector::class)->parse($header.'.'.$payload.'.'.$signature))->toBeNull();
+});
+
 it('resolves the persisted token from an already-parsed JWT', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://rp.test/cb']);

@@ -18,7 +18,7 @@ it('reports whether signing key material is resolvable', function () {
     expect((new SigningKeyGenerator)->hasKeys())->toBeTrue();
 
     config(['oidc.private_key' => null, 'oidc.public_key' => null, 'passport.private_key' => null, 'passport.public_key' => null]);
-    Passport::loadKeysFrom(sys_get_temp_dir().'/laravel-oidc-nokeys-'.uniqid());
+    Passport::loadKeysFrom(temporaryTestDirectory('nokeys'));
 
     expect((new SigningKeyGenerator)->hasKeys())->toBeFalse();
 });

@@ -6,14 +6,10 @@ use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Laravel\Passport\ClientRepository;
-use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
-use Lcobucci\JWT\Token\Parser;
-use Lcobucci\JWT\UnencryptedToken;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
-use League\OAuth2\Server\Exception\OAuthServerException;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -28,21 +24,10 @@ beforeEach(function () {
         ->toString();
 });
 
-function parseExchanged(string $jwt): UnencryptedToken
-{
-    $parsed = (new Parser(new JoseEncoder))->parse($jwt);
-
-    if (! $parsed instanceof UnencryptedToken) {
-        throw new RuntimeException('Expected an unencrypted token.');
-    }
-
-    return $parsed;
-}
-
 it('exchanges the root token for an audience-scoped, narrowed token', function () {
     $entity = app(TokenExchanger::class)->exchange($this->root, $this->appClient, 'https://api.orders.test', ['openid']);
 
-    $parsed = parseExchanged($entity->toString());
+    $parsed = parseAccessToken($entity->toString());
     expect($parsed->headers()->get('typ'))->toBe('at+jwt')
         ->and($parsed->claims()->get('aud'))->toBe(['https://api.orders.test'])
         ->and($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
@@ -63,32 +48,21 @@ it('wraps the entity into an IssuedToken', function () {
         ->and($issued->accessToken)->toBe($entity->toString());
 });
 
-it('rejects an unlisted target audience with invalid_target', function () {
-    try {
-        app(TokenExchanger::class)->exchange($this->root, $this->appClient, 'https://evil.test', ['openid']);
-        $this->fail('expected rejection');
-    } catch (OAuthServerException $e) {
-        expect($e->getErrorType())->toBe('invalid_target');
-    }
-});
-
-it('rejects scope widening with invalid_scope', function () {
-    try {
-        app(TokenExchanger::class)->exchange($this->root, $this->appClient, 'https://api.orders.test', ['admin']);
-        $this->fail('expected rejection');
-    } catch (OAuthServerException $e) {
-        expect($e->getErrorType())->toBe('invalid_scope');
-    }
-});
-
-it('rejects an invalid subject token with invalid_grant', function () {
-    try {
-        app(TokenExchanger::class)->exchange('garbage', $this->appClient, 'https://api.orders.test', ['openid']);
-        $this->fail('expected rejection');
-    } catch (OAuthServerException $e) {
-        expect($e->getErrorType())->toBe('invalid_grant');
-    }
-});
+it('rejects an invalid exchange with the matching OAuth error type', function (
+    ?string $subjectToken,
+    string $audience,
+    array $scopes,
+    string $errorType,
+) {
+    expectOAuthServerError(
+        fn () => app(TokenExchanger::class)->exchange($subjectToken ?? $this->root, $this->appClient, $audience, $scopes),
+        $errorType,
+    );
+})->with([
+    'unlisted target audience' => [null, 'https://evil.test', ['openid'], 'invalid_target'],
+    'scope widening' => [null, 'https://api.orders.test', ['admin'], 'invalid_scope'],
+    'invalid subject token' => ['garbage', 'https://api.orders.test', ['openid'], 'invalid_grant'],
+]);
 
 it('nests the prior act claim on a chained exchange', function () {
     $rootEntity = app(AccessTokenMinter::class)->mint((string) $this->user->id, $this->appClient, ['openid'], new DateInterval('PT1H'));
@@ -97,6 +71,6 @@ it('nests the prior act claim on a chained exchange', function () {
 
     $issued = app(TokenExchanger::class)->exchange($root, $this->appClient, 'https://api.orders.test', ['openid']);
 
-    $act = parseExchanged($issued->toString())->claims()->get('act');
+    $act = parseAccessToken($issued->toString())->claims()->get('act');
     expect($act)->toBe(['client_id' => $this->appClient->id, 'act' => ['client_id' => 'client-a']]);
 });

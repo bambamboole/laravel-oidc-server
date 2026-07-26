@@ -1,8 +1,15 @@
-# laravel-oidc
+# laravel-oidc-server
 
 An **OIDC-capable auth server built as a Laravel package** — turn your Laravel app into a
 full OpenID Connect identity provider that other applications authenticate their users
 against.
+
+This is the server package of the
+[`laravel-oidc`](https://github.com/bambamboole/laravel-oidc) monorepo. Its siblings are
+[`bambamboole/laravel-oidc-client`](https://github.com/bambamboole/laravel-oidc-client)
+(the relying party) and
+[`bambamboole/laravel-oidc-ui`](https://github.com/bambamboole/laravel-oidc-ui)
+(the Lattice auth UI); `bambamboole/laravel-oidc` ships all three.
 
 The package provides the complete protocol surface of an identity provider and, optionally,
 a complete authentication engine (login, registration, MFA) that your app fills with its own
@@ -40,8 +47,11 @@ views and actions.
 
 ## Installation
 
+Install the server package on its own, or the full suite (server + client + ui) via
+`composer require bambamboole/laravel-oidc`:
+
 ```bash
-composer require bambamboole/laravel-oidc
+composer require bambamboole/laravel-oidc-server
 
 # Publish and run the migrations (extends oauth_clients + adds the package's own tables)
 php artisan vendor:publish --tag=oidc-migrations
@@ -77,13 +87,10 @@ reconfigures it rather than reimplementing an authorization server. On registrat
 
 ## Documentation
 
-The full documentation lives at **[bambamboole.github.io/laravel-oidc](https://bambamboole.github.io/laravel-oidc)**
-and is built with [Starlight](https://starlight.astro.build/). To run it locally:
-
-```bash
-npm install
-npm run docs:dev
-```
+The full documentation lives at **[bambamboole.github.io/laravel-oidc](https://bambamboole.github.io/laravel-oidc)**.
+It is built with [Starlight](https://starlight.astro.build/) from the `docs/` directory of
+the [monorepo](https://github.com/bambamboole/laravel-oidc), where `npm run docs:dev`
+serves it locally.
 
 ## Testing
 
@@ -92,6 +99,11 @@ composer check   # pint --test, phpstan (level 6), and the pest suite
 ```
 
 CI runs the suite across Laravel 12/13 on every push and pull request.
+
+## Changelog
+
+All packages in the suite are versioned in lockstep; see the
+[monorepo changelog](https://github.com/bambamboole/laravel-oidc/blob/main/CHANGELOG.md).
 
 ## License
 

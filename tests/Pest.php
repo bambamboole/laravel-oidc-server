@@ -22,6 +22,7 @@ use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\CryptTrait;
+use League\OAuth2\Server\Exception\OAuthServerException;
 
 // Passport::$scopes is a real PHP static that survives the per-test app
 // rebuild; without the afterEach reset, a file calling Passport::tokensCan()
@@ -30,6 +31,44 @@ uses(TestCase::class)
     ->afterEach(fn () => Passport::tokensCan([]))
     ->in(__DIR__);
 uses(RefreshDatabase::class)->in(__DIR__);
+
+/**
+ * Per-run root for filesystem fixtures. Everything created through this helper
+ * lands under one pid-scoped directory that the shutdown hook below removes.
+ */
+function temporaryTestDirectory(string $prefix): string
+{
+    $directory = sys_get_temp_dir().'/laravel-oidc-server-tests-'.getmypid().'/'.$prefix.'-'.uniqid();
+    mkdir($directory, 0755, true);
+
+    return $directory;
+}
+
+// Plain PHP only: the Laravel app (and its facades) may already be torn down
+// by the time the shutdown hook runs.
+register_shutdown_function(function (): void {
+    $delete = function (string $path) use (&$delete): void {
+        if (! is_dir($path) || is_link($path)) {
+            return;
+        }
+
+        foreach (array_diff(scandir($path) ?: [], ['.', '..']) as $entry) {
+            $child = $path.'/'.$entry;
+            is_dir($child) && ! is_link($child) ? $delete($child) : unlink($child);
+        }
+
+        rmdir($path);
+    };
+
+    $delete(sys_get_temp_dir().'/laravel-oidc-server-tests-'.getmypid());
+
+    // Only this pid's database: parallel workers name theirs by token instead.
+    $database = sys_get_temp_dir().'/laravel-oidc-package-tests/database-'.getmypid().'.sqlite';
+
+    if (is_file($database)) {
+        unlink($database);
+    }
+});
 
 function parseAccessToken(string $jwt): UnencryptedToken
 {
@@ -40,6 +79,29 @@ function parseAccessToken(string $jwt): UnencryptedToken
     }
 
     return $token;
+}
+
+function parseIdToken(string $jwt): UnencryptedToken
+{
+    return parseAccessToken($jwt);
+}
+
+/**
+ * Locks both halves of a rejected-flow assertion: the closure must throw an
+ * OAuthServerException, and its RFC 6749 error type must match. A closure
+ * that does not throw fails on the instance expectation.
+ */
+function expectOAuthServerError(Closure $callback, string $errorType): void
+{
+    $thrown = null;
+
+    try {
+        $callback();
+    } catch (OAuthServerException $thrown) {
+    }
+
+    expect($thrown)->toBeInstanceOf(OAuthServerException::class)
+        ->and($thrown?->getErrorType())->toBe($errorType);
 }
 
 /**
