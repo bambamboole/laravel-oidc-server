@@ -23,7 +23,12 @@ use Lcobucci\JWT\UnencryptedToken;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\CryptTrait;
 
-uses(TestCase::class)->in(__DIR__);
+// Passport::$scopes is a real PHP static that survives the per-test app
+// rebuild; without the afterEach reset, a file calling Passport::tokensCan()
+// poisons every test that runs after it.
+uses(TestCase::class)
+    ->afterEach(fn () => Passport::tokensCan([]))
+    ->in(__DIR__);
 uses(RefreshDatabase::class)->in(__DIR__);
 
 function parseAccessToken(string $jwt): UnencryptedToken

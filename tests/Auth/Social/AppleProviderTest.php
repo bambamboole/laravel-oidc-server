@@ -92,6 +92,12 @@ it('uses the first-consent user payload for the name', function () {
     };
 
     Http::fake([
+        'https://appleid.apple.com/.well-known/openid-configuration' => Http::response([
+            'issuer' => 'https://appleid.apple.com',
+            'authorization_endpoint' => 'https://appleid.apple.com/auth/authorize',
+            'token_endpoint' => 'https://appleid.apple.com/auth/token',
+            'jwks_uri' => 'https://appleid.apple.com/auth/keys',
+        ]),
         'https://appleid.apple.com/auth/token' => Http::response(['access_token' => 'ap-at', 'id_token' => 'stubbed', 'token_type' => 'Bearer']),
     ]);
 

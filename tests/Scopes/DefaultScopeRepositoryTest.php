@@ -30,8 +30,6 @@ class RepositoryThrowingCatalog implements ScopeCatalog
 
 beforeEach(fn () => $this->repository = new DefaultScopeRepository(app()));
 
-afterEach(fn () => Passport::tokensCan([]));
-
 it('exposes passport scopes plus the oidc standard scopes', function () {
     Passport::tokensCan(['project:update' => 'Update projects']);
 

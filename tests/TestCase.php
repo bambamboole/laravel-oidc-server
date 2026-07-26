@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Tests;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\ParallelTesting;
 use Laravel\Passkeys\Passkeys;
 use Laravel\Passport\Passport;
@@ -42,6 +43,8 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Http::preventStrayRequests();
 
         Passport::$validateKeyPermissions = false;
         Passport::loadKeysFrom(__DIR__.'/fixtures');
