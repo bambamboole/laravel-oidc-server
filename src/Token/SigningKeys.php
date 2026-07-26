@@ -20,6 +20,24 @@ final class SigningKeys
         return self::key('public');
     }
 
+    /**
+     * All public keys signatures may verify against: the current key plus any
+     * retained previous keys (oidc.additional_public_keys). Verification and
+     * JWKS must use the same set, or rotation invalidates live tokens that
+     * relying parties still consider valid.
+     *
+     * @return non-empty-list<string>
+     */
+    public static function verificationKeys(): array
+    {
+        $additional = config('oidc.additional_public_keys', []);
+
+        return [self::publicKey(), ...array_values(array_filter(
+            is_array($additional) ? $additional : [],
+            fn ($key) => is_string($key) && $key !== '',
+        ))];
+    }
+
     public static function privateKey(): string
     {
         return self::key('private');

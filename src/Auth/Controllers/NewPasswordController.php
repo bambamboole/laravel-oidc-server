@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Auth\Pipeline\InteractiveLoginFinalizer;
+use Bambamboole\LaravelOidc\Auth\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Auth\UserActionManager;
 use Bambamboole\LaravelOidc\Auth\Views\PasswordResetPrompt;
 use Bambamboole\LaravelOidc\Auth\Views\PasswordResetView;
@@ -16,7 +18,6 @@ use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -29,6 +30,7 @@ class NewPasswordController
 
     public function __construct(
         private readonly UserActionManager $actions,
+        private readonly InteractiveLoginFinalizer $finalizer,
     ) {}
 
     /**
@@ -56,9 +58,11 @@ class NewPasswordController
             'password' => ['required'],
         ]);
 
+        $resetUser = null;
+
         $status = Password::broker((string) config('auth.defaults.passwords', 'users'))->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (CanResetPassword $user) use ($request): void {
+            function (CanResetPassword $user) use ($request, &$resetUser): void {
                 $this->actions->resetUserPassword($user, $request->all());
 
                 if (method_exists($user, 'setRememberToken')) {
@@ -75,13 +79,19 @@ class NewPasswordController
 
                 event(new PasswordReset($user));
 
-                Auth::guard($this->guardName())->login($user);
+                $resetUser = $user;
             },
         );
 
-        if ($status === Password::PASSWORD_RESET) {
-            if ($request->hasSession()) {
-                $request->session()->regenerate();
+        if ($status === Password::PASSWORD_RESET && $resetUser instanceof Authenticatable) {
+            // The password is reset either way; a postLogin denial or pending
+            // second factor only affects the session that follows.
+            $outcome = $this->finalizer->finalize($request, $resetUser, 'pwd');
+
+            if ($outcome === LoginOutcome::MfaChallenge) {
+                return $request->wantsJson()
+                    ? new JsonResponse(['two_factor' => true])
+                    : redirect()->route(Handler::TwoFactorLogin->value);
             }
 
             return $request->wantsJson()

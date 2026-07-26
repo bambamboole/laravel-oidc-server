@@ -11,6 +11,7 @@ use Bambamboole\LaravelOidc\Scopes\Scope;
 use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
 use DateInterval;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\Passport;
@@ -32,7 +33,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
     public function currentToken(): ?string
     {
         $stored = $this->session()->get($this->key());
-        $currentUserId = Auth::guard()->id();
+        $currentUserId = $this->guard()->id();
 
         if (is_array($stored)
             && is_string($stored['jwt'] ?? null)
@@ -41,7 +42,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
             return $stored['jwt'];
         }
 
-        $user = Auth::guard()->user();
+        $user = $this->guard()->user();
 
         if ($user === null) {
             return null;
@@ -96,6 +97,11 @@ class SessionMintTokenProvider implements SessionTokenProvider
     private function session(): Session
     {
         return app('session.store');
+    }
+
+    private function guard(): Guard
+    {
+        return Auth::guard(SessionTokenGuard::name());
     }
 
     /** @return string[] */

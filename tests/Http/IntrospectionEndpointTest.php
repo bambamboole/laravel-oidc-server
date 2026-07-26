@@ -6,6 +6,7 @@ declare(strict_types=1);
  * RFC 7662 (OAuth 2.0 Token Introspection)
  */
 
+use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Token;
 use Workbench\App\Models\User;
@@ -100,6 +101,24 @@ it('reports inactive for tokens belonging to another client', function () {
         'client_secret' => $this->secret,
         'token' => $jwt,
     ])->assertOk()->assertExactJson(['active' => false]);
+});
+
+it('reports active for a token that names the caller in its audience', function () {
+    $requester = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Requester', ['https://req.test/cb']);
+
+    $jwt = app(AccessTokenMinter::class)->mint(
+        (string) $this->user->id, $requester, ['openid'], new DateInterval('PT1H'), [(string) $this->client->id],
+    )->toString();
+
+    $this->postJson('/oauth/introspect', [
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'token' => $jwt,
+    ])->assertOk()->assertJson([
+        'active' => true,
+        'client_id' => (string) $requester->id,
+        'sub' => (string) $this->user->id,
+    ]);
 });
 
 it('reports active for a valid refresh token of the same client', function () {

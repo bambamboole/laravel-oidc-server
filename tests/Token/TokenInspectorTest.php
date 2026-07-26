@@ -3,9 +3,48 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Token\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Token\SigningKeyGenerator;
+use Bambamboole\LaravelOidc\Token\SigningKeys;
 use Bambamboole\LaravelOidc\Token\TokenInspector;
 use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
+
+function mintInspectorToken(): string
+{
+    $user = User::create(['name' => 'M', 'email' => 'm'.uniqid().'@example.com', 'password' => 'x']);
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://rp.test/cb']);
+
+    return app(AccessTokenMinter::class)
+        ->mint((string) $user->id, $client, ['openid'], new DateInterval('PT1H'))
+        ->toString();
+}
+
+it('validates tokens signed by a previous key listed in additional_public_keys', function () {
+    $jwt = mintInspectorToken();
+    $previousPublicKey = SigningKeys::publicKey();
+
+    $rotated = (new SigningKeyGenerator)->generate();
+    config([
+        'oidc.private_key' => $rotated->privateKeyPem,
+        'oidc.public_key' => $rotated->publicKeyPem,
+        'oidc.additional_public_keys' => [$previousPublicKey],
+    ]);
+
+    expect(app(TokenInspector::class)->parse($jwt))->not->toBeNull();
+});
+
+it('rejects tokens signed by a key that is neither current nor retained', function () {
+    $jwt = mintInspectorToken();
+
+    $rotated = (new SigningKeyGenerator)->generate();
+    config([
+        'oidc.private_key' => $rotated->privateKeyPem,
+        'oidc.public_key' => $rotated->publicKeyPem,
+        'oidc.additional_public_keys' => [],
+    ]);
+
+    expect(app(TokenInspector::class)->parse($jwt))->toBeNull();
+});
 
 it('resolves the persisted token from an already-parsed JWT', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);

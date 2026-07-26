@@ -78,6 +78,23 @@ it('re-establishes for the current user when the stored token belongs to a diffe
         ->and(parseSessionToken($jwt)->claims()->get('sub'))->toBe((string) $userB->id);
 });
 
+it('currentToken resolves the owning guard, not the momentary default guard', function () {
+    config([
+        'auth.guards.admin' => ['driver' => 'session', 'provider' => 'users'],
+        'oidc.session_token.guard' => 'web',
+    ]);
+
+    $this->actingAs($this->user);
+    app(SessionTokenProvider::class)->establish($this->user);
+    $stored = session('oidc.session_token')['jwt'];
+
+    config(['auth.defaults.guard' => 'admin']);
+
+    $jwt = app(SessionTokenProvider::class)->currentToken();
+
+    expect($jwt)->toBe($stored);
+});
+
 it('revokes the superseded root token when re-establishing', function () {
     $this->actingAs($this->user);
     app(SessionTokenProvider::class)->establish($this->user);

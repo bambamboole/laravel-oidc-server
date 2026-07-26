@@ -13,6 +13,10 @@ class ForgetSessionToken
 
     public function handle(Logout $event): void
     {
+        if ($event->guard !== SessionTokenGuard::name()) {
+            return;
+        }
+
         $this->tokens->forget();
     }
 }

@@ -12,6 +12,7 @@ use Bambamboole\LaravelOidc\Auth\Controllers\EmailVerificationPromptController;
 use Bambamboole\LaravelOidc\Auth\Controllers\EnableTwoFactorAuthenticationController;
 use Bambamboole\LaravelOidc\Auth\Controllers\LinkedAccountController;
 use Bambamboole\LaravelOidc\Auth\Controllers\NewPasswordController;
+use Bambamboole\LaravelOidc\Auth\Controllers\PasskeyAuthenticatedSessionController;
 use Bambamboole\LaravelOidc\Auth\Controllers\PasswordResetLinkController;
 use Bambamboole\LaravelOidc\Auth\Controllers\RegenerateRecoveryCodesController;
 use Bambamboole\LaravelOidc\Auth\Controllers\RegisteredUserController;
@@ -73,6 +74,7 @@ enum Handler: string
     case VerificationSend = 'identity.verification.send';
     case TwoFactorLogin = 'identity.two-factor.login';
     case TwoFactorLoginStore = 'identity.two-factor.login.store';
+    case TwoFactorChallengeOptions = 'identity.two-factor.login.options';
     case TwoFactorEnable = 'identity.two-factor.enable';
     case TwoFactorConfirm = 'identity.two-factor.confirm';
     case TwoFactorDisable = 'identity.two-factor.disable';
@@ -232,6 +234,11 @@ enum Handler: string
                 controller: [TwoFactorChallengeController::class, 'store'],
                 middleware: ['web', $guest, 'throttle:5,1'],
             ),
+            self::TwoFactorChallengeOptions => new HandlerConfig(
+                route: 'auth/two-factor-challenge/options',
+                controller: [TwoFactorChallengeController::class, 'options'],
+                middleware: ['web', $guest, 'throttle:5,1'],
+            ),
             self::TwoFactorEnable => new HandlerConfig(
                 route: 'auth/user/two-factor-authentication',
                 controller: EnableTwoFactorAuthenticationController::class,
@@ -274,7 +281,7 @@ enum Handler: string
             ),
             self::PasskeyLogin => new HandlerConfig(
                 route: 'auth/passkeys/login',
-                controller: [PasskeyLoginController::class, 'store'],
+                controller: [PasskeyAuthenticatedSessionController::class, 'store'],
                 middleware: ['web', $guest, 'throttle:5,1'],
             ),
             self::PasskeyConfirmOptions => new HandlerConfig(

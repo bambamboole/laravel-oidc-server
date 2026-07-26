@@ -14,7 +14,7 @@ class JwksController
     {
         $keys = [];
 
-        foreach ([SigningKeys::publicKey(), ...config('oidc.additional_public_keys', [])] as $pem) {
+        foreach (SigningKeys::verificationKeys() as $pem) {
             $jwk = Jwk::fromPem($pem);
             $keys[$jwk['kid']] = $jwk;
         }

@@ -7,20 +7,14 @@ namespace Bambamboole\LaravelOidc\Http\Controllers;
 use Bambamboole\LaravelOidc\Auth\SessionRegistry;
 use Bambamboole\LaravelOidc\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Issuer;
-use Bambamboole\LaravelOidc\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Token\TokenInspector;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\Passport;
-use Lcobucci\JWT\Encoding\JoseEncoder;
-use Lcobucci\JWT\Signer\Key\InMemory;
-use Lcobucci\JWT\Signer\Rsa\Sha256;
-use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\Token\Plain;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
-use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
-use Throwable;
 
 class EndSessionController
 {
@@ -96,23 +90,13 @@ class EndSessionController
             return null;
         }
 
-        try {
-            $token = (new Parser(new JoseEncoder))->parse($hint);
-        } catch (Throwable) {
+        $token = app(TokenInspector::class)->parse($hint);
+
+        if ($token === null || ! (new Validator)->validate($token, new IssuedBy(Issuer::url()))) {
             return null;
         }
 
-        if (! $token instanceof Plain) {
-            return null;
-        }
-
-        $valid = (new Validator)->validate(
-            $token,
-            new SignedWith(new Sha256, InMemory::plainText(SigningKeys::publicKey())),
-            new IssuedBy(Issuer::url()),
-        );
-
-        return $valid ? $token : null;
+        return $token;
     }
 
     private function validatedPostLogoutUri(Request $request, ?Plain $hint): ?string

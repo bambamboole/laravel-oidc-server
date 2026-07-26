@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Laravel\Passport\Passport;
 use Laravel\Passport\RefreshToken;
 use Laravel\Passport\Token;
+use Lcobucci\JWT\Token\Plain;
 
 class IntrospectionController
 {
@@ -26,9 +27,10 @@ class IntrospectionController
             return $this->introspectRefreshToken($tokenValue, $clientId, $inspector);
         }
 
-        $token = $inspector->accessToken($tokenValue);
+        $parsed = $inspector->parse($tokenValue);
+        $token = $parsed !== null ? $inspector->tokenForParsed($parsed) : null;
 
-        if (! $token instanceof Token) {
+        if ($parsed === null || ! $token instanceof Token) {
             return response()->json(['active' => false]);
         }
 
@@ -37,7 +39,7 @@ class IntrospectionController
 
         if ((bool) $token->getAttribute('revoked')
             || ($expiresAt instanceof CarbonInterface && $expiresAt->isPast())
-            || $tokenClientId !== $clientId) {
+            || ($tokenClientId !== $clientId && ! $this->callerInAudience($clientId, $parsed))) {
             return response()->json(['active' => false]);
         }
 
@@ -78,6 +80,20 @@ class IntrospectionController
             'sub' => $this->subject($payload->user_id ?? null),
             'exp' => $expireTime,
         ], fn (mixed $value): bool => $value !== null));
+    }
+
+    /**
+     * RFC 7662 leaves the caller-authorization policy open. Besides the client
+     * a token was issued to, any client named in its audience may introspect
+     * it — that is how a resource server validates an exchanged token whose
+     * client_id is the requesting client.
+     */
+    private function callerInAudience(string $clientId, Plain $parsed): bool
+    {
+        $aud = $parsed->claims()->get('aud');
+        $aud = is_array($aud) ? $aud : [$aud];
+
+        return in_array($clientId, array_map(strval(...), array_filter($aud, is_scalar(...))), true);
     }
 
     private function subject(mixed $userId): ?string

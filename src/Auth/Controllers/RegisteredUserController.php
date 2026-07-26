@@ -5,15 +5,17 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Auth\Pipeline\InteractiveLoginFinalizer;
+use Bambamboole\LaravelOidc\Auth\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Auth\UserActionManager;
 use Bambamboole\LaravelOidc\Auth\Views\RegisterPrompt;
 use Bambamboole\LaravelOidc\Auth\Views\RegisterView;
+use Bambamboole\LaravelOidc\Routing\Handler;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class RegisteredUserController
@@ -22,6 +24,7 @@ class RegisteredUserController
 
     public function __construct(
         private readonly UserActionManager $actions,
+        private readonly InteractiveLoginFinalizer $finalizer,
     ) {}
 
     /**
@@ -42,16 +45,18 @@ class RegisteredUserController
 
         event(new Registered($user = $this->actions->createUser($input)));
 
-        Auth::guard($this->guardName())->login($user);
-
-        if ($request->hasSession()) {
-            $request->session()->regenerate();
-        }
-
-        if ($request->wantsJson()) {
-            return new JsonResponse('', 201);
-        }
-
-        return redirect()->intended($this->homeUrl());
+        // The account exists either way; a postLogin denial only refuses the
+        // session, so the user lands on the login page instead.
+        return match ($this->finalizer->finalize($request, $user, 'pwd')) {
+            LoginOutcome::Denied => $request->wantsJson()
+                ? new JsonResponse('', 403)
+                : redirect()->route(Handler::Login->value),
+            LoginOutcome::MfaChallenge => $request->wantsJson()
+                ? new JsonResponse(['two_factor' => true])
+                : redirect()->route(Handler::TwoFactorLogin->value),
+            LoginOutcome::LoggedIn => $request->wantsJson()
+                ? new JsonResponse('', 201)
+                : redirect()->intended($this->homeUrl()),
+        };
     }
 }

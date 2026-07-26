@@ -18,6 +18,10 @@ class EstablishSessionToken
 
     public function handle(Login $event): void
     {
+        if ($event->guard !== SessionTokenGuard::name()) {
+            return;
+        }
+
         if (! $this->firstPartyClient->isConfigured()) {
             return;
         }

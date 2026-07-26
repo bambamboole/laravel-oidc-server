@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Auth\AuthenticationMethods;
 use Bambamboole\LaravelOidc\Auth\Controllers\Concerns\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorChallenge;
 use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorEnrollment;
 use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorRegistry;
 use Bambamboole\LaravelOidc\Auth\MultiFactor\FactorResponse;
@@ -40,7 +41,40 @@ class TwoFactorChallengeController
             return redirect()->route(Handler::Login->value);
         }
 
-        return app(TwoFactorChallengeView::class)->respond(new TwoFactorChallengePrompt, $request);
+        $factor = $request->session()->get('login.factor');
+
+        return app(TwoFactorChallengeView::class)->respond(new TwoFactorChallengePrompt(
+            factor: is_string($factor) ? $factor : null,
+        ), $request);
+    }
+
+    /**
+     * Issues the pending factor's challenge: the private half is persisted in
+     * the session for store() to verify against, the public half (e.g. the
+     * WebAuthn request options) goes to the browser. Challenge issuance and
+     * verification are separate requests by design — options generated in the
+     * same request as the verification can never match a real assertion.
+     */
+    public function options(Request $request): JsonResponse
+    {
+        $user = $this->challengedUser($request);
+
+        if ($user === null) {
+            return new JsonResponse(['message' => 'No pending two-factor challenge.'], 401);
+        }
+
+        $providerKey = (string) $request->session()->get('login.factor', 'totp');
+        $enrollment = $this->pendingEnrollment($user, $providerKey, (string) $request->session()->get('login.factor_id'));
+
+        if (! $enrollment instanceof FactorEnrollment) {
+            return new JsonResponse(['message' => 'No pending two-factor challenge.'], 401);
+        }
+
+        $challenge = $this->factors->get($providerKey)->beginChallenge($user, $enrollment);
+
+        $request->session()->put('login.challenge_state', $challenge->privateState);
+
+        return new JsonResponse($challenge->publicData);
     }
 
     public function store(Request $request): JsonResponse|RedirectResponse
@@ -48,6 +82,7 @@ class TwoFactorChallengeController
         $request->validate([
             'code' => ['nullable', 'string'],
             'recovery_code' => ['nullable', 'string'],
+            'credential' => ['nullable', 'array'],
         ]);
 
         $user = $this->challengedUser($request);
@@ -67,8 +102,11 @@ class TwoFactorChallengeController
             throw ValidationException::withMessages(['code' => __('The provided two factor authentication code was invalid.')]);
         }
 
-        $challenge = $provider->beginChallenge($user, $enrollment);
-        $verification = $provider->verify($user, $challenge, new FactorResponse($request->only('code', 'recovery_code')));
+        // The challenge was issued by options(); its private state is pulled
+        // (consumed) so every verification attempt needs a fresh challenge.
+        $state = $request->session()->pull('login.challenge_state');
+        $challenge = new FactorChallenge($enrollment, privateState: is_array($state) ? $state : []);
+        $verification = $provider->verify($user, $challenge, new FactorResponse($request->only('code', 'recovery_code', 'credential')));
 
         if (! $verification->verified) {
             $field = $usesRecoveryCode ? 'recovery_code' : 'code';
@@ -87,7 +125,11 @@ class TwoFactorChallengeController
         }
 
         if ($request->wantsJson()) {
-            return new JsonResponse('', 204);
+            // A WebAuthn submit comes from the passkey ceremony script, which
+            // navigates via the returned redirect target.
+            return $request->filled('credential')
+                ? new JsonResponse(['redirect' => redirect()->intended($this->homeUrl())->getTargetUrl()])
+                : new JsonResponse('', 204);
         }
 
         return redirect()->intended($this->homeUrl());

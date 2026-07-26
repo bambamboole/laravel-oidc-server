@@ -88,6 +88,9 @@ return [
         'session_key' => 'oidc.session_token',
         'refresh_skew' => 60,
         'scopes' => null,
+        // Guard whose login/logout owns the session token. Null falls back to
+        // the application's default guard; other guards never mint or revoke.
+        'guard' => env('OIDC_SESSION_TOKEN_GUARD'),
     ],
 
     'auth' => [

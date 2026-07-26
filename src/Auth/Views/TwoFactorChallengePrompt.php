@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Auth\Views;
 
-/**
- * No page-specific data today — kept as a DTO (rather than dropping the
- * parameter) so a future field never breaks respond()'s signature.
- */
-final readonly class TwoFactorChallengePrompt {}
+final readonly class TwoFactorChallengePrompt
+{
+    /**
+     * $factor is the provider key of the pending second factor ('totp',
+     * 'webauthn', ...) so the view can offer the matching input.
+     */
+    public function __construct(
+        public ?string $factor = null,
+    ) {}
+}

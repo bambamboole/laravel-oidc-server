@@ -36,14 +36,19 @@ class TokenInspector
             return null;
         }
 
-        if (! $parsed instanceof Plain || ! (new Validator)->validate(
-            $parsed,
-            new SignedWith(new Sha256, InMemory::plainText(SigningKeys::publicKey())),
-        )) {
+        if (! $parsed instanceof Plain) {
             return null;
         }
 
-        return $parsed;
+        $validator = new Validator;
+
+        foreach (SigningKeys::verificationKeys() as $publicKey) {
+            if ($validator->validate($parsed, new SignedWith(new Sha256, InMemory::plainText($publicKey)))) {
+                return $parsed;
+            }
+        }
+
+        return null;
     }
 
     public function tokenForParsed(Plain $parsed): ?Token

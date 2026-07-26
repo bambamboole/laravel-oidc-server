@@ -42,6 +42,29 @@ it('establishes a token on login when a valid first-party client is configured',
     expect(session('oidc.session_token')['jwt'] ?? null)->toBeString();
 });
 
+it('ignores logins on guards other than the passport guard', function () {
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
+    config(['oidc.first_party.client_id' => (string) $client->id]);
+
+    event(new Login('admin', $this->user, false));
+
+    expect(session('oidc.session_token'))->toBeNull();
+});
+
+it('ignores logouts on guards other than the passport guard', function () {
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
+    config(['oidc.first_party.client_id' => (string) $client->id]);
+    app(SessionTokenProvider::class)->establish($this->user);
+    $jwt = session('oidc.session_token')['jwt'];
+
+    event(new Logout('admin', $this->user));
+
+    expect(session('oidc.session_token'))->not->toBeNull();
+    $dbToken = app(TokenInspector::class)->accessToken($jwt);
+    expect($dbToken)->not->toBeNull()
+        ->and((bool) $dbToken->getAttribute('revoked'))->toBeFalse();
+});
+
 it('revokes and clears the token on logout', function () {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
     config(['oidc.first_party.client_id' => (string) $client->id]);
