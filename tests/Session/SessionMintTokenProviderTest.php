@@ -31,6 +31,10 @@ function parseSessionToken(string $jwt): UnencryptedToken
 }
 
 beforeEach(function () {
+    // Pin the owning guard to the guard actingAs() authenticates against, so
+    // these tests exercise the mint provider independent of the
+    // SessionTokenGuard default (covered in SessionTokenGuardTest).
+    config(['oidc.session_token.guard' => 'web']);
     $this->appClient = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
     config(['oidc.first_party.client_id' => (string) $this->appClient->id]);
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);

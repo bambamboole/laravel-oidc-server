@@ -58,7 +58,7 @@ class DefaultScopeRepository implements ScopeRepository
                 throw new LogicException("The configured scope catalog [{$configured}] must implement ScopeCatalog.");
             }
 
-            $configured = rescue(fn (): array => $catalog->scopes(), [], report: false);
+            $configured = rescue(fn (): array => $catalog->scopes(), [], report: ! $this->app->runningInConsole());
         }
 
         return $this->catalog = is_array($configured) ? $configured : [];

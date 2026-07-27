@@ -89,7 +89,8 @@ return [
         'refresh_skew' => 60,
         'scopes' => null,
         // Guard whose login/logout owns the session token. Null falls back to
-        // the application's default guard; other guards never mint or revoke.
+        // the OIDC auth guard (oidc.auth.guard), then the application's default
+        // guard; other guards never mint or revoke.
         'guard' => env('OIDC_SESSION_TOKEN_GUARD'),
     ],
 

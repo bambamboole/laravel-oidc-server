@@ -5,6 +5,7 @@ use Bambamboole\LaravelOidc\Server\Contracts\ScopeCatalog;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
+use Illuminate\Support\Facades\Exceptions;
 use Laravel\Passport\Passport;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 
@@ -121,6 +122,29 @@ it('falls back to an empty catalog when the catalog throws', function () {
     $ids = app(ScopeRepository::class)->all()->map(fn (Scope $scope) => $scope->id);
 
     expect($ids)->toContain('openid')->not->toContain('catalog:read');
+});
+
+it('suppresses catalog failure reports when running in console', function () {
+    Exceptions::fake();
+    config()->set('oidc.passport.scopes', RepositoryThrowingCatalog::class);
+
+    app(ScopeRepository::class)->all();
+
+    Exceptions::assertNothingReported();
+});
+
+it('reports catalog failures when not running in console', function () {
+    Exceptions::fake();
+
+    // runningInConsole() is cached true under the test runner; flip it so the
+    // repository takes the web-request branch that surfaces the failure.
+    (new ReflectionProperty($this->app, 'isRunningInConsole'))->setValue($this->app, false);
+
+    config()->set('oidc.passport.scopes', RepositoryThrowingCatalog::class);
+
+    app(ScopeRepository::class)->all();
+
+    Exceptions::assertReported(RuntimeException::class);
 });
 
 it('rejects a catalog class that does not implement the contract', function () {

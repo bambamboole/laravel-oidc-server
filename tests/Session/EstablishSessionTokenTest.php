@@ -13,6 +13,10 @@ use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
+    // Pin the owning guard explicitly so these lifecycle tests exercise
+    // mint/revoke behaviour independent of the SessionTokenGuard default,
+    // which is covered on its own in SessionTokenGuardTest.
+    config(['oidc.session_token.guard' => 'web']);
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->startSession();
 });

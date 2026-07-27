@@ -56,6 +56,7 @@ use Bambamboole\LaravelOidc\Server\Session\EstablishSessionToken;
 use Bambamboole\LaravelOidc\Server\Session\ForgetSessionToken;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Session\SessionMintTokenProvider;
+use Bambamboole\LaravelOidc\Server\Session\SessionTokenGuard;
 use Bambamboole\LaravelOidc\Server\Session\StartOidcSession;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentStore;
@@ -71,6 +72,7 @@ use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
@@ -292,6 +294,14 @@ class OidcServiceProvider extends ServiceProvider
         $this->publishesMigrations([
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'oidc-migrations');
+
+        AboutCommand::add('OIDC', fn (): array => [
+            'Issuer' => config('oidc.issuer') ?? 'not set',
+            'Auth Guard' => config('oidc.auth.guard'),
+            'Session Token Guard' => SessionTokenGuard::name() ?? 'not set',
+            'Self-SSO Client' => FirstPartyClientConfig::fromConfig()->isConfigured() ? 'configured' : 'not configured',
+            'Signing Key' => filled(config('oidc.private_key')) ? 'present' : 'missing',
+        ]);
 
         if ($this->app->runningInConsole()) {
             $this->commands([
