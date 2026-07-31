@@ -34,7 +34,7 @@ it('binds every controller-facing auth view contract to its JSON stub', function
 
     auth('identity')->logout();
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier()])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
         ->get(route('identity.two-factor.login'))
         ->assertOk()
         ->assertJson(['view' => 'two-factor-challenge']);

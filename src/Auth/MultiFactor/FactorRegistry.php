@@ -66,6 +66,22 @@ class FactorRegistry
     }
 
     /**
+     * The enrollments a login challenge may be satisfied with, limited to the
+     * providers the host opted into via `oidc.auth.two_factor.challenge_providers`.
+     *
+     * @return list<FactorEnrollment>
+     */
+    public function configuredChallengeableEnrollments(Authenticatable $user): array
+    {
+        $providerKeys = array_values(array_filter(
+            (array) config('oidc.auth.two_factor.challenge_providers', ['totp']),
+            is_string(...),
+        ));
+
+        return $this->challengeableEnrollments($user, $providerKeys);
+    }
+
+    /**
      * @param  list<string>|null  $providerKeys
      * @return list<FactorEnrollment>
      */

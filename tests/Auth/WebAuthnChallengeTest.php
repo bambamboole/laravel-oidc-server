@@ -8,10 +8,12 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Passkeys\Actions\VerifyPasskey;
 use Laravel\Passkeys\Contracts\PasskeyUser;
+use Laravel\Passkeys\Exceptions\InvalidPasskeyException;
 use Laravel\Passkeys\Passkey;
 use ParagonIE\ConstantTime\Base64UrlSafe;
 use Webauthn\PublicKeyCredential;
@@ -110,6 +112,32 @@ it('completes a webauthn second-factor challenge end to end', function () {
     expect(session(AuthSessionState::AMR_KEY))->toContain('webauthn');
 });
 
+it('completes a challenge after switching from totp to webauthn', function () {
+    [$user, $passkey] = webauthnChallengeUser();
+    $factor = app(TotpFactorProvider::class)->enroll($user);
+    $factor->forceFill(['confirmed_at' => now()])->save();
+    stubVerifiedPasskey($passkey);
+
+    $this->post(route(Handler::LoginStore->value), [
+        'email' => 'm@example.com',
+        'password' => 'password',
+    ])->assertRedirect(route(Handler::TwoFactorLogin->value))
+        ->assertSessionHas('login.factor', 'totp');
+
+    $this->get(route(Handler::TwoFactorLoginFactor->value, ['provider' => 'webauthn']))
+        ->assertRedirect(route(Handler::TwoFactorLogin->value))
+        ->assertSessionHas('login.factor', 'webauthn');
+
+    $this->getJson(route(Handler::TwoFactorChallengeOptions->value))->assertOk();
+
+    $this->post(route(Handler::TwoFactorLoginStore->value), [
+        'credential' => webauthnAssertionPayload(),
+    ])->assertRedirect('/dashboard');
+
+    $this->assertAuthenticatedAs($user, 'identity');
+    expect(session(AuthSessionState::AMR_KEY))->toContain('webauthn');
+});
+
 it('rejects a webauthn assertion when no challenge was issued', function () {
     [$user, $passkey] = webauthnChallengeUser();
     stubVerifiedPasskey($passkey);
@@ -125,13 +153,42 @@ it('rejects a webauthn assertion when no challenge was issued', function () {
     $this->assertGuest('identity');
 });
 
+it('accepts any of the users passkeys, not only the pinned enrollment', function () {
+    [$user, $passkey] = webauthnChallengeUser();
+    $secondPasskey = $user->passkeys()->create([
+        'name' => 'Backup key', 'credential_id' => Base64UrlSafe::encodeUnpadded(random_bytes(16)), 'credential' => ['type' => 'public-key'],
+    ]);
+    stubVerifiedPasskey($secondPasskey);
+
+    $this->withSession([
+        'login.id' => $user->getAuthIdentifier(),
+        'login.factor' => 'webauthn',
+        'login.factor_id' => (string) $passkey->getKey(),
+    ])->getJson(route(Handler::TwoFactorChallengeOptions->value))->assertOk();
+
+    $this->post(route(Handler::TwoFactorLoginStore->value), [
+        'credential' => webauthnAssertionPayload(),
+    ])->assertRedirect('/dashboard');
+
+    $this->assertAuthenticatedAs($user, 'identity');
+});
+
 it('consumes the challenge state on a failed attempt', function () {
     [$user, $passkey] = webauthnChallengeUser();
-    $otherUser = User::create(['name' => 'O', 'email' => 'o@example.com', 'password' => Hash::make('password')]);
-    $otherPasskey = $otherUser->passkeys()->create([
-        'name' => 'Other', 'credential_id' => Base64UrlSafe::encodeUnpadded(random_bytes(16)), 'credential' => ['type' => 'public-key'],
-    ]);
-    stubVerifiedPasskey($otherPasskey);
+    // VerifyPasskey rejects assertions that fail validation or belong to
+    // another user; simulate that rejection.
+    app()->instance(VerifyPasskey::class, new class extends VerifyPasskey
+    {
+        public function __construct() {}
+
+        public function __invoke(
+            PublicKeyCredential $credential,
+            PublicKeyCredentialRequestOptions $options,
+            ?PasskeyUser $user = null,
+        ): Passkey {
+            throw InvalidPasskeyException::make('Unable to verify passkey.');
+        }
+    });
 
     $this->withSession([
         'login.id' => $user->getAuthIdentifier(),

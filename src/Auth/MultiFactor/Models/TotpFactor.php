@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $name
  * @property string $secret
  * @property int|null $last_used_timestep
@@ -19,6 +20,8 @@ use Illuminate\Support\Carbon;
  */
 class TotpFactor extends Model
 {
+    use HasUuids;
+
     protected $table = 'oidc_totp_factors';
 
     protected $fillable = [

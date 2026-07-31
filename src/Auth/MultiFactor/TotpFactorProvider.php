@@ -8,19 +8,17 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Concerns\InteractsWithFactorUser;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorAuthenticatable;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\TotpFactor;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use PragmaRX\Google2FA\Google2FA;
 
 class TotpFactorProvider implements EnrollableFactorProvider
 {
-    use InteractsWithFactorUser;
-
     public function __construct(private readonly Google2FA $engine) {}
 
     public function key(): string
@@ -35,9 +33,7 @@ class TotpFactorProvider implements EnrollableFactorProvider
 
     public function enroll(Authenticatable $user, ?string $name = null): TotpFactor
     {
-        $user = $this->factorUser($user);
-
-        return $user->totpFactors()->create([
+        return $this->factors($user)->create([
             'name' => $name ?? 'Authenticator app',
             'secret' => $this->engine->generateSecretKey((int) config('oidc.auth.two_factor.secret_length', 16)),
         ]);
@@ -63,14 +59,18 @@ class TotpFactorProvider implements EnrollableFactorProvider
             $enrollment->label,
             $enrollment->confirmedAt,
             $enrollment->lastUsedAt,
-            ['secret' => $factor->secret],
+            [
+                'secret' => $factor->secret,
+                'qr_svg' => $this->qrCodeSvg($factor, $user),
+                'qr_url' => $this->qrCodeUrl($factor, $user),
+            ],
         );
     }
 
     public function confirmEnrollment(Authenticatable $user, FactorEnrollment $enrollment, FactorResponse $response): bool
     {
         return $this->confirm(
-            $this->factorFor($this->factorUser($user), $enrollment),
+            $this->factorFor($user, $enrollment),
             $response->string('code'),
         );
     }
@@ -88,22 +88,22 @@ class TotpFactorProvider implements EnrollableFactorProvider
 
     public function revoke(Authenticatable $user, FactorEnrollment $enrollment): void
     {
-        $this->factorFor($this->factorUser($user), $enrollment)->delete();
+        $this->factorFor($user, $enrollment)->delete();
     }
 
     public function disableAll(Authenticatable $user): void
     {
-        $this->factorUser($user)->totpFactors()->delete();
+        $this->factors($user)->delete();
     }
 
     public function latestFactor(Authenticatable $user): ?TotpFactor
     {
-        return $this->factorUser($user)->totpFactors()->latest('id')->first();
+        return $this->factors($user)->latest('id')->first();
     }
 
     public function latestPendingFactor(Authenticatable $user): ?TotpFactor
     {
-        return $this->factorUser($user)->totpFactors()->whereNull('confirmed_at')->latest('id')->first();
+        return $this->factors($user)->whereNull('confirmed_at')->latest('id')->first();
     }
 
     /**
@@ -111,31 +111,28 @@ class TotpFactorProvider implements EnrollableFactorProvider
      */
     public function enrollments(Authenticatable $user): array
     {
-        $user = $this->factorUser($user);
-
-        return $user->totpFactors()->get()
+        return $this->factors($user)->get()
             ->map(fn (TotpFactor $factor): FactorEnrollment => $this->toEnrollment($factor))
             ->all();
     }
 
     public function beginChallenge(Authenticatable $user, FactorEnrollment $enrollment): FactorChallenge
     {
-        $this->factorFor($this->factorUser($user), $enrollment);
+        $this->factorFor($user, $enrollment);
 
         return new FactorChallenge($enrollment, ['input' => 'code']);
     }
 
     public function verify(Authenticatable $user, FactorChallenge $challenge, FactorResponse $response): FactorVerification
     {
-        $factorUser = $this->factorUser($user);
         $code = $response->string('code');
 
         if ($code === '') {
             return new FactorVerification(false);
         }
 
-        $verified = DB::transaction(function () use ($factorUser, $challenge, $code): bool {
-            $factor = $factorUser->totpFactors()
+        $verified = DB::transaction(function () use ($user, $challenge, $code): bool {
+            $factor = $this->factors($user)
                 ->whereKey($challenge->enrollment->id)
                 ->whereNotNull('confirmed_at')
                 ->lockForUpdate()
@@ -188,13 +185,29 @@ class TotpFactorProvider implements EnrollableFactorProvider
         return (int) config('oidc.auth.two_factor.window', 1);
     }
 
-    private function factorFor(FactorAuthenticatable $user, FactorEnrollment $enrollment): TotpFactor
+    private function factorFor(Authenticatable $user, FactorEnrollment $enrollment): TotpFactor
     {
         if ($enrollment->providerKey !== $this->key()) {
             throw new LogicException('The enrollment does not belong to the TOTP provider.');
         }
 
-        return $user->totpFactors()->whereKey($enrollment->id)->firstOrFail();
+        return $this->factors($user)->whereKey($enrollment->id)->firstOrFail();
+    }
+
+    /**
+     * The provider owns its storage: the relation is built here, so the user
+     * model needs no factor-specific methods — any Eloquent authenticatable
+     * works.
+     *
+     * @return MorphMany<TotpFactor, covariant Model>
+     */
+    private function factors(Authenticatable $user): MorphMany
+    {
+        if (! $user instanceof Model) {
+            throw new LogicException('The authenticatable must be an Eloquent model to store TOTP factors.');
+        }
+
+        return $user->morphMany(TotpFactor::class, 'authenticatable');
     }
 
     private function toEnrollment(TotpFactor $factor): FactorEnrollment

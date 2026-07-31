@@ -36,7 +36,7 @@ it('renders the two-factor challenge through the package view seam', function ()
     });
     [$user] = confirmedTotpUser();
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier()])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
         ->get(route('identity.two-factor.login'))
         ->assertOk()
         ->assertSee('two-factor-view');
@@ -63,7 +63,7 @@ it('defers guard login until a confirmed factor is verified', function () {
     $this->assertAuthenticatedAs($user, 'identity');
 });
 
-it('returns the Fortify-compatible JSON challenge response', function () {
+it('returns the JSON challenge signal for JSON clients', function () {
     [$user] = confirmedTotpUser();
 
     $this->postJson(route('identity.login.store'), [
@@ -77,19 +77,19 @@ it('returns the Fortify-compatible JSON challenge response', function () {
 it('rejects invalid and replayed TOTP codes', function () {
     [$user, $factor] = confirmedTotpUser();
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier()])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
         ->post(route('identity.two-factor.login.store'), ['code' => '000000'])
         ->assertSessionHasErrors('code');
 
     $code = app(Google2FA::class)->getCurrentOtp($factor->secret);
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier()])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
         ->post(route('identity.two-factor.login.store'), ['code' => $code])
         ->assertRedirect('/dashboard');
 
     auth('identity')->logout();
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier()])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
         ->post(route('identity.two-factor.login.store'), ['code' => $code])
         ->assertSessionHasErrors('code');
 });
@@ -98,7 +98,7 @@ it('consumes one recovery code and logs the challenged user in', function () {
     [$user] = confirmedTotpUser();
     $recoveryCode = $user->recoveryCodes()->firstOrFail()->code;
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier()])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
         ->post(route('identity.two-factor.login.store'), ['recovery_code' => $recoveryCode])
         ->assertRedirect('/dashboard');
 
@@ -107,7 +107,7 @@ it('consumes one recovery code and logs the challenged user in', function () {
 
     auth('identity')->logout();
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier()])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
         ->post(route('identity.two-factor.login.store'), ['recovery_code' => $recoveryCode])
         ->assertSessionHasErrors('recovery_code');
 });
@@ -117,7 +117,7 @@ it('appends the otp method after a successful totp challenge', function () {
 
     $code = app(Google2FA::class)->getCurrentOtp($factor->secret);
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'oidc.amr' => ['pwd']])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp', 'oidc.amr' => ['pwd']])
         ->post(route('identity.two-factor.login.store'), ['code' => $code])
         ->assertRedirect('/dashboard');
 
@@ -128,7 +128,7 @@ it('appends the otp method after a successful recovery code challenge', function
     [$user] = confirmedTotpUser();
     $recoveryCode = $user->recoveryCodes()->firstOrFail()->code;
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'oidc.amr' => ['pwd']])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp', 'oidc.amr' => ['pwd']])
         ->post(route('identity.two-factor.login.store'), ['recovery_code' => $recoveryCode])
         ->assertRedirect('/dashboard');
 
@@ -139,15 +139,95 @@ it('redirects challenge requests without a pending user to login', function () {
     $this->get(route('identity.two-factor.login'))->assertRedirect(route('identity.login'));
 });
 
+it('exposes the available factors on the challenge prompt', function () {
+    app()->bind(TwoFactorChallengeView::class, fn () => new class implements TwoFactorChallengeView
+    {
+        public function respond(TwoFactorChallengePrompt $prompt, Request $request): Response
+        {
+            return response()->json($prompt);
+        }
+    });
+    [$user] = confirmedTotpUser();
+    $user->passkeys()->create(['name' => 'Key', 'credential_id' => 'credential-id', 'credential' => []]);
+
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
+        ->get(route('identity.two-factor.login'))
+        ->assertOk()
+        ->assertJson(['factor' => 'totp'])
+        ->assertJsonPath('availableFactors.0.providerKey', 'totp')
+        ->assertJsonPath('availableFactors.1.providerKey', 'webauthn');
+});
+
+it('switches the pending challenge to another enrolled factor', function () {
+    [$user] = confirmedTotpUser();
+    $passkey = $user->passkeys()->create(['name' => 'Key', 'credential_id' => 'credential-id', 'credential' => []]);
+
+    $this->withSession([
+        'login.id' => $user->getAuthIdentifier(),
+        'login.factor' => 'totp',
+        'login.challenge_state' => ['options' => 'stale'],
+    ])->get(route('identity.two-factor.login.factor', ['provider' => 'webauthn']))
+        ->assertRedirect(route('identity.two-factor.login'))
+        ->assertSessionHas('login.factor', 'webauthn')
+        ->assertSessionHas('login.factor_id', (string) $passkey->getKey())
+        ->assertSessionMissing('login.challenge_state');
+});
+
+it('switches the pending challenge to a specific enrollment', function () {
+    [$user, $first] = confirmedTotpUser();
+    $second = app(TotpFactorProvider::class)->enroll($user, 'Second');
+    $second->forceFill(['confirmed_at' => now()])->save();
+
+    $this->withSession([
+        'login.id' => $user->getAuthIdentifier(),
+        'login.factor' => 'totp',
+        'login.factor_id' => (string) $first->getKey(),
+    ])->get(route('identity.two-factor.login.factor', ['provider' => 'totp', 'enrollment' => (string) $second->getKey()]))
+        ->assertRedirect(route('identity.two-factor.login'))
+        ->assertSessionHas('login.factor_id', (string) $second->getKey());
+
+    $this->withSession([
+        'login.id' => $user->getAuthIdentifier(),
+        'login.factor' => 'totp',
+        'login.factor_id' => (string) $first->getKey(),
+    ])->get(route('identity.two-factor.login.factor', ['provider' => 'totp', 'enrollment' => 'unknown']))
+        ->assertRedirect(route('identity.two-factor.login'))
+        ->assertSessionHas('login.factor_id', (string) $first->getKey());
+});
+
+it('ignores a switch to a provider without a challengeable enrollment', function () {
+    [$user, $factor] = confirmedTotpUser();
+
+    $this->withSession([
+        'login.id' => $user->getAuthIdentifier(),
+        'login.factor' => 'totp',
+        'login.factor_id' => (string) $factor->getKey(),
+    ])->get(route('identity.two-factor.login.factor', ['provider' => 'webauthn']))
+        ->assertRedirect(route('identity.two-factor.login'))
+        ->assertSessionHas('login.factor', 'totp');
+
+    $this->withSession([
+        'login.id' => $user->getAuthIdentifier(),
+        'login.factor' => 'totp',
+    ])->get(route('identity.two-factor.login.factor', ['provider' => 'recovery_code']))
+        ->assertRedirect(route('identity.two-factor.login'))
+        ->assertSessionHas('login.factor', 'totp');
+});
+
+it('redirects a factor switch without a pending challenge to login', function () {
+    $this->get(route('identity.two-factor.login.factor', ['provider' => 'totp']))
+        ->assertRedirect(route('identity.login'));
+});
+
 it('throttles repeated two-factor challenge attempts', function () {
     [$user] = confirmedTotpUser();
 
     foreach (range(1, 5) as $ignored) {
-        $this->withSession(['login.id' => $user->getAuthIdentifier()])
+        $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
             ->post(route('identity.two-factor.login.store'), ['code' => '000000']);
     }
 
-    $this->withSession(['login.id' => $user->getAuthIdentifier()])
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
         ->post(route('identity.two-factor.login.store'), ['code' => '000000'])
         ->assertStatus(429);
 });

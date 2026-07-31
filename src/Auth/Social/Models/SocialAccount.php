@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Social\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $provider
  * @property string $provider_user_id
  * @property string|null $email
@@ -24,6 +25,8 @@ use Illuminate\Support\Carbon;
  */
 class SocialAccount extends Model
 {
+    use HasUuids;
+
     protected $table = 'oidc_social_accounts';
 
     protected $fillable = [

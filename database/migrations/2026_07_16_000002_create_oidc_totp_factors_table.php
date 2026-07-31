@@ -11,9 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('oidc_totp_factors', function (Blueprint $table): void {
-            $table->id();
-            $table->string('authenticatable_type');
-            $table->string('authenticatable_id');
+            $table->uuid('id')->primary();
+            $table->uuidMorphs('authenticatable', 'oidc_totp_authenticatable_index');
             $table->string('name');
             $table->text('secret');
             $table->timestamp('confirmed_at')->nullable();
@@ -21,7 +20,6 @@ return new class extends Migration
             $table->timestamp('last_used_at')->nullable();
             $table->timestamps();
 
-            $table->index(['authenticatable_type', 'authenticatable_id'], 'oidc_totp_authenticatable_index');
         });
     }
 

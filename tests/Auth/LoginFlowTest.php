@@ -33,7 +33,7 @@ it('logs a user in with canonicalized credentials and redirects home', function 
     $this->assertAuthenticatedAs($user, 'identity');
 });
 
-it('returns Fortify-compatible JSON after login', function () {
+it('returns the JSON success response after login', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->postJson(route('identity.login.store'), [

@@ -4,17 +4,20 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $sid
  * @property string $client_id
  * @property ?Carbon $created_at
  */
 class SessionParticipant extends Model
 {
+    use HasUuids;
+
     public $timestamps = false;
 
     protected $table = 'oidc_session_participants';

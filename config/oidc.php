@@ -100,7 +100,7 @@ return [
         'home' => env('OIDC_AUTH_HOME', '/dashboard'),
         'username' => env('OIDC_AUTH_USERNAME', 'email'),
         'two_factor' => [
-            'challenge_providers' => ['totp'],
+            'challenge_providers' => ['totp', 'webauthn'],
             'secret_length' => 16,
             'window' => 1,
             'recovery_codes' => 8,

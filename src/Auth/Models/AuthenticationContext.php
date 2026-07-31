@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -22,7 +22,7 @@ use Illuminate\Support\Carbon;
  */
 class AuthenticationContext extends Model
 {
-    use HasUlids;
+    use HasUuids;
 
     public $timestamps = false;
 

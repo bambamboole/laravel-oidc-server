@@ -18,8 +18,9 @@ use Illuminate\Validation\ValidationException;
 /**
  * The provider-keyed enrollment surface: any registered
  * {@see EnrollableFactorProvider} is enrollable through these endpoints
- * without package changes. Providers with their own ceremony (webauthn via
- * the passkey routes) are listable here but 404 on enroll.
+ * without package changes, including multi-step ceremonies (webauthn returns
+ * its creation options in the begin metadata and takes the attestation
+ * credential on confirm).
  */
 class FactorEnrollmentController
 {

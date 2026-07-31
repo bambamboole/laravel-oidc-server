@@ -30,15 +30,9 @@ it('enrolls and confirms a TOTP factor through the provider-keyed routes', funct
     expect($factor->authenticatable->is($user))->toBeTrue()
         ->and($factor->confirmed_at)->toBeNull()
         ->and($enrollment['metadata']['secret'])->toBe($factor->secret)
+        ->and($enrollment['metadata']['qr_svg'])->toContain('<svg')
+        ->and($enrollment['metadata']['qr_url'])->toContain('otpauth://')
         ->and(DB::table('oidc_totp_factors')->value('secret'))->not->toBe($factor->secret);
-
-    managementRequest($this, $user)->getJson(route('identity.two-factor.qr-code'))
-        ->assertOk()
-        ->assertJsonStructure(['svg', 'url']);
-
-    managementRequest($this, $user)->getJson(route('identity.two-factor.secret-key'))
-        ->assertOk()
-        ->assertJson(['secretKey' => $factor->secret]);
 
     $code = app(Google2FA::class)->getCurrentOtp($factor->secret);
 
@@ -67,20 +61,29 @@ it('lists regenerates and revokes recovery credentials', function () {
             'code' => $code,
         ])->assertOk();
 
-    $originalCodes = managementRequest($this, $user)
-        ->getJson(route('identity.two-factor.recovery-codes'))
-        ->assertOk()
+    // Recovery codes were backfilled on confirmation; re-enrolling the
+    // recovery_code provider regenerates them and is the only place the
+    // plaintext codes appear.
+    expect($user->recoveryCodes()->count())->toBe(8);
+
+    $originalCodes = $user->recoveryCodes()->pluck('code')->all();
+
+    $regenerated = managementRequest($this, $user)
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'recovery_code']))
+        ->assertCreated()
         ->json();
 
-    expect($originalCodes)->toHaveCount(8);
+    expect($regenerated['metadata']['codes'])->toHaveCount(8)->not->toBe($originalCodes);
 
-    managementRequest($this, $user)
-        ->postJson(route('identity.two-factor.regenerate-recovery-codes'))
-        ->assertOk();
+    $listing = managementRequest($this, $user)
+        ->getJson(route('identity.two-factor.factors'))
+        ->assertOk()
+        ->json('factors');
 
-    $newCodes = managementRequest($this, $user)->getJson(route('identity.two-factor.recovery-codes'))->json();
+    $recoveryRows = array_values(array_filter($listing, fn (array $row): bool => $row['provider'] === 'recovery_code'));
 
-    expect($newCodes)->toHaveCount(8)->not->toBe($originalCodes);
+    expect($recoveryRows)->toHaveCount(1)
+        ->and($recoveryRows[0]['metadata'])->toBe([]);
 
     managementRequest($this, $user)
         ->deleteJson(route('identity.two-factor.revoke', ['provider' => 'totp', 'enrollment' => $enrollment['id']]))
@@ -88,22 +91,6 @@ it('lists regenerates and revokes recovery credentials', function () {
 
     expect($user->totpFactors()->count())->toBe(0)
         ->and($user->recoveryCodes()->count())->toBe(0);
-});
-
-it('returns 404 from all two-factor read endpoints when 2FA is not enabled', function () {
-    $user = managementUser();
-
-    managementRequest($this, $user)
-        ->getJson(route('identity.two-factor.qr-code'))
-        ->assertNotFound();
-
-    managementRequest($this, $user)
-        ->getJson(route('identity.two-factor.secret-key'))
-        ->assertNotFound();
-
-    managementRequest($this, $user)
-        ->getJson(route('identity.two-factor.recovery-codes'))
-        ->assertNotFound();
 });
 
 it('allows multiple TOTP enrollments per user', function () {

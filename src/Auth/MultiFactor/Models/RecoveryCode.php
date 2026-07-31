@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $code
  * @property Carbon|null $used_at
  * @property-read Model $authenticatable
  */
 class RecoveryCode extends Model
 {
+    use HasUuids;
+
     protected $table = 'oidc_recovery_codes';
 
     protected $fillable = [

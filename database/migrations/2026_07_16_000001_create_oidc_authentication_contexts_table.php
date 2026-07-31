@@ -11,9 +11,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('oidc_authentication_contexts', function (Blueprint $table): void {
-            $table->ulid('id')->primary();
-            $table->string('user_id')->index();
-            $table->ulid('sid')->nullable()->index();
+            $table->uuid('id')->primary();
+            $table->uuid('user_id')->index();
+            $table->uuid('sid')->nullable()->index();
             $table->json('amr');
             $table->string('acr')->nullable();
             $table->unsignedInteger('auth_time')->nullable();

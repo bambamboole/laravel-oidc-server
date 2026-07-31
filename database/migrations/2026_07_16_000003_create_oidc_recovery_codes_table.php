@@ -11,14 +11,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('oidc_recovery_codes', function (Blueprint $table): void {
-            $table->id();
-            $table->string('authenticatable_type');
-            $table->string('authenticatable_id');
+            $table->uuid('id')->primary();
+            $table->uuidMorphs('authenticatable', 'oidc_recovery_authenticatable_index');
             $table->text('code');
             $table->timestamp('used_at')->nullable();
             $table->timestamps();
 
-            $table->index(['authenticatable_type', 'authenticatable_id'], 'oidc_recovery_authenticatable_index');
         });
     }
 

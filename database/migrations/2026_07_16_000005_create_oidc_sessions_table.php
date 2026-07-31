@@ -11,8 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('oidc_sessions', function (Blueprint $table): void {
-            $table->ulid('sid')->primary();
-            $table->string('user_id')->index();
+            $table->uuid('sid')->primary();
+            $table->uuid('user_id')->index();
             $table->timestamp('created_at')->nullable();
             $table->timestamp('expires_at')->index();
             $table->timestamp('revoked_at')->nullable();

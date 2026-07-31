@@ -55,6 +55,7 @@ abstract class TestCase extends BaseTestCase
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(dirname(__DIR__).'/vendor/laravel/passport/database/migrations');
+        $this->loadMigrationsFrom(dirname(__DIR__).'/workbench/database/migrations');
         $this->loadMigrationsFrom(Passkeys::migrationPath());
         $this->loadMigrationsFrom(dirname(__DIR__).'/database/migrations');
     }

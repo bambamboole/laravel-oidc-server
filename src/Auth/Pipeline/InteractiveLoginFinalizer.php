@@ -70,7 +70,7 @@ final class InteractiveLoginFinalizer
 
         $this->sessionState->putClaims($api->idTokenClaims(), $api->accessTokenClaims());
 
-        $enrollments = $this->factors->challengeableEnrollments($user, $this->challengeProviders());
+        $enrollments = $this->factors->configuredChallengeableEnrollments($user);
 
         if ($api->mfaRequired() && $enrollments === []) {
             Log::warning('oidc: login denied, MFA required but no challengeable factor', ['method' => $method]);
@@ -97,16 +97,5 @@ final class InteractiveLoginFinalizer
         }
 
         return LoginOutcome::LoggedIn;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function challengeProviders(): array
-    {
-        return array_values(array_filter(
-            (array) config('oidc.auth.two_factor.challenge_providers', ['totp']),
-            is_string(...),
-        ));
     }
 }

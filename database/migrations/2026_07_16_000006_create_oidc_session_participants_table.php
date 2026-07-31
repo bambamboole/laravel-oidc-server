@@ -11,8 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('oidc_session_participants', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->ulid('sid')->index();
+            $table->uuid('id')->primary();
+            $table->uuid('sid')->index();
             $table->string('client_id');
             $table->timestamp('created_at')->nullable();
             $table->unique(['sid', 'client_id']);

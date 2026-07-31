@@ -12,13 +12,9 @@ use Bambamboole\LaravelOidc\Server\Auth\Controllers\LinkedAccountController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\NewPasswordController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\PasskeyAuthenticatedSessionController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\PasswordResetLinkController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\RegenerateRecoveryCodesController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\RegisteredUserController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\SendEmailVerificationNotificationController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowConfirmedPasswordStatusController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowRecoveryCodesController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowTwoFactorQrCodeController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowTwoFactorSecretKeyController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\SocialAuthenticationController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\TwoFactorChallengeController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\VerifyEmailController;
@@ -39,7 +35,6 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController;
 use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
-use Laravel\Passkeys\Http\Controllers\PasskeyRegistrationController;
 use Laravel\Passport\Http\Controllers\AccessTokenController;
 use Laravel\Passport\Http\Controllers\TransientTokenController;
 
@@ -73,10 +68,7 @@ enum Handler: string
     case TwoFactorLogin = 'identity.two-factor.login';
     case TwoFactorLoginStore = 'identity.two-factor.login.store';
     case TwoFactorChallengeOptions = 'identity.two-factor.login.options';
-    case TwoFactorQrCode = 'identity.two-factor.qr-code';
-    case TwoFactorSecretKey = 'identity.two-factor.secret-key';
-    case TwoFactorRecoveryCodes = 'identity.two-factor.recovery-codes';
-    case TwoFactorRegenerateRecoveryCodes = 'identity.two-factor.regenerate-recovery-codes';
+    case TwoFactorLoginFactor = 'identity.two-factor.login.factor';
     case TwoFactorFactors = 'identity.two-factor.factors';
     case TwoFactorEnroll = 'identity.two-factor.enroll';
     case TwoFactorEnrollConfirm = 'identity.two-factor.enroll.confirm';
@@ -85,9 +77,6 @@ enum Handler: string
     case PasskeyLogin = 'identity.passkey.login';
     case PasskeyConfirmOptions = 'identity.passkey.confirm-options';
     case PasskeyConfirm = 'identity.passkey.confirm';
-    case PasskeyRegistrationOptions = 'identity.passkey.registration-options';
-    case PasskeyStore = 'identity.passkey.store';
-    case PasskeyDestroy = 'identity.passkey.destroy';
 
     case SocialRedirect = 'identity.social.redirect';
     case SocialCallback = 'identity.social.callback';
@@ -238,25 +227,10 @@ enum Handler: string
                 controller: [TwoFactorChallengeController::class, 'options'],
                 middleware: ['web', $guest, 'throttle:5,1'],
             ),
-            self::TwoFactorQrCode => new HandlerConfig(
-                route: 'auth/user/two-factor-qr-code',
-                controller: ShowTwoFactorQrCodeController::class,
-                middleware: ['web', $authenticated, $passwordConfirmed],
-            ),
-            self::TwoFactorSecretKey => new HandlerConfig(
-                route: 'auth/user/two-factor-secret-key',
-                controller: ShowTwoFactorSecretKeyController::class,
-                middleware: ['web', $authenticated, $passwordConfirmed],
-            ),
-            self::TwoFactorRecoveryCodes => new HandlerConfig(
-                route: 'auth/user/two-factor-recovery-codes',
-                controller: ShowRecoveryCodesController::class,
-                middleware: ['web', $authenticated, $passwordConfirmed],
-            ),
-            self::TwoFactorRegenerateRecoveryCodes => new HandlerConfig(
-                route: 'auth/user/two-factor-recovery-codes',
-                controller: RegenerateRecoveryCodesController::class,
-                middleware: ['web', $authenticated, $passwordConfirmed],
+            self::TwoFactorLoginFactor => new HandlerConfig(
+                route: 'auth/two-factor-challenge/factor/{provider}/{enrollment?}',
+                controller: [TwoFactorChallengeController::class, 'selectFactor'],
+                middleware: ['web', $guest],
             ),
             self::TwoFactorFactors => new HandlerConfig(
                 route: 'auth/user/two-factor/factors',
@@ -266,12 +240,12 @@ enum Handler: string
             self::TwoFactorEnroll => new HandlerConfig(
                 route: 'auth/user/two-factor/{provider}',
                 controller: [FactorEnrollmentController::class, 'store'],
-                middleware: ['web', $authenticated, $passwordConfirmed],
+                middleware: ['web', $authenticated, $passwordConfirmed, 'throttle:5,1'],
             ),
             self::TwoFactorEnrollConfirm => new HandlerConfig(
                 route: 'auth/user/two-factor/{provider}/confirm',
                 controller: [FactorEnrollmentController::class, 'confirm'],
-                middleware: ['web', $authenticated, $passwordConfirmed],
+                middleware: ['web', $authenticated, $passwordConfirmed, 'throttle:5,1'],
             ),
             self::TwoFactorRevoke => new HandlerConfig(
                 route: 'auth/user/two-factor/{provider}/{enrollment}',
@@ -297,21 +271,6 @@ enum Handler: string
                 route: 'auth/passkeys/confirm',
                 controller: [PasskeyConfirmationController::class, 'store'],
                 middleware: ['web', $authenticated, 'throttle:5,1'],
-            ),
-            self::PasskeyRegistrationOptions => new HandlerConfig(
-                route: 'auth/user/passkeys/options',
-                controller: [PasskeyRegistrationController::class, 'index'],
-                middleware: ['web', $authenticated, $passwordConfirmed, 'throttle:5,1'],
-            ),
-            self::PasskeyStore => new HandlerConfig(
-                route: 'auth/user/passkeys',
-                controller: [PasskeyRegistrationController::class, 'store'],
-                middleware: ['web', $authenticated, $passwordConfirmed, 'throttle:5,1'],
-            ),
-            self::PasskeyDestroy => new HandlerConfig(
-                route: 'auth/user/passkeys/{passkey}',
-                controller: [PasskeyRegistrationController::class, 'destroy'],
-                middleware: ['web', $authenticated, $passwordConfirmed],
             ),
             self::SocialRedirect => new HandlerConfig(
                 route: 'auth/social/{provider}',
@@ -412,18 +371,16 @@ enum Handler: string
             self::PasswordConfirmStore,
             self::VerificationSend,
             self::TwoFactorLoginStore,
-            self::TwoFactorRegenerateRecoveryCodes,
             self::TwoFactorEnroll,
             self::TwoFactorEnrollConfirm,
             self::PasskeyLogin,
             self::PasskeyConfirm,
-            self::PasskeyStore,
             self::Introspect,
             self::Revoke,
             self::IssueToken,
             self::TokenRefresh,
             self::Approve => 'post',
-            self::Deny, self::TwoFactorRevoke, self::PasskeyDestroy, self::SocialDestroy => 'delete',
+            self::Deny, self::TwoFactorRevoke, self::SocialDestroy => 'delete',
             self::Userinfo, self::Logout, self::SocialCallback => ['get', 'post'],
             default => 'get',
         };

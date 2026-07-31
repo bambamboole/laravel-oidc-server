@@ -43,7 +43,7 @@ it('returns 404 from the register endpoint when no create user action is registe
     ])->assertNotFound();
 });
 
-it('returns Fortify-compatible JSON after registration', function () {
+it('returns the JSON success response after registration', function () {
     Oidc::createUsersUsing(function (array $input): Authenticatable {
         return User::create([
             'name' => $input['name'],

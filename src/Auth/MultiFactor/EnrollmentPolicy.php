@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor;
 
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Concerns\InteractsWithFactorUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
@@ -15,24 +14,30 @@ use Illuminate\Contracts\Auth\Authenticatable;
  */
 class EnrollmentPolicy
 {
-    use InteractsWithFactorUser;
-
     public function __construct(
         private readonly FactorRegistry $factors,
         private readonly RecoveryCodeProvider $recoveryCodes,
     ) {}
 
-    public function factorConfirmed(Authenticatable $user): void
+    /**
+     * Returns whether recovery codes were backfilled, so callers can surface
+     * the fresh codes to the user.
+     */
+    public function factorConfirmed(Authenticatable $user): bool
     {
         if ($this->recoveryCodes->enrollments($user) === []) {
             $this->recoveryCodes->generate($user);
+
+            return true;
         }
+
+        return false;
     }
 
     public function factorRevoked(Authenticatable $user): void
     {
         if ($this->factors->challengeableEnrollments($user) === []) {
-            $this->factorUser($user)->recoveryCodes()->delete();
+            $this->recoveryCodes->clear($user);
         }
     }
 }
