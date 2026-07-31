@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
-use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\PasswordConfirmation;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationView;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +26,7 @@ class ConfirmablePasswordController
      */
     public function show(Request $request): Responsable|Response
     {
-        return app(PasswordConfirmationView::class)->respond(new PasswordConfirmationPrompt, $request);
+        return app(PasswordConfirmationView::class)->respond($request);
     }
 
     public function store(Request $request): JsonResponse|RedirectResponse
@@ -39,7 +39,7 @@ class ConfirmablePasswordController
             throw ValidationException::withMessages(['password' => __('auth.password')]);
         }
 
-        $request->session()->put('auth.password_confirmed_at', time());
+        PasswordConfirmation::confirm($request->session());
 
         if ($request->wantsJson()) {
             return new JsonResponse('', 201);

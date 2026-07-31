@@ -59,8 +59,6 @@ use Bambamboole\LaravelOidc\Server\Session\SessionMintTokenProvider;
 use Bambamboole\LaravelOidc\Server\Session\SessionTokenGuard;
 use Bambamboole\LaravelOidc\Server\Session\StartOidcSession;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentStore;
-use Bambamboole\LaravelOidc\Server\Support\PassportConfigurator;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessTokenRepository;
@@ -148,7 +146,7 @@ class OidcServiceProvider extends ServiceProvider
             fn (): FirstPartyClientConfig => FirstPartyClientConfig::fromConfig(),
         );
         $this->app->singleton(FirstPartyClientProvisioner::class);
-        $this->app->singleton(EnvironmentStore::class, EnvironmentFile::class);
+        $this->app->singleton(EnvironmentFile::class);
         $this->app->singleton(OidcManager::class);
         $this->app->singleton(ExchangePolicy::class, DefaultExchangePolicy::class);
         $this->app->singleton(AccessTokenMinter::class);
@@ -249,7 +247,11 @@ class OidcServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->app->make(PassportConfigurator::class)();
+        $tokenModel = config('oidc.passport.token_model');
+
+        if (is_string($tokenModel) && $tokenModel !== '') {
+            Passport::useTokenModel($tokenModel);
+        }
 
         Passport::useAuthorizationServerResponseType($this->app->make(IdTokenResponse::class));
 

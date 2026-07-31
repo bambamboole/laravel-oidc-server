@@ -10,13 +10,11 @@ use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\LoginPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\LoginView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengePrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
@@ -44,9 +42,9 @@ trait FakesAuthViews
 
         app()->bind(RegisterView::class, fn () => new class implements RegisterView
         {
-            public function respond(RegisterPrompt $prompt, Request $request): JsonResponse
+            public function respond(Request $request): JsonResponse
             {
-                return response()->json(['view' => 'register', 'prompt' => get_object_vars($prompt)]);
+                return response()->json(['view' => 'register']);
             }
         });
 
@@ -76,9 +74,9 @@ trait FakesAuthViews
 
         app()->bind(PasswordConfirmationView::class, fn () => new class implements PasswordConfirmationView
         {
-            public function respond(PasswordConfirmationPrompt $prompt, Request $request): JsonResponse
+            public function respond(Request $request): JsonResponse
             {
-                return response()->json(['view' => 'confirm-password', 'prompt' => get_object_vars($prompt)]);
+                return response()->json(['view' => 'confirm-password']);
             }
         });
 

@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\OidcManager;
 use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
 
 it('honors first-party config mutated after the singletons were resolved', function () {
     // Both singletons must exist before the config lands for this to prove anything.
     $provider = app(SessionTokenProvider::class);
-    Oidc::issuer();
+    app(OidcManager::class);
 
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
     config(['oidc.first_party.client_id' => (string) $client->id]);

@@ -10,10 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Passport\Client;
 use Laravel\Passport\ClientRepository;
 use Laravel\Passport\Passport;
-use League\Uri\Http;
-use League\Uri\Uri;
 use SensitiveParameter;
-use Throwable;
 
 final readonly class FirstPartyClientProvisioner
 {
@@ -206,8 +203,7 @@ final readonly class FirstPartyClientProvisioner
         return $this->normalize($values, function (string $value) use ($label): void {
             $parts = parse_url($value);
 
-            if ($this->containsForbiddenUriCharacters($value)
-                || $this->hasMalformedPercentEscape($value)
+            if (preg_match('/[\x00-\x20\x7F\\\\]|%(?![0-9A-Fa-f]{2})/', $value) === 1
                 || filter_var($value, FILTER_VALIDATE_URL) === false
                 || ! is_array($parts)
                 || ! in_array(strtolower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true)
@@ -228,61 +224,20 @@ final readonly class FirstPartyClientProvisioner
     private function normalizeAudiences(array $values): array
     {
         return $this->normalize($values, function (string $value): void {
-            if ($this->containsForbiddenUriCharacters($value)
-                || $this->hasMalformedPercentEscape($value)
-                || ! $this->isValidAudienceUri($value)) {
-                throw new FirstPartyClientProvisioningException("The audience [{$value}] must be an absolute URI identifier.");
+            if (! str_starts_with(strtolower($value), 'urn:') && ! $this->isHttpUrl($value)) {
+                throw new FirstPartyClientProvisioningException("The audience [{$value}] must be an HTTP(S) URL or a urn: identifier.");
             }
         });
     }
 
-    private function isValidAudienceUri(string $value): bool
+    private function isHttpUrl(string $value): bool
     {
-        try {
-            $isUrn = str_starts_with(strtolower($value), 'urn:');
-            $uri = Uri::new($isUrn ? 'x-'.$value : $value);
-            $scheme = $isUrn ? 'urn' : $uri->getScheme();
+        $parts = parse_url($value);
 
-            if ($scheme === null) {
-                return false;
-            }
-
-            if (in_array($scheme, ['http', 'https'], true)) {
-                return Http::new($value)->getHost() !== '';
-            }
-
-            if ($scheme === 'urn') {
-                return $this->isValidUrn($value);
-            }
-
-            return true;
-        } catch (Throwable) {
-            return false;
-        }
-    }
-
-    private function isValidUrn(string $value): bool
-    {
-        $pathCharacter = "(?:[A-Za-z0-9._\\~!$&'()*+,;=:@-]|%[0-9A-Fa-f]{2})";
-
-        return preg_match(
-            '~^urn:[A-Za-z0-9](?:[A-Za-z0-9-]{0,30}[A-Za-z0-9]):'
-            .$pathCharacter.'+(?:/|'.$pathCharacter.')*'
-            .'(?:\?\+(?:[/?]|'.$pathCharacter.')+)?'
-            .'(?:\?=(?:[/?]|'.$pathCharacter.')+)?'
-            .'(?:#(?:[/?]|'.$pathCharacter.')*)?$~i',
-            $value,
-        ) === 1;
-    }
-
-    private function containsForbiddenUriCharacters(string $value): bool
-    {
-        return preg_match('/[\x00-\x20\x7F\\\\]/', $value) === 1;
-    }
-
-    private function hasMalformedPercentEscape(string $value): bool
-    {
-        return preg_match('/%(?![0-9A-Fa-f]{2})/', $value) === 1;
+        return is_array($parts)
+            && in_array(strtolower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true)
+            && is_string($parts['host'] ?? null)
+            && $parts['host'] !== '';
     }
 
     /**

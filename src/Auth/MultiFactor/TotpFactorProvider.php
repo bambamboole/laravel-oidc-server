@@ -67,17 +67,15 @@ class TotpFactorProvider implements EnrollableFactorProvider
         );
     }
 
-    public function confirmEnrollment(Authenticatable $user, FactorEnrollment $enrollment, FactorResponse $response): bool
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public function confirmEnrollment(Authenticatable $user, FactorEnrollment $enrollment, array $input): bool
     {
-        return $this->confirm(
-            $this->factorFor($user, $enrollment),
-            $response->string('code'),
-        );
-    }
+        $factor = $this->factorFor($user, $enrollment);
+        $code = $input['code'] ?? null;
 
-    public function confirm(TotpFactor $factor, string $code): bool
-    {
-        if (! $this->engine->verifyKey($factor->secret, $code, $this->window())) {
+        if (! is_string($code) || ! $this->engine->verifyKey($factor->secret, $code, $this->window())) {
             return false;
         }
 
@@ -89,11 +87,6 @@ class TotpFactorProvider implements EnrollableFactorProvider
     public function revoke(Authenticatable $user, FactorEnrollment $enrollment): void
     {
         $this->factorFor($user, $enrollment)->delete();
-    }
-
-    public function disableAll(Authenticatable $user): void
-    {
-        $this->factors($user)->delete();
     }
 
     public function latestFactor(Authenticatable $user): ?TotpFactor
@@ -123,11 +116,14 @@ class TotpFactorProvider implements EnrollableFactorProvider
         return new FactorChallenge($enrollment, ['input' => 'code']);
     }
 
-    public function verify(Authenticatable $user, FactorChallenge $challenge, FactorResponse $response): FactorVerification
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public function verify(Authenticatable $user, FactorChallenge $challenge, array $input): FactorVerification
     {
-        $code = $response->string('code');
+        $code = $input['code'] ?? null;
 
-        if ($code === '') {
+        if (! is_string($code) || $code === '') {
             return new FactorVerification(false);
         }
 

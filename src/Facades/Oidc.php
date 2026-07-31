@@ -23,8 +23,6 @@ use SensitiveParameter;
  * @method static array<string, \Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider> socialProviders()
  * @method static void extendSocialProvider(string $driver, Closure $creator)
  * @method static \Bambamboole\LaravelOidc\Server\Exchange\IssuedToken issueScopedToken(string $audience, string[] $scopes)
- * @method static string issuer()
- * @method static \Bambamboole\LaravelOidc\Server\Routing\HandlerConfig|false handlerConfig(\Bambamboole\LaravelOidc\Server\Routing\Handler $handler)
  *
  * @see OidcManager
  */

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\PasswordConfirmation;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,7 +12,7 @@ use Workbench\App\Models\User;
 it('renders the confirm password view through the package seam', function () {
     app()->bind(PasswordConfirmationView::class, fn () => new class implements PasswordConfirmationView
     {
-        public function respond(PasswordConfirmationPrompt $prompt, Request $request): Response
+        public function respond(Request $request): Response
         {
             return response('confirm-password-view');
         }
@@ -72,4 +72,19 @@ it('treats an elapsed confirmation as unconfirmed', function () {
         ->getJson(route('identity.password.confirmation'))
         ->assertOk()
         ->assertJson(['confirmed' => false]);
+});
+
+it('confirms and reports recency through the PasswordConfirmation helper', function () {
+    config()->set('auth.password_timeout', 900);
+    $session = session()->driver();
+
+    expect(PasswordConfirmation::confirmedRecently($session))->toBeFalse();
+
+    PasswordConfirmation::confirm($session);
+
+    expect(PasswordConfirmation::confirmedRecently($session))->toBeTrue();
+
+    $session->put('auth.password_confirmed_at', time() - 1000);
+
+    expect(PasswordConfirmation::confirmedRecently($session))->toBeFalse();
 });

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Issuer;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +26,7 @@ class DiscoveryController
         }
 
         $document = [
-            'issuer' => Oidc::issuer(),
+            'issuer' => Issuer::url(),
             'authorization_endpoint' => $this->endpoint(Handler::Authorize),
             'token_endpoint' => $this->endpoint(Handler::IssueToken),
             'jwks_uri' => $this->endpoint(Handler::Jwks),
@@ -50,20 +50,20 @@ class DiscoveryController
             'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post', 'none'],
         ];
 
-        if (Oidc::handlerConfig(Handler::Userinfo) !== false) {
+        if (Handler::Userinfo->config() !== false) {
             $document['userinfo_endpoint'] = $this->endpoint(Handler::Userinfo);
         }
 
-        if (Oidc::handlerConfig(Handler::Logout) !== false) {
+        if (Handler::Logout->config() !== false) {
             $document['end_session_endpoint'] = $this->endpoint(Handler::Logout);
         }
 
-        if (Oidc::handlerConfig(Handler::Introspect) !== false) {
+        if (Handler::Introspect->config() !== false) {
             $document['introspection_endpoint'] = $this->endpoint(Handler::Introspect);
             $document['introspection_endpoint_auth_methods_supported'] = ['client_secret_basic', 'client_secret_post'];
         }
 
-        if (Oidc::handlerConfig(Handler::Revoke) !== false) {
+        if (Handler::Revoke->config() !== false) {
             $document['revocation_endpoint'] = $this->endpoint(Handler::Revoke);
             $document['revocation_endpoint_auth_methods_supported'] = ['client_secret_basic', 'client_secret_post'];
         }
@@ -75,6 +75,6 @@ class DiscoveryController
     {
         $path = parse_url(route($handler->value), PHP_URL_PATH);
 
-        return rtrim(Oidc::issuer(), '/').($path ?? '');
+        return rtrim(Issuer::url(), '/').($path ?? '');
     }
 }

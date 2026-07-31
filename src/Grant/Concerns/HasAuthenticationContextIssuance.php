@@ -84,7 +84,7 @@ trait HasAuthenticationContextIssuance
     ): ?AccessTokenApi {
         $pipeline = $this->accessTokenPipeline;
 
-        if (! $pipeline->hasAuthorizationCodeTriggers()) {
+        if (! $pipeline->has('authorization_code')) {
             return null;
         }
 
@@ -94,7 +94,7 @@ trait HasAuthenticationContextIssuance
             return null;
         }
 
-        return $pipeline->runAuthorizationCode(new AuthorizationCodeEvent(
+        return $pipeline->run('authorization_code', new AuthorizationCodeEvent(
             user: $user,
             client: $client,
             scopes: array_map(

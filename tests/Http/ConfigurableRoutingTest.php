@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\AuthenticatedSessionController;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\DiscoveryController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\JwksController;
+use Bambamboole\LaravelOidc\Server\Issuer;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Routing\HandlerConfig;
 use Bambamboole\LaravelOidc\Server\Routing\HandlerRegistrar;
@@ -188,10 +188,10 @@ it('prefixes every route except discovery and advertises the registered prefixed
     }
 });
 
-it('exposes a handler config DTO through the facade', function () {
+it('exposes a handler config DTO through the handler enum', function () {
     config(['oidc.handlers' => []]);
 
-    $config = Oidc::handlerConfig(Handler::Login);
+    $config = Handler::Login->config();
 
     expect($config)->toBeInstanceOf(HandlerConfig::class)
         ->and($config->route)->toBe('auth/login')
@@ -213,16 +213,16 @@ it('exposes each handler full default independently of consumer configuration', 
         ->and($defaults->middleware)->toBe(['web', 'guest:identity']);
 });
 
-it('returns false from the facade for a disabled handler', function () {
+it('returns false for a disabled handler', function () {
     $handlers = config('oidc.handlers');
     $handlers[Handler::Userinfo->value] = false;
     config(['oidc.handlers' => $handlers]);
 
-    expect(Oidc::handlerConfig(Handler::Userinfo))->toBeFalse();
+    expect(Handler::Userinfo->config())->toBeFalse();
 });
 
-it('exposes the issuer url through the facade', function () {
+it('exposes the issuer url', function () {
     config(['oidc.issuer' => 'https://id.example.com/']);
 
-    expect(Oidc::issuer())->toBe('https://id.example.com');
+    expect(Issuer::url())->toBe('https://id.example.com');
 });

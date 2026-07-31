@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGua
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
-use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterView;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Auth\Events\Registered;
@@ -34,7 +33,7 @@ class RegisteredUserController
      */
     public function create(Request $request): Responsable|Response
     {
-        return app(RegisterView::class)->respond(new RegisterPrompt, $request);
+        return app(RegisterView::class)->respond($request);
     }
 
     public function store(Request $request): JsonResponse|RedirectResponse

@@ -10,5 +10,5 @@ use Symfony\Component\HttpFoundation\Response;
 
 interface RegisterView
 {
-    public function respond(RegisterPrompt $prompt, Request $request): Responsable|Response;
+    public function respond(Request $request): Responsable|Response;
 }

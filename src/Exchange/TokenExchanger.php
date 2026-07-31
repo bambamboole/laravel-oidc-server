@@ -96,7 +96,7 @@ class TokenExchanger
             throw OAuthServerException::invalidGrant('The subject token user no longer exists.');
         }
 
-        $api = $this->pipeline->runTokenExchange(new TokenExchangeEvent(
+        $api = $this->pipeline->run('token_exchange', new TokenExchangeEvent(
             user: $user,
             client: $bridgeClient,
             scopes: $scopeIds,

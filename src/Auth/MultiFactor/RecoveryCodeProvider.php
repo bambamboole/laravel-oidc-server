@@ -88,7 +88,10 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
         ]);
     }
 
-    public function confirmEnrollment(Authenticatable $user, FactorEnrollment $enrollment, FactorResponse $response): bool
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public function confirmEnrollment(Authenticatable $user, FactorEnrollment $enrollment, array $input): bool
     {
         return true;
     }
@@ -108,11 +111,14 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
         return new FactorChallenge($enrollment, ['input' => 'recovery_code']);
     }
 
-    public function verify(Authenticatable $user, FactorChallenge $challenge, FactorResponse $response): FactorVerification
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public function verify(Authenticatable $user, FactorChallenge $challenge, array $input): FactorVerification
     {
-        $submittedCode = $response->string('recovery_code');
+        $submittedCode = $input['recovery_code'] ?? null;
 
-        if ($submittedCode === '') {
+        if (! is_string($submittedCode) || $submittedCode === '') {
             return new FactorVerification(false);
         }
 
@@ -135,7 +141,7 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
             });
         });
 
-        return new FactorVerification($verified, $verified ? ['otp'] : [], ['backup' => true]);
+        return new FactorVerification($verified, $verified ? ['otp'] : []);
     }
 
     /**

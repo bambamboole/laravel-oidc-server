@@ -28,7 +28,7 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
 {
     private const string PENDING_KEY = 'oidc.webauthn.enrollment';
 
-    public const string PENDING_ID = 'pending';
+    private const string PENDING_ID = 'pending';
 
     public function __construct(
         private readonly GenerateVerificationOptions $generateOptions,
@@ -107,10 +107,13 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
         );
     }
 
-    public function confirmEnrollment(Authenticatable $user, FactorEnrollment $enrollment, FactorResponse $response): bool
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public function confirmEnrollment(Authenticatable $user, FactorEnrollment $enrollment, array $input): bool
     {
         $pending = session()->get(self::PENDING_KEY);
-        $credential = $response->input['credential'] ?? null;
+        $credential = $input['credential'] ?? null;
 
         if ($enrollment->id !== self::PENDING_ID || ! is_array($pending) || ! is_array($credential)) {
             return false;
@@ -160,13 +163,16 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
         );
     }
 
-    public function verify(Authenticatable $user, FactorChallenge $challenge, FactorResponse $response): FactorVerification
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public function verify(Authenticatable $user, FactorChallenge $challenge, array $input): FactorVerification
     {
         if (! $user instanceof PasskeyUser) {
             return new FactorVerification(false);
         }
 
-        $credential = $response->input['credential'] ?? null;
+        $credential = $input['credential'] ?? null;
         $serializedOptions = $challenge->privateState['options'] ?? null;
 
         if (! is_array($credential) || ! is_string($serializedOptions)) {
@@ -187,9 +193,6 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
             return new FactorVerification(false);
         }
 
-        return new FactorVerification(true, ['webauthn'], [
-            'phishing_resistant' => true,
-            'user_verified' => true,
-        ]);
+        return new FactorVerification(true, ['webauthn']);
     }
 }

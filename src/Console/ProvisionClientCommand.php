@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Console;
 
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentStore;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
 use Illuminate\Console\Command;
 
@@ -27,7 +27,7 @@ class ProvisionClientCommand extends Command
 
     public function __construct(
         private readonly FirstPartyClientProvisioner $provisioner,
-        private readonly EnvironmentStore $environment,
+        private readonly EnvironmentFile $environment,
     ) {
         parent::__construct();
     }

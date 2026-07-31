@@ -78,15 +78,6 @@ it('redirects to the authorization endpoint with state and S256 PKCE', function 
         ->and($params['redirect_uri'])->toBe(route('identity.social.callback', ['provider' => 'fake']));
 });
 
-it('honors a scope override from config', function () {
-    $request = requestWithSession('/auth/social/fake');
-
-    $response = fakeOAuth2Provider(['scopes' => ['a', 'b']])->redirect($request);
-
-    parse_str((string) parse_url($response->getTargetUrl(), PHP_URL_QUERY), $params);
-    expect($params['scope'])->toBe('a b');
-});
-
 it('stores the link intent in the pending authorization', function () {
     $request = requestWithSession('/auth/social/fake');
 

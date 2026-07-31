@@ -10,5 +10,5 @@ use Symfony\Component\HttpFoundation\Response;
 
 interface PasswordConfirmationView
 {
-    public function respond(PasswordConfirmationPrompt $prompt, Request $request): Responsable|Response;
+    public function respond(Request $request): Responsable|Response;
 }

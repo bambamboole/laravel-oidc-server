@@ -41,16 +41,11 @@ final class Jwk
         ];
     }
 
-    public static function thumbprint(string $n, string $e): string
+    private static function thumbprint(string $n, string $e): string
     {
         // RFC 7638: members in lexicographic order (e, kty, n), no whitespace.
         $json = json_encode(['e' => $e, 'kty' => 'RSA', 'n' => $n]);
 
-        return self::base64UrlEncode(hash('sha256', $json, true));
-    }
-
-    private static function base64UrlEncode(string $binary): string
-    {
-        return rtrim(strtr(base64_encode($binary), '+/', '-_'), '=');
+        return sodium_bin2base64(hash('sha256', (string) $json, true), SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
     }
 }

@@ -82,6 +82,15 @@ class FactorRegistry
     }
 
     /**
+     * Whether the user has at least one confirmed, challengeable enrollment —
+     * the "does this user have 2FA?" check.
+     */
+    public function hasChallengeableFactors(Authenticatable $user): bool
+    {
+        return $this->challengeableEnrollments($user) !== [];
+    }
+
+    /**
      * @param  list<string>|null  $providerKeys
      * @return list<FactorEnrollment>
      */

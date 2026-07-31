@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterView;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,7 +16,7 @@ use Workbench\App\Models\User;
 it('renders account flow views through package seams', function () {
     app()->bind(RegisterView::class, fn () => new class implements RegisterView
     {
-        public function respond(RegisterPrompt $prompt, Request $request): Response
+        public function respond(Request $request): Response
         {
             return response('register-view');
         }

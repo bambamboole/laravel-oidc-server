@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\OidcManager;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
@@ -68,7 +68,7 @@ it('creates an authorization-code grant client with sane defaults', function () 
 
 it('configures a first-party client without any singleton busting', function () {
     // The manager must already be resolved for this to prove anything.
-    Oidc::issuer();
+    app(OidcManager::class);
 
     $client = $this->withFirstPartyClient();
 
@@ -183,5 +183,5 @@ it('returns the raw token error response for a broken token leg', function () {
 
     $result->response->assertStatus(401);
     expect($result->accessToken)->toBeNull()
-        ->and($result->json('error'))->toBe('invalid_client');
+        ->and($result->response->json('error'))->toBe('invalid_client');
 });

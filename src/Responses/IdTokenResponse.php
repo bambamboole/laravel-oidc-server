@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Responses;
 
-use Bambamboole\LaravelOidc\Server\Support\ResolvesRequestGrantType;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
@@ -12,8 +11,6 @@ use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
 
 class IdTokenResponse extends BearerTokenResponse
 {
-    use ResolvesRequestGrantType;
-
     private const string EXCHANGE_URN = 'urn:ietf:params:oauth:grant-type:token-exchange';
 
     private const string ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
@@ -98,5 +95,16 @@ class IdTokenResponse extends BearerTokenResponse
         }
 
         return $params;
+    }
+
+    private function requestGrantType(): ?string
+    {
+        if (! app()->bound('request')) {
+            return null;
+        }
+
+        $value = app('request')->input('grant_type');
+
+        return is_string($value) ? $value : null;
     }
 }

@@ -6,7 +6,6 @@ namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts;
 
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorChallenge;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorEnrollment;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorResponse;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorVerification;
 use Illuminate\Contracts\Auth\Authenticatable;
 
@@ -23,5 +22,8 @@ interface FactorProvider
 
     public function beginChallenge(Authenticatable $user, FactorEnrollment $enrollment): FactorChallenge;
 
-    public function verify(Authenticatable $user, FactorChallenge $challenge, FactorResponse $response): FactorVerification;
+    /**
+     * @param  array<string, mixed>  $input
+     */
+    public function verify(Authenticatable $user, FactorChallenge $challenge, array $input): FactorVerification;
 }

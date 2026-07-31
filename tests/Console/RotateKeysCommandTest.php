@@ -85,3 +85,24 @@ it('omits the previous key on a first-time generation with no current key', func
     expect($contents)->toContain('OIDC_PRIVATE_KEY=')
         ->and($contents)->not->toContain('OIDC_PREVIOUS_PUBLIC_KEY=');
 });
+
+it('skips generation with --if-missing when keys already exist', function () {
+    $env = rotateKeysEnv();
+    $before = (string) file_get_contents($env);
+
+    $this->artisan('oidc:rotate-keys', ['--if-missing' => true])
+        ->expectsOutputToContain('already exist')
+        ->assertSuccessful();
+
+    expect((string) file_get_contents($env))->toBe($before);
+});
+
+it('generates without confirmation with --if-missing when no keys exist', function () {
+    config(['passport.private_key' => null, 'passport.public_key' => null]);
+    Passport::loadKeysFrom(temporaryTestDirectory('nokeys-if-missing'));
+    $env = rotateKeysEnv();
+
+    $this->artisan('oidc:rotate-keys', ['--if-missing' => true])->assertSuccessful();
+
+    expect((string) file_get_contents($env))->toContain('OIDC_PRIVATE_KEY=');
+});

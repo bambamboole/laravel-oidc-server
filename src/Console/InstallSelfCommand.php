@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Console;
 
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentStore;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
 use Illuminate\Console\Command;
@@ -22,7 +22,7 @@ class InstallSelfCommand extends Command
 
     public function __construct(
         private readonly FirstPartyClientProvisioner $provisioner,
-        private readonly EnvironmentStore $environment,
+        private readonly EnvironmentFile $environment,
         private readonly SigningKeyGenerator $keys,
     ) {
         parent::__construct();
@@ -44,7 +44,8 @@ class InstallSelfCommand extends Command
             return self::FAILURE;
         }
 
-        $name = $this->stringOption('name') ?? $this->defaultClientName();
+        $nameOption = $this->option('name');
+        $name = is_string($nameOption) && $nameOption !== '' ? $nameOption : $this->defaultClientName();
         $redirectUri = $appUrl.'/login/callback';
 
         $configuredIssuer = config('oidc.issuer');
@@ -137,12 +138,5 @@ class InstallSelfCommand extends Command
         $appName = config('app.name');
 
         return is_string($appName) && $appName !== '' ? $appName : 'First-party app';
-    }
-
-    private function stringOption(string $name): ?string
-    {
-        $value = $this->option($name);
-
-        return is_string($value) ? $value : null;
     }
 }

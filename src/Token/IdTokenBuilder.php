@@ -89,6 +89,6 @@ class IdTokenBuilder
     {
         $hash = substr(hash('sha256', $accessTokenJwt, true), 0, 16);
 
-        return rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
+        return sodium_bin2base64($hash, SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
     }
 }

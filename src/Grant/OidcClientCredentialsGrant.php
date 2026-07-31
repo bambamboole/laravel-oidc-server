@@ -37,7 +37,7 @@ class OidcClientCredentialsGrant extends ClientCredentialsGrant
                 $scopes,
             )),
         );
-        $api = $this->pipeline->runClientCredentials($event);
+        $api = $this->pipeline->run('client_credentials', $event);
 
         if ($api->isDenied()) {
             throw OAuthServerException::accessDenied($api->denyReason());

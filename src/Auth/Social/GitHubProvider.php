@@ -73,10 +73,6 @@ class GitHubProvider extends AbstractOAuth2Provider
      */
     private function primaryVerifiedEmail(string $accessToken): array
     {
-        if (! in_array('user:email', $this->scopes(), true)) {
-            return [null, false];
-        }
-
         $emails = Http::withToken($accessToken)
             ->acceptJson()
             ->get('https://api.github.com/user/emails');

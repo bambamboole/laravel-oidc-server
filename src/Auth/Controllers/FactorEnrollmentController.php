@@ -9,7 +9,6 @@ use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorPr
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\EnrollmentPolicy;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorResponse;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -65,7 +64,7 @@ class FactorEnrollmentController
         $confirmed = $enrollment !== null && $enrollable->confirmEnrollment(
             $user,
             $enrollment,
-            new FactorResponse($request->except('enrollment_id')),
+            $request->except('enrollment_id'),
         );
 
         if (! $confirmed) {

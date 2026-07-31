@@ -9,7 +9,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGua
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorChallenge;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorResponse;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\PendingMfaChallenge;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengePrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
@@ -141,7 +140,7 @@ class TwoFactorChallengeController
         }
 
         $challenge = new FactorChallenge($enrollment, privateState: PendingMfaChallenge::pullChallengeState());
-        $verification = $provider->verify($user, $challenge, new FactorResponse($request->only('code', 'recovery_code', 'credential')));
+        $verification = $provider->verify($user, $challenge, $request->only('code', 'recovery_code', 'credential'));
 
         if (! $verification->verified) {
             $field = $usesRecoveryCode ? 'recovery_code' : 'code';

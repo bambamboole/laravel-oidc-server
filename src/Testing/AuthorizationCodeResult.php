@@ -10,7 +10,7 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * The outcome of {@see InteractsWithOidc::authorizeAndApprove()}. The token
  * fields are null when the token endpoint returned an error — assert on
- * `$response` / `json()` in that case.
+ * `$response` in that case.
  */
 final readonly class AuthorizationCodeResult
 {
@@ -41,10 +41,5 @@ final readonly class AuthorizationCodeResult
             $isJsonObject ? $response->json('id_token') : null,
             $isJsonObject ? $response->json('refresh_token') : null,
         );
-    }
-
-    public function json(?string $key = null): mixed
-    {
-        return $this->response->json($key);
     }
 }

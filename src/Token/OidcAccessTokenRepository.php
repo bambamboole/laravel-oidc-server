@@ -45,7 +45,7 @@ class OidcAccessTokenRepository extends AccessTokenRepository
     {
         $userIdentifier = $token->getUserIdentifier();
 
-        if (! $this->pipeline->hasPersonalAccessTokenTriggers()
+        if (! $this->pipeline->has('personal_access_token')
             || $userIdentifier === null
             || ! $this->isPersonalAccessClient($token->getClient())) {
             return;
@@ -57,7 +57,7 @@ class OidcAccessTokenRepository extends AccessTokenRepository
             return;
         }
 
-        $api = $this->pipeline->runPersonalAccessToken(new PersonalAccessTokenEvent(
+        $api = $this->pipeline->run('personal_access_token', new PersonalAccessTokenEvent(
             user: $user,
             client: $token->getClient(),
             scopes: array_values(array_map(

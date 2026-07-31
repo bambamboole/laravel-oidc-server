@@ -92,12 +92,12 @@ abstract class AbstractOAuth2Provider implements SocialProvider
             'client_id' => (string) $this->config['client_id'],
             'redirect_uri' => $this->redirectUrl(),
             'response_type' => 'code',
-            'scope' => implode(' ', $this->scopes()),
+            'scope' => implode(' ', $this->defaultScopes()),
             'state' => $pending->state,
         ];
 
         if ($pending->codeVerifier !== null) {
-            $params['code_challenge'] = rtrim(strtr(base64_encode(hash('sha256', $pending->codeVerifier, true)), '+/', '-_'), '=');
+            $params['code_challenge'] = sodium_bin2base64(hash('sha256', $pending->codeVerifier, true), SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING);
             $params['code_challenge_method'] = 'S256';
         }
 
@@ -131,14 +131,6 @@ abstract class AbstractOAuth2Provider implements SocialProvider
         $secret = $this->config['client_secret'] ?? null;
 
         return is_string($secret) && $secret !== '' ? $secret : null;
-    }
-
-    /**
-     * @return list<string>
-     */
-    protected function scopes(): array
-    {
-        return array_values(array_filter((array) ($this->config['scopes'] ?? $this->defaultScopes()), is_string(...)));
     }
 
     protected function redirectUrl(): string

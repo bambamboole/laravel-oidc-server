@@ -367,46 +367,21 @@ it('rejects invalid provisioning input before writing', function (
     'redirect missing host' => ['App', ['https:///callback'], [], 'absolute HTTP(S) URI'],
     'redirect malformed host' => ['App', ['https://app_test/callback'], [], 'absolute HTTP(S) URI'],
     'post logout raw space' => ['App', ['https://app.test/callback'], [], 'absolute HTTP(S) URI', ['https://app.test/logged out']],
-    'relative audience' => ['App', ['https://app.test/callback'], ['/orders'], 'absolute URI'],
-    'audience raw space' => ['App', ['https://app.test/callback'], ['urn:example:order details'], 'absolute URI'],
-    'audience control character' => ['App', ['https://app.test/callback'], ["urn:example:orders\tadmin"], 'absolute URI'],
-    'audience backslash' => ['App', ['https://app.test/callback'], ['urn:example:orders\\admin'], 'absolute URI'],
-    'audience malformed percent escape' => ['App', ['https://app.test/callback'], ['urn:example:orders%2'], 'absolute URI'],
-    'audience invalid scheme' => ['App', ['https://app.test/callback'], ['1abc:orders'], 'absolute URI'],
-    'audience incomplete https URI' => ['App', ['https://app.test/callback'], ['https://'], 'absolute URI'],
-    'audience incomplete URN' => ['App', ['https://app.test/callback'], ['urn:example:'], 'absolute URI'],
-    'audience one-character URN NID' => ['App', ['https://app.test/callback'], ['urn:a:orders'], 'absolute URI'],
-    'audience leading-hyphen URN NID' => ['App', ['https://app.test/callback'], ['urn:-example:orders'], 'absolute URI'],
-    'audience trailing-hyphen URN NID' => ['App', ['https://app.test/callback'], ['urn:example-:orders'], 'absolute URI'],
-    'audience excessive-length URN NID' => ['App', ['https://app.test/callback'], ['urn:'.str_repeat('a', 33).':orders'], 'absolute URI'],
-    'audience raw pipe' => ['App', ['https://app.test/callback'], ['urn:example:ord|ers'], 'absolute URI'],
-    'audience raw quote' => ['App', ['https://app.test/callback'], ['urn:example:"orders'], 'absolute URI'],
-    'audience unmatched bracket' => ['App', ['https://app.test/callback'], ['urn:example:[orders'], 'absolute URI'],
+    'relative audience' => ['App', ['https://app.test/callback'], ['/orders'], 'HTTP(S) URL or a urn: identifier'],
+    'audience invalid scheme' => ['App', ['https://app.test/callback'], ['1abc:orders'], 'HTTP(S) URL or a urn: identifier'],
+    'audience incomplete https URI' => ['App', ['https://app.test/callback'], ['https://'], 'HTTP(S) URL or a urn: identifier'],
+    'audience non-http scheme' => ['App', ['https://app.test/callback'], ['mailto:orders@example.com'], 'HTTP(S) URL or a urn: identifier'],
 ]);
 
-it('accepts valid RFC 8141 optional components', function (string $audience) {
+it('accepts https and urn audience identifiers', function () {
     $result = app(FirstPartyClientProvisioner::class)->provision(
         'First-party app',
         ['https://app.test/callback'],
-        allowedExchangeAudiences: [$audience],
+        allowedExchangeAudiences: ['urn:example:orders', 'https://api.test/orders'],
     );
 
     expect(json_decode((string) $result->client->getRawOriginal('allowed_exchange_audiences'), true, flags: JSON_THROW_ON_ERROR))
-        ->toBe([$audience]);
-})->with([
-    'question mark in r-component' => 'urn:example:orders?+a?b',
-    'empty fragment' => 'urn:example:orders#',
-]);
-
-it('accepts absolute URI audience identifiers with hierarchical and non-hierarchical schemes', function () {
-    $result = app(FirstPartyClientProvisioner::class)->provision(
-        'First-party app',
-        ['https://app.test/callback'],
-        allowedExchangeAudiences: ['urn:example:orders', 'https://api.test/orders', 'mailto:orders@example.com'],
-    );
-
-    expect(json_decode((string) $result->client->getRawOriginal('allowed_exchange_audiences'), true, flags: JSON_THROW_ON_ERROR))
-        ->toBe(['urn:example:orders', 'https://api.test/orders', 'mailto:orders@example.com']);
+        ->toBe(['urn:example:orders', 'https://api.test/orders']);
 });
 
 it('rejects adoption when another managed client already exists', function () {

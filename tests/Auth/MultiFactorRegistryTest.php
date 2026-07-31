@@ -6,7 +6,6 @@ use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorChallenge;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorResponse;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorVerification;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -36,7 +35,7 @@ it('registers factor providers by stable key and aggregates enrollments', functi
             return new FactorChallenge($enrollment, ['prompt' => 'Touch key']);
         }
 
-        public function verify(Authenticatable $user, FactorChallenge $challenge, FactorResponse $response): FactorVerification
+        public function verify(Authenticatable $user, FactorChallenge $challenge, array $input): FactorVerification
         {
             return new FactorVerification(true, ['custom']);
         }
@@ -64,6 +63,18 @@ it('limits configured challengeable enrollments to the challenge providers confi
     config(['oidc.auth.two_factor.challenge_providers' => ['totp']]);
     expect(array_column($registry->configuredChallengeableEnrollments($user), 'providerKey'))
         ->toBe(['totp']);
+});
+
+it('reports whether a user has challengeable factors', function () {
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
+    $registry = app(FactorRegistry::class);
+
+    expect($registry->hasChallengeableFactors($user))->toBeFalse();
+
+    $factor = app(TotpFactorProvider::class)->enroll($user);
+    $factor->forceFill(['confirmed_at' => now()])->save();
+
+    expect($registry->hasChallengeableFactors($user))->toBeTrue();
 });
 
 it('rejects duplicate factor provider keys', function () {

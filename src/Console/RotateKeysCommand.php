@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Console;
 
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentStore;
+use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
@@ -12,22 +12,34 @@ use Throwable;
 
 class RotateKeysCommand extends Command
 {
-    protected $signature = 'oidc:rotate-keys {--print : Print the env variables instead of writing them to .env} {--force : Skip the confirmation prompt}';
+    protected $signature = 'oidc:rotate-keys
+        {--print : Print the env variables instead of writing them to .env}
+        {--force : Skip the confirmation prompt}
+        {--if-missing : Only generate when no signing keys exist yet (skips the confirmation prompt)}';
 
     protected $description = 'Generate a new OIDC signing keypair as env variables, rolling the current public key into OIDC_PREVIOUS_PUBLIC_KEY';
 
     public function __construct(
         private readonly SigningKeyGenerator $keys,
-        private readonly EnvironmentStore $environment,
+        private readonly EnvironmentFile $environment,
     ) {
         parent::__construct();
     }
 
     public function handle(): int
     {
+        if ($this->option('if-missing') && $this->keys->hasKeys()) {
+            $this->info('Signing keys already exist; nothing to generate.');
+
+            return self::SUCCESS;
+        }
+
         $current = $this->currentPublicKey();
 
-        if (! $this->option('force') && ! $this->option('print') && ! $this->confirm('Generate a new signing keypair and write it to .env?')) {
+        if (! $this->option('force')
+            && ! $this->option('print')
+            && ! $this->option('if-missing')
+            && ! $this->confirm('Generate a new signing keypair and write it to .env?')) {
             $this->info('Aborted.');
 
             return self::SUCCESS;

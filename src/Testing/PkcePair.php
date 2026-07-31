@@ -23,7 +23,7 @@ final readonly class PkcePair
 
         return new self(
             $verifier,
-            rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '='),
+            sodium_bin2base64(hash('sha256', $verifier, true), SODIUM_BASE64_VARIANT_URLSAFE_NO_PADDING),
         );
     }
 }
