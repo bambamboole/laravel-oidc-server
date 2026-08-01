@@ -1,8 +1,10 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Illuminate\Support\Facades\File;
 use Laravel\Passport\Passport;
 
@@ -67,7 +69,7 @@ it('aborts without writing when the confirmation is declined', function () {
     $before = (string) file_get_contents($env);
 
     $this->artisan('oidc:rotate-keys')
-        ->expectsConfirmation('Generate a new signing keypair and write it to .env?', 'no')
+        ->expectsConfirmation('Generate a new signing keypair and store it?', 'no')
         ->assertSuccessful();
 
     expect((string) file_get_contents($env))->toBe($before);
@@ -105,4 +107,34 @@ it('generates without confirmation with --if-missing when no keys exist', functi
     $this->artisan('oidc:rotate-keys', ['--if-missing' => true])->assertSuccessful();
 
     expect((string) file_get_contents($env))->toContain('OIDC_PRIVATE_KEY=');
+});
+
+it('fails with the store error when rotation cannot persist', function () {
+    rotateKeysEnv();
+    app()->instance(SigningKeyStore::class, new class implements SigningKeyStore
+    {
+        public function privateKey(): string
+        {
+            return 'p';
+        }
+
+        public function publicKey(): string
+        {
+            return 'pub';
+        }
+
+        public function previousPublicKeys(): array
+        {
+            return [];
+        }
+
+        public function rotate(GeneratedSigningKeys $keys): void
+        {
+            throw new RuntimeException('cannot persist');
+        }
+    });
+
+    $this->artisan('oidc:rotate-keys', ['--force' => true])
+        ->expectsOutputToContain('cannot persist')
+        ->assertFailed();
 });

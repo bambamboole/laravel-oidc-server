@@ -105,3 +105,20 @@ it('round-trips values written through write()', function () {
     expect($store->value('OIDC_RP_CLIENT_SECRET'))->toBe('plain-secret')
         ->and($store->value('OIDC_PRIVATE_KEY'))->toBe("line1\nline2");
 });
+
+it('encodes values identically for LF, CRLF, and bare-CR line endings', function () {
+    $encoded = EnvironmentFile::encode("-----BEGIN X-----\nabc\n-----END X-----\n");
+
+    expect($encoded)->toBe('"-----BEGIN X-----\nabc\n-----END X-----"')
+        ->and(EnvironmentFile::encode("-----BEGIN X-----\r\nabc\r\n-----END X-----\r\n"))->toBe($encoded)
+        ->and(EnvironmentFile::encode("-----BEGIN X-----\rabc\r-----END X-----\r"))->toBe($encoded)
+        ->and($encoded)->not->toContain("\r");
+});
+
+it('round-trips a CRLF value through encode() and value()', function () {
+    $path = environmentFileFixture("APP_NAME=Testing\n");
+
+    (new EnvironmentFile($path))->write(['OIDC_PRIVATE_KEY' => "line1\r\nline2"], EnvironmentFile::encode(...));
+
+    expect((new EnvironmentFile($path))->value('OIDC_PRIVATE_KEY'))->toBe("line1\nline2");
+});

@@ -9,6 +9,15 @@ final class EnvironmentFile
     public function __construct(private readonly ?string $path = null) {}
 
     /**
+     * Encode a value as a double-quoted, `\n`-escaped single-line env value,
+     * normalizing CRLF and bare-CR line endings so no raw `\r` reaches the file.
+     */
+    public static function encode(string $value): string
+    {
+        return '"'.str_replace(["\r\n", "\r", "\n"], '\n', trim($value)).'"';
+    }
+
+    /**
      * Atomically upsert the given variables into the environment file.
      *
      * @param  array<string, string>  $variables

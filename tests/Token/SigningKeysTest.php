@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Laravel\Passport\Bridge\AccessToken;
 use Laravel\Passport\Bridge\Client as BridgeClient;
 use Laravel\Passport\Bridge\Scope as BridgeScope;
@@ -97,4 +99,30 @@ it('signs id_tokens with env-provided keys', function () {
     expect($valid)->toBeTrue()
         ->and($parsed->headers()->get('kid'))
         ->toBe(Jwk::fromPem(SigningKeys::publicKey())['kid']);
+});
+
+it('resolves keys through a custom bound store', function () {
+    app()->instance(SigningKeyStore::class, new class implements SigningKeyStore
+    {
+        public function privateKey(): string
+        {
+            return 'custom-private';
+        }
+
+        public function publicKey(): string
+        {
+            return 'custom-public';
+        }
+
+        public function previousPublicKeys(): array
+        {
+            return ['old-public'];
+        }
+
+        public function rotate(GeneratedSigningKeys $keys): void {}
+    });
+
+    expect(SigningKeys::publicKey())->toBe('custom-public')
+        ->and(SigningKeys::privateKey())->toBe('custom-private')
+        ->and(SigningKeys::verificationKeys())->toBe(['custom-public', 'old-public']);
 });

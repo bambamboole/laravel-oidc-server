@@ -4,24 +4,25 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Console;
 
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Illuminate\Console\Command;
+use RuntimeException;
 use Throwable;
 
 class RotateKeysCommand extends Command
 {
     protected $signature = 'oidc:rotate-keys
-        {--print : Print the env variables instead of writing them to .env}
+        {--print : Print the env variables instead of writing them to the key store}
         {--force : Skip the confirmation prompt}
         {--if-missing : Only generate when no signing keys exist yet (skips the confirmation prompt)}';
 
-    protected $description = 'Generate a new OIDC signing keypair as env variables, rolling the current public key into OIDC_PREVIOUS_PUBLIC_KEY';
+    protected $description = 'Generate a new OIDC signing keypair, rolling the current public key into the previous set';
 
     public function __construct(
         private readonly SigningKeyGenerator $keys,
-        private readonly EnvironmentFile $environment,
+        private readonly SigningKeyStore $store,
     ) {
         parent::__construct();
     }
@@ -39,7 +40,7 @@ class RotateKeysCommand extends Command
         if (! $this->option('force')
             && ! $this->option('print')
             && ! $this->option('if-missing')
-            && ! $this->confirm('Generate a new signing keypair and write it to .env?')) {
+            && ! $this->confirm('Generate a new signing keypair and store it?')) {
             $this->info('Aborted.');
 
             return self::SUCCESS;
@@ -47,21 +48,21 @@ class RotateKeysCommand extends Command
 
         $generated = $this->keys->generate();
 
-        $vars = [
-            'OIDC_PRIVATE_KEY' => $generated->privateKeyPem,
-            'OIDC_PUBLIC_KEY' => $generated->publicKeyPem,
-        ];
-
-        if ($current !== null) {
-            $vars['OIDC_PREVIOUS_PUBLIC_KEY'] = $current;
-        }
-
         if ($this->option('print')) {
+            $vars = [
+                'OIDC_PRIVATE_KEY' => $generated->privateKeyPem,
+                'OIDC_PUBLIC_KEY' => $generated->publicKeyPem,
+            ];
+
+            if ($current !== null) {
+                $vars['OIDC_PREVIOUS_PUBLIC_KEY'] = $current;
+            }
+
             $this->printVars($vars);
         } else {
             try {
-                $this->environment->write($vars, $this->encode(...));
-            } catch (EnvironmentWriteException $exception) {
+                $this->store->rotate($generated);
+            } catch (RuntimeException $exception) {
                 $this->error($exception->getMessage());
 
                 return self::FAILURE;
@@ -71,7 +72,7 @@ class RotateKeysCommand extends Command
         $this->info('New signing key generated. New kid: '.$generated->kid);
 
         if ($current !== null) {
-            $this->line('The previous public key stays in JWKS via OIDC_PREVIOUS_PUBLIC_KEY. Remove it once every token signed by it has expired.');
+            $this->line('The previous public key stays in JWKS via the key store. Remove it once every token signed by it has expired.');
         }
 
         if (! $this->option('print')) {
@@ -96,12 +97,7 @@ class RotateKeysCommand extends Command
         $this->warn('Add these to your environment (the private key is secret — never commit it):');
 
         foreach ($vars as $name => $pem) {
-            $this->line($name.'='.$this->encode($pem));
+            $this->line($name.'='.EnvironmentFile::encode($pem));
         }
-    }
-
-    private function encode(string $pem): string
-    {
-        return '"'.str_replace("\n", '\n', trim($pem)).'"';
     }
 }
