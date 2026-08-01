@@ -392,6 +392,32 @@ it('does not leak a stale pendingContext into a later token request on the same 
     expect($accessToken->claims()->has('leaked'))->toBeFalse();
 });
 
+// Inertia XHR can't navigate the browser to the client's redirect_uri (e.g. a
+// custom-scheme mobile callback), so approve/deny must hand it the 409 +
+// X-Inertia-Location protocol instead of a plain redirect it would swallow.
+it('answers an Inertia approve request with a 409 + X-Inertia-Location instead of a redirect', function () {
+    $pkce = $this->pkce();
+
+    $view = $this->actingAsIdentity($this->user, authTime: time() - 60)
+        ->get('/oauth/authorize?'.http_build_query([
+            'client_id' => $this->client->id,
+            'redirect_uri' => 'https://rp.test/callback',
+            'response_type' => 'code',
+            'scope' => 'openid',
+            'state' => 'st4te',
+            'code_challenge' => $pkce->challenge,
+            'code_challenge_method' => 'S256',
+        ]))
+        ->assertOk();
+
+    $approve = $this->post(route('oidc.approve'), [
+        'auth_token' => $view->json('authToken'),
+    ], ['X-Inertia' => 'true']);
+
+    $approve->assertStatus(409);
+    expect($approve->headers->get('X-Inertia-Location'))->toStartWith('https://rp.test/callback?');
+});
+
 it('owns the oauth routes with package controllers', function () {
     $routes = app('router')->getRoutes();
 
