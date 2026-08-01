@@ -57,6 +57,12 @@ return [
         'enabled' => env('OIDC_TOKEN_EXCHANGE_ENABLED', true),
     ],
 
+    // Additional resource audiences the auth:api guard accepts on an exchanged access token,
+    // beyond the issuer URL. Only widens what's accepted — a foreign audience still 401s.
+    'resource' => [
+        'audiences' => [],
+    ],
+
     'key_size' => (int) env('OIDC_KEY_SIZE', 2048),
 
     'additional_public_keys' => array_values(array_filter([

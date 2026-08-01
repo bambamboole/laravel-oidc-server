@@ -63,6 +63,8 @@ use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessTokenRepository;
+use Bambamboole\LaravelOidc\Server\Token\ResourceAudienceBearerTokenValidator;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use DateInterval;
 use Illuminate\Auth\Events\Login;
@@ -87,6 +89,8 @@ use Laravel\Passport\Bridge\RefreshTokenRepository;
 use Laravel\Passport\Bridge\ScopeRepository as PassportBridgeScopeRepository;
 use Laravel\Passport\Passport;
 use League\OAuth2\Server\AuthorizationServer;
+use League\OAuth2\Server\CryptKey;
+use League\OAuth2\Server\ResourceServer;
 use Symfony\Component\HttpFoundation\Response;
 
 class OidcServiceProvider extends ServiceProvider
@@ -154,6 +158,18 @@ class OidcServiceProvider extends ServiceProvider
         $this->app->singleton(ExchangePolicy::class, DefaultExchangePolicy::class);
         $this->app->singleton(AccessTokenMinter::class);
         $this->app->singleton(TokenExchanger::class);
+        // Passport registers ResourceServer with the stock BearerTokenValidator, which is not
+        // swappable after construction; extend() (not singleton()) rebuilds it because provider
+        // registration order is alphabetical in a real app (this package sorts before
+        // laravel/passport), so PassportServiceProvider::register() may run its own competing
+        // singleton() bind after ours. extend() survives that: Container::bind()/singleton() only
+        // clear `instances`/`aliases` via dropStaleInstances(), never `extenders`, so this decorator
+        // still applies on resolution regardless of which provider's register() ran last.
+        $this->app->extend(ResourceServer::class, fn (ResourceServer $server, Application $app): ResourceServer => new ResourceServer(
+            $app->make(PassportBridgeAccessTokenRepository::class),
+            new CryptKey(SigningKeys::publicKey(), null, false),
+            new ResourceAudienceBearerTokenValidator($app->make(PassportBridgeAccessTokenRepository::class)),
+        ));
         $this->app->singleton(SessionTokenProvider::class, SessionMintTokenProvider::class);
         $this->app->singleton(AccessTokenPipeline::class);
         $this->app->bind(PassportBridgeAccessTokenRepository::class, OidcAccessTokenRepository::class);

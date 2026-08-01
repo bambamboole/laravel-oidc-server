@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Grant;
 
+use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use DateInterval;
 use Laravel\Passport\Passport;
@@ -18,6 +19,11 @@ class TokenExchangeGrant extends AbstractGrant
     private const string GRANT_URN = 'urn:ietf:params:oauth:grant-type:token-exchange';
 
     private const string ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
+
+    private const array RESERVED_PARAMETERS = [
+        'grant_type', 'client_id', 'client_secret', 'subject_token', 'subject_token_type',
+        'requested_token_type', 'audience', 'scope', 'resource', 'actor_token', 'actor_token_type',
+    ];
 
     public function __construct(
         private readonly TokenExchanger $exchanger,
@@ -35,7 +41,7 @@ class TokenExchangeGrant extends AbstractGrant
     ): ResponseTypeInterface {
         $client = $this->validateClient($request);
 
-        if (! $client->isConfidential()) {
+        if (! $client->isConfidential() && ! resolve(FirstPartyClientConfig::class)->isTrusted($client->getIdentifier())) {
             throw OAuthServerException::invalidClient($request);
         }
 
@@ -68,6 +74,7 @@ class TokenExchangeGrant extends AbstractGrant
             $audience,
             $this->scopeParam($request),
             $accessTokenTTL,
+            $this->extensionParameters($request),
         );
 
         $this->getEmitter()->emit(new RequestEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request));
@@ -83,5 +90,11 @@ class TokenExchangeGrant extends AbstractGrant
         $scope = $this->getRequestParameter('scope', $request);
 
         return $scope === null ? null : array_values(array_filter(explode(' ', $scope)));
+    }
+
+    /** @return array<string, mixed> */
+    private function extensionParameters(ServerRequestInterface $request): array
+    {
+        return array_diff_key((array) $request->getParsedBody(), array_flip(self::RESERVED_PARAMETERS));
     }
 }

@@ -15,10 +15,11 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Self-contained RFC 9068 resource-server validator for a bearer access token: verifies the OP
  * signature, the at+jwt typ, expiry, revocation, and that the token is addressed to one of the
- * given audiences. It does NOT require auth:api to precede it — an exchanged token's aud is a
- * resource audience rather than a client id, which auth:api rejects. Revocation is checked against
- * the OP's own token store, so this suits a resource server that shares (or is) the OP; a fully
- * external RS would validate via token introspection instead.
+ * given audiences. It does NOT require auth:api to precede it — auth:api itself now accepts an
+ * exchanged token whose aud names this server (via ResourceAudienceBearerTokenValidator), but this
+ * middleware remains for routes that must enforce one SPECIFIC audience rather than any recognized
+ * one. Revocation is checked against the OP's own token store, so this suits a resource server that
+ * shares (or is) the OP; a fully external RS would validate via token introspection instead.
  */
 class CheckAudience
 {

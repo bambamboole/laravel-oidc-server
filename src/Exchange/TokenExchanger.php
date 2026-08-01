@@ -37,6 +37,7 @@ class TokenExchanger
 
     /**
      * @param  string[]|null  $scopes
+     * @param  array<string, mixed>  $parameters
      */
     public function exchange(
         string $subjectToken,
@@ -44,6 +45,7 @@ class TokenExchanger
         string $audience,
         ?array $scopes = null,
         ?DateInterval $accessTokenTTL = null,
+        array $parameters = [],
     ): OidcAccessToken {
         $parsed = $this->inspector->parse($subjectToken);
         $dbToken = $parsed !== null ? $this->inspector->tokenForParsed($parsed) : null;
@@ -74,6 +76,7 @@ class TokenExchanger
             requestedAudience: $audience,
             requestedScopes: $scopes,
             subjectExpiresAt: $subjectExpiresAt,
+            parameters: $parameters,
         ));
 
         $bridgeClient = new BridgeClient((string) $requestingClient->getKey(), (string) $requestingClient->getAttribute('name'), [], true);

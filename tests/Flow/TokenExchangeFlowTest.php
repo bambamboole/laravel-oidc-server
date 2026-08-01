@@ -8,6 +8,9 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
+use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Exchange\ExchangeGrantResult;
+use Bambamboole\LaravelOidc\Server\Exchange\ExchangeRequest;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
@@ -266,6 +269,44 @@ it('rejects a public client with invalid_client', function () {
         ->assertJsonPath('error', 'invalid_client');
 });
 
+it('allows a trusted public client to exchange its own token', function () {
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Mobile', ['https://rp.test/cb'], confidential: false);
+    $client->forceFill([
+        'grant_types' => [...(array) $client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
+        'allowed_exchange_audiences' => json_encode(['https://api.example.com']),
+    ])->save();
+    config()->set('oidc.trusted_clients', [(string) $client->getKey()]);
+
+    $subject = mintExchangeSubjectToken((string) $client->getKey(), $this->user->getKey(), ['openid']);
+
+    $response = $this->post('/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => (string) $client->getKey(),
+        'subject_token' => $subject,
+        'subject_token_type' => 'urn:ietf:params:oauth:token-type:access_token',
+        'audience' => 'https://api.example.com',
+    ]);
+
+    $response->assertOk();
+    expect($response->json('access_token'))->toBeString();
+});
+
+it('rejects a trusted public client whose grant_types lack token exchange', function () {
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Mobile', ['https://rp.test/cb'], confidential: false);
+    $client->forceFill(['allowed_exchange_audiences' => json_encode(['https://api.example.com'])])->save();
+    config()->set('oidc.trusted_clients', [(string) $client->getKey()]);
+
+    $subject = mintExchangeSubjectToken((string) $client->getKey(), $this->user->getKey(), ['openid']);
+
+    $this->post('/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => (string) $client->getKey(),
+        'subject_token' => $subject,
+        'subject_token_type' => 'urn:ietf:params:oauth:token-type:access_token',
+        'audience' => 'https://api.example.com',
+    ])->assertStatus(400)->assertJsonPath('error', 'unauthorized_client');
+});
+
 // RFC 8693 §3 (token type identifiers)
 it('rejects a wrong subject_token_type with invalid_request', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
@@ -288,6 +329,40 @@ it('rejects a client without the grant', function () {
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT, 'client_id' => $other->id, 'client_secret' => $other->plainSecret,
         'subject_token' => $subject, 'subject_token_type' => ACCESS_TOKEN_URN, 'audience' => 'https://api.internal/orders',
     ])->assertStatus(400);
+});
+
+it('passes extension parameters to the exchange policy', function () {
+    $spy = new class implements ExchangePolicy
+    {
+        public ?ExchangeRequest $request = null;
+
+        public function authorize(ExchangeRequest $request): ExchangeGrantResult
+        {
+            $this->request = $request;
+
+            return new ExchangeGrantResult(
+                userId: (string) $request->subjectClaims['sub'],
+                scopes: [],
+                audience: [(string) $request->requestedAudience],
+                expiresAt: $request->subjectExpiresAt,
+            );
+        }
+    };
+    app()->instance(ExchangePolicy::class, $spy);
+
+    $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
+
+    $this->post('/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'subject_token' => $subject,
+        'subject_token_type' => ACCESS_TOKEN_URN,
+        'audience' => 'https://api.internal/orders',
+        'tenant' => 'acme',
+    ])->assertOk();
+
+    expect($spy->request?->parameters)->toBe(['tenant' => 'acme']);
 });
 
 // RFC 8414 §2 (grant_types_supported)
