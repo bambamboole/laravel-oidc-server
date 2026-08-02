@@ -42,9 +42,9 @@ it('requests form_post and name/email scopes without PKCE', function () {
     $request->setLaravelSession(app('session.store'));
 
     $response = appleProvider($privatePem)->redirect($request);
-    parse_str((string) parse_url($response->getTargetUrl(), PHP_URL_QUERY), $params);
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $params);
 
-    expect($response->getTargetUrl())->toStartWith('https://appleid.apple.com/auth/authorize?')
+    expect($response->headers->get('Location'))->toStartWith('https://appleid.apple.com/auth/authorize?')
         ->and($params['response_mode'])->toBe('form_post')
         ->and($params['scope'])->toBe('name email')
         ->and($params)->not->toHaveKey('code_challenge');

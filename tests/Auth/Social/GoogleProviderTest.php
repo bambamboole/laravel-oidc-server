@@ -21,6 +21,6 @@ it('is pinned to the Google issuer regardless of config', function () {
     $request = Request::create('/auth/social/google');
     $request->setLaravelSession(app('session.store'));
 
-    expect($provider->redirect($request)->getTargetUrl())
+    expect($provider->redirect($request)->headers->get('Location'))
         ->toStartWith('https://accounts.google.com/o/oauth2/v2/auth?');
 });

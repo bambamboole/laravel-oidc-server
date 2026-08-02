@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Auth\Social;
 
 use Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\Response;
 
 abstract class AbstractOAuth2Provider implements SocialProvider
 {
+    use RespondsToInertiaExternalRedirects;
+
     /**
      * @param  array<string, mixed>  $config
      */
@@ -37,7 +40,7 @@ abstract class AbstractOAuth2Provider implements SocialProvider
 
     abstract protected function fetchUser(TokenResponse $tokens, PendingAuthorization $pending, Request $request): SocialUser;
 
-    public function redirect(Request $request, string $intent = PendingAuthorization::INTENT_LOGIN): RedirectResponse
+    public function redirect(Request $request, string $intent = PendingAuthorization::INTENT_LOGIN): Response
     {
         $pending = new PendingAuthorization(
             provider: $this->key,
@@ -49,9 +52,9 @@ abstract class AbstractOAuth2Provider implements SocialProvider
 
         $pending->store($request);
 
-        return redirect()->away(
+        return $this->respondToInertia($request, redirect()->away(
             $this->authorizationEndpoint().'?'.http_build_query($this->authorizationParameters($pending)),
-        );
+        ));
     }
 
     public function user(Request $request, PendingAuthorization $pending): SocialUser

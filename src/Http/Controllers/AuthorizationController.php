@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Auth\LoginDestination;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -26,6 +27,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AuthorizationController extends PassportAuthorizationController
 {
+    use RespondsToInertiaExternalRedirects;
+
     public function __construct(
         AuthorizationServer $server,
         StatefulGuard $guard,
@@ -48,7 +51,16 @@ class AuthorizationController extends PassportAuthorizationController
         $this->rememberRequestedAcrValues($request);
         $this->enforceMaxAge($request);
 
-        return parent::authorize($psrRequest, $request, $psrResponse, $viewResponse);
+        $response = parent::authorize($psrRequest, $request, $psrResponse, $viewResponse);
+
+        // A trusted client skips consent entirely (see hasGrantedScopes()), so
+        // the final redirect_uri redirect is issued right here rather than
+        // from ApproveAuthorizationController — the only other place this
+        // package already guards against Inertia silently swallowing a
+        // redirect to a non-HTTP scheme.
+        return $response instanceof Response
+            ? $this->respondToInertia($request, $response)
+            : $response;
     }
 
     protected function hasGrantedScopes(Authenticatable $user, Client $client, array $scopes): bool

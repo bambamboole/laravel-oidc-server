@@ -103,9 +103,9 @@ it('reads endpoints from the discovery document for the redirect', function () {
     $request->setLaravelSession(app('session.store'));
 
     $response = oidcTestProvider()->redirect($request);
-    parse_str((string) parse_url($response->getTargetUrl(), PHP_URL_QUERY), $params);
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $params);
 
-    expect($response->getTargetUrl())->toStartWith('https://idp.test/authorize?')
+    expect($response->headers->get('Location'))->toStartWith('https://idp.test/authorize?')
         ->and($params['scope'])->toBe('openid profile email')
         ->and($params['nonce'])->not->toBeEmpty();
 });

@@ -63,10 +63,10 @@ it('redirects to the authorization endpoint with state and S256 PKCE', function 
 
     $response = fakeOAuth2Provider()->redirect($request);
 
-    parse_str((string) parse_url($response->getTargetUrl(), PHP_URL_QUERY), $params);
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $params);
     $pending = PendingAuthorization::pull($request);
 
-    expect($response->getTargetUrl())->toStartWith('https://provider.test/authorize?')
+    expect($response->headers->get('Location'))->toStartWith('https://provider.test/authorize?')
         ->and($params['client_id'])->toBe('client-1')
         ->and($params['response_type'])->toBe('code')
         ->and($params['scope'])->toBe('profile')

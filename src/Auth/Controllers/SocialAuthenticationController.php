@@ -20,6 +20,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\Response;
 
 class SocialAuthenticationController
 {
@@ -31,7 +32,7 @@ class SocialAuthenticationController
         private readonly InteractiveLoginFinalizer $finalizer,
     ) {}
 
-    public function redirect(Request $request, string $provider): RedirectResponse
+    public function redirect(Request $request, string $provider): Response
     {
         return $this->provider($provider)->redirect($request);
     }

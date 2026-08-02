@@ -26,9 +26,9 @@ it('redirects to GitHub without PKCE and with default scopes', function () {
     $request->setLaravelSession(app('session.store'));
 
     $response = githubProvider()->redirect($request);
-    parse_str((string) parse_url($response->getTargetUrl(), PHP_URL_QUERY), $params);
+    parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $params);
 
-    expect($response->getTargetUrl())->toStartWith('https://github.com/login/oauth/authorize?')
+    expect($response->headers->get('Location'))->toStartWith('https://github.com/login/oauth/authorize?')
         ->and($params['scope'])->toBe('read:user user:email')
         ->and($params)->not->toHaveKey('code_challenge');
 });

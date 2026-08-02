@@ -45,6 +45,18 @@ it('logs out and redirects to a registered post_logout_redirect_uri', function (
     expect(auth('identity')->guest())->toBeTrue();
 });
 
+it('answers an Inertia logout request with a 409 + X-Inertia-Location instead of a redirect', function () {
+    $response = $this->actingAs($this->user, 'identity')->get('/oauth/logout?'.http_build_query([
+        'id_token_hint' => issueIdToken($this),
+        'post_logout_redirect_uri' => 'https://rp.test/logged-out',
+        'state' => 'xyz',
+    ]), ['X-Inertia' => 'true']);
+
+    $response->assertStatus(409);
+    expect($response->headers->get('X-Inertia-Location'))->toBe('https://rp.test/logged-out?state=xyz');
+    expect(auth('identity')->guest())->toBeTrue();
+});
+
 it('preserves an existing query string when appending state', function () {
     $this->client->forceFill([
         'post_logout_redirect_uris' => json_encode(['https://rp.test/logged-out?tenant=abc']),

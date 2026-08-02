@@ -6,20 +6,23 @@ namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelLogoutNotifier;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Issuer;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Passport\Passport;
 use Lcobucci\JWT\Token\Plain;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
 use Lcobucci\JWT\Validation\Validator;
+use Symfony\Component\HttpFoundation\Response;
 
 class EndSessionController
 {
-    public function __invoke(Request $request): RedirectResponse
+    use RespondsToInertiaExternalRedirects;
+
+    public function __invoke(Request $request): Response
     {
         $hint = $this->validatedHint($request);
         $redirectUri = $this->validatedPostLogoutUri($request, $hint);
@@ -50,14 +53,14 @@ class EndSessionController
         $state = $request->input('state');
 
         if ($state === null) {
-            return redirect()->away($redirectUri);
+            return $this->respondToInertia($request, redirect()->away($redirectUri));
         }
 
         $separator = str_contains($redirectUri, '?') ? '&' : '?';
 
-        return redirect()->away(
+        return $this->respondToInertia($request, redirect()->away(
             $redirectUri.$separator.http_build_query(['state' => $state]),
-        );
+        ));
     }
 
     private function shouldLogout(Request $request, ?Plain $hint): bool

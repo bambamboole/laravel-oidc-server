@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class LinkedAccountController
 {
@@ -21,7 +22,7 @@ class LinkedAccountController
         private readonly SocialProviderRegistry $providers,
     ) {}
 
-    public function link(Request $request, string $provider): RedirectResponse
+    public function link(Request $request, string $provider): Response
     {
         $driver = $this->providers->get($provider) ?? abort(404);
 
