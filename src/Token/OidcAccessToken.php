@@ -14,8 +14,10 @@ use League\OAuth2\Server\Entities\Traits\AccessTokenTrait;
 /**
  * Emits an RFC 9068 (application/at+jwt) access token. league's AccessTokenTrait::convertToJWT is
  * private and stops at a bare JWT (no iss, no typ, a non-standard `scopes` array); we re-use the
- * trait to redefine it. The legacy `scopes` array is retained because Passport's auth:api guard and
- * this package's userinfo read it — dropping it breaks authentication. toString() stays memoized:
+ * trait to redefine it. The legacy `scopes` array is retained for compatibility with Passport's own
+ * native `driver: passport` guard, whose BearerTokenValidator reads scopes from this claim; this
+ * package's own `auth:oidc` guard and userinfo endpoint read scopes off the persisted token record
+ * instead. toString() stays memoized:
  * league 9.4 + lcobucci 5.6 mint fresh microsecond iat/nbf per call, so the at_hash computed in
  * IdTokenBuilder must hash the identical string returned as access_token.
  */

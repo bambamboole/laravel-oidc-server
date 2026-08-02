@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Issuer;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Laravel\Passport\ClientRepository;
+use Laravel\Passport\Http\Middleware\CheckToken;
 use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
@@ -23,7 +25,7 @@ beforeEach(function () {
         'allowed_exchange_audiences' => json_encode([Issuer::url(), 'https://other.example']),
     ])->save();
 
-    Route::middleware('auth:api')->get('/probe', fn () => ['id' => auth()->id()]);
+    Route::middleware('auth:oidc')->get('/probe', fn () => ['id' => auth()->id()]);
 });
 
 function exchangedTokenFor(object $context, string $audience): string
@@ -76,10 +78,43 @@ it('rejects a revoked exchanged token', function () {
     $jti = parseAccessToken($token)->claims()->get('jti');
     Passport::token()->newQuery()->whereKey($jti)->update(['revoked' => true]);
 
-    // TokenGuard caches the resolved user on itself after the first call, so a second
+    // The oidc guard caches the resolved user on itself after the first call, so a second
     // request in the same test would silently reuse it instead of re-validating; drop
-    // the cached guard instance to force a fresh ResourceServer round trip.
+    // the cached guard instance to force a fresh authentication.
     Auth::forgetGuards();
 
     $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])->assertUnauthorized();
+});
+
+it('authenticates a PAT-shaped token identically to a classic authorization-code token', function () {
+    $token = app(AccessTokenMinter::class)->mint(
+        $this->user->getKey(),
+        $this->client,
+        ['openid'],
+        new DateInterval('PT1H'),
+    )->toString();
+
+    $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])
+        ->assertOk()
+        ->assertJson(['id' => $this->user->getKey()]);
+});
+
+it('passes Passport CheckToken scope middleware placed after auth:oidc when the token has the scope', function () {
+    Route::middleware(['auth:oidc', CheckToken::using('openid')])
+        ->get('/probe/scoped', fn () => ['id' => auth()->id()]);
+
+    $token = exchangedTokenFor($this, Issuer::url());
+
+    $this->getJson('/probe/scoped', ['Authorization' => 'Bearer '.$token])
+        ->assertOk()
+        ->assertJson(['id' => $this->user->getKey()]);
+});
+
+it('rejects Passport CheckToken scope middleware placed after auth:oidc when the token lacks the scope', function () {
+    Route::middleware(['auth:oidc', CheckToken::using('admin')])
+        ->get('/probe/scoped-missing', fn () => ['id' => auth()->id()]);
+
+    $token = exchangedTokenFor($this, Issuer::url());
+
+    $this->getJson('/probe/scoped-missing', ['Authorization' => 'Bearer '.$token])->assertForbidden();
 });

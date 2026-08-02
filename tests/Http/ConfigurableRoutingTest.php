@@ -40,9 +40,9 @@ it('registers the OIDC oauth endpoints under the configured passport.path prefix
 
 it('authenticates userinfo via the configured oidc.api_guard', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-    Passport::actingAs($user, ['openid']);
+    Passport::actingAs($user, ['openid'], 'oidc');
 
-    expect(config('oidc.api_guard'))->toBe('api');
+    expect(config('oidc.api_guard'))->toBe('oidc');
     $this->getJson('/oauth/userinfo')->assertOk();
 });
 

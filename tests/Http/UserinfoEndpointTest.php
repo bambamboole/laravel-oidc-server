@@ -23,7 +23,7 @@ it('returns an RFC 6750 error on an unauthenticated userinfo request', function 
 });
 
 it('returns insufficient_scope when the token lacks openid', function () {
-    Passport::actingAs($this->user, ['email']);
+    Passport::actingAs($this->user, ['email'], 'oidc');
     $this->getJson('/oauth/userinfo')
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
@@ -31,7 +31,7 @@ it('returns insufficient_scope when the token lacks openid', function () {
 });
 
 it('returns sub plus scope-filtered claims', function () {
-    Passport::actingAs($this->user, ['openid', 'email']);
+    Passport::actingAs($this->user, ['openid', 'email'], 'oidc');
 
     $this->getJson('/oauth/userinfo')
         ->assertOk()
@@ -53,7 +53,7 @@ it('includes scoped claims from a custom claims resolver', function () {
         }
     });
 
-    Passport::actingAs($this->user, ['openid', 'tenant']);
+    Passport::actingAs($this->user, ['openid', 'tenant'], 'oidc');
 
     $this->getJson('/oauth/userinfo')
         ->assertOk()
@@ -64,7 +64,7 @@ it('includes scoped claims from a custom claims resolver', function () {
 });
 
 it('includes profile claims when granted', function () {
-    Passport::actingAs($this->user, ['openid', 'profile', 'email']);
+    Passport::actingAs($this->user, ['openid', 'profile', 'email'], 'oidc');
 
     $response = $this->getJson('/oauth/userinfo')->assertOk();
 
@@ -73,7 +73,7 @@ it('includes profile claims when granted', function () {
 });
 
 it('accepts POST as required by the spec', function () {
-    Passport::actingAs($this->user, ['openid']);
+    Passport::actingAs($this->user, ['openid'], 'oidc');
 
     $this->postJson('/oauth/userinfo')->assertOk()->assertJson(['sub' => (string) $this->user->id]);
 });

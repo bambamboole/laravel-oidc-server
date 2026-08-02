@@ -30,7 +30,7 @@ return [
         'absolute_lifetime' => (int) env('OIDC_SESSION_ABSOLUTE_LIFETIME', 2592000),
     ],
 
-    'api_guard' => env('OIDC_API_GUARD', 'api'),
+    'api_guard' => env('OIDC_API_GUARD', 'oidc'),
 
     'passport' => [
         // Eloquent token model handed to Passport::useTokenModel(); a
@@ -57,7 +57,7 @@ return [
         'enabled' => env('OIDC_TOKEN_EXCHANGE_ENABLED', true),
     ],
 
-    // Additional resource audiences the auth:api guard accepts on an exchanged access token,
+    // Additional resource audiences the oidc guard accepts on an exchanged access token,
     // beyond the issuer URL. Only widens what's accepted — a foreign audience still 401s.
     'resource' => [
         'audiences' => [],

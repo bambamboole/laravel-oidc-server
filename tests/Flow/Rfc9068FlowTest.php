@@ -55,7 +55,7 @@ it('issues an RFC 9068 access token through the real flow with context-store cla
         ->and($at->claims()->get('client_id'))->toBe($this->client->id);
 });
 
-it('still authenticates the RFC 9068 token on an auth:api route (no guard regression)', function () {
-    Passport::actingAs($this->user, ['openid']);
+it('still authenticates the RFC 9068 token on an auth:oidc route (no guard regression)', function () {
+    Passport::actingAs($this->user, ['openid'], 'oidc');
     $this->getJson('/oauth/userinfo')->assertOk();
 });
