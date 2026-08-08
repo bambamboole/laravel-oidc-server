@@ -120,6 +120,18 @@ it('runs token-exchange triggers independently with their event context', functi
         ]);
 });
 
+it('seeds token-exchange context before the first trigger runs', function () {
+    $pipeline = new AccessTokenPipeline;
+
+    $pipeline->register('token_exchange', function (TokenExchangeEvent $event, AccessTokenApi $api): void {
+        $api->setAccessTokenClaim('tenant_id', $api->context('tenant_id'));
+    });
+
+    $api = $pipeline->run('token_exchange', tokenExchangePipelineEvent(), ['tenant_id' => 'acme']);
+
+    expect($api->accessTokenClaims())->toBe(['tenant_id' => 'acme']);
+});
+
 it('fails closed with a token-exchange-specific reason when a trigger throws', function () {
     $pipeline = new AccessTokenPipeline;
 

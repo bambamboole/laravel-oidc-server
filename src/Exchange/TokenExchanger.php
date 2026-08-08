@@ -105,7 +105,7 @@ class TokenExchanger
             scopes: $scopeIds,
             audience: $result->audience[0] ?? (string) $requestingClient->getKey(),
             subjectClaims: $claims,
-        ));
+        ), $result->context);
 
         if ($api->isDenied()) {
             throw OAuthServerException::accessDenied($api->denyReason());

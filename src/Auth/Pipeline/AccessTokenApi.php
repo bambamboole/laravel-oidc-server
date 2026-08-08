@@ -16,6 +16,9 @@ class AccessTokenApi
     /** @var array<string, mixed> */
     private array $accessTokenClaims = [];
 
+    /** @var array<string, mixed> */
+    private array $context = [];
+
     public function deny(string $reason): void
     {
         $this->denied = true;
@@ -47,5 +50,19 @@ class AccessTokenApi
     public function accessTokenClaims(): array
     {
         return $this->accessTokenClaims;
+    }
+
+    /**
+     * Share arbitrary data between triggers within the same pipeline run.
+     * Unlike setAccessTokenClaim(), this never ends up in the minted token.
+     */
+    public function setContext(string $key, mixed $value): void
+    {
+        $this->context[$key] = $value;
+    }
+
+    public function context(string $key): mixed
+    {
+        return $this->context[$key] ?? null;
     }
 }

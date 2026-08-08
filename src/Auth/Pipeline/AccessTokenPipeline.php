@@ -27,9 +27,14 @@ class AccessTokenPipeline
         return ($this->triggers[$kind] ?? []) !== [];
     }
 
-    public function run(string $kind, object $event): AccessTokenApi
+    /** @param  array<string, mixed>  $context  seeded before the first trigger runs */
+    public function run(string $kind, object $event, array $context = []): AccessTokenApi
     {
         $api = new AccessTokenApi;
+
+        foreach ($context as $key => $value) {
+            $api->setContext($key, $value);
+        }
 
         foreach ($this->triggers[$kind] ?? [] as $trigger) {
             try {

@@ -24,6 +24,17 @@ it('buffers custom access-token claims', function () {
     expect($api->accessTokenClaims())->toBe(['tier' => 'gold']);
 });
 
+it('shares context between triggers without leaking into token claims', function () {
+    $api = new AccessTokenApi;
+
+    expect($api->context('tenant_id'))->toBeNull();
+
+    $api->setContext('tenant_id', 'acme');
+
+    expect($api->context('tenant_id'))->toBe('acme')
+        ->and($api->accessTokenClaims())->toBe([]);
+});
+
 it('refuses protected access-token claim :dataset', function (string $claim) {
     $api = new AccessTokenApi;
 

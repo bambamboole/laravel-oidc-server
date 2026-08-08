@@ -365,6 +365,43 @@ it('passes extension parameters to the exchange policy', function () {
     expect($spy->request?->parameters)->toBe(['tenant' => 'acme']);
 });
 
+it('carries context from the exchange policy into the token-exchange trigger', function () {
+    $policy = new class implements ExchangePolicy
+    {
+        public function authorize(ExchangeRequest $request): ExchangeGrantResult
+        {
+            return new ExchangeGrantResult(
+                userId: (string) $request->subjectClaims['sub'],
+                scopes: [],
+                audience: [(string) $request->requestedAudience],
+                expiresAt: $request->subjectExpiresAt,
+                context: ['tenant_id' => $request->parameters['tenant'] ?? null],
+            );
+        }
+    };
+    app()->instance(ExchangePolicy::class, $policy);
+
+    Oidc::tokenExchange(function (TokenExchangeEvent $event, AccessTokenApi $api): void {
+        $api->setAccessTokenClaim('tenant_id', $api->context('tenant_id'));
+    });
+
+    $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
+
+    $response = $this->post('/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'subject_token' => $subject,
+        'subject_token_type' => ACCESS_TOKEN_URN,
+        'audience' => 'https://api.internal/orders',
+        'tenant' => 'acme',
+    ])->assertOk();
+
+    $claims = parseAccessToken((string) $response->json('access_token'))->claims()->all();
+
+    expect($claims)->toHaveKey('tenant_id', 'acme');
+});
+
 // RFC 8414 §2 (grant_types_supported)
 it('advertises the grant in discovery when enabled', function () {
     expect($this->getJson('/.well-known/openid-configuration')->json('grant_types_supported'))
