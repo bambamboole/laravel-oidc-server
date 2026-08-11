@@ -63,6 +63,43 @@ return [
         'audiences' => [],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Protected resource metadata (RFC 9728)
+    |--------------------------------------------------------------------------
+    |
+    | Resources this provider protects, advertised via
+    | `/.well-known/oauth-protected-resource/{path}`. Keys are the resource's
+    | path relative to the issuer origin (no slashes); MCP clients resolve
+    | their authorization server through this document. Unlisted paths 404.
+    |
+    | 'mcp' => ['scopes' => ['mcp:use']],
+    |
+    */
+    'protected_resources' => [],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Dynamic client registration (RFC 7591)
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, `POST /oauth/register` lets clients (e.g. MCP clients such
+    | as Claude or Cursor) register themselves without credentials. Registered
+    | clients are always public (no secret) with PKCE enforced. Redirect URIs
+    | must use http(s) — hosts checked against `allowed_redirect_domains`
+    | ('*' allows any) — or one of the `allowed_redirect_schemes` (e.g.
+    | 'claude', 'cursor', 'vscode'; a non-http scheme requires a host).
+    | `default_scopes` restricts registered clients to those scopes; empty
+    | leaves the client unrestricted (Passport default).
+    |
+    */
+    'dcr' => [
+        'enabled' => env('OIDC_DCR_ENABLED', false),
+        'allowed_redirect_schemes' => [],
+        'allowed_redirect_domains' => ['*'],
+        'default_scopes' => [],
+    ],
+
     'key_size' => (int) env('OIDC_KEY_SIZE', 2048),
 
     'additional_public_keys' => array_values(array_filter([

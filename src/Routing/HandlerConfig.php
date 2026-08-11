@@ -13,10 +13,12 @@ final class HandlerConfig
     /**
      * @param  string|array{0: class-string, 1: string}  $controller  An invokable controller class, or a [class, method] pair.
      * @param  array<int, string>  $middleware
+     * @param  array<string, string>  $wheres  Route parameter constraints, applied via `Route::where()`.
      */
     public function __construct(
         public readonly string $route,
         public readonly string|array $controller,
         public readonly array $middleware,
+        public readonly array $wheres = [],
     ) {}
 }

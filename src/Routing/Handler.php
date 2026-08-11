@@ -21,11 +21,14 @@ use Bambamboole\LaravelOidc\Server\Auth\Controllers\VerifyEmailController;
 use Bambamboole\LaravelOidc\Server\Auth\Middleware\AuthenticateIdentity;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\ApproveAuthorizationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationServerMetadataController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\ClientRegistrationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\DenyAuthorizationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\DiscoveryController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\EndSessionController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\IntrospectionController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\JwksController;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\ProtectedResourceController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\RevocationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\UserinfoController;
 use Illuminate\Auth\Middleware\RequirePassword;
@@ -85,6 +88,9 @@ enum Handler: string
 
     case Jwks = 'oidc.jwks';
     case Discovery = 'oidc.discovery';
+    case AuthorizationServerMetadata = 'oidc.authorization-server';
+    case ProtectedResource = 'oidc.protected-resource';
+    case ClientRegistration = 'oidc.register';
     case Userinfo = 'oidc.userinfo';
     case Logout = 'oidc.logout';
     case Introspect = 'oidc.introspect';
@@ -101,6 +107,10 @@ enum Handler: string
      */
     public function config(): HandlerConfig|false
     {
+        if ($this === self::ClientRegistration && ! config('oidc.dcr.enabled', false)) {
+            return false;
+        }
+
         /** @var array<string, array{route?: string, controller?: string|array{0: class-string, 1: string}, middleware?: array<int, string>}|false> $handlers */
         $handlers = config('oidc.handlers', []);
         $override = $handlers[$this->value] ?? null;
@@ -116,11 +126,15 @@ enum Handler: string
                 route: $override['route'] ?? $defaults->route,
                 controller: $override['controller'] ?? $defaults->controller,
                 middleware: $override['middleware'] ?? $defaults->middleware,
+                wheres: $defaults->wheres,
             );
 
         /** @var array<int, string> $globalMiddleware */
         $globalMiddleware = config('oidc.routes.middleware', []);
-        $prefix = $this === self::Discovery
+
+        // RFC 8414 / RFC 9728 clients construct these `.well-known` URLs from
+        // the issuer origin themselves, so they must never be prefixed.
+        $prefix = in_array($this, [self::Discovery, self::AuthorizationServerMetadata, self::ProtectedResource], true)
             ? ''
             : trim((string) config('oidc.routes.prefix', ''), '/');
 
@@ -128,6 +142,7 @@ enum Handler: string
             route: $prefix === '' ? $resolved->route : $prefix.'/'.ltrim($resolved->route, '/'),
             controller: $resolved->controller,
             middleware: [...$resolved->middleware, ...$globalMiddleware],
+            wheres: $resolved->wheres,
         );
     }
 
@@ -307,6 +322,23 @@ enum Handler: string
                 controller: DiscoveryController::class,
                 middleware: [],
             ),
+            self::AuthorizationServerMetadata => new HandlerConfig(
+                route: '.well-known/oauth-authorization-server/{path?}',
+                controller: AuthorizationServerMetadataController::class,
+                middleware: [],
+                wheres: ['path' => '.*'],
+            ),
+            self::ProtectedResource => new HandlerConfig(
+                route: '.well-known/oauth-protected-resource/{path?}',
+                controller: ProtectedResourceController::class,
+                middleware: [],
+                wheres: ['path' => '.*'],
+            ),
+            self::ClientRegistration => new HandlerConfig(
+                route: 'oauth/register',
+                controller: ClientRegistrationController::class,
+                middleware: ['throttle'],
+            ),
             self::Userinfo => new HandlerConfig(
                 route: 'oauth/userinfo',
                 controller: UserinfoController::class,
@@ -379,6 +411,7 @@ enum Handler: string
             self::Revoke,
             self::IssueToken,
             self::TokenRefresh,
+            self::ClientRegistration,
             self::Approve => 'post',
             self::Deny, self::TwoFactorRevoke, self::SocialDestroy => 'delete',
             self::Userinfo, self::Logout, self::SocialCallback => ['get', 'post'],

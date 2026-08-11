@@ -1,0 +1,93 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bambamboole\LaravelOidc\Server\Http;
+
+use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Issuer;
+use Bambamboole\LaravelOidc\Server\Routing\Handler;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
+use Laravel\Passport\Passport;
+
+/**
+ * Builds the provider metadata document served both as the OIDC Discovery 1.0
+ * document and as RFC 8414 authorization server metadata — RFC 8414 §2 allows
+ * additional members, so the OIDC-specific fields are valid in both.
+ */
+final readonly class ProviderMetadata
+{
+    public function __construct(private ScopeRepository $scopes) {}
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function document(): array
+    {
+        $grantTypes = ['authorization_code', 'refresh_token', 'client_credentials'];
+
+        if (Passport::$deviceCodeGrantEnabled) {
+            $grantTypes[] = 'urn:ietf:params:oauth:grant-type:device_code';
+        }
+
+        if (config('oidc.token_exchange.enabled', true)) {
+            $grantTypes[] = 'urn:ietf:params:oauth:grant-type:token-exchange';
+        }
+
+        $document = [
+            'issuer' => Issuer::url(),
+            'authorization_endpoint' => $this->endpoint(Handler::Authorize),
+            'token_endpoint' => $this->endpoint(Handler::IssueToken),
+            'jwks_uri' => $this->endpoint(Handler::Jwks),
+            'response_types_supported' => ['code'],
+            'response_modes_supported' => ['query'],
+            'grant_types_supported' => $grantTypes,
+            'subject_types_supported' => ['public'],
+            'id_token_signing_alg_values_supported' => ['RS256'],
+            'scopes_supported' => $this->scopes->all()
+                ->reject(fn (Scope $scope) => $scope->hidden)
+                ->map(fn (Scope $scope) => $scope->id)
+                ->values()
+                ->all(),
+            'claims_supported' => config('oidc.claims_supported'),
+            'claims_parameter_supported' => false,
+            'request_parameter_supported' => false,
+            'request_uri_parameter_supported' => false,
+            'code_challenge_methods_supported' => ['S256'],
+            'backchannel_logout_supported' => true,
+            'backchannel_logout_session_supported' => true,
+            'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post', 'none'],
+        ];
+
+        if (Handler::Userinfo->config() !== false) {
+            $document['userinfo_endpoint'] = $this->endpoint(Handler::Userinfo);
+        }
+
+        if (Handler::Logout->config() !== false) {
+            $document['end_session_endpoint'] = $this->endpoint(Handler::Logout);
+        }
+
+        if (Handler::Introspect->config() !== false) {
+            $document['introspection_endpoint'] = $this->endpoint(Handler::Introspect);
+            $document['introspection_endpoint_auth_methods_supported'] = ['client_secret_basic', 'client_secret_post'];
+        }
+
+        if (Handler::Revoke->config() !== false) {
+            $document['revocation_endpoint'] = $this->endpoint(Handler::Revoke);
+            $document['revocation_endpoint_auth_methods_supported'] = ['client_secret_basic', 'client_secret_post'];
+        }
+
+        if (Handler::ClientRegistration->config() !== false) {
+            $document['registration_endpoint'] = $this->endpoint(Handler::ClientRegistration);
+        }
+
+        return $document;
+    }
+
+    public function endpoint(Handler $handler): string
+    {
+        $path = parse_url(route($handler->value), PHP_URL_PATH);
+
+        return rtrim(Issuer::url(), '/').($path ?? '');
+    }
+}

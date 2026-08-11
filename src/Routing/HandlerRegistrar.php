@@ -30,7 +30,7 @@ final class HandlerRegistrar
                 ? Route::match($method, $config->route, $config->controller)
                 : Route::{$method}($config->route, $config->controller);
 
-            $route->name($handler->value)->middleware($config->middleware);
+            $route->name($handler->value)->middleware($config->middleware)->where($config->wheres);
         }
     }
 }

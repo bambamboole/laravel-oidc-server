@@ -2,9 +2,9 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\AuthenticatedSessionController;
-use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\DiscoveryController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\JwksController;
+use Bambamboole\LaravelOidc\Server\Http\ProviderMetadata;
 use Bambamboole\LaravelOidc\Server\Issuer;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Routing\HandlerConfig;
@@ -47,7 +47,7 @@ it('authenticates userinfo via the configured oidc.api_guard', function () {
 });
 
 it('registers a route for every enabled handler', function () {
-    config(['oidc.handlers' => []]);
+    config(['oidc.handlers' => [], 'oidc.dcr.enabled' => true]);
 
     $routes = registerHandlersInFreshRouter()->getRoutes();
 
@@ -151,12 +151,15 @@ it('appends global route middleware after each handler middleware list', functio
         ->toBe(['global-one', 'global-two']);
 });
 
-it('prefixes every route except discovery and advertises the registered prefixed endpoints', function () {
+it('prefixes every route except the well-known documents and advertises the registered prefixed endpoints', function () {
     config([
         'oidc.issuer' => 'https://issuer.test',
         'oidc.routes.prefix' => 'provider',
         'oidc.handlers' => [],
+        'oidc.dcr.enabled' => true,
     ]);
+
+    $wellKnown = [Handler::Discovery, Handler::AuthorizationServerMetadata, Handler::ProtectedResource];
 
     $routes = registerHandlersInFreshRouter()->getRoutes();
     app('url')->setRoutes($routes);
@@ -164,15 +167,19 @@ it('prefixes every route except discovery and advertises the registered prefixed
     expect($routes->getByName(Handler::Discovery->value)->uri())
         ->toBe('.well-known/openid-configuration');
 
+    foreach ($wellKnown as $handler) {
+        expect($routes->getByName($handler->value)->uri())->toStartWith('.well-known/');
+    }
+
     foreach (Handler::cases() as $handler) {
-        if ($handler === Handler::Discovery) {
+        if (in_array($handler, $wellKnown, true)) {
             continue;
         }
 
         expect($routes->getByName($handler->value)->uri())->toStartWith('provider/');
     }
 
-    $document = app(DiscoveryController::class)(app(ScopeRepository::class))->getData(true);
+    $document = app(DiscoveryController::class)(app(ProviderMetadata::class))->getData(true);
 
     foreach ([
         'authorization_endpoint' => Handler::Authorize,
@@ -182,6 +189,7 @@ it('prefixes every route except discovery and advertises the registered prefixed
         'end_session_endpoint' => Handler::Logout,
         'introspection_endpoint' => Handler::Introspect,
         'revocation_endpoint' => Handler::Revoke,
+        'registration_endpoint' => Handler::ClientRegistration,
     ] as $documentKey => $handler) {
         expect(parse_url($document[$documentKey], PHP_URL_PATH))
             ->toBe('/'.$routes->getByName($handler->value)->uri());

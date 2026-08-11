@@ -52,5 +52,6 @@ parameters:
             message: '#Call to an undefined method Bambamboole\\LaravelOidc\\Server\\Tests\\TestCase::(actingAsIdentity|authorizeAndApprove|pkce)\(\)#'
             paths:
                 - tests/Flow/AuthorizationCodeFlowTest.php
+                - tests/Flow/DynamicClientRegistrationFlowTest.php
                 - tests/Flow/Rfc9068FlowTest.php
                 - tests/Flow/MaxAgeTest.php
