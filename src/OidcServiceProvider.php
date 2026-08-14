@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Audit\LogSink;
+use Bambamboole\LaravelOidc\Server\Audit\RecordLoginAudit;
+use Bambamboole\LaravelOidc\Server\Audit\RecordLogoutAudit;
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
@@ -37,6 +42,7 @@ use Bambamboole\LaravelOidc\Server\Console\PruneAuthenticationContextsCommand;
 use Bambamboole\LaravelOidc\Server\Console\RotateKeysCommand;
 use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
+use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
@@ -89,6 +95,7 @@ use Laravel\Passport\Bridge\RefreshTokenRepository;
 use Laravel\Passport\Bridge\ScopeRepository as PassportBridgeScopeRepository;
 use Laravel\Passport\Passport;
 use League\OAuth2\Server\AuthorizationServer;
+use League\OAuth2\Server\RequestEvent;
 use Symfony\Component\HttpFoundation\Response;
 
 class OidcServiceProvider extends ServiceProvider
@@ -183,6 +190,10 @@ class OidcServiceProvider extends ServiceProvider
         $this->app->singleton(BackChannelLogoutNotifier::class);
         $this->app->singleton(AccessTokenContextLink::class);
         $this->app->singleton(DeviceRecognizer::class, NullDeviceRecognizer::class);
+        $this->app->singleton(AuditSink::class, fn (Application $app): AuditSink => $app->make(
+            (string) config('oidc.audit.sink', LogSink::class),
+        ));
+        $this->app->singleton(Auditor::class);
 
         $this->registerDefaultAuthViewBindings();
 
@@ -214,6 +225,7 @@ class OidcServiceProvider extends ServiceProvider
                 $app->make(AuthenticationContextStore::class),
                 $app->make(OidcSessionRepository::class),
                 $app->make(AuthSessionState::class),
+                $app->make(Auditor::class),
             );
             $grant->setRefreshTokenTTL(Passport::refreshTokensExpireIn());
 
@@ -225,12 +237,13 @@ class OidcServiceProvider extends ServiceProvider
                 $app->make(AccessTokenPipeline::class),
                 $app->make(AuthenticationContextStore::class),
                 $app->make(OidcSessionRepository::class),
+                $app->make(Auditor::class),
             );
             $refreshGrant->setRefreshTokenTTL(Passport::refreshTokensExpireIn());
             $server->enableGrantType($refreshGrant, $accessTokenTtl);
 
             $server->enableGrantType(
-                new OidcClientCredentialsGrant($app->make(AccessTokenPipeline::class)),
+                new OidcClientCredentialsGrant($app->make(AccessTokenPipeline::class), $app->make(Auditor::class)),
                 new DateInterval('PT'.(int) config('oidc.token_lifetimes.client_credentials').'S'),
             );
 
@@ -242,6 +255,18 @@ class OidcServiceProvider extends ServiceProvider
                     Passport::tokensExpireIn(),
                 );
             }
+
+            $auditClientAuthFailure = function (RequestEvent $event) use ($app): void {
+                $body = $event->getRequest()->getParsedBody();
+                $clientId = is_array($body) ? ($body['client_id'] ?? null) : null;
+                $clientId = is_string($clientId) ? $clientId : ($event->getRequest()->getQueryParams()['client_id'] ?? null);
+                $app->make(Auditor::class)->log(AuditEventType::ClientAuthenticationFailed, clientId: is_string($clientId) ? $clientId : null, context: [
+                    'endpoint' => trim($event->getRequest()->getUri()->getPath(), '/'),
+                    'reason' => $event->eventName(),
+                ]);
+            };
+            $server->getEmitter()->subscribeTo(RequestEvent::CLIENT_AUTHENTICATION_FAILED, $auditClientAuthFailure);
+            $server->getEmitter()->subscribeTo(RequestEvent::REFRESH_TOKEN_CLIENT_FAILED, $auditClientAuthFailure);
 
             return $server;
         });
@@ -294,8 +319,13 @@ class OidcServiceProvider extends ServiceProvider
             ),
         );
 
+        // RecordLoginAudit runs after StartOidcSession so the sid it captures
+        // exists; RecordLogoutAudit runs before the teardown listeners so the
+        // sid is still readable from the session.
         Event::listen(Login::class, EstablishSessionToken::class);
         Event::listen(Login::class, StartOidcSession::class);
+        Event::listen(Login::class, RecordLoginAudit::class);
+        Event::listen(Logout::class, RecordLogoutAudit::class);
         Event::listen(Logout::class, ForgetSessionToken::class);
         Event::listen(Logout::class, EndOidcSession::class);
 

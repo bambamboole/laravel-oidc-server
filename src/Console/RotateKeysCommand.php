@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Console;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
@@ -67,6 +69,10 @@ class RotateKeysCommand extends Command
 
                 return self::FAILURE;
             }
+
+            app(Auditor::class)->log(AuditEventType::KeysRotated, context: [
+                'kid' => $generated->kid,
+            ]);
         }
 
         $this->info('New signing key generated. New kid: '.$generated->kid);

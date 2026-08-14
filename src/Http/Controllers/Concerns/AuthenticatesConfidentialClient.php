@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Http\ClientCredentials;
 use Bambamboole\LaravelOidc\Server\Http\OAuthError;
 use Illuminate\Http\Request;
@@ -18,6 +20,11 @@ trait AuthenticatesConfidentialClient
         $clientId = $credentials->validate($request);
 
         if ($clientId === null) {
+            $attempted = $request->input('client_id');
+            app(Auditor::class)->log(AuditEventType::ClientAuthenticationFailed, clientId: is_string($attempted) ? $attempted : null, context: [
+                'endpoint' => $request->path(),
+            ]);
+
             OAuthError::client();
         }
 

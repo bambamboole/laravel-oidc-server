@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\EnrollmentPolicy;
@@ -28,6 +30,7 @@ class FactorEnrollmentController
     public function __construct(
         private readonly FactorRegistry $factors,
         private readonly EnrollmentPolicy $policy,
+        private readonly Auditor $auditor,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -52,6 +55,11 @@ class FactorEnrollmentController
             is_string($name) && $name !== '' ? $name : null,
         );
 
+        $this->auditor->log(AuditEventType::FactorEnrollmentStarted, userId: (string) $user->getAuthIdentifier(), context: [
+            'factor' => $provider,
+            'enrollment_id' => $enrollment->id,
+        ]);
+
         return new JsonResponse($this->serialize($enrollment), 201);
     }
 
@@ -61,17 +69,16 @@ class FactorEnrollmentController
         $enrollable = $this->enrollable($provider);
         $enrollment = $this->pendingEnrollment($enrollable, $user, (string) $request->input('enrollment_id'));
 
-        $confirmed = $enrollment !== null && $enrollable->confirmEnrollment(
-            $user,
-            $enrollment,
-            $request->except('enrollment_id'),
-        );
-
-        if (! $confirmed) {
+        if ($enrollment === null || ! $enrollable->confirmEnrollment($user, $enrollment, $request->except('enrollment_id'))) {
             throw ValidationException::withMessages(['code' => __('The provided two factor authentication code was invalid.')]);
         }
 
         $this->policy->factorConfirmed($user);
+
+        $this->auditor->log(AuditEventType::FactorConfirmed, userId: (string) $user->getAuthIdentifier(), context: [
+            'factor' => $provider,
+            'enrollment_id' => $enrollment->id,
+        ]);
 
         return new JsonResponse('', 200);
     }
@@ -88,6 +95,11 @@ class FactorEnrollmentController
 
         $enrollable->revoke($user, $pending);
         $this->policy->factorRevoked($user);
+
+        $this->auditor->log(AuditEventType::FactorRevoked, userId: (string) $user->getAuthIdentifier(), context: [
+            'factor' => $provider,
+            'enrollment_id' => $enrollment,
+        ]);
 
         return new JsonResponse('', 204);
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Grant;
 
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
@@ -44,11 +45,13 @@ class OidcAuthCodeGrant extends AuthCodeGrant
         private readonly AuthenticationContextStore $contextStore,
         private readonly OidcSessionRepository $sessions,
         private readonly AuthSessionState $sessionState,
+        Auditor $auditor,
     ) {
         parent::__construct($authCodeRepository, $refreshTokenRepository, $authCodeTTL);
         $this->authCodeTTL = $authCodeTTL;
         $this->contextLink = $contextLink;
         $this->accessTokenPipeline = $accessTokenPipeline;
+        $this->auditor = $auditor;
     }
 
     protected function createAuthorizationRequest(): AuthorizationRequestInterface

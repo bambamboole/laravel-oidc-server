@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,7 @@ final readonly class FirstPartyClientProvisioner
     public function __construct(
         private ClientRepository $clients,
         private Hasher $hasher,
+        private Auditor $auditor,
     ) {}
 
     /**
@@ -55,7 +58,7 @@ final readonly class FirstPartyClientProvisioner
         }
 
         try {
-            return $this->transactionalProvision(
+            return $this->recordProvisioned($this->transactionalProvision(
                 $name,
                 $redirectUris,
                 $postLogoutRedirectUris,
@@ -63,11 +66,11 @@ final readonly class FirstPartyClientProvisioner
                 $adoptClientId,
                 $rotateSecret,
                 $existingClientSecret,
-            );
+            ));
         } catch (QueryException $exception) {
             if ($this->isUniqueConstraint($exception)
                 && Passport::client()->newQuery()->where('oidc_provisioning_key', self::ProvisioningKey)->exists()) {
-                return $this->transactionalProvision(
+                return $this->recordProvisioned($this->transactionalProvision(
                     $name,
                     $redirectUris,
                     $postLogoutRedirectUris,
@@ -75,11 +78,21 @@ final readonly class FirstPartyClientProvisioner
                     $adoptClientId,
                     $rotateSecret,
                     $existingClientSecret,
-                );
+                ));
             }
 
             throw $exception;
         }
+    }
+
+    private function recordProvisioned(FirstPartyClientProvisioningResult $result): FirstPartyClientProvisioningResult
+    {
+        $this->auditor->log(AuditEventType::ClientProvisioned, clientId: $result->clientId, context: [
+            'created' => $result->wasCreated,
+            'secret_rotated' => $result->secretRotated,
+        ]);
+
+        return $result;
     }
 
     /**

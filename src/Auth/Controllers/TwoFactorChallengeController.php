@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorChallenge;
@@ -28,6 +30,7 @@ class TwoFactorChallengeController
     public function __construct(
         private readonly FactorRegistry $factors,
         private readonly AuthSessionState $sessionState,
+        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -136,6 +139,11 @@ class TwoFactorChallengeController
             : $this->pendingEnrollment($user, $providerKey, $pending->factorId);
 
         if (! $enrollment instanceof FactorEnrollment) {
+            $this->auditor->log(AuditEventType::MfaChallengeFailed, userId: (string) $pending->userId, context: [
+                'factor' => $providerKey,
+                'reason' => 'unknown_enrollment',
+            ]);
+
             throw ValidationException::withMessages(['code' => __('The provided two factor authentication code was invalid.')]);
         }
 
@@ -144,11 +152,23 @@ class TwoFactorChallengeController
 
         if (! $verification->verified) {
             $field = $usesRecoveryCode ? 'recovery_code' : 'code';
+            $this->auditor->log(AuditEventType::MfaChallengeFailed, userId: (string) $pending->userId, context: [
+                'factor' => $providerKey,
+                'reason' => 'invalid_code',
+            ]);
 
             throw ValidationException::withMessages([$field => __('The provided two factor authentication code was invalid.')]);
         }
 
         $this->sessionState->add(...$verification->amr);
+
+        $this->auditor->log(AuditEventType::MfaChallengeSucceeded, userId: (string) $pending->userId, context: [
+            'factor' => $providerKey,
+        ]);
+
+        if ($usesRecoveryCode) {
+            $this->auditor->log(AuditEventType::RecoveryCodeUsed, userId: (string) $pending->userId);
+        }
 
         PendingMfaChallenge::forget();
         $this->sessionGuard()->login($user, $pending->remember);

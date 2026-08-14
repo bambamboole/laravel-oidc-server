@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Exchange;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
@@ -33,6 +35,7 @@ class TokenExchanger
         private readonly AccessTokenMinter $minter,
         private readonly ScopeRepository $scopes,
         private readonly AccessTokenPipeline $pipeline,
+        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -51,23 +54,23 @@ class TokenExchanger
         $dbToken = $parsed !== null ? $this->inspector->tokenForParsed($parsed) : null;
 
         if ($parsed === null || $dbToken === null || (bool) $dbToken->getAttribute('revoked')) {
-            throw OAuthServerException::invalidGrant('The subject token is invalid.');
+            $this->deny($requestingClient, 'subject_token_invalid', 'The subject token is invalid.');
         }
 
         if (((string) ($dbToken->getAttribute('user_id') ?? '')) === '') {
-            throw OAuthServerException::invalidGrant('The subject token must be bound to a user.');
+            $this->deny($requestingClient, 'subject_token_userless', 'The subject token must be bound to a user.');
         }
 
         $claims = $parsed->claims()->all();
         $subjectExpiresAt = $this->claimTimestamp($claims['exp'] ?? null);
 
         if ($subjectExpiresAt <= time()) {
-            throw OAuthServerException::invalidGrant('The subject token has expired.');
+            $this->deny($requestingClient, 'subject_token_expired', 'The subject token has expired.');
         }
 
         $dbExpiresAt = $dbToken->getAttribute('expires_at');
         if ($dbExpiresAt instanceof DateTimeInterface && $dbExpiresAt->getTimestamp() <= time()) {
-            throw OAuthServerException::invalidGrant('The subject token has expired.');
+            $this->deny($requestingClient, 'subject_token_expired', 'The subject token has expired.');
         }
 
         $result = $this->policy->authorize(new ExchangeRequest(
@@ -96,7 +99,7 @@ class TokenExchanger
         $user = $this->resolveUser($result->userId);
 
         if ($user === null) {
-            throw OAuthServerException::invalidGrant('The subject token user no longer exists.');
+            $this->deny($requestingClient, 'subject_user_missing', 'The subject token user no longer exists.');
         }
 
         $api = $this->pipeline->run('token_exchange', new TokenExchangeEvent(
@@ -108,6 +111,12 @@ class TokenExchanger
         ), $result->context);
 
         if ($api->isDenied()) {
+            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: $result->userId, clientId: (string) $requestingClient->getKey(), context: array_filter([
+                'grant_type' => self::GRANT_URN,
+                'reason' => 'pipeline_denied',
+                'deny_reason' => $api->denyReason(),
+            ]));
+
             throw OAuthServerException::accessDenied($api->denyReason());
         }
 
@@ -127,7 +136,24 @@ class TokenExchanger
 
         $token->setActor($act);
 
+        $this->auditor->log(AuditEventType::TokenIssued, userId: $result->userId, clientId: (string) $requestingClient->getKey(), context: [
+            'grant_type' => self::GRANT_URN,
+            'jti' => $token->getIdentifier(),
+            'audience' => $result->audience,
+            'scopes' => $scopeIds,
+        ]);
+
         return $token;
+    }
+
+    private function deny(Client $requestingClient, string $reason, string $message): never
+    {
+        $this->auditor->log(AuditEventType::TokenIssuanceFailed, clientId: (string) $requestingClient->getKey(), context: [
+            'grant_type' => self::GRANT_URN,
+            'reason' => $reason,
+        ]);
+
+        throw OAuthServerException::invalidGrant($message);
     }
 
     private function cappedTtl(DateInterval $default, int $subjectExpiresAt): DateInterval

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
@@ -31,6 +33,7 @@ class NewPasswordController
     public function __construct(
         private readonly UserActionManager $actions,
         private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -84,6 +87,8 @@ class NewPasswordController
         );
 
         if ($status === Password::PASSWORD_RESET && $resetUser instanceof Authenticatable) {
+            $this->auditor->log(AuditEventType::PasswordReset, userId: (string) $resetUser->getAuthIdentifier());
+
             // The password is reset either way; a postLogin denial or pending
             // second factor only affects the session that follows.
             $outcome = $this->finalizer->finalize($request, $resetUser, 'pwd');

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
@@ -30,6 +32,7 @@ class SocialAuthenticationController
         private readonly SocialProviderRegistry $providers,
         private readonly SocialAccountManager $accounts,
         private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly Auditor $auditor,
     ) {}
 
     public function redirect(Request $request, string $provider): Response
@@ -67,6 +70,10 @@ class SocialAuthenticationController
             return $this->failed($request, __('Your sign-in attempt expired. Please try again.'));
         } catch (SocialAuthenticationException $exception) {
             Log::warning("oidc: social authentication with [{$provider}] failed: {$exception->getMessage()}");
+            $this->auditor->log(AuditEventType::LoginFailed, context: [
+                'method' => 'social:'.$provider,
+                'reason' => $exception->getMessage(),
+            ]);
 
             return $this->failed($request, __('We could not sign you in with this account.'));
         }

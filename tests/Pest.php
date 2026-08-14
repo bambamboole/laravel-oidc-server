@@ -1,7 +1,9 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
 use Bambamboole\LaravelOidc\Server\Issuer;
+use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
@@ -69,6 +71,14 @@ register_shutdown_function(function (): void {
         unlink($database);
     }
 });
+
+function fakeAudit(): FakeAuditSink
+{
+    $sink = new FakeAuditSink;
+    app()->instance(AuditSink::class, $sink);
+
+    return $sink;
+}
 
 function parseAccessToken(string $jwt): UnencryptedToken
 {

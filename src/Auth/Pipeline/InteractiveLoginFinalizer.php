@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Pipeline;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesPendingAuthorization;
@@ -31,6 +33,7 @@ final class InteractiveLoginFinalizer
         private readonly AuthSessionState $sessionState,
         private readonly PostLoginPipeline $pipeline,
         private readonly DeviceRecognizer $deviceRecognizer,
+        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -63,6 +66,11 @@ final class InteractiveLoginFinalizer
 
         if ($api->isDenied()) {
             Log::warning('oidc: login denied by postLogin', ['method' => $method, 'reason' => $api->denyReason()]);
+            $this->auditor->log(AuditEventType::LoginFailed, userId: (string) $user->getAuthIdentifier(), context: array_filter([
+                'method' => $method,
+                'reason' => 'policy_denied',
+                'deny_reason' => $api->denyReason(),
+            ]));
             $this->sessionState->forget();
 
             return LoginOutcome::Denied;
@@ -74,6 +82,10 @@ final class InteractiveLoginFinalizer
 
         if ($api->mfaRequired() && $enrollments === []) {
             Log::warning('oidc: login denied, MFA required but no challengeable factor', ['method' => $method]);
+            $this->auditor->log(AuditEventType::LoginFailed, userId: (string) $user->getAuthIdentifier(), context: [
+                'method' => $method,
+                'reason' => 'mfa_required_without_factor',
+            ]);
             $this->sessionState->forget();
 
             return LoginOutcome::Denied;

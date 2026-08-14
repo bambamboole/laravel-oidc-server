@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Grant;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
@@ -35,10 +37,12 @@ class OidcRefreshTokenGrant extends RefreshTokenGrant
         AccessTokenPipeline $accessTokenPipeline,
         private readonly AuthenticationContextStore $contextStore,
         private readonly OidcSessionRepository $sessions,
+        Auditor $auditor,
     ) {
         parent::__construct($refreshTokenRepository);
         $this->contextLink = $contextLink;
         $this->accessTokenPipeline = $accessTokenPipeline;
+        $this->auditor = $auditor;
     }
 
     public function respondToAccessTokenRequest(
@@ -67,6 +71,12 @@ class OidcRefreshTokenGrant extends RefreshTokenGrant
 
         foreach ($scopes as $scope) {
             if (in_array($scope->getIdentifier(), $oldRefreshToken['scopes'], true) === false) {
+                $this->auditor->log(AuditEventType::TokenIssuanceFailed, clientId: $client->getIdentifier(), context: [
+                    'grant_type' => $this->getIdentifier(),
+                    'reason' => 'scope_escalation',
+                    'scope' => $scope->getIdentifier(),
+                ]);
+
                 throw OAuthServerException::invalidScope($scope->getIdentifier());
             }
         }
@@ -114,17 +124,17 @@ class OidcRefreshTokenGrant extends RefreshTokenGrant
         $context = $this->contextStore->find($contextId);
 
         if ($context === null) {
-            throw OAuthServerException::invalidRefreshToken('The authentication session has expired; re-authentication is required.');
+            $this->denyRefresh('context_expired', 'The authentication session has expired; re-authentication is required.');
         }
 
         if ($context->sid !== null) {
             $session = $this->sessions->find($context->sid);
             if ($session === null || ! $session->isActive()) {
-                throw OAuthServerException::invalidRefreshToken('The authentication session has ended; re-authentication is required.');
+                $this->denyRefresh('session_ended', 'The authentication session has ended; re-authentication is required.', $context->sid);
             }
         } elseif ($context->expires_at !== null && $context->expires_at->isPast()) {
             // Pre-session context (no sid): fall back to the 2a-2 per-context cap.
-            throw OAuthServerException::invalidRefreshToken('The authentication session has expired; re-authentication is required.');
+            $this->denyRefresh('context_expired', 'The authentication session has expired; re-authentication is required.');
         }
 
         $this->pendingContext = $context;
@@ -135,5 +145,15 @@ class OidcRefreshTokenGrant extends RefreshTokenGrant
             $responseType->setAuthTime($context->auth_time);
             $responseType->setSid($context->sid);
         }
+    }
+
+    private function denyRefresh(string $reason, string $message, ?string $sid = null): never
+    {
+        $this->auditor->log(AuditEventType::TokenIssuanceFailed, sid: $sid, context: [
+            'grant_type' => $this->getIdentifier(),
+            'reason' => $reason,
+        ]);
+
+        throw OAuthServerException::invalidRefreshToken($message);
     }
 }

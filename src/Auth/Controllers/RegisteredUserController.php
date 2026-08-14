@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
@@ -24,6 +26,7 @@ class RegisteredUserController
     public function __construct(
         private readonly UserActionManager $actions,
         private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -47,6 +50,8 @@ class RegisteredUserController
         ]);
 
         event(new Registered($user = $this->actions->createUser($input)));
+
+        $this->auditor->log(AuditEventType::UserRegistered, userId: (string) $user->getAuthIdentifier());
 
         // The account exists either way; a postLogin denial only refuses the
         // session, so the user lands on the login page instead.

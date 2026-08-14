@@ -22,6 +22,14 @@ use League\OAuth2\Server\RequestTypes\AuthorizationRequestInterface;
  */
 trait RetrievesAuthRequestFromSession
 {
+    private const array ALLOWED_AUTH_REQUEST_CLASSES = [
+        OidcAuthorizationRequest::class,
+        AuthorizationRequest::class,
+        Client::class,
+        Scope::class,
+        User::class,
+    ];
+
     protected function getAuthRequestFromSession(Request $request): AuthorizationRequestInterface
     {
         if ($request->isNotFilled('auth_token') ||
@@ -40,12 +48,28 @@ trait RetrievesAuthRequestFromSession
             return $authRequest;
         }
 
-        return unserialize($authRequest, ['allowed_classes' => [
-            OidcAuthorizationRequest::class,
-            AuthorizationRequest::class,
-            Client::class,
-            Scope::class,
-            User::class,
-        ]]);
+        return unserialize($authRequest, ['allowed_classes' => self::ALLOWED_AUTH_REQUEST_CLASSES]);
+    }
+
+    /**
+     * Non-destructive variant for observers (e.g. consent auditing): the
+     * authoritative pull with auth_token verification stays in
+     * getAuthRequestFromSession(), which Passport's parent controller runs.
+     */
+    protected function peekAuthRequestFromSession(Request $request): ?AuthorizationRequestInterface
+    {
+        $authRequest = $request->session()->get('authRequest');
+
+        if ($authRequest instanceof AuthorizationRequestInterface) {
+            return $authRequest;
+        }
+
+        if (! is_string($authRequest)) {
+            return null;
+        }
+
+        $unserialized = unserialize($authRequest, ['allowed_classes' => self::ALLOWED_AUTH_REQUEST_CLASSES]);
+
+        return $unserialized instanceof AuthorizationRequestInterface ? $unserialized : null;
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Grant;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\ClientCredentialsEvent;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
@@ -19,6 +21,7 @@ class OidcClientCredentialsGrant extends ClientCredentialsGrant
 {
     public function __construct(
         private readonly AccessTokenPipeline $pipeline,
+        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -40,6 +43,12 @@ class OidcClientCredentialsGrant extends ClientCredentialsGrant
         $api = $this->pipeline->run('client_credentials', $event);
 
         if ($api->isDenied()) {
+            $this->auditor->log(AuditEventType::TokenIssuanceFailed, clientId: $client->getIdentifier(), context: array_filter([
+                'grant_type' => $this->getIdentifier(),
+                'reason' => 'pipeline_denied',
+                'deny_reason' => $api->denyReason(),
+            ]));
+
             throw OAuthServerException::accessDenied($api->denyReason());
         }
 
@@ -52,6 +61,12 @@ class OidcClientCredentialsGrant extends ClientCredentialsGrant
         foreach ($api->accessTokenClaims() as $name => $value) {
             $accessToken->addExtraClaim($name, $value);
         }
+
+        $this->auditor->log(AuditEventType::TokenIssued, clientId: $client->getIdentifier(), context: [
+            'grant_type' => $this->getIdentifier(),
+            'jti' => $accessToken->getIdentifier(),
+            'scopes' => $event->scopes,
+        ]);
 
         return $accessToken;
     }

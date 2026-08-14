@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Grant\Concerns;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
@@ -35,6 +37,9 @@ trait HasAuthenticationContextIssuance
     /** Assigned in the constructor of every grant composing this trait. */
     protected readonly AccessTokenPipeline $accessTokenPipeline;
 
+    /** Assigned in the constructor of every grant composing this trait. */
+    protected readonly Auditor $auditor;
+
     protected ?AuthenticationContext $pendingContext = null;
 
     /**
@@ -49,6 +54,12 @@ trait HasAuthenticationContextIssuance
         $api = $this->runAuthorizationCodeTriggers($client, $userIdentifier, $scopes);
 
         if ($api?->isDenied() === true) {
+            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: $userIdentifier, clientId: $client->getIdentifier(), context: array_filter([
+                'grant_type' => $this->getIdentifier(),
+                'reason' => 'pipeline_denied',
+                'deny_reason' => $api->denyReason(),
+            ]));
+
             throw OAuthServerException::accessDenied($api->denyReason());
         }
 
@@ -70,6 +81,12 @@ trait HasAuthenticationContextIssuance
                 $accessToken->addExtraClaim($name, $value);
             }
         }
+
+        $this->auditor->log(AuditEventType::TokenIssued, userId: $userIdentifier, clientId: $client->getIdentifier(), sid: $context?->sid, context: [
+            'grant_type' => $this->getIdentifier(),
+            'jti' => $accessToken->getIdentifier(),
+            'scopes' => array_map(fn (ScopeEntityInterface $scope): string => $scope->getIdentifier(), $scopes),
+        ]);
 
         return $accessToken;
     }

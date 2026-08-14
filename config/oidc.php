@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Audit\LogSink;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\RecoveryCodeProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\WebAuthnFactorProvider;
@@ -55,6 +56,26 @@ return [
 
     'token_exchange' => [
         'enabled' => env('OIDC_TOKEN_EXCHANGE_ENABLED', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Audit logging
+    |--------------------------------------------------------------------------
+    |
+    | Every security-relevant event (logins, MFA, consent, token issuance,
+    | revocation, client administration) is dispatched as an AuditEvent and
+    | forwarded to the configured sink. `sink` is a class-string of an
+    | AuditSink implementation resolved from the container; the shipped
+    | LogSink writes structured log lines (failures as warning, successes as
+    | info) to `log_channel`, null meaning the default channel. Recording is
+    | fail-open: sink failures are reported, never propagated.
+    |
+    */
+    'audit' => [
+        'enabled' => env('OIDC_AUDIT_ENABLED', true),
+        'sink' => LogSink::class,
+        'log_channel' => env('OIDC_AUDIT_LOG_CHANNEL'),
     ],
 
     // Additional resource audiences the oidc guard accepts on an exchanged access token,

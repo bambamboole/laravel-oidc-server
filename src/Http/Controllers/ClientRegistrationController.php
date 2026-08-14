@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -56,6 +58,11 @@ class ClientRegistrationController
         if ($scopes !== []) {
             $client->forceFill(['scopes' => $scopes])->save();
         }
+
+        app(Auditor::class)->log(AuditEventType::ClientRegistered, clientId: (string) $client->getKey(), context: [
+            'client_name' => (string) $client->getAttribute('name'),
+            'redirect_uris' => $normalized,
+        ]);
 
         $response = [
             'client_id' => (string) $client->getKey(),

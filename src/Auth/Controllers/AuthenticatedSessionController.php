@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
@@ -23,6 +25,7 @@ class AuthenticatedSessionController
 
     public function __construct(
         private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -57,6 +60,12 @@ class AuthenticatedSessionController
         $user = $provider->retrieveByCredentials($credentials);
 
         if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
+            $this->auditor->log(AuditEventType::LoginFailed, userId: $user === null ? null : (string) $user->getAuthIdentifier(), context: [
+                'method' => 'pwd',
+                'username' => $credentials[$username],
+                'reason' => 'invalid_credentials',
+            ]);
+
             throw ValidationException::withMessages([$username => __('auth.failed')]);
         }
 
