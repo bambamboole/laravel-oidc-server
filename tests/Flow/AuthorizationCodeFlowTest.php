@@ -441,6 +441,44 @@ it('answers a trusted client\'s Inertia authorize request with a 409 + X-Inertia
     expect($response->headers->get('X-Inertia-Location'))->toStartWith('https://rp.test/callback?');
 });
 
+/**
+ * The authorize route runs on bare `web` middleware — no `auth` guard — so the
+ * guest redirect is the controller's own `promptForLogin()`, sending the visitor
+ * to `oidc.login_route` and flagging the session so a later `max_age` check does
+ * not force a second round trip.
+ */
+it('redirects a guest authorize request to the configured login route', function () {
+    config(['oidc.login_route' => 'identity.login']);
+    $pkce = $this->pkce();
+
+    $this->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $this->client->id,
+        'redirect_uri' => 'https://rp.test/callback',
+        'response_type' => 'code',
+        'scope' => 'openid',
+        'state' => 'st4te',
+        'code_challenge' => $pkce->challenge,
+        'code_challenge_method' => 'S256',
+    ]))->assertRedirect(route('identity.login'));
+
+    expect(session('promptedForLogin'))->toBeTrue();
+});
+
+it('redirects a guest to a plain path when login_route is not a registered route name', function () {
+    config(['oidc.login_route' => 'accounts/sign-in']);
+    $pkce = $this->pkce();
+
+    $this->get('/oauth/authorize?'.http_build_query([
+        'client_id' => $this->client->id,
+        'redirect_uri' => 'https://rp.test/callback',
+        'response_type' => 'code',
+        'scope' => 'openid',
+        'state' => 'st4te',
+        'code_challenge' => $pkce->challenge,
+        'code_challenge_method' => 'S256',
+    ]))->assertRedirect(url('accounts/sign-in'));
+});
+
 it('owns the oauth routes with package controllers', function () {
     $routes = app('router')->getRoutes();
 

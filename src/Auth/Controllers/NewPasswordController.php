@@ -55,10 +55,14 @@ class NewPasswordController
 
     public function store(Request $request): JsonResponse|RedirectResponse
     {
+        // `confirmed` is the one password rule the package owns: the shipped
+        // reset page renders a confirmation field, and without the rule a typo
+        // would silently commit the first value. Every other rule (length,
+        // strength, history) stays with the reset action.
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required'],
+            'password' => ['required', 'confirmed'],
         ]);
 
         $resetUser = null;
