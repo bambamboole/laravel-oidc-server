@@ -175,7 +175,7 @@ enum Handler: string
             self::RegisterStore => new HandlerConfig(
                 route: 'auth/register',
                 controller: [RegisteredUserController::class, 'store'],
-                middleware: ['web', $guest],
+                middleware: ['web', $guest, 'throttle:5,1'],
             ),
             self::PasswordRequest => new HandlerConfig(
                 route: 'auth/forgot-password',
@@ -185,7 +185,7 @@ enum Handler: string
             self::PasswordEmail => new HandlerConfig(
                 route: 'auth/forgot-password',
                 controller: [PasswordResetLinkController::class, 'store'],
-                middleware: ['web', $guest],
+                middleware: ['web', $guest, 'throttle:5,1'],
             ),
             self::PasswordReset => new HandlerConfig(
                 route: 'auth/reset-password/{token}',
@@ -195,7 +195,7 @@ enum Handler: string
             self::PasswordUpdate => new HandlerConfig(
                 route: 'auth/reset-password',
                 controller: [NewPasswordController::class, 'store'],
-                middleware: ['web', $guest],
+                middleware: ['web', $guest, 'throttle:5,1'],
             ),
             self::PasswordConfirm => new HandlerConfig(
                 route: 'auth/user/confirm-password',
@@ -205,7 +205,7 @@ enum Handler: string
             self::PasswordConfirmStore => new HandlerConfig(
                 route: 'auth/user/confirm-password',
                 controller: [ConfirmablePasswordController::class, 'store'],
-                middleware: ['web', $authenticated],
+                middleware: ['web', $authenticated, 'throttle:5,1'],
             ),
             self::PasswordConfirmation => new HandlerConfig(
                 route: 'auth/user/confirmed-password-status',

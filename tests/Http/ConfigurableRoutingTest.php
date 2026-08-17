@@ -72,6 +72,69 @@ it('carries the configured middleware onto the registered route', function () {
         ->and($routes->getByName(Handler::VerificationVerify->value)->middleware())->toContain('signed');
 });
 
+/**
+ * Every endpoint that accepts a credential, mints one, or mails one out ships a
+ * throttle by default — a host app narrowing it further is a middleware override,
+ * but nothing here may be unlimited out of the box. Asserted as one map so a
+ * newly added endpoint that forgets its limiter names itself on failure.
+ */
+it('throttles every credential-handling auth endpoint by default', function () {
+    $routes = registerHandlersInFreshRouter()->getRoutes();
+
+    $handlers = [
+        Handler::LoginStore,
+        Handler::RegisterStore,
+        Handler::PasswordEmail,
+        Handler::PasswordUpdate,
+        Handler::PasswordConfirmStore,
+        Handler::VerificationSend,
+        Handler::VerificationVerify,
+        Handler::TwoFactorLoginStore,
+        Handler::TwoFactorChallengeOptions,
+        Handler::TwoFactorEnroll,
+        Handler::TwoFactorEnrollConfirm,
+        Handler::PasskeyLoginOptions,
+        Handler::PasskeyLogin,
+        Handler::PasskeyConfirmOptions,
+        Handler::PasskeyConfirm,
+    ];
+
+    $throttled = [];
+
+    foreach ($handlers as $handler) {
+        $throttled[$handler->value] = collect($routes->getByName($handler->value)->middleware())
+            ->contains(fn (string $middleware): bool => str_starts_with($middleware, 'throttle'));
+    }
+
+    expect($throttled)->toBe(array_fill_keys(array_map(
+        fn (Handler $handler): string => $handler->value,
+        $handlers,
+    ), true));
+});
+
+it('throttles the unauthenticated auth write endpoints at the login rate', function () {
+    $routes = registerHandlersInFreshRouter()->getRoutes();
+
+    // Registration and both password-reset legs sit next to login on the same
+    // guest surface, so they share its limit rather than inventing their own.
+    expect($routes->getByName(Handler::RegisterStore->value)->middleware())
+        ->toBe(['web', 'guest:identity', 'throttle:5,1'])
+        ->and($routes->getByName(Handler::PasswordEmail->value)->middleware())
+        ->toBe(['web', 'guest:identity', 'throttle:5,1'])
+        ->and($routes->getByName(Handler::PasswordUpdate->value)->middleware())
+        ->toBe(['web', 'guest:identity', 'throttle:5,1']);
+});
+
+it('leaves the GET auth pages unthrottled', function () {
+    $routes = registerHandlersInFreshRouter()->getRoutes();
+
+    // The forms themselves are cheap and stateless; throttling them would lock a
+    // user out of the page that explains why they were locked out.
+    foreach ([Handler::Register, Handler::PasswordRequest, Handler::PasswordReset] as $handler) {
+        expect($routes->getByName($handler->value)->middleware())->toBe(['web', 'guest:identity']);
+    }
+});
+
 it('does not register a handler set to false', function () {
     $handlers = config('oidc.handlers');
     $handlers[Handler::Userinfo->value] = false;
