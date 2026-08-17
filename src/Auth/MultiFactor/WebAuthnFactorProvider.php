@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor;
 
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Data\EnrollmentOption;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Enums\FactorRole;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Enums\FactorSetupKind;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\WebAuthn\AttachmentAwareRegistrationOptions;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Laravel\Passkeys\Actions\GenerateRegistrationOptions;
 use Laravel\Passkeys\Actions\GenerateVerificationOptions;
@@ -14,6 +18,7 @@ use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\Passkey;
 use Laravel\Passkeys\Support\WebAuthn;
 use Throwable;
+use Webauthn\AuthenticatorSelectionCriteria;
 use Webauthn\PublicKeyCredential;
 use Webauthn\PublicKeyCredentialCreationOptions;
 use Webauthn\PublicKeyCredentialRequestOptions;
@@ -45,6 +50,37 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
     public function isBackup(): bool
     {
         return false;
+    }
+
+    /**
+     * Two ways into the same credential store. A platform authenticator and a
+     * roaming security key produce the same kind of discoverable credential and
+     * are verified identically — they differ only in which authenticator the
+     * ceremony asks for, so they are options rather than separate providers.
+     *
+     * @return list<EnrollmentOption>
+     */
+    public function enrollmentOptions(): array
+    {
+        return [
+            new EnrollmentOption(
+                id: 'passkey',
+                providerKey: $this->key(),
+                role: FactorRole::LoginAndSecondFactor,
+                setupKind: FactorSetupKind::Ceremony,
+                recommended: true,
+                sortOrder: 10,
+                hints: ['attachment' => AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_PLATFORM],
+            ),
+            new EnrollmentOption(
+                id: 'security_key',
+                providerKey: $this->key(),
+                role: FactorRole::LoginAndSecondFactor,
+                setupKind: FactorSetupKind::Ceremony,
+                sortOrder: 20,
+                hints: ['attachment' => AuthenticatorSelectionCriteria::AUTHENTICATOR_ATTACHMENT_CROSS_PLATFORM],
+            ),
+        ];
     }
 
     /**
@@ -83,18 +119,34 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
         return $enrollments;
     }
 
-    public function beginEnrollment(Authenticatable $user, ?string $name = null): FactorEnrollment
+    /**
+     * Idempotent per option, mirroring the TOTP provider: a repeated call for the
+     * same option returns the options already parked in the session rather than
+     * minting a fresh challenge. That matters because the credential the browser
+     * produces is bound to the challenge it was shown — reissuing options behind
+     * the user's back would invalidate a ceremony already in flight. Asking for a
+     * different option does replace them, so switching from a platform passkey to
+     * a security key really does re-ask the browser.
+     */
+    public function beginEnrollment(Authenticatable $user, ?EnrollmentOption $option = null, ?string $name = null): FactorEnrollment
     {
         if (! $user instanceof PasskeyUser) {
             abort(403);
         }
 
-        $options = ($this->generateRegistrationOptions)($user);
-        $name ??= 'Passkey';
+        $pending = session()->get(self::PENDING_KEY);
+        $reusable = is_array($pending) && ($pending['option'] ?? null) === $option?->id;
+
+        $serialized = $reusable
+            ? (string) $pending['options']
+            : WebAuthn::toJson(($this->registrationOptionsFor($option))($user));
+
+        $name ??= $reusable ? (string) ($pending['name'] ?? 'Passkey') : 'Passkey';
 
         session()->put(self::PENDING_KEY, [
-            'options' => WebAuthn::toJson($options),
+            'options' => $serialized,
             'name' => $name,
+            'option' => $option?->id,
         ]);
 
         return new FactorEnrollment(
@@ -103,7 +155,9 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
             $name,
             null,
             null,
-            ['options' => WebAuthn::toBrowserArray($options)],
+            ['options' => WebAuthn::toBrowserArray(
+                WebAuthn::fromJson($serialized, PublicKeyCredentialCreationOptions::class),
+            )],
         );
     }
 
@@ -119,10 +173,17 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
             return false;
         }
 
+        // A name supplied at confirmation wins: the user types it while the
+        // ceremony is already in flight, so it cannot have been known at begin.
+        $submittedName = $input['name'] ?? null;
+        $name = is_string($submittedName) && trim($submittedName) !== ''
+            ? trim($submittedName)
+            : (string) ($pending['name'] ?? 'Passkey');
+
         try {
             ($this->storePasskey)(
                 $user,
-                (string) ($pending['name'] ?? 'Passkey'),
+                $name,
                 WebAuthn::fromJson((string) json_encode($credential), PublicKeyCredential::class),
                 WebAuthn::fromJson((string) $pending['options'], PublicKeyCredentialCreationOptions::class),
             );
@@ -194,5 +255,18 @@ class WebAuthnFactorProvider implements EnrollableFactorProvider
         }
 
         return new FactorVerification(true, ['webauthn']);
+    }
+
+    /**
+     * The injected action stays in charge whenever no attachment was asked for,
+     * so a host that swapped it keeps its customization on the default path.
+     */
+    private function registrationOptionsFor(?EnrollmentOption $option): GenerateRegistrationOptions
+    {
+        $attachment = $option?->hints['attachment'] ?? null;
+
+        return is_string($attachment)
+            ? new AttachmentAwareRegistrationOptions($attachment)
+            : $this->generateRegistrationOptions;
     }
 }

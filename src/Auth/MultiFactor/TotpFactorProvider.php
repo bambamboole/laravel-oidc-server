@@ -9,6 +9,9 @@ use BaconQrCode\Renderer\ImageRenderer;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Data\EnrollmentOption;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Enums\FactorRole;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Enums\FactorSetupKind;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\TotpFactor;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -31,6 +34,22 @@ class TotpFactorProvider implements EnrollableFactorProvider
         return false;
     }
 
+    /**
+     * @return list<EnrollmentOption>
+     */
+    public function enrollmentOptions(): array
+    {
+        return [
+            new EnrollmentOption(
+                id: 'totp',
+                providerKey: $this->key(),
+                role: FactorRole::SecondFactorOnly,
+                setupKind: FactorSetupKind::Code,
+                sortOrder: 30,
+            ),
+        ];
+    }
+
     public function enroll(Authenticatable $user, ?string $name = null): TotpFactor
     {
         return $this->factors($user)->create([
@@ -46,7 +65,7 @@ class TotpFactorProvider implements EnrollableFactorProvider
      * Confirmed factors are never touched; enrolling alongside one creates a
      * fresh pending row (re-enrollment), which revoke cleans up.
      */
-    public function beginEnrollment(Authenticatable $user, ?string $name = null): FactorEnrollment
+    public function beginEnrollment(Authenticatable $user, ?EnrollmentOption $option = null, ?string $name = null): FactorEnrollment
     {
         $factor = $this->latestPendingFactor($user) ?? $this->enroll($user, $name);
         $enrollment = $this->toEnrollment($factor);

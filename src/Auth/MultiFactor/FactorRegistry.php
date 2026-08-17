@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor;
 
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\FactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Data\EnrollmentOption;
 use Illuminate\Contracts\Auth\Authenticatable;
 use LogicException;
 
@@ -33,8 +34,8 @@ class FactorRegistry
 
     /**
      * The provider for $key when it supports enrollment through the generic
-     * endpoints, null otherwise (unknown key, or a provider like webauthn
-     * whose enrollment runs through its own ceremony routes).
+     * endpoints, null for an unknown key or a provider that cannot be enrolled
+     * in at all.
      */
     public function enrollable(string $key): ?EnrollableFactorProvider
     {
@@ -52,6 +53,40 @@ class FactorRegistry
     }
 
     /**
+     * Every way a user could add a factor, ordered for display. Backup
+     * providers stay out: recovery codes are backfilled, never picked.
+     *
+     * @return list<EnrollmentOption>
+     */
+    public function enrollmentOptions(): array
+    {
+        $options = [];
+
+        foreach ($this->providers as $provider) {
+            if ($provider->isBackup() || ! $provider instanceof EnrollableFactorProvider) {
+                continue;
+            }
+
+            array_push($options, ...$provider->enrollmentOptions());
+        }
+
+        usort($options, static fn (EnrollmentOption $a, EnrollmentOption $b): int => [$a->sortOrder, $a->id] <=> [$b->sortOrder, $b->id]);
+
+        return $options;
+    }
+
+    public function enrollmentOption(string $id): ?EnrollmentOption
+    {
+        foreach ($this->enrollmentOptions() as $option) {
+            if ($option->id === $id) {
+                return $option;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @return list<FactorEnrollment>
      */
     public function enrollments(Authenticatable $user): array
@@ -63,6 +98,28 @@ class FactorRegistry
         }
 
         return $enrollments;
+    }
+
+    /**
+     * One of the user's enrollments — pending or confirmed — by provider and id.
+     * The single lookup every revoke/confirm surface should use, so ownership is
+     * proven the same way everywhere.
+     */
+    public function findEnrollment(Authenticatable $user, string $providerKey, string $id): ?FactorEnrollment
+    {
+        $provider = $this->providers[$providerKey] ?? null;
+
+        if ($provider === null) {
+            return null;
+        }
+
+        foreach ($provider->enrollments($user) as $enrollment) {
+            if ($enrollment->id === $id) {
+                return $enrollment;
+            }
+        }
+
+        return null;
     }
 
     /**

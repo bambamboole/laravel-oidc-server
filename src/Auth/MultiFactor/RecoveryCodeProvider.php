@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Auth\MultiFactor;
 
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\RecoveryCode;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,17 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
     public function isBackup(): bool
     {
         return true;
+    }
+
+    /**
+     * Recovery codes are backfilled once the first real factor is confirmed,
+     * so they are never something the user picks from a method list.
+     *
+     * @return list<EnrollmentOption>
+     */
+    public function enrollmentOptions(): array
+    {
+        return [];
     }
 
     /**
@@ -61,6 +73,21 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
     }
 
     /**
+     * How many of the current set are still usable, and how big the set was when
+     * it was generated. Counting rows rather than reading the configured size
+     * keeps the answer true for a set generated under an older setting.
+     */
+    public function remaining(Authenticatable $user): int
+    {
+        return $this->recoveryCodes($user)->whereNull('used_at')->count();
+    }
+
+    public function total(Authenticatable $user): int
+    {
+        return $this->recoveryCodes($user)->count();
+    }
+
+    /**
      * A single account-wide enrollment whenever codes exist. The
      * EnrollmentPolicy owns the lifecycle (backfilled with the first
      * confirmed factor, removed with the last), so existence of codes is the
@@ -81,7 +108,7 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
      * Enrolling (re)generates the code set — the codes appear only in this
      * return value's metadata, never in enrollments().
      */
-    public function beginEnrollment(Authenticatable $user, ?string $name = null): FactorEnrollment
+    public function beginEnrollment(Authenticatable $user, ?EnrollmentOption $option = null, ?string $name = null): FactorEnrollment
     {
         return new FactorEnrollment($this->key(), 'account', 'Recovery code', now(), null, [
             'codes' => $this->generate($user),

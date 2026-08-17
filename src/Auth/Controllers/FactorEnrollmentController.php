@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Contracts\EnrollableFactorProvider;
+use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\EnrollmentPolicy;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
@@ -52,6 +53,7 @@ class FactorEnrollmentController
 
         $enrollment = $this->enrollable($provider)->beginEnrollment(
             $user,
+            $this->requestedOption($request, $provider),
             is_string($name) && $name !== '' ? $name : null,
         );
 
@@ -67,7 +69,7 @@ class FactorEnrollmentController
     {
         $user = $this->requireUser($request);
         $enrollable = $this->enrollable($provider);
-        $enrollment = $this->pendingEnrollment($enrollable, $user, (string) $request->input('enrollment_id'));
+        $enrollment = $this->factors->findEnrollment($user, $provider, (string) $request->input('enrollment_id'));
 
         if ($enrollment === null || ! $enrollable->confirmEnrollment($user, $enrollment, $request->except('enrollment_id'))) {
             throw ValidationException::withMessages(['code' => __('The provided two factor authentication code was invalid.')]);
@@ -87,11 +89,7 @@ class FactorEnrollmentController
     {
         $user = $this->requireUser($request);
         $enrollable = $this->enrollable($provider);
-        $pending = $this->pendingEnrollment($enrollable, $user, $enrollment);
-
-        if ($pending === null) {
-            abort(404);
-        }
+        $pending = $this->factors->findEnrollment($user, $provider, $enrollment) ?? abort(404);
 
         $enrollable->revoke($user, $pending);
         $this->policy->factorRevoked($user);
@@ -109,20 +107,31 @@ class FactorEnrollmentController
         return $this->factors->enrollable($provider) ?? abort(404);
     }
 
+    /**
+     * The enrollment option the caller picked. Optional — omitting it keeps the
+     * provider's default — but an option that belongs to a different provider is
+     * a client bug, not a fallback.
+     */
+    private function requestedOption(Request $request, string $provider): ?EnrollmentOption
+    {
+        $id = $request->input('option');
+
+        if (! is_string($id) || $id === '') {
+            return null;
+        }
+
+        $option = $this->factors->enrollmentOption($id);
+
+        if ($option === null || $option->providerKey !== $provider) {
+            throw ValidationException::withMessages(['option' => __('The selected enrollment option is invalid.')]);
+        }
+
+        return $option;
+    }
+
     private function requireUser(Request $request): Authenticatable
     {
         return $this->currentUser($request) ?? abort(401);
-    }
-
-    private function pendingEnrollment(EnrollableFactorProvider $provider, Authenticatable $user, string $id): ?FactorEnrollment
-    {
-        foreach ($provider->enrollments($user) as $enrollment) {
-            if ($enrollment->id === $id) {
-                return $enrollment;
-            }
-        }
-
-        return null;
     }
 
     /**

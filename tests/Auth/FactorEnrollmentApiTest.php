@@ -239,6 +239,43 @@ it('enrolls a passkey through the generic webauthn ceremony', function () {
     expect($user->passkeys()->count())->toBe(0);
 });
 
+it('asks the browser for the authenticator the chosen option names', function () {
+    config(['passkeys.user_handle_secret' => 'user-handle-secret']);
+    $user = enrollmentUser();
+
+    $begin = actingAsEnrollmentUser($this, $user)
+        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'webauthn']), ['option' => 'security_key'])
+        ->assertCreated()
+        ->json();
+
+    expect($begin['metadata']['options']['authenticatorSelection']['authenticatorAttachment'])
+        ->toBe('cross-platform');
+});
+
+it('leaves the authenticator unconstrained when no option is named', function () {
+    config(['passkeys.user_handle_secret' => 'user-handle-secret']);
+    $user = enrollmentUser();
+
+    $begin = actingAsEnrollmentUser($this, $user)
+        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'webauthn']))
+        ->assertCreated()
+        ->json();
+
+    expect($begin['metadata']['options']['authenticatorSelection'])
+        ->not->toHaveKey('authenticatorAttachment');
+});
+
+it('rejects an enrollment option that belongs to another provider', function () {
+    $user = enrollmentUser();
+
+    actingAsEnrollmentUser($this, $user)
+        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']), ['option' => 'passkey'])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('option');
+
+    expect($user->totpFactors()->count())->toBe(0);
+});
+
 it('requires authentication', function () {
     $this->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))->assertUnauthorized();
 });
