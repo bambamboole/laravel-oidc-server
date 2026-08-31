@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Exchange;
 
+use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Laravel\Passport\Client;
 use League\OAuth2\Server\Exception\OAuthServerException;
@@ -57,10 +58,7 @@ class DefaultExchangePolicy implements ExchangePolicy
     /** @return string[] */
     private function allowedAudiences(Client $client): array
     {
-        $raw = $client->getRawOriginal('allowed_exchange_audiences');
-        $decoded = is_string($raw) ? json_decode($raw, true) : null;
-
-        return is_array($decoded) ? array_values(array_filter($decoded, 'is_string')) : [];
+        return AllowedAudiences::of($client);
     }
 
     /** @return string[] */

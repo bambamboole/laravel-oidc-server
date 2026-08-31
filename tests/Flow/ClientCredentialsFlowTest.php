@@ -55,6 +55,79 @@ it('runs the client-credentials trigger once and applies its access-token claims
         ->and($triggerCount)->toBe(1);
 });
 
+it('binds the token to an allowlisted requested resource', function () {
+    $this->client->forceFill(['allowed_exchange_audiences' => json_encode(['https://mail.test'])])->save();
+
+    $response = $this->post('/oauth/token', [
+        'grant_type' => 'client_credentials',
+        'client_id' => $this->client->id,
+        'client_secret' => $this->client->plainSecret,
+        'scope' => '',
+        'resource' => 'https://mail.test',
+    ])->assertOk();
+
+    $accessToken = parseAccessToken((string) $response->json('access_token'));
+
+    expect($accessToken->claims()->get('aud'))->toBe(['https://mail.test']);
+});
+
+it('defaults the audience to the client itself without a resource parameter', function () {
+    $response = $this->post('/oauth/token', [
+        'grant_type' => 'client_credentials',
+        'client_id' => $this->client->id,
+        'client_secret' => $this->client->plainSecret,
+        'scope' => '',
+    ])->assertOk();
+
+    $accessToken = parseAccessToken((string) $response->json('access_token'));
+
+    expect($accessToken->claims()->get('aud'))->toBe([(string) $this->client->id]);
+});
+
+it('rejects a resource the client is not allowed to target', function () {
+    $this->client->forceFill(['allowed_exchange_audiences' => json_encode(['https://mail.test'])])->save();
+
+    $this->post('/oauth/token', [
+        'grant_type' => 'client_credentials',
+        'client_id' => $this->client->id,
+        'client_secret' => $this->client->plainSecret,
+        'scope' => '',
+        'resource' => 'https://somewhere-else.test',
+    ])->assertStatus(400)
+        ->assertJsonPath('error', 'invalid_target')
+        ->assertJsonMissingPath('access_token');
+});
+
+it('rejects a resource that is not an absolute URI', function () {
+    $this->post('/oauth/token', [
+        'grant_type' => 'client_credentials',
+        'client_id' => $this->client->id,
+        'client_secret' => $this->client->plainSecret,
+        'scope' => '',
+        'resource' => 'not-a-uri',
+    ])->assertStatus(400)
+        ->assertJsonPath('error', 'invalid_target');
+});
+
+it('exposes the requested audiences to the client-credentials trigger', function () {
+    $this->client->forceFill(['allowed_exchange_audiences' => json_encode(['https://mail.test'])])->save();
+    $seen = null;
+
+    Oidc::clientCredentials(function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$seen): void {
+        $seen = $event->audiences;
+    });
+
+    $this->post('/oauth/token', [
+        'grant_type' => 'client_credentials',
+        'client_id' => $this->client->id,
+        'client_secret' => $this->client->plainSecret,
+        'scope' => '',
+        'resource' => 'https://mail.test',
+    ])->assertOk();
+
+    expect($seen)->toBe(['https://mail.test']);
+});
+
 it('denies client credentials before persisting an access token', function () {
     $persistedTokenCount = Passport::token()->newQuery()->count();
 
