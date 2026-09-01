@@ -6,6 +6,7 @@ use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\Social\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
@@ -125,6 +126,18 @@ it('provisions a user just-in-time via the registered action', function () {
 
     expect(User::query()->where('email', 'm@example.com')->exists())->toBeTrue();
     $this->assertAuthenticated('identity');
+});
+
+it('rejects the login with a friendly error when the provisioning action refuses the identity', function () {
+    Oidc::createUsersFromSocialUsing(function (SocialUser $socialUser): User {
+        throw new SocialAuthenticationException('The account has no verified email address.');
+    });
+
+    completeSocialLogin($this)
+        ->assertRedirect(route(Handler::Login->value))
+        ->assertSessionHasErrors('social');
+
+    $this->assertGuest('identity');
 });
 
 it('rejects the login when no account can be resolved', function () {

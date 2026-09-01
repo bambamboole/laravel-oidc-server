@@ -64,8 +64,16 @@ class SocialAuthenticationController
             return $this->failed($request, __('Your sign-in attempt expired. Please try again.'));
         }
 
+        // Also covers completeLogin/completeLink: linking and JIT provisioning
+        // (a host's createUsersFromSocialUsing action) may reject the identity
+        // with a SocialAuthenticationException, which must read as a failed
+        // login, not a 500.
         try {
             $socialUser = $driver->user($request, $pending);
+
+            return $pending->intent === PendingAuthorization::INTENT_LINK
+                ? $this->completeLink($request, $provider, $socialUser)
+                : $this->completeLogin($request, $provider, $socialUser);
         } catch (InvalidStateException) {
             return $this->failed($request, __('Your sign-in attempt expired. Please try again.'));
         } catch (SocialAuthenticationException $exception) {
@@ -77,10 +85,6 @@ class SocialAuthenticationController
 
             return $this->failed($request, __('We could not sign you in with this account.'));
         }
-
-        return $pending->intent === PendingAuthorization::INTENT_LINK
-            ? $this->completeLink($request, $provider, $socialUser)
-            : $this->completeLogin($request, $provider, $socialUser);
     }
 
     private function completeLogin(Request $request, string $providerKey, SocialUser $socialUser): RedirectResponse
