@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Token;
 
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimsAudience;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use DateTimeImmutable;
@@ -80,7 +82,14 @@ class IdTokenBuilder
                 'Unable to resolve the user for id_token issuance: '.$accessToken->getUserIdentifier(),
             );
 
-        foreach ($this->claims->resolve($user)->forScopes($scopes) as $name => $value) {
+        $resolved = $this->claims->resolve(new ClaimsRequest(
+            user: $user,
+            audience: ClaimsAudience::IdToken,
+            clientId: $clientId,
+            scopes: array_values($scopes),
+        ));
+
+        foreach ($resolved as $name => $value) {
             $builder = $builder->withClaim($name, $value);
         }
 

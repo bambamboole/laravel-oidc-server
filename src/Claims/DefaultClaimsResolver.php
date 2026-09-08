@@ -5,13 +5,20 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Claims;
 
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 
 class DefaultClaimsResolver implements ClaimsResolver
 {
-    public function resolve(Authenticatable $user): ClaimSet
+    /** @return array<string, mixed> */
+    public function resolve(ClaimsRequest $request): array
     {
+        return $this->claimSet($request)->forScopes($request->scopes);
+    }
+
+    protected function claimSet(ClaimsRequest $request): ClaimSet
+    {
+        $user = $request->user;
+
         if (! $user instanceof Model) {
             return new ClaimSet;
         }

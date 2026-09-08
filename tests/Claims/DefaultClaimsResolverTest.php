@@ -1,9 +1,26 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Claims\ClaimsAudience;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Claims\DefaultClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Workbench\App\Models\User;
+
+/**
+ * @param  list<string>  $scopes
+ * @return array<string, mixed>
+ */
+function defaultResolverClaims(Authenticatable $user, array $scopes): array
+{
+    return (new DefaultClaimsResolver)->resolve(new ClaimsRequest(
+        user: $user,
+        audience: ClaimsAudience::IdToken,
+        clientId: 'client-uuid',
+        scopes: $scopes,
+    ));
+}
 
 it('is bound as the default claims resolver', function () {
     expect(app(ClaimsResolver::class)::class)->toBe(DefaultClaimsResolver::class);
@@ -17,24 +34,22 @@ it('maps common user attributes into scope-grouped claims', function () {
         'password' => 'secret',
     ]);
 
-    $claims = (new DefaultClaimsResolver)->resolve($user);
-
-    expect($claims->forScopes(['profile']))->toHaveKey('name', 'Manuel')
-        ->and($claims->forScopes(['profile']))->toHaveKey('updated_at')
-        ->and($claims->forScopes(['email']))->toBe(['email' => 'manuel@example.com', 'email_verified' => true])
-        ->and($claims->forScopes(['profile', 'email']))->toHaveKeys(['name', 'email']);
+    expect(defaultResolverClaims($user, ['profile']))->toHaveKey('name', 'Manuel')
+        ->and(defaultResolverClaims($user, ['profile']))->toHaveKey('updated_at')
+        ->and(defaultResolverClaims($user, ['email']))->toBe(['email' => 'manuel@example.com', 'email_verified' => true])
+        ->and(defaultResolverClaims($user, ['profile', 'email']))->toHaveKeys(['name', 'email']);
 });
 
 it('returns no claims for scopes without claims', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
-    expect((new DefaultClaimsResolver)->resolve($user)->forScopes(['openid']))->toBe([]);
+    expect(defaultResolverClaims($user, ['openid']))->toBe([]);
 });
 
 it('marks email unverified when email_verified_at is null', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
-    expect((new DefaultClaimsResolver)->resolve($user)->forScopes(['email']))
+    expect(defaultResolverClaims($user, ['email']))
         ->toBe(['email' => 'm@example.com', 'email_verified' => false]);
 });
 
@@ -45,7 +60,7 @@ it('maps locale and timezone attributes when present', function () {
         'timezone' => 'Europe/Berlin',
     ]);
 
-    $claims = (new DefaultClaimsResolver)->resolve($user)->forScopes(['profile']);
+    $claims = defaultResolverClaims($user, ['profile']);
 
     expect($claims)->toHaveKey('locale', 'de')
         ->and($claims)->toHaveKey('zoneinfo', 'Europe/Berlin');
@@ -54,7 +69,7 @@ it('maps locale and timezone attributes when present', function () {
 it('omits locale and zoneinfo for users without those attributes', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
-    $claims = (new DefaultClaimsResolver)->resolve($user)->forScopes(['profile']);
+    $claims = defaultResolverClaims($user, ['profile']);
 
     expect(array_keys($claims))->not->toContain('locale')
         ->and(array_keys($claims))->not->toContain('zoneinfo');

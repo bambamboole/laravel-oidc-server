@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Contracts;
 
-use Bambamboole\LaravelOidc\Server\Claims\ClaimSet;
-use Illuminate\Contracts\Auth\Authenticatable;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
 
 interface ClaimsResolver
 {
-    public function resolve(Authenticatable $user): ClaimSet;
+    /**
+     * The claims to emit, already narrowed to the request's scopes and audience.
+     * Protocol claims the caller owns (sub, iss, aud, ...) are ignored.
+     *
+     * @return array<string, mixed>
+     */
+    public function resolve(ClaimsRequest $request): array;
 }

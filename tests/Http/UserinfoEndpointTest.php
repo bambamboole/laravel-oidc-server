@@ -6,8 +6,8 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Claims\ClaimSet;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
@@ -45,11 +45,11 @@ it('returns sub plus scope-filtered claims', function () {
 it('includes scoped claims from a custom claims resolver', function () {
     app()->instance(ClaimsResolver::class, new class implements ClaimsResolver
     {
-        public function resolve(Authenticatable $user): ClaimSet
+        public function resolve(ClaimsRequest $request): array
         {
-            return new ClaimSet([
+            return (new ClaimSet([
                 'tenant' => ['tenant' => 'acme'],
-            ]);
+            ]))->forScopes($request->scopes);
         }
     });
 
