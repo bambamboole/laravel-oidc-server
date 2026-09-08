@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Issuer;
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -25,9 +25,11 @@ class ProtectedResourceController
 
         abort_unless(array_key_exists($path, $resources), 404);
 
+        $issuer = app(IssuerResolver::class)->url();
+
         return response()->json([
-            'resource' => $path === '' ? Issuer::url() : Issuer::url().'/'.$path,
-            'authorization_servers' => [Issuer::url()],
+            'resource' => $path === '' ? $issuer : $issuer.'/'.$path,
+            'authorization_servers' => [$issuer],
             'scopes_supported' => array_values($resources[$path]['scopes'] ?? []),
             'bearer_methods_supported' => ['header'],
         ])->header('Cache-Control', 'max-age=3600, public');

@@ -21,6 +21,8 @@ class TokenInspector
 {
     use CryptTrait;
 
+    public function __construct(private readonly SigningKeys $signingKeys) {}
+
     public function accessToken(string $jwt): ?Token
     {
         $parsed = $this->parse($jwt);
@@ -42,8 +44,8 @@ class TokenInspector
 
         $validator = new Validator;
 
-        foreach (SigningKeys::verificationKeys() as $publicKey) {
-            if ($validator->validate($parsed, new SignedWith(new Sha256, InMemory::plainText($publicKey)))) {
+        foreach ($this->signingKeys->verificationKeys() as $key) {
+            if ($validator->validate($parsed, new SignedWith(new Sha256, InMemory::plainText($key->publicKeyPem)))) {
                 return $parsed;
             }
         }

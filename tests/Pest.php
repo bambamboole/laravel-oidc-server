@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
-use Bambamboole\LaravelOidc\Server\Issuer;
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
@@ -264,6 +264,16 @@ function resourceServerBearer(
  * matching Passport token row. CheckAudience validates the signature and persisted row but
  * still rejects it on its typ guard, since the header typ is not at+jwt.
  */
+function signingPublicKey(): string
+{
+    return app(SigningKeys::class)->signingKey()->publicKeyPem;
+}
+
+function signingPrivateKey(): string
+{
+    return app(SigningKeys::class)->signingKey()->privateKey();
+}
+
 function persistedIdTokenAsBearer(mixed $test): string
 {
     $tokenId = Str::random(80);
@@ -271,13 +281,13 @@ function persistedIdTokenAsBearer(mixed $test): string
 
     $config = Configuration::forAsymmetricSigner(
         new Sha256,
-        InMemory::plainText(SigningKeys::privateKey()),
-        InMemory::plainText(SigningKeys::publicKey()),
+        InMemory::plainText(signingPrivateKey()),
+        InMemory::plainText(signingPublicKey()),
     );
 
     $jwt = $config->builder()
-        ->withHeader('kid', Jwk::fromPem(SigningKeys::publicKey())['kid'])
-        ->issuedBy(Issuer::url())
+        ->withHeader('kid', Jwk::fromPem(signingPublicKey())['kid'])
+        ->issuedBy(app(IssuerResolver::class)->url())
         ->identifiedBy($tokenId)
         ->issuedAt($now)
         ->canOnlyBeUsedAfter($now)

@@ -4,7 +4,6 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Exchange\IssuedToken;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Laravel\Passport\ClientRepository;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -34,7 +33,7 @@ it('exchanges the root token for an audience-scoped, narrowed token', function (
         ->and($parsed->claims()->get('scope'))->toBe('openid')
         ->and($parsed->claims()->get('act'))->toBe(['client_id' => $this->appClient->id]);
 
-    expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(SigningKeys::publicKey()))))->toBeTrue();
+    expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
 });
 
 it('wraps the entity into an IssuedToken', function () {

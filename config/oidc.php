@@ -6,6 +6,7 @@ use Bambamboole\LaravelOidc\Server\Audit\LogSink;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\RecoveryCodeProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\WebAuthnFactorProvider;
+use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
 
 return [
     'issuer' => env('OIDC_ISSUER'),
@@ -119,6 +120,24 @@ return [
         'allowed_redirect_schemes' => [],
         'allowed_redirect_domains' => ['*'],
         'default_scopes' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Signing keys
+    |--------------------------------------------------------------------------
+    |
+    | `store` is a class-string of a SigningKeyStore implementation resolved
+    | from the container. EnvSigningKeyStore reads the keypair from
+    | `oidc.{private,public}_key` (falling back to passport config and
+    | Passport's key files) and retains `additional_public_keys` for
+    | verification. DatabaseSigningKeyStore keeps the keypair in
+    | `oidc_signing_keys`, where every rotation retains the previous key under
+    | its own kid; it needs the shipped migration.
+    |
+    */
+    'keys' => [
+        'store' => EnvSigningKeyStore::class,
     ],
 
     'key_size' => (int) env('OIDC_KEY_SIZE', 2048),

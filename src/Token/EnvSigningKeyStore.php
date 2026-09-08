@@ -13,25 +13,23 @@ final class EnvSigningKeyStore implements SigningKeyStore
 {
     public function __construct(private readonly EnvironmentFile $environment) {}
 
-    public function privateKey(): string
+    public function signingKey(): SigningKey
     {
-        return $this->key('private');
+        $privateKey = $this->key('private');
+
+        return new SigningKey($this->key('public'), $privateKey);
     }
 
-    public function publicKey(): string
+    /** @return non-empty-list<SigningKey> */
+    public function verificationKeys(): array
     {
-        return $this->key('public');
-    }
-
-    /** @return list<string> */
-    public function previousPublicKeys(): array
-    {
-        $additional = config('oidc.additional_public_keys', []);
-
-        return array_values(array_filter(
-            is_array($additional) ? $additional : [],
-            fn ($key) => is_string($key) && $key !== '',
-        ));
+        return [
+            new SigningKey($this->key('public')),
+            ...array_map(
+                static fn (string $pem): SigningKey => new SigningKey($pem),
+                $this->retainedPublicKeys(),
+            ),
+        ];
     }
 
     public function rotate(GeneratedSigningKeys $keys): void
@@ -42,12 +40,23 @@ final class EnvSigningKeyStore implements SigningKeyStore
         ];
 
         try {
-            $vars['OIDC_PREVIOUS_PUBLIC_KEY'] = $this->publicKey();
+            $vars['OIDC_PREVIOUS_PUBLIC_KEY'] = $this->key('public');
         } catch (Throwable) {
-            // First-time generation: no current key to roll into the previous set.
+            // First-time generation: no current key to retain.
         }
 
         $this->environment->write($vars, EnvironmentFile::encode(...));
+    }
+
+    /** @return list<string> */
+    private function retainedPublicKeys(): array
+    {
+        $additional = config('oidc.additional_public_keys', []);
+
+        return array_values(array_filter(
+            is_array($additional) ? $additional : [],
+            fn ($key) => is_string($key) && $key !== '',
+        ));
     }
 
     private function key(string $type): string

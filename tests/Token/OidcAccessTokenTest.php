@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Laravel\Passport\Bridge\Client;
 use Laravel\Passport\Bridge\Scope;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -30,7 +29,7 @@ it('emits an RFC 9068 at+jwt access token', function () {
     $parsed = parseAccessToken(makeOidcAccessToken()->toString());
 
     expect($parsed->headers()->get('typ'))->toBe('at+jwt')
-        ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(SigningKeys::publicKey())['kid'])
+        ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(signingPublicKey())['kid'])
         ->and($parsed->claims()->get('iss'))->toBe('https://op.test')
         ->and($parsed->claims()->get('sub'))->toBe('42')
         ->and($parsed->claims()->get('client_id'))->toBe('client-uuid')
@@ -60,7 +59,7 @@ it('uses an explicitly set audience instead of the client id', function () {
 it('signs with the passport key so the token validates against jwks', function () {
     $parsed = parseAccessToken(makeOidcAccessToken()->toString());
 
-    expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(SigningKeys::publicKey()))))->toBeTrue();
+    expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
 });
 
 it('memoizes serialization', function () {

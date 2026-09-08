@@ -2,10 +2,10 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\AuthenticatedSessionController;
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\DiscoveryController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\JwksController;
 use Bambamboole\LaravelOidc\Server\Http\ProviderMetadata;
-use Bambamboole\LaravelOidc\Server\Issuer;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Routing\HandlerConfig;
 use Bambamboole\LaravelOidc\Server\Routing\HandlerRegistrar;
@@ -295,5 +295,5 @@ it('returns false for a disabled handler', function () {
 it('exposes the issuer url', function () {
     config(['oidc.issuer' => 'https://id.example.com/']);
 
-    expect(Issuer::url())->toBe('https://id.example.com');
+    expect(app(IssuerResolver::class)->url())->toBe('https://id.example.com');
 });

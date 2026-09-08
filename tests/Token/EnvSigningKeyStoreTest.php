@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\SigningKey;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Laravel\Passport\Passport;
 
@@ -18,17 +19,20 @@ function envStoreFixture(): array
     return [new EnvSigningKeyStore(new EnvironmentFile($path)), $path];
 }
 
-it('filters non-string and empty entries out of previous public keys', function () {
+it('filters non-string and empty entries out of retained public keys', function () {
     config(['oidc.additional_public_keys' => ['valid-key', '', 42, null]]);
 
     [$store] = envStoreFixture();
 
-    expect($store->previousPublicKeys())->toBe(['valid-key']);
+    expect(array_map(
+        fn (SigningKey $key): string => $key->publicKeyPem,
+        array_slice($store->verificationKeys(), 1),
+    ))->toBe(['valid-key']);
 });
 
 it('rotates by writing the new keypair and rolling the current public key', function () {
     [$store, $path] = envStoreFixture();
-    $current = $store->publicKey();
+    $current = $store->signingKey()->publicKeyPem;
 
     $store->rotate(new GeneratedSigningKeys(
         privateKeyPem: "-----BEGIN PRIVATE KEY-----\r\nnew-private\r\n-----END PRIVATE KEY-----\r\n",
@@ -61,7 +65,7 @@ it('omits the previous key when no current key exists', function () {
     expect((string) file_get_contents($path))->not->toContain('OIDC_PREVIOUS_PUBLIC_KEY=');
 });
 
-it('binds the env store as the SigningKeyStore singleton', function () {
+it('binds the env store as the configured SigningKeyStore', function () {
     $first = app(SigningKeyStore::class);
 
     expect($first::class)->toBe(EnvSigningKeyStore::class)

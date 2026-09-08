@@ -10,12 +10,15 @@ use Illuminate\Http\JsonResponse;
 
 class JwksController
 {
+    public function __construct(private readonly SigningKeys $signingKeys) {}
+
     public function __invoke(): JsonResponse
     {
         $keys = [];
 
-        foreach (SigningKeys::verificationKeys() as $pem) {
-            $jwk = Jwk::fromPem($pem);
+        foreach ($this->signingKeys->verificationKeys() as $key) {
+            $jwk = Jwk::fromPem($key->publicKeyPem);
+            $jwk['kid'] = $key->kid();
             $keys[$jwk['kid']] = $jwk;
         }
 

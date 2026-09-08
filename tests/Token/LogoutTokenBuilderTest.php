@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Token\LogoutTokenBuilder;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -39,7 +38,7 @@ it('mints a spec-shaped, signed logout token', function () {
         ->and($token->claims()->has('nonce'))->toBeFalse()
         ->and($token->claims()->get('events'))
         ->toHaveKey('http://schemas.openid.net/event/backchannel-logout')
-        ->and((new Validator)->validate($token, new SignedWith(new Sha256, InMemory::plainText(SigningKeys::publicKey()))))
+        ->and((new Validator)->validate($token, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))
         ->toBeTrue();
 });
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Bambamboole\LaravelOidc\Server\Issuer;
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use DateTimeImmutable;
 use Laravel\Passport\Bridge\AccessToken;
 use Lcobucci\JWT\Token;
@@ -68,8 +68,8 @@ class OidcAccessToken extends AccessToken
 
         $builder = $this->jwtConfiguration->builder()
             ->withHeader('typ', 'at+jwt')
-            ->withHeader('kid', SigningKeys::signingKid())
-            ->issuedBy(Issuer::url())
+            ->withHeader('kid', app(SigningKeys::class)->signingKid())
+            ->issuedBy(app(IssuerResolver::class)->url())
             ->identifiedBy($this->getIdentifier())
             ->issuedAt($now)
             ->canOnlyBeUsedAfter($now)

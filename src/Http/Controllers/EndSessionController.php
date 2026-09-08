@@ -6,8 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelLogoutNotifier;
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\RespondsToInertiaExternalRedirects;
-use Bambamboole\LaravelOidc\Server\Issuer;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Illuminate\Http\Request;
@@ -96,7 +96,7 @@ class EndSessionController
 
         $token = app(TokenInspector::class)->parse($hint);
 
-        if ($token === null || ! (new Validator)->validate($token, new IssuedBy(Issuer::url()))) {
+        if ($token === null || ! (new Validator)->validate($token, new IssuedBy(app(IssuerResolver::class)->url()))) {
             return null;
         }
 

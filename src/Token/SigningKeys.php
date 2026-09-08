@@ -10,47 +10,32 @@ use Lcobucci\JWT\Signer\Rsa\Sha256;
 
 final class SigningKeys
 {
-    /** @var array<string, string> */
-    private static array $kidCache = [];
+    public function __construct(private readonly SigningKeyStore $store) {}
 
-    public static function publicKey(): string
+    public function signingKey(): SigningKey
     {
-        return app(SigningKeyStore::class)->publicKey();
+        return $this->store->signingKey();
     }
 
-    /**
-     * All public keys signatures may verify against: the current key plus any
-     * retained previous keys from the bound store. Verification and JWKS must
-     * use the same set, or rotation invalidates live tokens that relying
-     * parties still consider valid.
-     *
-     * @return non-empty-list<string>
-     */
-    public static function verificationKeys(): array
+    /** @return non-empty-list<SigningKey> */
+    public function verificationKeys(): array
     {
-        $store = app(SigningKeyStore::class);
-
-        return [$store->publicKey(), ...$store->previousPublicKeys()];
+        return $this->store->verificationKeys();
     }
 
-    public static function privateKey(): string
+    public function signingKid(): string
     {
-        return app(SigningKeyStore::class)->privateKey();
+        return $this->signingKey()->kid();
     }
 
-    public static function signingConfiguration(): Configuration
+    public function signingConfiguration(): Configuration
     {
+        $key = $this->signingKey();
+
         return Configuration::forAsymmetricSigner(
             new Sha256,
-            InMemory::plainText(self::privateKey()),
-            InMemory::plainText(self::publicKey()),
+            InMemory::plainText($key->privateKey()),
+            InMemory::plainText($key->publicKeyPem),
         );
-    }
-
-    public static function signingKid(): string
-    {
-        $publicKey = self::publicKey();
-
-        return self::$kidCache[$publicKey] ??= Jwk::fromPem($publicKey)['kid'];
     }
 }

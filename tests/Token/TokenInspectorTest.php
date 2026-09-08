@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
@@ -21,9 +20,9 @@ function mintInspectorToken(): string
 
 it('validates tokens signed by a previous key listed in additional_public_keys', function () {
     $jwt = mintInspectorToken();
-    $previousPublicKey = SigningKeys::publicKey();
+    $previousPublicKey = signingPublicKey();
 
-    $rotated = (new SigningKeyGenerator)->generate();
+    $rotated = app(SigningKeyGenerator::class)->generate();
     config([
         'oidc.private_key' => $rotated->privateKeyPem,
         'oidc.public_key' => $rotated->publicKeyPem,
@@ -36,7 +35,7 @@ it('validates tokens signed by a previous key listed in additional_public_keys',
 it('rejects tokens signed by a key that is neither current nor retained', function () {
     $jwt = mintInspectorToken();
 
-    $rotated = (new SigningKeyGenerator)->generate();
+    $rotated = app(SigningKeyGenerator::class)->generate();
     config([
         'oidc.private_key' => $rotated->privateKeyPem,
         'oidc.public_key' => $rotated->publicKeyPem,
@@ -62,7 +61,7 @@ it('rejects an unsigned token with header alg none', function () {
 it('rejects an HS256 token signed with the server public key as the HMAC secret', function () {
     $header = tokenInspectorBase64Url((string) json_encode(['typ' => 'at+jwt', 'alg' => 'HS256']));
     $payload = tokenInspectorBase64Url((string) json_encode(['jti' => 'forged', 'sub' => '1', 'exp' => time() + 3600]));
-    $signature = tokenInspectorBase64Url(hash_hmac('sha256', $header.'.'.$payload, SigningKeys::publicKey(), true));
+    $signature = tokenInspectorBase64Url(hash_hmac('sha256', $header.'.'.$payload, signingPublicKey(), true));
 
     expect(app(TokenInspector::class)->parse($header.'.'.$payload.'.'.$signature))->toBeNull();
 });

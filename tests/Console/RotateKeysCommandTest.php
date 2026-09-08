@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Token\SigningKey;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Illuminate\Support\Facades\File;
 use Laravel\Passport\Passport;
@@ -26,7 +26,7 @@ function decodeEnvKey(string $envContents, string $name): string
 
 it('writes a new keypair and the previous public key to .env', function () {
     $env = rotateKeysEnv();
-    $currentKid = Jwk::fromPem(SigningKeys::publicKey())['kid'];
+    $currentKid = Jwk::fromPem(signingPublicKey())['kid'];
 
     $this->artisan('oidc:rotate-keys', ['--force' => true])->assertSuccessful();
 
@@ -113,19 +113,14 @@ it('fails with the store error when rotation cannot persist', function () {
     rotateKeysEnv();
     app()->instance(SigningKeyStore::class, new class implements SigningKeyStore
     {
-        public function privateKey(): string
+        public function signingKey(): SigningKey
         {
-            return 'p';
+            return new SigningKey('pub', 'p', 'kid');
         }
 
-        public function publicKey(): string
+        public function verificationKeys(): array
         {
-            return 'pub';
-        }
-
-        public function previousPublicKeys(): array
-        {
-            return [];
+            return [$this->signingKey()];
         }
 
         public function rotate(GeneratedSigningKeys $keys): void

@@ -45,6 +45,7 @@ use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Exchange\DefaultExchangePolicy;
@@ -70,6 +71,7 @@ use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessTokenGuard;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessTokenRepository;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use DateInterval;
@@ -97,6 +99,7 @@ use Laravel\Passport\Passport;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\RequestEvent;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class OidcServiceProvider extends ServiceProvider
 {
@@ -147,6 +150,7 @@ class OidcServiceProvider extends ServiceProvider
         Passport::useAccessTokenEntity(OidcAccessToken::class);
         Passkeys::ignoreRoutes();
 
+        $this->app->scoped(IssuerResolver::class, ConfiguredIssuerResolver::class);
         $this->app->singleton(ScopeRepository::class, DefaultScopeRepository::class);
         $this->app->bind(PassportBridgeScopeRepository::class, BridgeScopeRepository::class);
         $this->app->singleton(ClaimsResolver::class, DefaultClaimsResolver::class);
@@ -176,7 +180,10 @@ class OidcServiceProvider extends ServiceProvider
         );
         $this->app->singleton(FirstPartyClientProvisioner::class);
         $this->app->singleton(EnvironmentFile::class);
-        $this->app->singleton(SigningKeyStore::class, EnvSigningKeyStore::class);
+        $this->app->singleton(SigningKeyStore::class, fn (Application $app): SigningKeyStore => $app->make(
+            (string) config('oidc.keys.store', EnvSigningKeyStore::class),
+        ));
+        $this->app->singleton(SigningKeys::class);
         $this->app->singleton(OidcManager::class);
         $this->app->singleton(ExchangePolicy::class, DefaultExchangePolicy::class);
         $this->app->singleton(AccessTokenMinter::class);
@@ -355,7 +362,8 @@ class OidcServiceProvider extends ServiceProvider
             'Auth Guard' => config('oidc.auth.guard'),
             'Session Token Guard' => SessionTokenGuard::name() ?? 'not set',
             'Self-SSO Client' => FirstPartyClientConfig::fromConfig()->isConfigured() ? 'configured' : 'not configured',
-            'Signing Key' => filled(config('oidc.private_key')) ? 'present' : 'missing',
+            'Signing Key Store' => class_basename((string) config('oidc.keys.store', EnvSigningKeyStore::class)),
+            'Signing Key' => $this->activeSigningKid(),
         ]);
 
         if ($this->app->runningInConsole()) {
@@ -366,6 +374,15 @@ class OidcServiceProvider extends ServiceProvider
                 DispatchExpiredSessionLogoutsCommand::class,
                 RotateKeysCommand::class,
             ]);
+        }
+    }
+
+    private function activeSigningKid(): string
+    {
+        try {
+            return $this->app->make(SigningKeyStore::class)->signingKey()->kid();
+        } catch (Throwable) {
+            return 'missing';
         }
     }
 }

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http;
 
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
-use Bambamboole\LaravelOidc\Server\Issuer;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Laravel\Passport\Passport;
@@ -17,7 +17,10 @@ use Laravel\Passport\Passport;
  */
 final readonly class ProviderMetadata
 {
-    public function __construct(private ScopeRepository $scopes) {}
+    public function __construct(
+        private ScopeRepository $scopes,
+        private IssuerResolver $issuer,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -35,7 +38,7 @@ final readonly class ProviderMetadata
         }
 
         $document = [
-            'issuer' => Issuer::url(),
+            'issuer' => $this->issuer->url(),
             'authorization_endpoint' => $this->endpoint(Handler::Authorize),
             'token_endpoint' => $this->endpoint(Handler::IssueToken),
             'jwks_uri' => $this->endpoint(Handler::Jwks),
@@ -88,6 +91,6 @@ final readonly class ProviderMetadata
     {
         $path = parse_url(route($handler->value), PHP_URL_PATH);
 
-        return rtrim(Issuer::url(), '/').($path ?? '');
+        return rtrim($this->issuer->url(), '/').($path ?? '');
     }
 }

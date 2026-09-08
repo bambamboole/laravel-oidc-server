@@ -10,6 +10,8 @@ use Throwable;
 
 final class SigningKeyGenerator
 {
+    public function __construct(private readonly SigningKeyStore $store) {}
+
     public function generate(): GeneratedSigningKeys
     {
         /** @var PrivateKey $key */
@@ -28,7 +30,7 @@ final class SigningKeyGenerator
     public function hasKeys(): bool
     {
         try {
-            SigningKeys::publicKey();
+            $this->store->signingKey();
 
             return true;
         } catch (Throwable) {

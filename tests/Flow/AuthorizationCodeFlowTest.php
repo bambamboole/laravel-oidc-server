@@ -18,7 +18,6 @@ use Bambamboole\LaravelOidc\Server\Http\Controllers\DenyAuthorizationController;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Testing\TestResponse;
@@ -90,7 +89,7 @@ it('issues an id_token through the full code + pkce flow', function () {
     expect($idToken->claims()->get('at_hash'))->toBe($expectedAtHash);
 
     expect((new Validator)->validate($idToken, new SignedWith(
-        new Sha256, InMemory::plainText(SigningKeys::publicKey()),
+        new Sha256, InMemory::plainText(signingPublicKey()),
     )))->toBeTrue();
 
     $jwks = $this->getJson('/.well-known/jwks.json')->json('keys');

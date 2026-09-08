@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Token;
 
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Http\Middleware\CheckAudience;
-use Bambamboole\LaravelOidc\Server\Issuer;
 use DateTimeInterface;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -126,7 +126,9 @@ class OidcAccessTokenGuard implements Guard
 
         $audience = $this->normalizeAudience($parsed->claims()->get('aud'));
         $clientId = $parsed->claims()->get('client_id');
-        $accepted = [Issuer::url(), ...$this->configuredAudiences()];
+        // Resolved per call, not held: the guard instance outlives a request (see setRequest),
+        // while the issuer resolver is a scoped binding.
+        $accepted = [app(IssuerResolver::class)->url(), ...$this->configuredAudiences()];
 
         if (array_intersect($audience, $accepted) === [] && ! (is_string($clientId) && in_array($clientId, $audience, true))) {
             return null;

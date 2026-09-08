@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Token\SigningKey;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Laravel\Passport\Bridge\AccessToken;
@@ -27,7 +28,7 @@ function escapedFixtureKey(string $file): string
 it('resolves keys from oidc config with escaped newlines', function () {
     config(['oidc.public_key' => escapedFixtureKey('oauth-public.key')]);
 
-    expect(SigningKeys::publicKey())
+    expect(signingPublicKey())
         ->toBe(trim((string) file_get_contents(__DIR__.'/../fixtures/oauth-public.key')));
 });
 
@@ -37,7 +38,7 @@ it('prefers the oidc config key over the passport config key', function () {
         'passport.public_key' => 'stale-passport-key',
     ]);
 
-    expect(SigningKeys::publicKey())
+    expect(signingPublicKey())
         ->toBe(trim((string) file_get_contents(__DIR__.'/../fixtures/oauth-public.key')));
 });
 
@@ -47,14 +48,14 @@ it('falls back to the passport config key when no oidc key is set', function () 
         'passport.public_key' => escapedFixtureKey('oauth-public.key'),
     ]);
 
-    expect(SigningKeys::publicKey())
+    expect(signingPublicKey())
         ->toBe(trim((string) file_get_contents(__DIR__.'/../fixtures/oauth-public.key')));
 });
 
 it('falls back to key files when no config key is set', function () {
     config(['oidc.public_key' => null, 'passport.public_key' => null]);
 
-    expect(SigningKeys::publicKey())
+    expect(signingPublicKey())
         ->toBe(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));
 });
 
@@ -62,7 +63,7 @@ it('fails loud when neither config key nor key file exists', function () {
     config(['oidc.private_key' => null, 'passport.private_key' => null]);
     Passport::loadKeysFrom('/nonexistent');
 
-    SigningKeys::privateKey();
+    signingPrivateKey();
 })->throws(RuntimeException::class, 'OIDC_PRIVATE_KEY');
 
 it('serves the same jwks from an env-provided key', function () {
@@ -93,36 +94,35 @@ it('signs id_tokens with env-provided keys', function () {
     $parsed = (new Parser(new JoseEncoder))->parse($jwt);
     $valid = (new Validator)->validate($parsed, new SignedWith(
         new Sha256,
-        InMemory::plainText(SigningKeys::publicKey()),
+        InMemory::plainText(signingPublicKey()),
     ));
 
     expect($valid)->toBeTrue()
         ->and($parsed->headers()->get('kid'))
-        ->toBe(Jwk::fromPem(SigningKeys::publicKey())['kid']);
+        ->toBe(Jwk::fromPem(signingPublicKey())['kid']);
 });
 
-it('resolves keys through a custom bound store', function () {
-    app()->instance(SigningKeyStore::class, new class implements SigningKeyStore
+it('reads every key through the store it was given', function () {
+    $keys = new SigningKeys(new class implements SigningKeyStore
     {
-        public function privateKey(): string
+        public function signingKey(): SigningKey
         {
-            return 'custom-private';
+            return new SigningKey('custom-public', 'custom-private', 'custom-kid');
         }
 
-        public function publicKey(): string
+        public function verificationKeys(): array
         {
-            return 'custom-public';
-        }
-
-        public function previousPublicKeys(): array
-        {
-            return ['old-public'];
+            return [$this->signingKey(), new SigningKey('old-public', null, 'old-kid')];
         }
 
         public function rotate(GeneratedSigningKeys $keys): void {}
     });
 
-    expect(SigningKeys::publicKey())->toBe('custom-public')
-        ->and(SigningKeys::privateKey())->toBe('custom-private')
-        ->and(SigningKeys::verificationKeys())->toBe(['custom-public', 'old-public']);
+    expect($keys->signingKey()->publicKeyPem)->toBe('custom-public')
+        ->and($keys->signingKey()->privateKey())->toBe('custom-private')
+        ->and($keys->signingKid())->toBe('custom-kid')
+        ->and(array_map(
+            fn (SigningKey $key): string => $key->publicKeyPem,
+            $keys->verificationKeys(),
+        ))->toBe(['custom-public', 'old-public']);
 });

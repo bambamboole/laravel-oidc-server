@@ -14,7 +14,10 @@ use League\OAuth2\Server\CryptKey;
 
 class AccessTokenMinter
 {
-    public function __construct(private readonly AccessTokenRepository $tokens) {}
+    public function __construct(
+        private readonly AccessTokenRepository $tokens,
+        private readonly SigningKeys $signingKeys,
+    ) {}
 
     /**
      * @param  string[]  $scopeIds
@@ -28,7 +31,7 @@ class AccessTokenMinter
         $token = new OidcAccessToken($userId, $scopes, $bridgeClient);
         $token->setIdentifier(bin2hex(random_bytes(40)));
         $token->setExpiryDateTime((new DateTimeImmutable)->add($ttl));
-        $token->setPrivateKey(new CryptKey(SigningKeys::privateKey(), null, false));
+        $token->setPrivateKey(new CryptKey($this->signingKeys->signingKey()->privateKey(), null, false));
 
         if ($audiences !== []) {
             $token->setAudience(...$audiences);

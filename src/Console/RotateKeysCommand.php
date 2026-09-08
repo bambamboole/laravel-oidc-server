@@ -7,7 +7,6 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Illuminate\Console\Command;
 use RuntimeException;
@@ -91,7 +90,7 @@ class RotateKeysCommand extends Command
     private function currentPublicKey(): ?string
     {
         try {
-            return SigningKeys::publicKey();
+            return $this->store->signingKey()->publicKeyPem;
         } catch (Throwable) {
             return null;
         }

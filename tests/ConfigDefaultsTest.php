@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
+
 it('exposes per-flow lifetime defaults', function () {
     expect(config('oidc.token_lifetimes.access_token'))->toBe(900)
         ->and(config('oidc.token_lifetimes.id_token'))->toBe(3600)
@@ -23,4 +26,9 @@ it('ships no protected resources and disabled dynamic client registration by def
             'allowed_redirect_domains' => ['*'],
             'default_scopes' => [],
         ]);
+});
+
+it('defaults the signing key store to the env store', function () {
+    expect(config('oidc.keys.store'))->toBe(EnvSigningKeyStore::class)
+        ->and(app(SigningKeyStore::class)::class)->toBe(EnvSigningKeyStore::class);
 });

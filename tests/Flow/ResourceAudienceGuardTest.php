@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Issuer;
+use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +22,7 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
     $this->client->forceFill([
         'grant_types' => [...(array) $this->client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
-        'allowed_exchange_audiences' => json_encode([Issuer::url(), 'https://other.example']),
+        'allowed_exchange_audiences' => json_encode([app(IssuerResolver::class)->url(), 'https://other.example']),
     ])->save();
 
     Route::middleware('auth:oidc')->get('/probe', fn () => ['id' => auth()->id()]);
@@ -43,7 +43,7 @@ function exchangedTokenFor(object $context, string $audience): string
 }
 
 it('authenticates an exchanged token addressed to the issuer', function () {
-    $token = exchangedTokenFor($this, Issuer::url());
+    $token = exchangedTokenFor($this, app(IssuerResolver::class)->url());
 
     $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])
         ->assertOk()
@@ -71,7 +71,7 @@ it('still authenticates a classic token whose aud is the client id', function ()
 });
 
 it('rejects a revoked exchanged token', function () {
-    $token = exchangedTokenFor($this, Issuer::url());
+    $token = exchangedTokenFor($this, app(IssuerResolver::class)->url());
 
     $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])->assertOk();
 
@@ -103,7 +103,7 @@ it('passes Passport CheckToken scope middleware placed after auth:oidc when the 
     Route::middleware(['auth:oidc', CheckToken::using('openid')])
         ->get('/probe/scoped', fn () => ['id' => auth()->id()]);
 
-    $token = exchangedTokenFor($this, Issuer::url());
+    $token = exchangedTokenFor($this, app(IssuerResolver::class)->url());
 
     $this->getJson('/probe/scoped', ['Authorization' => 'Bearer '.$token])
         ->assertOk()
@@ -114,7 +114,7 @@ it('rejects Passport CheckToken scope middleware placed after auth:oidc when the
     Route::middleware(['auth:oidc', CheckToken::using('admin')])
         ->get('/probe/scoped-missing', fn () => ['id' => auth()->id()]);
 
-    $token = exchangedTokenFor($this, Issuer::url());
+    $token = exchangedTokenFor($this, app(IssuerResolver::class)->url());
 
     $this->getJson('/probe/scoped-missing', ['Authorization' => 'Bearer '.$token])->assertForbidden();
 });
