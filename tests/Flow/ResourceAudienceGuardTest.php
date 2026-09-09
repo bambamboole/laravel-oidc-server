@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckScopes;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Illuminate\Support\Facades\Auth;
@@ -89,7 +89,7 @@ it('rejects a revoked exchanged token', function () {
 it('authenticates a PAT-shaped token identically to a classic authorization-code token', function () {
     $token = app(AccessTokenMinter::class)->mint(
         $this->user->getKey(),
-        $this->client,
+        $this->client->client_id,
         ['openid'],
         new DateInterval('PT1H'),
     )->toString();

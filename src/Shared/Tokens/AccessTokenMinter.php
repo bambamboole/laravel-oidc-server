@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Tokens;
+namespace Bambamboole\LaravelOidc\Server\Shared\Tokens;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
 use DateInterval;
 
 /**
  * Mints and persists an RFC 9068 access token outside a grant flow (session
  * tokens, personal access tokens, token exchange). The protocol layer binds
- * the league-backed implementation; nothing in the Tokens domain sees league.
+ * the league-backed implementation.
  */
 interface AccessTokenMinter
 {
     /**
+     * @param  string  $clientId  the wire client_id of an active client in the current realm
      * @param  list<string>  $scopeIds
      * @param  list<string>  $audiences
      * @param  array<string, mixed>  $extraClaims
@@ -22,7 +22,7 @@ interface AccessTokenMinter
      */
     public function mint(
         ?string $userId,
-        Client $client,
+        string $clientId,
         array $scopeIds,
         DateInterval $ttl,
         array $audiences = [],

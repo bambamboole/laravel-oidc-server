@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Shared\Brokering;
 
-use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**

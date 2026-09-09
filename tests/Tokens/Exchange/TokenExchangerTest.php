@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\IssuedToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -19,7 +19,7 @@ beforeEach(function () {
     $this->appClient->forceFill(['allowed_exchange_audiences' => ['https://api.orders.test']])->save();
     // A root token issued TO the app client (aud defaults to the app client id) — reciprocity passes via client_id match.
     $this->root = app(AccessTokenMinter::class)
-        ->mint((string) $this->user->id, $this->appClient, ['openid', 'email'], new DateInterval('PT1H'))
+        ->mint((string) $this->user->id, $this->appClient->client_id, ['openid', 'email'], new DateInterval('PT1H'))
         ->toString();
 });
 
@@ -65,7 +65,7 @@ it('rejects an invalid exchange with the matching OAuth error type', function (
 
 it('nests the prior act claim on a chained exchange', function () {
     $root = app(AccessTokenMinter::class)
-        ->mint((string) $this->user->id, $this->appClient, ['openid'], new DateInterval('PT1H'), actor: ['client_id' => 'client-a'])
+        ->mint((string) $this->user->id, $this->appClient->client_id, ['openid'], new DateInterval('PT1H'), actor: ['client_id' => 'client-a'])
         ->toString();
 
     $issued = app(TokenExchanger::class)->exchange($root, $this->appClient, 'https://api.orders.test', ['openid']);

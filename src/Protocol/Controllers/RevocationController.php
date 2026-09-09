@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientCredentials;
 use Bambamboole\LaravelOidc\Server\Clients\Concerns\AuthenticatesConfidentialClient;
+use Bambamboole\LaravelOidc\Server\Protocol\League\RefreshTokenPayload;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
@@ -20,12 +21,12 @@ class RevocationController
 
     public function __construct(private readonly Auditor $auditor) {}
 
-    public function __invoke(Request $request, ClientCredentials $credentials, TokenInspector $inspector): Response
+    public function __invoke(Request $request, ClientCredentials $credentials, TokenInspector $inspector, RefreshTokenPayload $refreshTokens): Response
     {
         [$clientId, $tokenValue] = $this->authenticateConfidentialClient($request, $credentials);
 
         if ($this->isRefreshTokenHint($request)) {
-            $payload = $inspector->refreshTokenPayload($tokenValue);
+            $payload = $refreshTokens->decode($tokenValue);
 
             if ($payload !== null && (string) ($payload->client_id ?? '') === $clientId) {
                 $refreshTokenId = $payload->refresh_token_id ?? null;

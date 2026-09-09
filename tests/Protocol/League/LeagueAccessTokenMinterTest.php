@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -31,7 +31,7 @@ it('mints, signs and persists a scoped at+jwt that round-trips', function () {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://rp.test/cb']);
 
     $entity = app(AccessTokenMinter::class)->mint(
-        (string) $user->id, $client, ['openid', 'email'], new DateInterval('PT1H'), ['https://api.test'],
+        (string) $user->id, $client->client_id, ['openid', 'email'], new DateInterval('PT1H'), ['https://api.test'],
     );
 
     $jwt = $entity->toString();
@@ -56,7 +56,7 @@ it('defaults the audience to the client id when none given', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://rp.test/cb']);
 
-    $entity = app(AccessTokenMinter::class)->mint((string) $user->id, $client, ['openid'], new DateInterval('PT1H'));
+    $entity = app(AccessTokenMinter::class)->mint((string) $user->id, $client->client_id, ['openid'], new DateInterval('PT1H'));
 
     expect(parseMinted($entity->toString())->claims()->get('aud'))->toBe([$client->id]);
 });

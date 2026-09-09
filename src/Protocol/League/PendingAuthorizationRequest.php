@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\League;
 
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Illuminate\Http\Request;

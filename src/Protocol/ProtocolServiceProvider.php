@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizationController;
 use Bambamboole\LaravelOidc\Server\Protocol\League\AuthorizationServerFactory;
 use Bambamboole\LaravelOidc\Server\Protocol\League\LeagueAccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Protocol\League\LeagueAuthorizationCompleter;
 use Bambamboole\LaravelOidc\Server\Protocol\League\PendingAuthorizationRequest;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AccessTokenRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AuthCodeRepository;
@@ -15,7 +16,8 @@ use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ClientRepository
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\RefreshTokenRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\UserRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\AuthorizationCompleter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
@@ -40,6 +42,7 @@ class ProtocolServiceProvider extends ServiceProvider
         $this->app->bind(ScopeRepositoryInterface::class, ScopeRepository::class);
         $this->app->singleton(AccessTokenMinter::class, LeagueAccessTokenMinter::class);
         $this->app->singleton(PendingAuthorization::class, PendingAuthorizationRequest::class);
+        $this->app->bind(AuthorizationCompleter::class, LeagueAuthorizationCompleter::class);
 
         $this->app->when(AuthorizationController::class)
             ->needs(StatefulGuard::class)

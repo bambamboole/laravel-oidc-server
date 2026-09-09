@@ -9,8 +9,9 @@ use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Session\Session;
@@ -27,6 +28,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
 {
     public function __construct(
         private readonly AccessTokenMinter $minter,
+        private readonly AccessTokenRevoker $revoker,
         private readonly ScopeRepository $scopes,
         private readonly RealmResolver $realms,
     ) {}
@@ -65,12 +67,12 @@ class SessionMintTokenProvider implements SessionTokenProvider
         $prior = $this->session()->get($this->key());
 
         if (is_array($prior) && is_string($prior['jti'] ?? null)) {
-            Token::query()->whereKey($prior['jti'])->update(['revoked' => true]);
+            $this->revoker->revoke($prior['jti']);
         }
 
         $token = $this->minter->mint(
             (string) $user->getAuthIdentifier(),
-            $client,
+            $client->client_id,
             $this->defaultScopes(),
             $this->realms->current()->sessions()->token(),
         );
@@ -88,7 +90,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
         $stored = $this->session()->get($this->key());
 
         if (is_array($stored) && is_string($stored['jti'] ?? null)) {
-            Token::query()->whereKey($stored['jti'])->update(['revoked' => true]);
+            $this->revoker->revoke($stored['jti']);
         }
 
         $this->session()->forget($this->key());

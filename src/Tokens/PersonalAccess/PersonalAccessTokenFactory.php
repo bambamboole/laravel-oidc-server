@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\PersonalAccessTokenEvent;
@@ -47,7 +47,7 @@ final readonly class PersonalAccessTokenFactory
 
         $token = $this->minter->mint(
             userId: $userId,
-            client: $client,
+            clientId: $client->client_id,
             scopeIds: $granted,
             ttl: $this->realms->current()->tokens()->accessToken(),
             extraClaims: $claims,

@@ -23,10 +23,10 @@ $dependencies = [
     'Clients' => [],
     'Scopes' => ['Clients'],
     'Tokens' => ['Clients', 'Scopes'],
-    'Sessions' => ['Clients', 'Scopes', 'Tokens'],
+    'Sessions' => ['Clients', 'Scopes'],
     'Authentication' => ['Clients', 'Tokens'],
     'Protocol' => ['Authentication', 'Clients', 'Scopes', 'Sessions', 'Tokens'],
-    'Consents' => ['Clients', 'Protocol', 'Scopes'],
+    'Consents' => ['Clients', 'Scopes'],
     'Installation' => ['Clients', 'Keys'],
 ];
 
@@ -46,8 +46,4 @@ foreach ($dependencies as $domain => $allowed) {
 arch('league/oauth2-server stays inside Protocol')
     ->expect($server)
     ->not->toUse('League\OAuth2\Server')
-    ->ignoring([
-        "{$server}\\Protocol",
-        "{$server}\\Consents\\Actions\\CompleteAuthorization",
-        "{$server}\\Tokens\\TokenInspector",
-    ]);
+    ->ignoring("{$server}\\Protocol");

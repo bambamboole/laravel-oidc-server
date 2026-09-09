@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts;
+namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Illuminate\Http\Request;

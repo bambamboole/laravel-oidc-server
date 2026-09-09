@@ -4,34 +4,39 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\League;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity as BridgeClient;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AccessTokenRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
-use Bambamboole\LaravelOidc\Server\Tokens\MintedAccessToken;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use DateInterval;
 use DateTimeImmutable;
 use League\OAuth2\Server\CryptKey;
+use RuntimeException;
 
 class LeagueAccessTokenMinter implements AccessTokenMinter
 {
     public function __construct(
         private readonly AccessTokenRepository $tokens,
         private readonly SigningKeys $signingKeys,
+        private readonly ClientRepository $clients,
     ) {}
 
     public function mint(
         ?string $userId,
-        Client $client,
+        string $clientId,
         array $scopeIds,
         DateInterval $ttl,
         array $audiences = [],
         array $extraClaims = [],
         ?array $actor = null,
     ): MintedAccessToken {
+        $client = $this->clients->findActive($clientId)
+            ?? throw new RuntimeException("Cannot mint an access token for the unknown or revoked client [{$clientId}].");
+
         $bridgeClient = new BridgeClient(
             identifier: $client->client_id,
             name: $client->name,

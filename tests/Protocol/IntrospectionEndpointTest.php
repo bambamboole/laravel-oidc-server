@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Workbench\App\Models\User;
 
@@ -107,7 +107,7 @@ it('reports active for a token that names the caller in its audience', function 
     $requester = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Requester', ['https://req.test/cb']);
 
     $jwt = app(AccessTokenMinter::class)->mint(
-        (string) $this->user->id, $requester, ['openid'], new DateInterval('PT1H'), [(string) $this->client->id],
+        (string) $this->user->id, $requester->client_id, ['openid'], new DateInterval('PT1H'), [(string) $this->client->id],
     )->toString();
 
     $this->postJson('/realms/default/oauth/introspect', [

@@ -9,9 +9,9 @@ use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
-use Bambamboole\LaravelOidc\Server\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
@@ -113,7 +113,7 @@ class TokenExchanger
             $act['act'] = $claims['act'];
         }
 
-        $token = $this->minter->mint($result->userId, $requestingClient, $scopeIds, $ttl, $result->audience, $api->accessTokenClaims(), $act);
+        $token = $this->minter->mint($result->userId, $requestingClient->client_id, $scopeIds, $ttl, $result->audience, $api->accessTokenClaims(), $act);
 
         $this->auditor->log(AuditEventType::TokenIssued, userId: $result->userId, clientId: (string) $requestingClient->getKey(), context: [
             'grant_type' => self::GRANT_URN,

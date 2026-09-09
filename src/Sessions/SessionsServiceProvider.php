@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Sessions;
 
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\DispatchExpiredSessionLogoutsCommand;
+use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
 use Illuminate\Support\ServiceProvider;
 
 class SessionsServiceProvider extends ServiceProvider

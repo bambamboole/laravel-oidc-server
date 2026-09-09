@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Exchange;
 
-use Bambamboole\LaravelOidc\Server\Tokens\MintedAccessToken;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 
 final readonly class IssuedToken
 {

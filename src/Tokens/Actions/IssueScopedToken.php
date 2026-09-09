@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Sessions\Actions;
+namespace Bambamboole\LaravelOidc\Server\Tokens\Actions;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\IssuedToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use RuntimeException;

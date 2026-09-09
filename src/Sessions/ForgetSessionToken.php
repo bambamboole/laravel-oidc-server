@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions;
 
+use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
 use Illuminate\Auth\Events\Logout;
 
 class ForgetSessionToken

@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Lcobucci\JWT\Token\Plain;
@@ -89,7 +89,7 @@ class EndSessionController
             return null;
         }
 
-        $token = app(TokenInspector::class)->parse($hint);
+        $token = app(SignedJwtParser::class)->parse($hint);
 
         if ($token === null || ! (new Validator)->validate($token, new IssuedBy(app(IssuerResolver::class)->url()))) {
             return null;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Workbench\App\Models\User;
 
@@ -14,7 +14,7 @@ function mintInspectorToken(): string
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://rp.test/cb']);
 
     return app(AccessTokenMinter::class)
-        ->mint((string) $user->id, $client, ['openid'], new DateInterval('PT1H'))
+        ->mint((string) $user->id, $client->client_id, ['openid'], new DateInterval('PT1H'))
         ->toString();
 }
 
@@ -71,7 +71,7 @@ it('resolves the persisted token from an already-parsed JWT', function () {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://rp.test/cb']);
 
     $entity = app(AccessTokenMinter::class)->mint(
-        (string) $user->id, $client, ['openid'], new DateInterval('PT1H'), ['https://api.test'],
+        (string) $user->id, $client->client_id, ['openid'], new DateInterval('PT1H'), ['https://api.test'],
     );
 
     $inspector = app(TokenInspector::class);

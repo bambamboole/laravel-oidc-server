@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Tokens;
+namespace Bambamboole\LaravelOidc\Server\Shared\Tokens;
 
 use DateTimeImmutable;
 

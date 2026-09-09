@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
-use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\OAuthenticatable;
@@ -173,7 +173,7 @@ trait InteractsWithOidc
 
         return app(AccessTokenMinter::class)->mint(
             (string) $user->getAuthIdentifier(),
-            $client,
+            $client->client_id,
             $scopes,
             $ttl ?? new DateInterval('PT1H'),
             $audience,

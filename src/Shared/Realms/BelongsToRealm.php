@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Shared\Realms;
 
-use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
