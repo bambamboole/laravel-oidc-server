@@ -6,7 +6,6 @@ use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\NullDeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Illuminate\Http\Request;
 use Workbench\App\Models\User;
 
@@ -23,7 +22,7 @@ function makeRegistrationLoginEvent(array $amr = ['pwd']): LoginEvent
 }
 
 it('registers a postLogin hook on the shared pipeline', function () {
-    Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
+    app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
 
     $api = app(PostLoginPipeline::class)->run(makeRegistrationLoginEvent());
 

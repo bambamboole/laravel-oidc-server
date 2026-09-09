@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
@@ -63,7 +63,7 @@ function driveLoginAuthorizeToken(TestCase $test): TestResponse
 }
 
 it('carries a real postLogin claim through to the id_token', function () {
-    Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->setIdTokenClaim('groups', ['admin']));
+    app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->setIdTokenClaim('groups', ['admin']));
 
     $token = driveLoginAuthorizeToken($this)->assertOk();
 

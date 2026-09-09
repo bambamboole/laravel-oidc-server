@@ -6,9 +6,9 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
-use Bambamboole\LaravelOidc\Server\Credential\RecoveryCodeProvider;
-use Bambamboole\LaravelOidc\Server\Credential\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Credentials\RecoveryCodeProvider;
+use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -50,7 +50,7 @@ it('audits a login attempt with invalid credentials', function () {
 it('audits a login denied by the postLogin policy', function () {
     $sink = fakeAudit();
     auditTestUser();
-    Oidc::postLogin(fn (LoginEvent $event, LoginApi $api) => $api->deny('blocked'));
+    app(PostLoginPipeline::class)->register(fn (LoginEvent $event, LoginApi $api) => $api->deny('blocked'));
 
     $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'password']);
 
@@ -135,7 +135,7 @@ it('audits the factor enrollment lifecycle', function () {
 
 it('audits a registration', function () {
     $sink = fakeAudit();
-    Oidc::createUsersUsing(fn (array $input): Authenticatable => User::create([
+    createUsersUsing(fn (array $input): Authenticatable => User::create([
         'name' => $input['name'],
         'email' => $input['email'],
         'password' => Hash::make($input['password']),
@@ -164,7 +164,7 @@ it('audits a password reset', function () {
     }
 
     $token = $broker->createToken($user);
-    Oidc::resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 

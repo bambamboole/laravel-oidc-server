@@ -5,7 +5,7 @@ namespace Bambamboole\LaravelOidc\Server\Keys;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
+use Bambamboole\LaravelOidc\Server\Installation\EnvironmentFile;
 use Illuminate\Console\Command;
 use RuntimeException;
 use Throwable;

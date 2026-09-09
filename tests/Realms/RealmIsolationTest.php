@@ -8,10 +8,10 @@ use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Realm\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Realm\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Token\Token;
-use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Workbench\App\Models\User;
 
 /** Switches realms the way an application's host-derived resolver would. */

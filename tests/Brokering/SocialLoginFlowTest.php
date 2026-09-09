@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
-use Bambamboole\LaravelOidc\Server\Credential\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Keys\Jwk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
@@ -115,7 +115,7 @@ it('logs in an existing user via verified email link and records the provider am
 });
 
 it('provisions a user just-in-time via the registered action', function () {
-    Oidc::createUsersFromSocialUsing(fn (SocialUser $socialUser): User => User::create([
+    createUsersFromSocialUsing(fn (SocialUser $socialUser): User => User::create([
         'name' => $socialUser->name ?? 'Unknown',
         'email' => $socialUser->email,
         'password' => Str::random(40),
@@ -128,7 +128,7 @@ it('provisions a user just-in-time via the registered action', function () {
 });
 
 it('rejects the login with a friendly error when the provisioning action refuses the identity', function () {
-    Oidc::createUsersFromSocialUsing(function (SocialUser $socialUser): User {
+    createUsersFromSocialUsing(function (SocialUser $socialUser): User {
         throw new SocialAuthenticationException('The account has no verified email address.');
     });
 
@@ -151,7 +151,7 @@ it('rejects the login when no account can be resolved', function () {
 
 it('denies the login when a postLogin hook rejects it', function () {
     User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
-    Oidc::postLogin(function ($event, $api): void {
+    app(PostLoginPipeline::class)->register(function ($event, $api): void {
         $api->deny('blocked');
     });
 
@@ -176,7 +176,7 @@ it('sends an MFA-enrolled user to the two-factor challenge instead of logging in
 
 it('stores pipeline claims in the session for the id_token', function () {
     User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
-    Oidc::postLogin(function ($event, $api): void {
+    app(PostLoginPipeline::class)->register(function ($event, $api): void {
         $api->setIdTokenClaim('department', 'engineering');
     });
 

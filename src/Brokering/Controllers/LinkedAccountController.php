@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Server\Brokering\Actions\UnlinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -20,6 +20,7 @@ class LinkedAccountController
 
     public function __construct(
         private readonly SocialProviderRegistry $providers,
+        private readonly UnlinkSocialAccount $unlink,
     ) {}
 
     public function link(Request $request, string $provider): Response
@@ -31,11 +32,9 @@ class LinkedAccountController
 
     public function destroy(Request $request, SocialAccount $socialAccount): JsonResponse|RedirectResponse
     {
-        $user = $this->currentUser($request);
+        $user = $this->currentUser($request) ?? abort(401);
 
-        abort_unless($user instanceof Model && $socialAccount->authenticatable->is($user), 403);
-
-        $socialAccount->delete();
+        ($this->unlink)($user, $socialAccount);
 
         return $this->statusResponse($request, 'social-account-unlinked', 200);
     }

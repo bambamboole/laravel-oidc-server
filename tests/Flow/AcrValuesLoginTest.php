@@ -8,8 +8,8 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -31,7 +31,7 @@ beforeEach(function () {
 
 it('exposes the pending authorize request acr_values to postLogin hooks', function () {
     $captured = null;
-    Oidc::postLogin(function (LoginEvent $event, LoginApi $api) use (&$captured) {
+    app(PostLoginPipeline::class)->register(function (LoginEvent $event, LoginApi $api) use (&$captured) {
         $captured = $event;
     });
 
@@ -48,7 +48,7 @@ it('exposes the pending authorize request acr_values to postLogin hooks', functi
 
 it('does not leak acr_values from an earlier authorize request without them', function () {
     $captured = null;
-    Oidc::postLogin(function (LoginEvent $event, LoginApi $api) use (&$captured) {
+    app(PostLoginPipeline::class)->register(function (LoginEvent $event, LoginApi $api) use (&$captured) {
         $captured = $event;
     });
 

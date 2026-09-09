@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Server\Forms\ConsentPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\ConsentView;
-use Bambamboole\LaravelOidc\Server\Forms\EmailVerificationPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\EmailVerificationView;
-use Bambamboole\LaravelOidc\Server\Forms\LoginPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\LoginView;
-use Bambamboole\LaravelOidc\Server\Forms\PasswordConfirmationView;
-use Bambamboole\LaravelOidc\Server\Forms\PasswordResetPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\PasswordResetRequestPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\PasswordResetRequestView;
-use Bambamboole\LaravelOidc\Server\Forms\PasswordResetView;
-use Bambamboole\LaravelOidc\Server\Forms\RegisterView;
-use Bambamboole\LaravelOidc\Server\Forms\TwoFactorChallengePrompt;
-use Bambamboole\LaravelOidc\Server\Forms\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationPrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginPrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordConfirmationView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetPrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestPrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
+use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
+use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengePrompt;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

@@ -9,7 +9,7 @@ use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyRecord;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Support\Facades\DB;
 
 /**

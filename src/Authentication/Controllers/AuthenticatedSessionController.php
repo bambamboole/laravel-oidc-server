@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Authentication\Actions\AuthenticateWithPassword;
 use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginOutcome;
-use Bambamboole\LaravelOidc\Server\Forms\LoginPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\LoginView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginPrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,8 +22,8 @@ class AuthenticatedSessionController
     use ResolvesIdentityGuard;
 
     public function __construct(
+        private readonly AuthenticateWithPassword $authenticate,
         private readonly InteractiveLoginFinalizer $finalizer,
-        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -50,26 +49,15 @@ class AuthenticatedSessionController
             'password' => ['required', 'string'],
         ]);
 
-        $credentials = [
-            $username => $request->string($username)->lower()->value(),
-            'password' => $request->string('password')->value(),
-        ];
+        $user = ($this->authenticate)(
+            $this->sessionGuard()->getProvider(),
+            $username,
+            $request->string($username)->value(),
+            $request->string('password')->value(),
+        );
 
-        $provider = $this->sessionGuard()->getProvider();
-        $user = $provider->retrieveByCredentials($credentials);
-
-        if ($user === null || ! $provider->validateCredentials($user, $credentials)) {
-            $this->auditor->log(AuditEventType::LoginFailed, userId: $user === null ? null : (string) $user->getAuthIdentifier(), context: [
-                'method' => 'pwd',
-                'username' => $credentials[$username],
-                'reason' => 'invalid_credentials',
-            ]);
-
+        if ($user === null) {
             throw ValidationException::withMessages([$username => __('auth.failed')]);
-        }
-
-        if (config('hashing.rehash_on_login', true)) {
-            $provider->rehashPasswordIfRequired($user, $credentials);
         }
 
         return match ($this->finalizer->finalize($request, $user, 'pwd', $request->boolean('remember'))) {

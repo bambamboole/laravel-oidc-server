@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
+
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Authentication\PasswordResetResult;
+use Bambamboole\LaravelOidc\Server\Users\Actions\ResetUserPassword;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Contracts\Container\Container;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use RuntimeException;
+
+/**
+ * Validates the reset token through the password broker and hands the user
+ * to the app's ResetUserPassword binding, which owns the password rules and
+ * persistence. Signing the user in afterwards is the caller's job.
+ */
+final class ResetPassword
+{
+    public function __construct(
+        private readonly Container $container,
+        private readonly Auditor $auditor,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $input  the full reset request (token, email, password, password_confirmation, …)
+     */
+    public function __invoke(array $input): PasswordResetResult
+    {
+        $resetUser = null;
+
+        $status = Password::broker((string) config('auth.defaults.passwords', 'users'))->reset(
+            array_intersect_key($input, array_flip(['email', 'password', 'password_confirmation', 'token'])),
+            function (CanResetPassword $user) use ($input, &$resetUser): void {
+                $this->container->make(ResetUserPassword::class)($user, $input);
+
+                if (method_exists($user, 'setRememberToken')) {
+                    $user->setRememberToken(Str::random(60));
+                }
+
+                if (method_exists($user, 'save')) {
+                    $user->save();
+                }
+
+                if (! $user instanceof Authenticatable) {
+                    throw new RuntimeException('The reset password user must be authenticatable.');
+                }
+
+                event(new PasswordReset($user));
+
+                $resetUser = $user;
+            },
+        );
+
+        if ($status === Password::PASSWORD_RESET && $resetUser instanceof Authenticatable) {
+            $this->auditor->log(AuditEventType::PasswordReset, userId: (string) $resetUser->getAuthIdentifier());
+
+            return new PasswordResetResult($status, $resetUser);
+        }
+
+        return new PasswordResetResult(is_string($status) ? $status : Password::INVALID_TOKEN, null);
+    }
+}

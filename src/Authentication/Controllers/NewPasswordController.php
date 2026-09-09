@@ -4,25 +4,17 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Authentication\Actions\ResetPassword;
 use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginOutcome;
-use Bambamboole\LaravelOidc\Server\Forms\PasswordResetPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\PasswordResetView;
-use Bambamboole\LaravelOidc\Server\User\UserActionManager;
-use Illuminate\Auth\Events\PasswordReset;
-use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\CanResetPassword;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetPrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 class NewPasswordController
@@ -30,9 +22,8 @@ class NewPasswordController
     use ResolvesIdentityGuard;
 
     public function __construct(
-        private readonly UserActionManager $actions,
+        private readonly ResetPassword $reset,
         private readonly InteractiveLoginFinalizer $finalizer,
-        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -64,37 +55,12 @@ class NewPasswordController
             'password' => ['required', 'confirmed'],
         ]);
 
-        $resetUser = null;
+        $result = ($this->reset)($request->all());
 
-        $status = Password::broker((string) config('auth.defaults.passwords', 'users'))->reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (CanResetPassword $user) use ($request, &$resetUser): void {
-                $this->actions->resetUserPassword($user, $request->all());
-
-                if (method_exists($user, 'setRememberToken')) {
-                    $user->setRememberToken(Str::random(60));
-                }
-
-                if (method_exists($user, 'save')) {
-                    $user->save();
-                }
-
-                if (! $user instanceof Authenticatable) {
-                    throw new RuntimeException('The reset password user must be authenticatable.');
-                }
-
-                event(new PasswordReset($user));
-
-                $resetUser = $user;
-            },
-        );
-
-        if ($status === Password::PASSWORD_RESET && $resetUser instanceof Authenticatable) {
-            $this->auditor->log(AuditEventType::PasswordReset, userId: (string) $resetUser->getAuthIdentifier());
-
+        if ($result->user !== null) {
             // The password is reset either way; a postLogin denial or pending
             // second factor only affects the session that follows.
-            $outcome = $this->finalizer->finalize($request, $resetUser, 'pwd');
+            $outcome = $this->finalizer->finalize($request, $result->user, 'pwd');
 
             if ($outcome === LoginOutcome::MfaChallenge) {
                 return $request->wantsJson()
@@ -103,14 +69,14 @@ class NewPasswordController
             }
 
             return $request->wantsJson()
-                ? new JsonResponse(['status' => __($status)], 200)
-                : redirect()->route('identity.login')->with('status', __($status));
+                ? new JsonResponse(['status' => __($result->status)], 200)
+                : redirect()->route('identity.login')->with('status', __($result->status));
         }
 
         if ($request->wantsJson()) {
-            throw ValidationException::withMessages(['email' => [__($status)]]);
+            throw ValidationException::withMessages(['email' => [__($result->status)]]);
         }
 
-        return back()->withInput($request->only('email'))->withErrors(['email' => __($status)]);
+        return back()->withInput($request->only('email'))->withErrors(['email' => __($result->status)]);
     }
 }

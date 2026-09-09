@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Authentication\Actions\RegisterUser;
 use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginOutcome;
-use Bambamboole\LaravelOidc\Server\Forms\RegisterView;
-use Bambamboole\LaravelOidc\Server\User\UserActionManager;
-use Illuminate\Auth\Events\Registered;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -23,9 +20,8 @@ class RegisteredUserController
     use ResolvesIdentityGuard;
 
     public function __construct(
-        private readonly UserActionManager $actions,
+        private readonly RegisterUser $register,
         private readonly InteractiveLoginFinalizer $finalizer,
-        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -40,17 +36,11 @@ class RegisteredUserController
 
     public function store(Request $request): JsonResponse|RedirectResponse
     {
-        // Mirrors the createUserFromSocial null design: registration without a
-        // configured action is disabled, not broken — so 404, not 500.
-        abort_unless($this->actions->hasCreateUserAction(), 404);
+        // Registration without a bound CreateUser action is disabled, not
+        // broken — so 404, not 500.
+        abort_unless($this->register->enabled(), 404);
 
-        $input = array_merge($request->all(), [
-            'email' => $request->string('email')->lower()->value(),
-        ]);
-
-        event(new Registered($user = $this->actions->createUser($input)));
-
-        $this->auditor->log(AuditEventType::UserRegistered, userId: (string) $user->getAuthIdentifier());
+        $user = ($this->register)($request->all());
 
         // The account exists either way; a postLogin denial only refuses the
         // session, so the user lands on the login page instead.

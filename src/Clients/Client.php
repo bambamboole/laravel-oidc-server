@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Realm\Concerns\BelongsToRealm;
-use Bambamboole\LaravelOidc\Server\Token\AuthCode;
-use Bambamboole\LaravelOidc\Server\Token\Token;
+use Bambamboole\LaravelOidc\Server\Realms\Concerns\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

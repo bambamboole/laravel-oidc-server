@@ -5,8 +5,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -128,7 +127,7 @@ it('audits a client credentials token issuance', function () {
 });
 
 it('audits a token exchange and its failure paths', function () {
-    Oidc::tokensCan(['openid' => 'Authenticate', 'orders:read' => 'Read orders']);
+    config(['oidc.scopes.catalog' => ['openid' => 'Authenticate', 'orders:read' => 'Read orders']]);
     $this->client->forceFill([
         'grant_types' => [...(array) $this->client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
         'allowed_exchange_audiences' => ['https://api.internal/orders'],

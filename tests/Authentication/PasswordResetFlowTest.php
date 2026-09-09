@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Passwords\PasswordBroker;
@@ -51,7 +50,7 @@ it('resets a password through the package action seam and logs the user in', fun
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);
 
-    Oidc::resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 
@@ -78,7 +77,7 @@ it('rejects a mismatched password confirmation before reaching the reset action'
     $token = resolvePasswordBroker()->createToken($user);
     $actionRan = false;
 
-    Oidc::resetUserPasswordsUsing(function (CanResetPassword $user, array $input) use (&$actionRan): void {
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input) use (&$actionRan): void {
         $actionRan = true;
 
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
@@ -103,7 +102,7 @@ it('rejects a reset request with no password confirmation at all', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);
 
-    Oidc::resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 
@@ -126,7 +125,7 @@ it('surfaces a validation error the reset action raises for its own password rul
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);
 
-    Oidc::resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         Validator::make($input, ['password' => ['min:20']])->validate();
 
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
@@ -149,7 +148,7 @@ it('surfaces a validation error the reset action raises for its own password rul
 it('returns validation errors for an invalid reset token', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
 
-    Oidc::resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 

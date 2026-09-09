@@ -6,20 +6,20 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AuthorizationCodeEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Context\AccessTokenContext;
-use Bambamboole\LaravelOidc\Server\Context\AuthenticationContext;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Http\Controllers\ApproveAuthorizationController;
-use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;
-use Bambamboole\LaravelOidc\Server\Http\Controllers\DenyAuthorizationController;
-use Bambamboole\LaravelOidc\Server\Session\OidcSession;
-use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Consents\Controllers\ApproveAuthorizationController;
+use Bambamboole\LaravelOidc\Server\Consents\Controllers\DenyAuthorizationController;
+use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizationController;
+use Bambamboole\LaravelOidc\Server\Sessions\OidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Token\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContext;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Testing\TestResponse;
@@ -97,7 +97,7 @@ it('issues an id_token through the full code + pkce flow', function () {
 });
 
 it('merges authorization-code trigger claims into issued and refreshed access tokens', function () {
-    Oidc::authorizationCode(function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
+    app(AccessTokenPipeline::class)->register('authorization_code', function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
         expect($event->user->getAuthIdentifier())->toBe($this->user->id)
             ->and($event->client->getIdentifier())->toBe((string) $this->client->id)
             ->and($event->scopes)->toBe(['openid', 'email']);
@@ -128,7 +128,7 @@ it('merges authorization-code trigger claims into issued and refreshed access to
 it('denies authorization-code issuance before persisting when a trigger denies', function () {
     $persistedTokenCount = Token::query()->count();
 
-    Oidc::authorizationCode(function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
+    app(AccessTokenPipeline::class)->register('authorization_code', function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
         $api->deny('user_blocked');
     });
 

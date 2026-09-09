@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Authentication\Actions\SendEmailVerification;
 use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,8 @@ class SendEmailVerificationNotificationController
 {
     use ResolvesIdentityGuard;
 
+    public function __construct(private readonly SendEmailVerification $sendVerification) {}
+
     public function __invoke(Request $request): JsonResponse|RedirectResponse
     {
         $user = $this->currentUser($request);
@@ -23,11 +26,9 @@ class SendEmailVerificationNotificationController
             throw new HttpException(403);
         }
 
-        if ($user->hasVerifiedEmail()) {
+        if (! ($this->sendVerification)($user)) {
             return redirect()->intended($this->homeUrl());
         }
-
-        $user->sendEmailVerificationNotification();
 
         if ($request->wantsJson()) {
             return new JsonResponse('', 202);

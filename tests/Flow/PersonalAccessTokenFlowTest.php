@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Token\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Workbench\App\Models\User;
 
@@ -18,7 +18,7 @@ beforeEach(function () {
 it('runs the personal-access trigger once and applies its access-token claims', function () {
     $triggerCount = 0;
 
-    Oidc::personalAccessToken(function (PersonalAccessTokenEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
+    app(AccessTokenPipeline::class)->register('personal_access_token', function (PersonalAccessTokenEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
         $triggerCount++;
 
         expect($event->user->getAuthIdentifier())->toBe($this->user->id)
@@ -34,7 +34,7 @@ it('runs the personal-access trigger once and applies its access-token claims', 
 });
 
 it('denies personal-access issuance before persisting an access token', function () {
-    Oidc::personalAccessToken(function (PersonalAccessTokenEvent $event, AccessTokenApi $api): void {
+    app(AccessTokenPipeline::class)->register('personal_access_token', function (PersonalAccessTokenEvent $event, AccessTokenApi $api): void {
         $api->deny('pat_blocked');
     });
 
@@ -47,7 +47,7 @@ it('denies personal-access issuance before persisting an access token', function
 it('does not fire the personal-access trigger for other grants', function () {
     $triggerRan = false;
 
-    Oidc::personalAccessToken(function () use (&$triggerRan): void {
+    app(AccessTokenPipeline::class)->register('personal_access_token', function () use (&$triggerRan): void {
         $triggerRan = true;
     });
 

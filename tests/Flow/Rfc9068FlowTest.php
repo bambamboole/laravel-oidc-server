@@ -6,7 +6,6 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Lcobucci\JWT\Encoding\JoseEncoder;
@@ -56,6 +55,6 @@ it('issues an RFC 9068 access token through the real flow with context-store cla
 });
 
 it('still authenticates the RFC 9068 token on an auth:oidc route (no guard regression)', function () {
-    Oidc::actingAs($this->user, ['openid'], 'oidc');
+    $this->actingAsOidcUser($this->user, ['openid'], 'oidc');
     $this->getJson('/realms/default/oauth/userinfo')->assertOk();
 });

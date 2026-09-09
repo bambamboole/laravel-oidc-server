@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Forms\EmailVerificationPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\EmailVerificationView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationPrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationView;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Http\Request;

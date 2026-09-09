@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Event;
@@ -12,7 +11,7 @@ use Workbench\App\Models\User;
 it('registers a user through the package action seam and logs them in', function () {
     Event::fake([Registered::class]);
 
-    Oidc::createUsersUsing(function (array $input): Authenticatable {
+    createUsersUsing(function (array $input): Authenticatable {
         return User::create([
             'name' => $input['name'],
             'email' => $input['email'],
@@ -44,7 +43,7 @@ it('returns 404 from the register endpoint when no create user action is registe
 });
 
 it('returns the JSON success response after registration', function () {
-    Oidc::createUsersUsing(function (array $input): Authenticatable {
+    createUsersUsing(function (array $input): Authenticatable {
         return User::create([
             'name' => $input['name'],
             'email' => $input['email'],

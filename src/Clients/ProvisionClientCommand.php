@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
+use Bambamboole\LaravelOidc\Server\Installation\EnvironmentFile;
+use Bambamboole\LaravelOidc\Server\Installation\EnvironmentWriteException;
 use Illuminate\Console\Command;
 
 class ProvisionClientCommand extends Command

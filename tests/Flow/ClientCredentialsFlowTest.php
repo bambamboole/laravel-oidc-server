@@ -7,10 +7,10 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\ClientCredentialsEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Token\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 
 beforeEach(function () {
     $this->client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
@@ -33,7 +33,7 @@ it('issues a client_credentials token with its own configured lifetime', functio
 it('runs the client-credentials trigger once and applies its access-token claims', function () {
     $triggerCount = 0;
 
-    Oidc::clientCredentials(function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
+    app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
         $triggerCount++;
 
         expect($event->client->getIdentifier())->toBe((string) $this->client->id)
@@ -113,7 +113,7 @@ it('exposes the requested audiences to the client-credentials trigger', function
     $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
     $seen = null;
 
-    Oidc::clientCredentials(function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$seen): void {
+    app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$seen): void {
         $seen = $event->audiences;
     });
 
@@ -131,7 +131,7 @@ it('exposes the requested audiences to the client-credentials trigger', function
 it('denies client credentials before persisting an access token', function () {
     $persistedTokenCount = Token::query()->count();
 
-    Oidc::clientCredentials(function (ClientCredentialsEvent $event, AccessTokenApi $api): void {
+    app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api): void {
         $api->deny('client_blocked');
     });
 

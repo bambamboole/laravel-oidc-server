@@ -9,9 +9,11 @@ use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Brokering\Actions\LinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\InvalidStateException;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountAlreadyLinkedException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
@@ -30,6 +32,7 @@ class SocialAuthenticationController
     public function __construct(
         private readonly SocialProviderRegistry $providers,
         private readonly SocialAccountManager $accounts,
+        private readonly LinkSocialAccount $linkAccount,
         private readonly InteractiveLoginFinalizer $finalizer,
         private readonly Auditor $auditor,
     ) {}
@@ -64,7 +67,7 @@ class SocialAuthenticationController
         }
 
         // Also covers completeLogin/completeLink: linking and JIT provisioning
-        // (a host's createUsersFromSocialUsing action) may reject the identity
+        // (the app's CreateUserFromSocialAccount action) may reject the identity
         // with a SocialAuthenticationException, which must read as a failed
         // login, not a 500.
         try {
@@ -119,13 +122,11 @@ class SocialAuthenticationController
             throw new RuntimeException('Social accounts require an Eloquent user model.');
         }
 
-        $existing = $this->accounts->findAccount($providerKey, $socialUser->id);
-
-        if ($existing !== null && ! $existing->authenticatable->is($user)) {
+        try {
+            ($this->linkAccount)($user, $providerKey, $socialUser);
+        } catch (SocialAccountAlreadyLinkedException) {
             return redirect($this->homeUrl())->withErrors(['social' => __('This account is already linked to another user.')]);
         }
-
-        $this->accounts->link($user, $providerKey, $socialUser);
 
         return redirect($this->homeUrl())->with('status', 'social-account-linked');
     }

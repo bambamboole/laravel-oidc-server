@@ -27,16 +27,16 @@ class DefaultScopeRepository implements ScopeRepository
     public function all(): Collection
     {
         return collect($this->catalog())
-            ->union(ScopeRegistry::all())
             ->union(self::OIDC_SCOPES)
             ->map(fn (string $description, string $id) => new Scope($id, $description))
             ->values();
     }
 
     /**
-     * The configured catalog, resolved once per instance. A catalog may query
-     * the database, so failures fall back to an empty catalog (fail-closed:
-     * unknown scopes are stripped at issuance) instead of breaking the flow.
+     * The configured catalog. A catalog class is resolved once per instance
+     * because it may query the database; its failures fall back to an empty
+     * catalog (fail-closed: unknown scopes are stripped at issuance) instead
+     * of breaking the flow. An inline array is read fresh each time.
      *
      * @return array<string, string>
      */
@@ -48,17 +48,17 @@ class DefaultScopeRepository implements ScopeRepository
 
         $configured = config('oidc.scopes.catalog', []);
 
-        if (is_string($configured)) {
-            $catalog = $this->app->make($configured);
-
-            if (! $catalog instanceof ScopeCatalog) {
-                throw new LogicException("The configured scope catalog [{$configured}] must implement ScopeCatalog.");
-            }
-
-            $configured = rescue(fn (): array => $catalog->scopes(), [], report: ! $this->app->runningInConsole());
+        if (! is_string($configured)) {
+            return is_array($configured) ? $configured : [];
         }
 
-        return $this->catalog = is_array($configured) ? $configured : [];
+        $catalog = $this->app->make($configured);
+
+        if (! $catalog instanceof ScopeCatalog) {
+            throw new LogicException("The configured scope catalog [{$configured}] must implement ScopeCatalog.");
+        }
+
+        return $this->catalog = rescue(fn (): array => $catalog->scopes(), [], report: ! $this->app->runningInConsole());
     }
 
     public function find(string $identifier): ?Scope

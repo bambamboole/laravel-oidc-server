@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Keys;
 
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
+use Bambamboole\LaravelOidc\Server\Installation\EnvironmentFile;
 use RuntimeException;
 use Throwable;
 

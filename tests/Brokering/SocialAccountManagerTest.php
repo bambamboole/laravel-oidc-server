@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\UserProvider;
@@ -80,7 +79,7 @@ it('does not link by email when disabled', function () {
 });
 
 it('provisions a new user via the registered action', function () {
-    Oidc::createUsersFromSocialUsing(fn (SocialUser $socialUser, string $provider): User => User::create([
+    createUsersFromSocialUsing(fn (SocialUser $socialUser, string $provider): User => User::create([
         'name' => $socialUser->name ?? 'Unknown',
         'email' => $socialUser->email,
         'password' => Str::random(40),
@@ -96,7 +95,7 @@ it('provisions a new user via the registered action', function () {
 
 it('returns null when provisioning is disabled', function () {
     config()->set('oidc.social.auto_provision', false);
-    Oidc::createUsersFromSocialUsing(fn (): User => throw new LogicException('must not be called'));
+    createUsersFromSocialUsing(fn (): User => throw new LogicException('must not be called'));
 
     expect(app(SocialAccountManager::class)->resolveUser('google', socialUser(), userProvider()))->toBeNull();
 });

@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace Workbench\App\Models;
 
-use Bambamboole\LaravelOidc\Server\Credential\Concerns\HasAuthenticationFactors;
-use Bambamboole\LaravelOidc\Server\User\Concerns\HasOidcTokens;
-use Bambamboole\LaravelOidc\Server\User\OAuthenticatable;
+use Bambamboole\LaravelOidc\Server\Credentials\Concerns\HasAuthenticationFactors;
+use Bambamboole\LaravelOidc\Server\Users\Concerns\HasOidcTokens;
+use Bambamboole\LaravelOidc\Server\Users\OAuthenticatable;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Foundation\Auth\User as Authenticatable;

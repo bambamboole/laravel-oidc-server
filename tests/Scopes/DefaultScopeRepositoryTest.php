@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeCatalog;
@@ -32,7 +31,7 @@ class RepositoryThrowingCatalog implements ScopeCatalog
 beforeEach(fn () => $this->repository = new DefaultScopeRepository(app()));
 
 it('exposes registered scopes plus the oidc standard scopes', function () {
-    Oidc::tokensCan(['project:update' => 'Update projects']);
+    config(['oidc.scopes.catalog' => ['project:update' => 'Update projects']]);
 
     $ids = $this->repository->all()->map(fn (Scope $scope) => $scope->id);
 
@@ -40,7 +39,7 @@ it('exposes registered scopes plus the oidc standard scopes', function () {
 });
 
 it('does not duplicate oidc scopes the app already defines', function () {
-    Oidc::tokensCan(['openid' => 'Custom openid description']);
+    config(['oidc.scopes.catalog' => ['openid' => 'Custom openid description']]);
 
     expect($this->repository->all()->filter(fn (Scope $scope) => $scope->id === 'openid'))->toHaveCount(1)
         ->and($this->repository->find('openid')->description)->toBe('Custom openid description');
@@ -100,9 +99,8 @@ it('does not consult the catalog until scopes are enumerated', function () {
     expect(RepositoryCountingCatalog::$calls)->toBe(0);
 });
 
-it('prefers a catalog description over tokensCan and built-in oidc scopes', function () {
+it('prefers a catalog description over the built-in oidc scopes', function () {
     config()->set('oidc.scopes.catalog', ['profile' => 'Catalog wording', 'api:x' => 'X']);
-    Oidc::tokensCan(['api:x' => 'Passport wording']);
 
     $repository = app(ScopeRepository::class);
 
@@ -110,10 +108,11 @@ it('prefers a catalog description over tokensCan and built-in oidc scopes', func
         ->and($repository->find('api:x')?->description)->toBe('X');
 });
 
-it('still honours scopes registered through tokensCan', function () {
-    Oidc::tokensCan(['legacy:scope' => 'Registered directly']);
+it('reads an inline catalog fresh after the repository was resolved', function () {
+    $repository = app(ScopeRepository::class);
+    config(['oidc.scopes.catalog' => ['legacy:scope' => 'Registered later']]);
 
-    expect(app(ScopeRepository::class)->find('legacy:scope'))->not->toBeNull();
+    expect($repository->find('legacy:scope'))->not->toBeNull();
 });
 
 it('falls back to an empty catalog when the catalog throws', function () {

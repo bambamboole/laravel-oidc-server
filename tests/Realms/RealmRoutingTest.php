@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Realm\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Realm\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 
 beforeEach(function () {
     config(['oidc.issuer' => 'https://id.example.com']);

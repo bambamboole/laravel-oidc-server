@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\OidcManager;
+use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
-use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Carbon;
@@ -67,8 +67,8 @@ it('creates an authorization-code grant client with sane defaults', function () 
 });
 
 it('configures a first-party client without any singleton busting', function () {
-    // The manager must already be resolved for this to prove anything.
-    app(OidcManager::class);
+    // The provider singleton must already be resolved for this to prove anything.
+    app(SessionTokenProvider::class);
 
     $client = $this->withFirstPartyClient();
 

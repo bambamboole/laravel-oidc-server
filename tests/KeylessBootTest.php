@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tests;
 
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\OidcManager;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
 use Illuminate\Encryption\MissingAppKeyException;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as BaseTestCase;
@@ -31,16 +32,16 @@ class KeylessBootTest extends BaseTestCase
         $this->app->make('encrypter');
     }
 
-    public function test_facade_registration_never_resolves_the_encrypter(): void
+    public function test_hook_registration_never_resolves_the_encrypter(): void
     {
-        Oidc::createUsersUsing(fn (array $input) => throw new \RuntimeException('unused'));
-        Oidc::resetUserPasswordsUsing(fn () => null);
-        Oidc::createUsersFromSocialUsing(fn () => throw new \RuntimeException('unused'));
-        Oidc::postLogin(fn () => null);
-        Oidc::clientCredentials(fn () => null);
-        Oidc::tokenExchange(fn () => null);
-        Oidc::extendSocialProvider('custom', fn () => throw new \RuntimeException('unused'));
+        createUsersUsing(fn (array $input) => throw new \RuntimeException('unused'));
+        resetUserPasswordsUsing(fn () => null);
+        createUsersFromSocialUsing(fn () => throw new \RuntimeException('unused'));
+        app(PostLoginPipeline::class)->register(fn () => null);
+        app(AccessTokenPipeline::class)->register('client_credentials', fn () => null);
+        app(AccessTokenPipeline::class)->register('token_exchange', fn () => null);
+        app(SocialProviderRegistry::class)->extend('custom', fn () => throw new \RuntimeException('unused'));
 
-        $this->assertInstanceOf(OidcManager::class, $this->app->make(OidcManager::class));
+        $this->assertTrue(app(AccessTokenPipeline::class)->has('client_credentials'));
     }
 }

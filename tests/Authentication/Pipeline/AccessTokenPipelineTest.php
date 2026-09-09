@@ -8,13 +8,13 @@ use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AuthorizationCodeEven
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\ClientCredentialsEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\TokenExchangeEvent;
-use Bambamboole\LaravelOidc\Server\Bridge\Client;
+use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
 use Workbench\App\Models\User;
 
 function clientCredentialsPipelineEvent(): ClientCredentialsEvent
 {
     return new ClientCredentialsEvent(
-        client: new Client('client-id', 'Machine client', []),
+        client: new ClientEntity('client-id', 'Machine client', []),
         scopes: ['orders:read'],
     );
 }
@@ -26,7 +26,7 @@ function tokenExchangePipelineEvent(): TokenExchangeEvent
 
     return new TokenExchangeEvent(
         user: $user,
-        client: new Client('client-id', 'Exchange client', []),
+        client: new ClientEntity('client-id', 'Exchange client', []),
         scopes: ['orders:read'],
         audience: 'https://api.internal/orders',
         subjectClaims: ['sub' => 'subject-id'],
@@ -166,7 +166,7 @@ function personalAccessPipelineEvent(): PersonalAccessTokenEvent
 
     return new PersonalAccessTokenEvent(
         user: $user,
-        client: new Client('client-id', 'PAT client', []),
+        client: new ClientEntity('client-id', 'PAT client', []),
         scopes: ['openid'],
     );
 }
@@ -178,7 +178,7 @@ function authorizationCodePipelineEvent(string $grantType = 'authorization_code'
 
     return new AuthorizationCodeEvent(
         user: $user,
-        client: new Client('client-id', 'Interactive client', []),
+        client: new ClientEntity('client-id', 'Interactive client', []),
         scopes: ['openid', 'email'],
         grantType: $grantType,
     );

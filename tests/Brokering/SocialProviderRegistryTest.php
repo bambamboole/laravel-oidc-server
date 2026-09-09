@@ -8,12 +8,8 @@ use Bambamboole\LaravelOidc\Server\Brokering\OidcProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\User\UserActionManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Workbench\App\Models\User;
 
 it('omits providers without credentials and resolves configured ones', function () {
     config()->set('oidc.social.providers.google.client_id', 'g-client');
@@ -41,7 +37,7 @@ it('resolves the generic oidc driver from config', function () {
 it('supports custom drivers via extend', function () {
     config()->set('oidc.social.providers.custom', ['driver' => 'my-driver', 'client_id' => 'x']);
 
-    Oidc::extendSocialProvider('my-driver', fn (string $key, array $config): SocialProvider => new class($key) implements SocialProvider
+    app(SocialProviderRegistry::class)->extend('my-driver', fn (string $key, array $config): SocialProvider => new class($key) implements SocialProvider
     {
         public function __construct(private readonly string $key) {}
 
@@ -62,25 +58,5 @@ it('supports custom drivers via extend', function () {
     });
 
     expect(app(SocialProviderRegistry::class)->get('custom')?->key())->toBe('custom')
-        ->and(Oidc::socialProviders())->toHaveKey('custom');
-});
-
-it('creates users from social via the registered action and returns null without one', function () {
-    $socialUser = new SocialUser('g-1', 'm@example.com', true, 'M', null, null);
-
-    $manager = app(UserActionManager::class);
-
-    expect($manager->createUserFromSocial($socialUser, 'google'))->toBeNull();
-
-    Oidc::createUsersFromSocialUsing(fn (SocialUser $user, string $provider) => User::create([
-        'name' => $user->name ?? 'Unknown',
-        'email' => $user->email,
-        'password' => Str::random(40),
-    ]));
-
-    $created = $manager->createUserFromSocial($socialUser, 'google');
-
-    expect($created)->toBeInstanceOf(User::class);
-
-    $this->assertDatabaseHas('users', ['email' => 'm@example.com']);
+        ->and(app(SocialProviderRegistry::class)->enabled())->toHaveKey('custom');
 });

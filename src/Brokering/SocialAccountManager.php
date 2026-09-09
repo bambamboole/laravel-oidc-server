@@ -5,16 +5,17 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
-use Bambamboole\LaravelOidc\Server\User\UserActionManager;
+use Bambamboole\LaravelOidc\Server\Users\Actions\CreateUserFromSocialAccount;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Contracts\Container\Container;
 use Illuminate\Database\Eloquent\Model;
 use RuntimeException;
 
 class SocialAccountManager
 {
     public function __construct(
-        private readonly UserActionManager $userActions,
+        private readonly Container $container,
     ) {}
 
     public function findAccount(string $provider, string $providerUserId): ?SocialAccount
@@ -52,14 +53,11 @@ class SocialAccountManager
             }
         }
 
-        if (config('oidc.social.auto_provision', true)) {
-            $user = $this->userActions->createUserFromSocial($socialUser, $provider);
+        if (config('oidc.social.auto_provision', true) && $this->container->bound(CreateUserFromSocialAccount::class)) {
+            $user = $this->container->make(CreateUserFromSocialAccount::class)($socialUser, $provider);
+            $this->link($user, $provider, $socialUser);
 
-            if ($user !== null) {
-                $this->link($user, $provider, $socialUser);
-
-                return $user;
-            }
+            return $user;
         }
 
         return null;

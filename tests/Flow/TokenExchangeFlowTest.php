@@ -7,25 +7,25 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Exchange\ExchangeGrantResult;
-use Bambamboole\LaravelOidc\Server\Exchange\ExchangePolicy;
-use Bambamboole\LaravelOidc\Server\Exchange\ExchangeRequest;
-use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Token\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeGrantResult;
+use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeRequest;
+use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Workbench\App\Models\User;
 
 const ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
 
 beforeEach(function () {
-    Oidc::tokensCan([
+    config(['oidc.scopes.catalog' => [
         'openid' => 'Authenticate',
         'orders:read' => 'Read orders',
         'orders:write' => 'Write orders',
-    ]);
+    ]]);
 
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
@@ -68,7 +68,7 @@ it('exchanges a reciprocal token for a narrowed, audience-scoped access token', 
 it('runs the token-exchange trigger once with finalized context and applies its access-token claims', function () {
     $triggerCount = 0;
 
-    Oidc::tokenExchange(function (TokenExchangeEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
+    app(AccessTokenPipeline::class)->register('token_exchange', function (TokenExchangeEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
         $triggerCount++;
 
         expect($event->user->getAuthIdentifier())->toBe($this->user->getAuthIdentifier())
@@ -102,7 +102,7 @@ it('denies token exchange before persisting an access token', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
     $persistedTokenCount = Token::query()->count();
 
-    Oidc::tokenExchange(function (TokenExchangeEvent $event, AccessTokenApi $api): void {
+    app(AccessTokenPipeline::class)->register('token_exchange', function (TokenExchangeEvent $event, AccessTokenApi $api): void {
         $api->deny('exchange_blocked');
     });
 
@@ -128,7 +128,7 @@ it('keeps the package-owned actor chain when a token-exchange trigger attempts t
         ->toString();
     $triggerCount = 0;
 
-    Oidc::tokenExchange(function (TokenExchangeEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
+    app(AccessTokenPipeline::class)->register('token_exchange', function (TokenExchangeEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
         $triggerCount++;
         $api->setAccessTokenClaim('act', ['client_id' => 'forged-client']);
     });
@@ -381,7 +381,7 @@ it('carries context from the exchange policy into the token-exchange trigger', f
     };
     app()->instance(ExchangePolicy::class, $policy);
 
-    Oidc::tokenExchange(function (TokenExchangeEvent $event, AccessTokenApi $api): void {
+    app(AccessTokenPipeline::class)->register('token_exchange', function (TokenExchangeEvent $event, AccessTokenApi $api): void {
         $api->setAccessTokenClaim('tenant_id', $api->context('tenant_id'));
     });
 

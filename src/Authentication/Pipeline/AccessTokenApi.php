@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
-use Bambamboole\LaravelOidc\Server\Token\ProtocolClaims;
+use Bambamboole\LaravelOidc\Server\Tokens\ProtocolClaims;
 use Illuminate\Support\Facades\Log;
 
 class AccessTokenApi

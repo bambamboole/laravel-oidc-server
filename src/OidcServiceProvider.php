@@ -8,31 +8,26 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditServiceProvider;
 use Bambamboole\LaravelOidc\Server\Audit\RecordLoginAudit;
 use Bambamboole\LaravelOidc\Server\Audit\RecordLogoutAudit;
 use Bambamboole\LaravelOidc\Server\Authentication\AuthenticationServiceProvider;
-use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelServiceProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\BrokeringServiceProvider;
-use Bambamboole\LaravelOidc\Server\Claims\ClaimsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Clients\ClientsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Server\Console\InstallSelfCommand;
-use Bambamboole\LaravelOidc\Server\Context\ContextServiceProvider;
-use Bambamboole\LaravelOidc\Server\Credential\CredentialServiceProvider;
-use Bambamboole\LaravelOidc\Server\Exchange\ExchangeServiceProvider;
-use Bambamboole\LaravelOidc\Server\Forms\FormsServiceProvider;
+use Bambamboole\LaravelOidc\Server\Consents\ConsentsServiceProvider;
+use Bambamboole\LaravelOidc\Server\Credentials\CredentialsServiceProvider;
+use Bambamboole\LaravelOidc\Server\Installation\InstallationServiceProvider;
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Keys\KeysServiceProvider;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Realm\RealmServiceProvider;
+use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
+use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
-use Bambamboole\LaravelOidc\Server\Server\AuthorizationServerServiceProvider;
-use Bambamboole\LaravelOidc\Server\Session\EndOidcSession;
-use Bambamboole\LaravelOidc\Server\Session\EstablishSessionToken;
-use Bambamboole\LaravelOidc\Server\Session\ForgetSessionToken;
-use Bambamboole\LaravelOidc\Server\Session\SessionServiceProvider;
-use Bambamboole\LaravelOidc\Server\Session\SessionTokenGuard;
-use Bambamboole\LaravelOidc\Server\Session\StartOidcSession;
-use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
-use Bambamboole\LaravelOidc\Server\Token\TokenServiceProvider;
-use Bambamboole\LaravelOidc\Server\User\UserServiceProvider;
+use Bambamboole\LaravelOidc\Server\Sessions\EndOidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\EstablishSessionToken;
+use Bambamboole\LaravelOidc\Server\Sessions\ForgetSessionToken;
+use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;
+use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenGuard;
+use Bambamboole\LaravelOidc\Server\Sessions\StartOidcSession;
+use Bambamboole\LaravelOidc\Server\Tokens\TokensServiceProvider;
+use Bambamboole\LaravelOidc\Server\Users\UsersServiceProvider;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Console\AboutCommand;
@@ -50,23 +45,20 @@ class OidcServiceProvider extends ServiceProvider
      * @var list<class-string<ServiceProvider>>
      */
     private const DOMAIN_PROVIDERS = [
-        RealmServiceProvider::class,
+        RealmsServiceProvider::class,
         KeysServiceProvider::class,
         ScopesServiceProvider::class,
-        ClaimsServiceProvider::class,
-        UserServiceProvider::class,
-        CredentialServiceProvider::class,
+        UsersServiceProvider::class,
+        CredentialsServiceProvider::class,
         BrokeringServiceProvider::class,
         ClientsServiceProvider::class,
-        ExchangeServiceProvider::class,
-        TokenServiceProvider::class,
+        TokensServiceProvider::class,
         AuthenticationServiceProvider::class,
-        SessionServiceProvider::class,
-        ContextServiceProvider::class,
-        BackChannelServiceProvider::class,
+        SessionsServiceProvider::class,
+        ConsentsServiceProvider::class,
         AuditServiceProvider::class,
-        FormsServiceProvider::class,
-        AuthorizationServerServiceProvider::class,
+        ProtocolServiceProvider::class,
+        InstallationServiceProvider::class,
     ];
 
     public function register(): void
@@ -76,9 +68,6 @@ class OidcServiceProvider extends ServiceProvider
         foreach (self::DOMAIN_PROVIDERS as $provider) {
             $this->app->register($provider);
         }
-
-        $this->app->singleton(EnvironmentFile::class);
-        $this->app->singleton(OidcManager::class);
     }
 
     public function boot(): void
@@ -112,10 +101,6 @@ class OidcServiceProvider extends ServiceProvider
             'Signing Key Store' => class_basename((string) config('oidc.keys.store', EnvSigningKeyStore::class)),
             'Signing Key' => $this->activeSigningKid(),
         ]);
-
-        if ($this->app->runningInConsole()) {
-            $this->commands([InstallSelfCommand::class]);
-        }
     }
 
     private function activeSigningKid(): string

@@ -11,8 +11,8 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
-use Bambamboole\LaravelOidc\Server\Credential\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -40,7 +40,7 @@ function finalizationPasswordToken(User $user): string
 
 function finalizationRegisterUsers(): void
 {
-    Oidc::createUsersUsing(fn (array $input): Authenticatable => User::create([
+    createUsersUsing(fn (array $input): Authenticatable => User::create([
         'name' => $input['name'],
         'email' => $input['email'],
         'password' => Hash::make($input['password']),
@@ -96,7 +96,7 @@ function finalizationPasskeyLogin(mixed $test, User $user): TestResponse
 
 it('applies the postLogin policy to registration', function () {
     finalizationRegisterUsers();
-    Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
+    app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
     $this->post(route('identity.register.store'), [
         'name' => 'M',
@@ -126,10 +126,10 @@ it('applies the postLogin policy to password resets', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = finalizationPasswordToken($user);
 
-    Oidc::resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
-    Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
+    app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
     $this->post(route('identity.password.update'), [
         'token' => $token,
@@ -146,7 +146,7 @@ it('records amr for password-reset logins', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = finalizationPasswordToken($user);
 
-    Oidc::resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 
@@ -163,7 +163,7 @@ it('records amr for password-reset logins', function () {
 
 it('applies the postLogin policy to passkey logins', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
-    Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
+    app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
     finalizationPasskeyLogin($this, $user)->assertSessionHasErrors();
 
@@ -194,7 +194,7 @@ it('still requires a challenge after passkey login when the pipeline demands MFA
     $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
 
-    Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
+    app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
 
     finalizationPasskeyLogin($this, $user)->assertRedirect(route('identity.two-factor.login'));
 

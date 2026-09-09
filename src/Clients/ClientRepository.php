@@ -10,7 +10,7 @@ use RuntimeException;
 
 /**
  * Model-level client administration. The league-facing lookup lives in
- * {@see \Bambamboole\LaravelOidc\Server\Bridge\ClientRepository}.
+ * {@see \Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ClientRepository}.
  */
 class ClientRepository
 {
