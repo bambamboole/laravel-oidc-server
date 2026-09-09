@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Protocol\Concerns\ConvertsPsrResponses;
 use Bambamboole\LaravelOidc\Server\Protocol\Concerns\HandlesOAuthErrors;
+use Bambamboole\LaravelOidc\Server\Shared\Http\ConvertsPsrResponses;
 use League\OAuth2\Server\AuthorizationServer;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;

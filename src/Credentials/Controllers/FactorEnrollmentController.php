@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Credentials\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Credentials\Actions\ConfirmFactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Credentials\Actions\EnrollFactor;
 use Bambamboole\LaravelOidc\Server\Credentials\Actions\RevokeFactor;
@@ -12,6 +11,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\Contracts\EnrollableFactorProvide
 use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

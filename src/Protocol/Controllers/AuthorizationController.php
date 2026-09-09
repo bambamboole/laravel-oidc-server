@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Authentication\LoginDestination;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Server\Consents\Views\AuthorizationViewResponse;
-use Bambamboole\LaravelOidc\Server\Protocol\Concerns\ConvertsPsrResponses;
 use Bambamboole\LaravelOidc\Server\Protocol\Concerns\HandlesOAuthErrors;
-use Bambamboole\LaravelOidc\Server\Protocol\Concerns\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\UserEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
+use Bambamboole\LaravelOidc\Server\Shared\Http\ConvertsPsrResponses;
+use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\StatefulGuard;

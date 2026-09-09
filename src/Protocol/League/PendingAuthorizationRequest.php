@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\League;
 
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Illuminate\Http\Request;
@@ -11,11 +12,10 @@ use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequestInterface;
 
 /**
- * Reads the authorization request a login was initiated from (if any) back
- * out of the session, so the post-login pipeline can see the pending client
- * and scopes without knowing how the authorize endpoint stashed them.
+ * Reads the league authorization request the authorize endpoint stashed in
+ * the session back out for the post-login pipeline.
  */
-final class PendingAuthorizationRequest
+final class PendingAuthorizationRequest implements PendingAuthorization
 {
     public function __construct(private readonly ClientRepository $clients) {}
 
@@ -26,9 +26,6 @@ final class PendingAuthorizationRequest
         return $authRequest === null ? null : $this->clients->findActive($authRequest->getClient()->getIdentifier());
     }
 
-    /**
-     * @return list<string>
-     */
     public function scopes(Request $request): array
     {
         $authRequest = $this->stashed($request);

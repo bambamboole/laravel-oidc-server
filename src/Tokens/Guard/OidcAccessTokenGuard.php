@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckAudience;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
-use Bambamboole\LaravelOidc\Server\Users\OAuthenticatable;
 use DateTimeInterface;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -68,7 +67,7 @@ class OidcAccessTokenGuard implements Guard
             return null;
         }
 
-        return $this->user = $user instanceof OAuthenticatable
+        return $this->user = $user instanceof AccessTokenBearer
             ? $user->withAccessToken(new CurrentAccessToken($token))
             : $user;
     }

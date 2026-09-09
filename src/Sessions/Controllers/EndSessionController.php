@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
-use Bambamboole\LaravelOidc\Server\Protocol\Concerns\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Sessions\Actions\EndSession;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

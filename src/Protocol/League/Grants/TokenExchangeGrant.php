@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\League\Grants;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use DateInterval;
@@ -83,7 +84,7 @@ class TokenExchangeGrant extends AbstractGrant
         }
 
         $this->getEmitter()->emit(new RequestEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request));
-        $responseType->setAccessToken($accessToken);
+        $responseType->setAccessToken(AccessTokenEntity::fromMinted($accessToken, $client));
 
         // Exchange must never mint a refresh token; issueRefreshToken is deliberately never called.
         return $responseType;

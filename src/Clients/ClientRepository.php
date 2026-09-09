@@ -5,15 +5,34 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
  * Model-level client administration. The league-facing lookup lives in
- * {@see \Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ClientRepository}.
+ * {@see \Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ClientRepository}
+ * and delegates secret checks to {@see self::validateSecret()}.
  */
 class ClientRepository
 {
+    public function __construct(private readonly Hasher $hasher) {}
+
+    /**
+     * A public client authenticates with no secret; a confidential client only
+     * with the one hashed on its record.
+     */
+    public function validateSecret(Client $client, ?string $clientSecret): bool
+    {
+        if (! $client->confidential()) {
+            return $clientSecret === null || $clientSecret === '';
+        }
+
+        return $clientSecret !== null
+            && $clientSecret !== ''
+            && $this->hasher->check($clientSecret, (string) $client->getAttributes()['secret']);
+    }
+
     public function find(string $clientId): ?Client
     {
         return Client::query()->inRealm()->where('client_id', $clientId)->first();

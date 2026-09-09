@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Brokering;
 
+use Bambamboole\LaravelOidc\Server\Brokering\Actions\CreateUserFromSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Users\Actions\CreateUserFromSocialAccount;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Container\Container;

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Credentials;
 
-use Bambamboole\LaravelOidc\Server\Authentication\Views\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
 use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passkeys\Contracts\PasskeyUser;

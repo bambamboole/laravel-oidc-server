@@ -7,16 +7,12 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\League\Repositories;
 use Bambamboole\LaravelOidc\Server\Clients\Client as ClientModel;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository as ClientModelRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
-use Illuminate\Contracts\Hashing\Hasher;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 
 class ClientRepository implements ClientRepositoryInterface
 {
-    public function __construct(
-        protected ClientModelRepository $clients,
-        protected Hasher $hasher,
-    ) {}
+    public function __construct(protected ClientModelRepository $clients) {}
 
     public function getClientEntity(string $clientIdentifier): ?ClientEntityInterface
     {
@@ -29,17 +25,7 @@ class ClientRepository implements ClientRepositoryInterface
     {
         $record = $this->clients->findActive($clientIdentifier);
 
-        if ($record === null) {
-            return false;
-        }
-
-        if (! $record->confidential()) {
-            return $clientSecret === null || $clientSecret === '';
-        }
-
-        return $clientSecret !== null
-            && $clientSecret !== ''
-            && $this->hasher->check($clientSecret, (string) $record->getAttributes()['secret']);
+        return $record !== null && $this->clients->validateSecret($record, $clientSecret);
     }
 
     public function getPersonalAccessClientEntity(?string $provider = null): ClientEntityInterface

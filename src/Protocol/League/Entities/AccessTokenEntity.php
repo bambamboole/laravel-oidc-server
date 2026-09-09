@@ -6,7 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\League\Entities;
 
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Tokens\ProtocolClaims;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
+use Bambamboole\LaravelOidc\Server\Tokens\MintedAccessToken;
 use DateTimeImmutable;
 use Lcobucci\JWT\Token;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
@@ -124,5 +125,25 @@ class AccessTokenEntity implements AccessTokenEntityInterface
     public function toString(): string
     {
         return $this->serialized ??= $this->convertToJWT()->toString();
+    }
+
+    /**
+     * Wraps an already-minted token so league can hand it out through its
+     * response types. The serialized form is pinned: re-signing would change
+     * iat/nbf and break the persisted record the JWT was issued against.
+     */
+    public static function fromMinted(MintedAccessToken $minted, ClientEntityInterface $client): self
+    {
+        $entity = new self(
+            $minted->userId,
+            array_map(fn (string $id): ScopeEntity => new ScopeEntity($id), $minted->scopes),
+            $client,
+        );
+        $entity->setIdentifier($minted->jti);
+        $entity->setExpiryDateTime($minted->expiresAt);
+        $entity->setAudience(...$minted->audience);
+        $entity->serialized = $minted->jwt;
+
+        return $entity;
     }
 }

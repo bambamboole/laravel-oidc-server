@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Middleware;
 
-use Bambamboole\LaravelOidc\Server\Protocol\OAuthError;
-use Bambamboole\LaravelOidc\Server\Users\OAuthenticatable;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthError;
+use Bambamboole\LaravelOidc\Server\Tokens\Guard\AccessTokenBearer;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,7 +25,7 @@ class CheckScopes
     {
         $user = $request->user();
 
-        if (! $user instanceof OAuthenticatable || $user->currentAccessToken() === null) {
+        if (! $user instanceof AccessTokenBearer || $user->currentAccessToken() === null) {
             OAuthError::bearer('invalid_token', 401);
         }
 

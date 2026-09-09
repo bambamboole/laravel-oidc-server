@@ -36,9 +36,9 @@ it('exchanges the root token for an audience-scoped, narrowed token', function (
     expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
 });
 
-it('wraps the entity into an IssuedToken', function () {
+it('wraps the minted token into an IssuedToken', function () {
     $entity = app(TokenExchanger::class)->exchange($this->root, $this->appClient, 'https://api.orders.test', ['openid']);
-    $issued = IssuedToken::fromEntity($entity, 'https://api.orders.test');
+    $issued = IssuedToken::fromMinted($entity, 'https://api.orders.test');
 
     expect($issued->tokenType)->toBe('Bearer')
         ->and($issued->audience)->toBe('https://api.orders.test')
@@ -64,9 +64,9 @@ it('rejects an invalid exchange with the matching OAuth error type', function (
 ]);
 
 it('nests the prior act claim on a chained exchange', function () {
-    $rootEntity = app(AccessTokenMinter::class)->mint((string) $this->user->id, $this->appClient, ['openid'], new DateInterval('PT1H'));
-    $rootEntity->setActor(['client_id' => 'client-a']);
-    $root = $rootEntity->toString();
+    $root = app(AccessTokenMinter::class)
+        ->mint((string) $this->user->id, $this->appClient, ['openid'], new DateInterval('PT1H'), actor: ['client_id' => 'client-a'])
+        ->toString();
 
     $issued = app(TokenExchanger::class)->exchange($root, $this->appClient, 'https://api.orders.test', ['openid']);
 

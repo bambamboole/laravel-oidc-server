@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\Exchange\DefaultExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\OidcAccessTokenGuard;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
 
@@ -34,7 +35,7 @@ class TokensServiceProvider extends ServiceProvider
             fn (OidcAccessTokenGuard $guard) => $app->refresh('request', $guard, 'setRequest'),
         )));
 
-        $this->app->singleton(AccessTokenMinter::class);
+        $this->app->singleton(AccessTokenPipeline::class);
         $this->app->singleton(AccessTokenContextLink::class);
         $this->app->singleton(ExchangePolicy::class, DefaultExchangePolicy::class);
         $this->app->singleton(TokenExchanger::class);

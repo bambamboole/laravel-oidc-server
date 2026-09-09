@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
-use Bambamboole\LaravelOidc\Server\Protocol\Concerns\ConvertsPsrResponses;
+use Bambamboole\LaravelOidc\Server\Shared\Http\ConvertsPsrResponses;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Arr;
 use League\OAuth2\Server\Exception\OAuthServerException as LeagueException;

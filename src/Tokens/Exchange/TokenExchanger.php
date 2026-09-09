@@ -6,14 +6,14 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Exchange;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Tokens\MintedAccessToken;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use DateInterval;
 use DateTimeImmutable;
@@ -46,7 +46,7 @@ class TokenExchanger
         ?array $scopes = null,
         ?DateInterval $accessTokenTTL = null,
         array $parameters = [],
-    ): AccessTokenEntity {
+    ): MintedAccessToken {
         $parsed = $this->inspector->parse($subjectToken);
         $dbToken = $parsed !== null ? $this->inspector->tokenForParsed($parsed) : null;
 
@@ -107,23 +107,17 @@ class TokenExchanger
 
         $ttl = $this->cappedTtl($accessTokenTTL ?? $this->realms->current()->tokens()->accessToken(), $result->expiresAt);
 
-        $token = $this->minter->mint($result->userId, $requestingClient, $scopeIds, $ttl, $result->audience);
-
-        foreach ($api->accessTokenClaims() as $name => $value) {
-            $token->addExtraClaim($name, $value);
-        }
-
         $act = ['client_id' => (string) $requestingClient->getKey()];
 
         if (isset($claims['act']) && is_array($claims['act'])) {
             $act['act'] = $claims['act'];
         }
 
-        $token->setActor($act);
+        $token = $this->minter->mint($result->userId, $requestingClient, $scopeIds, $ttl, $result->audience, $api->accessTokenClaims(), $act);
 
         $this->auditor->log(AuditEventType::TokenIssued, userId: $result->userId, clientId: (string) $requestingClient->getKey(), context: [
             'grant_type' => self::GRANT_URN,
-            'jti' => $token->getIdentifier(),
+            'jti' => $token->jti,
             'audience' => $result->audience,
             'scopes' => $scopeIds,
         ]);

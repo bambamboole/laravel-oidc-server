@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Audit;
 
-use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use DateTimeImmutable;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Events\Dispatcher;

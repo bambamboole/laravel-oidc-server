@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ClientRepository;
 use Illuminate\Http\Request;
 
 final class ClientCredentials
@@ -20,6 +19,8 @@ final class ClientCredentials
             return null;
         }
 
-        return $this->clients->validateClient($clientId, $clientSecret, null) ? $clientId : null;
+        $client = $this->clients->findActive($clientId);
+
+        return $client !== null && $this->clients->validateSecret($client, $clientSecret) ? $clientId : null;
     }
 }

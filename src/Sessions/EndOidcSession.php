@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions;
 
-use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Illuminate\Auth\Events\Logout;
 
 class EndOidcSession

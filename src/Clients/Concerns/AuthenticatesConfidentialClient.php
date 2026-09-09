@@ -7,7 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Clients\Concerns;
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Clients\ClientCredentials;
-use Bambamboole\LaravelOidc\Server\Protocol\OAuthError;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthError;
 use Illuminate\Http\Request;
 
 trait AuthenticatesConfidentialClient

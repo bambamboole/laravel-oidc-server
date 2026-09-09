@@ -6,23 +6,19 @@ namespace Bambamboole\LaravelOidc\Server\Authentication;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\PruneAuthenticationContextsCommand;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\NullDeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
-use Bambamboole\LaravelOidc\Server\Authentication\Views\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordConfirmationView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
-use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizationController;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
-use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -39,7 +35,6 @@ class AuthenticationServiceProvider extends ServiceProvider
             ]);
         }
 
-        $this->app->singleton(AccessTokenPipeline::class);
         $this->app->singleton(PostLoginPipeline::class);
         $this->app->singleton(DeviceRecognizer::class, NullDeviceRecognizer::class);
         $this->app->singleton(AuthenticationContextStore::class);
@@ -56,10 +51,6 @@ class AuthenticationServiceProvider extends ServiceProvider
         ] as $contract) {
             $this->app->bind($contract, fn (): never => throw MissingAuthViewException::forContract($contract));
         }
-
-        $this->app->when(AuthorizationController::class)
-            ->needs(StatefulGuard::class)
-            ->give(fn () => Auth::guard((string) config('oidc.auth.guard', 'identity')));
     }
 
     public function boot(): void

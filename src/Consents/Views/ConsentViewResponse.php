@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Consents\Views;
 
+use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
 use Illuminate\Contracts\Support\Responsable;
 
 /**

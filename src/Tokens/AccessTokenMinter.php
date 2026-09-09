@@ -5,26 +5,20 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity as BridgeClient;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AccessTokenRepository;
 use DateInterval;
-use DateTimeImmutable;
-use League\OAuth2\Server\CryptKey;
 
-class AccessTokenMinter
+/**
+ * Mints and persists an RFC 9068 access token outside a grant flow (session
+ * tokens, personal access tokens, token exchange). The protocol layer binds
+ * the league-backed implementation; nothing in the Tokens domain sees league.
+ */
+interface AccessTokenMinter
 {
-    public function __construct(
-        private readonly AccessTokenRepository $tokens,
-        private readonly SigningKeys $signingKeys,
-    ) {}
-
     /**
-     * @param  string[]  $scopeIds
-     * @param  string[]  $audiences
+     * @param  list<string>  $scopeIds
+     * @param  list<string>  $audiences
      * @param  array<string, mixed>  $extraClaims
+     * @param  array<string, mixed>|null  $actor  the RFC 8693 `act` claim, when the token is issued on behalf of another party
      */
     public function mint(
         ?string $userId,
@@ -33,30 +27,6 @@ class AccessTokenMinter
         DateInterval $ttl,
         array $audiences = [],
         array $extraClaims = [],
-    ): AccessTokenEntity {
-        $bridgeClient = new BridgeClient(
-            identifier: $client->client_id,
-            name: $client->name,
-            isConfidential: true,
-            key: $client->getKey(),
-        );
-        $scopes = array_map(fn (string $id): ScopeEntity => new ScopeEntity($id), $scopeIds);
-
-        $token = new AccessTokenEntity($userId, $scopes, $bridgeClient);
-        $token->setIdentifier(bin2hex(random_bytes(40)));
-        $token->setExpiryDateTime((new DateTimeImmutable)->add($ttl));
-        $token->setPrivateKey(new CryptKey($this->signingKeys->signingKey()->privateKey(), null, false));
-
-        if ($audiences !== []) {
-            $token->setAudience(...$audiences);
-        }
-
-        foreach ($extraClaims as $name => $value) {
-            $token->addExtraClaim($name, $value);
-        }
-
-        $this->tokens->persistNewAccessToken($token);
-
-        return $token;
-    }
+        ?array $actor = null,
+    ): MintedAccessToken;
 }

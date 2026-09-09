@@ -6,9 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\League;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Grants\OidcAuthCodeGrant;
@@ -19,8 +17,10 @@ use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AuthCodeReposito
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\RefreshTokenRepository;
 use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use DateInterval;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\CryptKey;

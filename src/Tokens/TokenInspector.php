@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Protocol\League\EncryptionKey;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Illuminate\Contracts\Encryption\Encrypter;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -62,7 +62,7 @@ class TokenInspector
 
     public function refreshTokenPayload(string $encrypted): ?object
     {
-        $this->encryptionKey ??= app(EncryptionKey::class)->value();
+        $this->encryptionKey ??= app(Encrypter::class)->getKey();
 
         try {
             $payload = json_decode($this->decrypt($encrypted));

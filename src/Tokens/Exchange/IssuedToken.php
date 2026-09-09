@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Exchange;
 
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
+use Bambamboole\LaravelOidc\Server\Tokens\MintedAccessToken;
 
 final readonly class IssuedToken
 {
@@ -17,14 +17,14 @@ final readonly class IssuedToken
         public array $scopes,
     ) {}
 
-    public static function fromEntity(AccessTokenEntity $token, string $audience): self
+    public static function fromMinted(MintedAccessToken $token, string $audience): self
     {
         return new self(
-            accessToken: $token->toString(),
+            accessToken: $token->jwt,
             tokenType: 'Bearer',
-            expiresIn: max(0, $token->getExpiryDateTime()->getTimestamp() - time()),
+            expiresIn: max(0, $token->expiresAt->getTimestamp() - time()),
             audience: $audience,
-            scopes: $token->scopeIdentifiers(),
+            scopes: $token->scopes,
         );
     }
 }

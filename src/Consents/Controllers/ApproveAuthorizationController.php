@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Consents\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Consents\Actions\CompleteAuthorization;
-use Bambamboole\LaravelOidc\Server\Protocol\Concerns\ConvertsPsrResponses;
 use Bambamboole\LaravelOidc\Server\Protocol\Concerns\HandlesOAuthErrors;
-use Bambamboole\LaravelOidc\Server\Protocol\Concerns\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Protocol\League\RetrievesAuthRequestFromSession;
+use Bambamboole\LaravelOidc\Server\Shared\Http\ConvertsPsrResponses;
+use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Illuminate\Http\Request;
 use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\HttpFoundation\Response;

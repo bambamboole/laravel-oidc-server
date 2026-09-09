@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms\Settings;
 
-use Bambamboole\LaravelOidc\Server\Scopes\ScopeCatalog;
-
 final readonly class ScopeSettings
 {
     /**
-     * @param  array<string, string>|class-string<ScopeCatalog>  $catalog  the API scopes on top of the OIDC standard scopes
+     * @param  array<string, string>|class-string  $catalog  the API scopes on top of the OIDC standard scopes, or a ScopeCatalog implementation resolved from the container
      * @param  list<string>  $claimsSupported  advertised in the discovery document
      */
     public function __construct(

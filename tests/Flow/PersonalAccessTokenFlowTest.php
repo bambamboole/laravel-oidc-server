@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenIssuanceDeniedException;
 use Workbench\App\Models\User;
 

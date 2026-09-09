@@ -6,9 +6,6 @@ declare(strict_types=1);
  * RFC 8693 (OAuth 2.0 Token Exchange); RFC 6749 §5.2 (error responses)
  */
 
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeGrantResult;
@@ -16,6 +13,9 @@ use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeRequest;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\TokenExchangeEvent;
 use Workbench\App\Models\User;
 
 const ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';

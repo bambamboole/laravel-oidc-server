@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditSink;
+use Bambamboole\LaravelOidc\Server\Brokering\Actions\CreateUserFromSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
@@ -19,7 +20,6 @@ use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckAudience;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Users\Actions\CreateUser;
-use Bambamboole\LaravelOidc\Server\Users\Actions\CreateUserFromSocialAccount;
 use Bambamboole\LaravelOidc\Server\Users\Actions\ResetUserPassword;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;

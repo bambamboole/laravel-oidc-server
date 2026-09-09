@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Consents;
 
-use Bambamboole\LaravelOidc\Server\Authentication\Views\MissingAuthViewException;
-use Bambamboole\LaravelOidc\Server\Consents\Views\AuthorizationViewResponse;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentViewResponse;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
+use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
 use Illuminate\Support\ServiceProvider;
 
 class ConsentsServiceProvider extends ServiceProvider

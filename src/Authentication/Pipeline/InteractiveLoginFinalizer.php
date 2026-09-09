@@ -6,12 +6,12 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\DeviceRecognizer;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
 use Bambamboole\LaravelOidc\Server\Credentials\PendingMfaChallenge;
-use Bambamboole\LaravelOidc\Server\Protocol\League\PendingAuthorizationRequest;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -33,7 +33,7 @@ final class InteractiveLoginFinalizer
         private readonly PostLoginPipeline $pipeline,
         private readonly DeviceRecognizer $deviceRecognizer,
         private readonly Auditor $auditor,
-        private readonly PendingAuthorizationRequest $pending,
+        private readonly PendingAuthorization $pending,
     ) {}
 
     /**

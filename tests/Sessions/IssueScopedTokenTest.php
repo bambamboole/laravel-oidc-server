@@ -6,7 +6,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\Actions\IssueScopedToken;
+use Bambamboole\LaravelOidc\Server\Sessions\Actions\IssueScopedToken;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;

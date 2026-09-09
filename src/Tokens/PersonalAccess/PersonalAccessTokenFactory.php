@@ -6,14 +6,14 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\PersonalAccess;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenIssuanceDeniedException;
 use Illuminate\Contracts\Auth\Authenticatable;
 
@@ -55,15 +55,15 @@ final readonly class PersonalAccessTokenFactory
 
         $this->auditor->log(AuditEventType::TokenIssued, userId: $userId, clientId: $client->client_id, context: [
             'grant_type' => self::GRANT_TYPE,
-            'jti' => $token->getIdentifier(),
+            'jti' => $token->jti,
             'scopes' => $granted,
         ]);
 
-        Token::query()->whereKey($token->getIdentifier())->update(['name' => $name]);
+        Token::query()->whereKey($token->jti)->update(['name' => $name]);
 
         return new PersonalAccessTokenResult(
-            accessToken: $token->toString(),
-            token: Token::query()->findOrFail($token->getIdentifier()),
+            accessToken: $token->jwt,
+            token: Token::query()->findOrFail($token->jti),
         );
     }
 

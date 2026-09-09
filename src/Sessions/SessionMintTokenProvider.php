@@ -76,10 +76,10 @@ class SessionMintTokenProvider implements SessionTokenProvider
         );
 
         $this->session()->put($this->key(), [
-            'jwt' => $token->toString(),
-            'jti' => $token->getIdentifier(),
+            'jwt' => $token->jwt,
+            'jti' => $token->jti,
             'user_id' => (string) $user->getAuthIdentifier(),
-            'expires_at' => $token->getExpiryDateTime()->getTimestamp(),
+            'expires_at' => $token->expiresAt->getTimestamp(),
         ]);
     }
 

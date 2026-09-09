@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\Authentication\Views\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
