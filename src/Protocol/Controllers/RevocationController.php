@@ -6,7 +6,6 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientCredentials;
 use Bambamboole\LaravelOidc\Server\Clients\Concerns\AuthenticatesConfidentialClient;
-use Bambamboole\LaravelOidc\Server\Protocol\League\RefreshTokenPayload;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
@@ -21,35 +20,28 @@ class RevocationController
 
     public function __construct(private readonly Auditor $auditor) {}
 
-    public function __invoke(Request $request, ClientCredentials $credentials, TokenInspector $inspector, RefreshTokenPayload $refreshTokens): Response
+    public function __invoke(Request $request, ClientCredentials $credentials, TokenInspector $inspector): Response
     {
         [$clientId, $tokenValue] = $this->authenticateConfidentialClient($request, $credentials);
 
         if ($this->isRefreshTokenHint($request)) {
-            $payload = $refreshTokens->decode($tokenValue);
+            $refreshToken = RefreshToken::query()
+                ->with('accessToken')
+                ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
+                ->find($tokenValue);
+            $accessToken = $refreshToken?->accessToken;
 
-            if ($payload !== null && (string) ($payload->client_id ?? '') === $clientId) {
-                $refreshTokenId = $payload->refresh_token_id ?? null;
-                $accessTokenId = $payload->access_token_id ?? null;
+            if ($refreshToken instanceof RefreshToken
+                && $accessToken instanceof Token
+                && (string) $accessToken->getAttribute('client_id') === $clientId) {
+                RefreshToken::query()->whereKey($refreshToken->getKey())->update(['revoked' => true]);
+                Token::query()->whereKey($accessToken->getKey())->update(['revoked' => true]);
 
-                if (is_string($refreshTokenId)) {
-                    RefreshToken::query()
-                        ->whereKey($refreshTokenId)
-                        ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
-                        ->update(['revoked' => true]);
-                }
-
-                if (is_string($accessTokenId)) {
-                    Token::query()->inRealm()->whereKey($accessTokenId)->update(['revoked' => true]);
-                }
-
-                if (is_string($refreshTokenId) || is_string($accessTokenId)) {
-                    $this->auditor->log(AuditEventType::TokenRevoked, clientId: $clientId, context: array_filter([
-                        'token_type_hint' => 'refresh_token',
-                        'refresh_token_jti' => is_string($refreshTokenId) ? $refreshTokenId : null,
-                        'jti' => is_string($accessTokenId) ? $accessTokenId : null,
-                    ]));
-                }
+                $this->auditor->log(AuditEventType::TokenRevoked, clientId: $clientId, context: [
+                    'token_type_hint' => 'refresh_token',
+                    'refresh_token_jti' => (string) $refreshToken->getKey(),
+                    'jti' => (string) $accessToken->getKey(),
+                ]);
             }
 
             return response()->noContent(200);

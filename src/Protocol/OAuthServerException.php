@@ -4,67 +4,103 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
-use Bambamboole\LaravelOidc\Server\Shared\Http\ConvertsPsrResponses;
+use Bambamboole\LaravelOidc\Server\Protocol\Http\RedirectUri;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Support\Arr;
-use League\OAuth2\Server\Exception\OAuthServerException as LeagueException;
-use League\OAuth2\Server\RequestTypes\AuthorizationRequestInterface;
-use Psr\Http\Message\ResponseInterface;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 
 /**
- * Renders a league exception as the HTTP response the protocol prescribes —
- * a redirect back to the client where one is known, a JSON error otherwise.
+ * An RFC 6749 §4.1.2.1 / §5.2 error, rendered as the HTTP response the
+ * protocol prescribes: a redirect back to the client where one is validated,
+ * a JSON error otherwise. Extends HttpResponseException so Laravel renders it
+ * without reporting it.
  */
 final class OAuthServerException extends HttpResponseException
 {
-    use ConvertsPsrResponses;
+    /** @param  array<string, string>  $headers */
+    private function __construct(
+        public readonly string $error,
+        public readonly string $description,
+        public readonly int $status,
+        ?string $redirectUri = null,
+        ?string $state = null,
+        array $headers = [],
+    ) {
+        parent::__construct($redirectUri !== null
+            ? new RedirectResponse(RedirectUri::append($redirectUri, array_filter([
+                'error' => $error,
+                'error_description' => $description,
+                'state' => $state,
+            ], fn (?string $value): bool => $value !== null)))
+            : new JsonResponse(['error' => $error, 'error_description' => $description], $status, [
+                'Cache-Control' => 'no-store',
+                'Pragma' => 'no-cache',
+                ...$headers,
+            ]));
 
-    public function __construct(LeagueException $exception, bool $useFragment = false)
-    {
-        parent::__construct($this->convertResponse(
-            $exception->generateHttpResponse(app(ResponseInterface::class), $useFragment)
-        ), $exception);
+        $this->message = $description;
     }
 
-    public static function loginRequired(AuthorizationRequestInterface $authRequest): static
+    public static function invalidRequest(string $description, ?string $redirectUri = null, ?string $state = null): self
     {
-        return self::forAuthRequest(
-            $authRequest,
-            'login_required',
-            'The authorization server requires end-user authentication.',
-            'The user is not authenticated',
-        );
+        return new self('invalid_request', $description, 400, $redirectUri, $state);
     }
 
-    public static function consentRequired(AuthorizationRequestInterface $authRequest): static
+    public static function invalidClient(string $description = 'Client authentication failed.'): self
     {
-        return self::forAuthRequest(
-            $authRequest,
-            'consent_required',
-            'The authorization server requires end-user consent.',
-        );
+        return new self('invalid_client', $description, 401, headers: ['WWW-Authenticate' => 'Basic realm="OIDC"']);
     }
 
-    protected static function forAuthRequest(
-        AuthorizationRequestInterface $authRequest,
-        string $errorType,
-        string $message,
-        ?string $hint = null,
-    ): static {
-        $exception = new LeagueException(
-            $message,
-            9,
-            $errorType,
-            401,
-            $hint,
-            $authRequest->getRedirectUri() ?? Arr::wrap($authRequest->getClient()->getRedirectUri())[0],
-        );
+    public static function invalidGrant(string $description): self
+    {
+        return new self('invalid_grant', $description, 400);
+    }
 
-        $exception->setPayload([
-            'state' => $authRequest->getState(),
-            ...$exception->getPayload(),
-        ]);
+    public static function unauthorizedClient(string $description, ?string $redirectUri = null, ?string $state = null): self
+    {
+        return new self('unauthorized_client', $description, 400, $redirectUri, $state);
+    }
 
-        return new self($exception, $authRequest->getGrantTypeId() === 'implicit');
+    public static function unsupportedGrantType(): self
+    {
+        return new self('unsupported_grant_type', 'The authorization grant type is not supported by the authorization server.', 400);
+    }
+
+    public static function unsupportedResponseType(string $redirectUri, ?string $state): self
+    {
+        return new self('unsupported_response_type', 'The authorization server does not support obtaining an authorization code using this method.', 400, $redirectUri, $state);
+    }
+
+    public static function invalidScope(string $scope, ?string $redirectUri = null, ?string $state = null): self
+    {
+        return new self('invalid_scope', "The requested scope is invalid, unknown, or malformed: {$scope}.", 400, $redirectUri, $state);
+    }
+
+    public static function accessDenied(?string $description = null, ?string $redirectUri = null, ?string $state = null): self
+    {
+        return new self('access_denied', $description ?? 'The resource owner or authorization server denied the request.', 400, $redirectUri, $state);
+    }
+
+    /** RFC 8707 §2 / RFC 8693 §2.2.2. */
+    public static function invalidTarget(string $description): self
+    {
+        return new self('invalid_target', $description, 400);
+    }
+
+    /** OpenID Connect Core §3.1.2.6. */
+    public static function loginRequired(string $redirectUri, ?string $state): self
+    {
+        return new self('login_required', 'The authorization server requires end-user authentication.', 401, $redirectUri, $state);
+    }
+
+    /** OpenID Connect Core §3.1.2.6. */
+    public static function consentRequired(string $redirectUri, ?string $state): self
+    {
+        return new self('consent_required', 'The authorization server requires end-user consent.', 401, $redirectUri, $state);
+    }
+
+    public static function serverError(string $description): self
+    {
+        return new self('server_error', $description, 500);
     }
 }

@@ -133,7 +133,7 @@ it('denies authorization-code issuance before persisting when a trigger denies',
     });
 
     completeAuthorizationCodeFlow($this)
-        ->assertStatus(401)
+        ->assertStatus(400)
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 
@@ -200,9 +200,8 @@ it('denies refresh once the session absolute lifetime is exceeded', function () 
 });
 
 it('does not leak a denied refresh context into the next refresh on the same grant instance', function () {
-    // Octane-safety: the grant is a container singleton, so a stale pendingContext from one
-    // request must never survive into the next. Deny one refresh, then reissue a different
-    // one on the same AuthorizationServer/grant instance and assert its claims are its own.
+    // Octane-safety: a denied refresh must leave nothing behind for the next one. Deny
+    // one refresh, then reissue a different one and assert its claims are its own.
     $deniedRefreshToken = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd']])->json('refresh_token');
 
     AuthenticationContext::query()->delete();
@@ -214,7 +213,7 @@ it('does not leak a denied refresh context into the next refresh on the same gra
         'refresh_token' => $deniedRefreshToken,
     ])->assertStatus(400);
 
-    // A different user avoids Passport's "already granted these scopes" consent skip,
+    // A different user avoids the "already granted these scopes" consent skip,
     // which would otherwise short-circuit completeAuthorizationCodeFlow() with a redirect.
     $this->user = User::create(['name' => 'N', 'email' => 'n@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 
@@ -270,11 +269,14 @@ it('rejects an authorization request without PKCE even for a confidential client
         'state' => 'st4te',
     ]));
 
-    // League's invalidRequest() exception never carries a redirect_uri (same
-    // as its own public-client PKCE-required path), so this surfaces as a
-    // 400 JSON error rather than a redirect back to the client.
-    $response->assertStatus(400);
-    expect($response->json('error'))->toBe('invalid_request');
+    // RFC 7636 §4.4.1: the client and redirect_uri are valid, so the error
+    // travels back to the client as an authorization error response.
+    $response->assertRedirect();
+    parse_str((string) parse_url((string) $response->headers->get('Location'), PHP_URL_QUERY), $params);
+
+    expect($response->headers->get('Location'))->toStartWith('https://rp.test/callback?')
+        ->and($params['error'])->toBe('invalid_request')
+        ->and($params['state'])->toBe('st4te');
 });
 
 it('emits postLogin-buffered id_token claims via the context store', function () {
@@ -318,13 +320,12 @@ it('emits postLogin access-token claims onto the access token and links it', fun
     expect(AccessTokenContext::query()->count())->toBe(1);
 });
 
-// Octane safety: AuthorizationServer (and thus its grants) is a container singleton.
-// A stale pendingContext left behind by a *failed* token exchange must never leak
-// into a later token request handled by the same grant instance.
-it('does not leak a stale pendingContext into a later token request on the same grant instance', function () {
+// Octane safety: state left behind by a *failed* token exchange must never leak
+// into a later token request handled by the same worker.
+it('does not leak state from a failed token request into a later one', function () {
     // First flow: seed a distinguishing access-token claim, then fail the token
-    // exchange with a wrong code_verifier so league throws (PKCE mismatch) before
-    // issueAccessToken() ever runs — the only place that clears pendingContext.
+    // exchange with a wrong code_verifier so the PKCE check rejects it before
+    // anything is issued.
     $pkce1 = $this->pkce();
 
     $view1 = $this->actingAsIdentity($this->user, accessTokenClaims: ['leaked' => true], authTime: time() - 60)
@@ -373,9 +374,8 @@ it('does not leak a stale pendingContext into a later token request on the same 
         ->assertRedirect();
     parse_str(parse_url($approve2->headers->get('Location'), PHP_URL_QUERY), $params2);
 
-    // Force this request's own context lookup to miss, so the
-    // `if ($context !== null)` guard in the grant skips reassigning
-    // pendingContext — exactly the condition under which a stale value survives.
+    // Force this request's own context lookup to miss, so nothing but leaked
+    // state could put the first flow's claim onto this token.
     AuthenticationContext::query()->delete();
 
     $response = $this->post('/realms/default/oauth/token', [

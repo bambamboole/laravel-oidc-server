@@ -5,51 +5,45 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Protocol\Authorize\CompleteAuthorizeRequest;
+use Bambamboole\LaravelOidc\Server\Protocol\Authorize\PendingAuthorizationRequest;
+use Bambamboole\LaravelOidc\Server\Protocol\Clients\ClientAuthenticator;
 use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizationController;
-use Bambamboole\LaravelOidc\Server\Protocol\League\AuthorizationServerFactory;
-use Bambamboole\LaravelOidc\Server\Protocol\League\LeagueAccessTokenMinter;
-use Bambamboole\LaravelOidc\Server\Protocol\League\LeagueAuthorizationCompleter;
-use Bambamboole\LaravelOidc\Server\Protocol\League\PendingAuthorizationRequest;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AccessTokenRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AuthCodeRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\RefreshTokenRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ScopeRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\UserRepository;
+use Bambamboole\LaravelOidc\Server\Protocol\Grants\AuthorizationCodeGrant;
+use Bambamboole\LaravelOidc\Server\Protocol\Grants\ClientCredentialsGrant;
+use Bambamboole\LaravelOidc\Server\Protocol\Grants\RefreshTokenGrant;
+use Bambamboole\LaravelOidc\Server\Protocol\Grants\TokenExchangeGrant;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\AuthorizationCompleter;
-use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
-use League\OAuth2\Server\AuthorizationServer;
-use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
-use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
-use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
-use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
-use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
-use League\OAuth2\Server\Repositories\UserRepositoryInterface;
 
 class ProtocolServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->bind(AccessTokenRepositoryInterface::class, AccessTokenRepository::class);
-        $this->app->bind(ClientRepositoryInterface::class, ClientRepository::class);
-        $this->app->bind(RefreshTokenRepositoryInterface::class, RefreshTokenRepository::class);
-        $this->app->bind(AuthCodeRepositoryInterface::class, AuthCodeRepository::class);
-        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
-        $this->app->bind(ScopeRepositoryInterface::class, ScopeRepository::class);
-        $this->app->singleton(AccessTokenMinter::class, LeagueAccessTokenMinter::class);
-        $this->app->singleton(PendingAuthorization::class, PendingAuthorizationRequest::class);
-        $this->app->bind(AuthorizationCompleter::class, LeagueAuthorizationCompleter::class);
+        $this->app->bind(PendingAuthorization::class, PendingAuthorizationRequest::class);
+        $this->app->bind(AuthorizationCompleter::class, CompleteAuthorizeRequest::class);
 
         $this->app->when(AuthorizationController::class)
             ->needs(StatefulGuard::class)
             ->give(fn () => Auth::guard((string) config('oidc.auth.guard', 'identity')));
 
-        $this->app->scoped(AuthorizationServer::class, fn (Application $app): AuthorizationServer => $app
-            ->make(AuthorizationServerFactory::class)
-            ->make());
+        // Built per request: the grants on offer follow the current realm's settings.
+        $this->app->bind(TokenEndpoint::class, function (Application $app): TokenEndpoint {
+            $grants = [
+                $app->make(AuthorizationCodeGrant::class),
+                $app->make(RefreshTokenGrant::class),
+                $app->make(ClientCredentialsGrant::class),
+            ];
+
+            if ($app->make(RealmResolver::class)->current()->clients()->tokenExchange) {
+                $grants[] = $app->make(TokenExchangeGrant::class);
+            }
+
+            return new TokenEndpoint($app->make(ClientAuthenticator::class), $grants);
+        });
     }
 }

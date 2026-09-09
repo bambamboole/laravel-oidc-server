@@ -71,6 +71,8 @@ it('purges refresh tokens and authorization codes too', function () {
         'user_id' => $this->user->id,
         'client_id' => $this->client->id,
         'scopes' => ['openid'],
+        'code_challenge' => str_repeat('c', 43),
+        'code_challenge_method' => 'S256',
         'revoked' => true,
         'expires_at' => now()->addHour()->toDateTimeString(),
     ])->save();

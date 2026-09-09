@@ -8,14 +8,15 @@ use Bambamboole\LaravelOidc\Server\Authentication\LoginDestination;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Server\Protocol\Concerns\HandlesOAuthErrors;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\UserEntity;
+use Bambamboole\LaravelOidc\Server\Protocol\Authorize\AuthorizationCodeIssuer;
+use Bambamboole\LaravelOidc\Server\Protocol\Authorize\AuthorizeRequest;
+use Bambamboole\LaravelOidc\Server\Protocol\Authorize\AuthorizeRequestSession;
+use Bambamboole\LaravelOidc\Server\Protocol\Authorize\AuthorizeRequestValidator;
 use Bambamboole\LaravelOidc\Server\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
-use Bambamboole\LaravelOidc\Server\Shared\Http\ConvertsPsrResponses;
 use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -23,20 +24,16 @@ use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
-use Illuminate\Support\Str;
-use League\OAuth2\Server\AuthorizationServer;
-use League\OAuth2\Server\Entities\ScopeEntityInterface;
-use League\OAuth2\Server\RequestTypes\AuthorizationRequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthorizationController
 {
-    use ConvertsPsrResponses, HandlesOAuthErrors, RespondsToInertiaExternalRedirects;
+    use RespondsToInertiaExternalRedirects;
 
     public function __construct(
-        protected AuthorizationServer $server,
+        protected AuthorizeRequestValidator $validator,
+        protected AuthorizeRequestSession $pending,
+        protected AuthorizationCodeIssuer $codes,
         protected StatefulGuard $guard,
         protected ClientRepository $clients,
         protected ScopeRepository $scopeRepository,
@@ -45,25 +42,19 @@ class AuthorizationController
         private readonly AuthSessionState $sessionState,
     ) {}
 
-    public function authorize(
-        ServerRequestInterface $psrRequest,
-        Request $request,
-        ResponseInterface $psrResponse,
-        AuthorizationViewResponse $viewResponse,
-    ): Response|AuthorizationViewResponse {
+    public function authorize(Request $request, AuthorizationViewResponse $viewResponse): Response|AuthorizationViewResponse
+    {
         $this->removeConsentPromptForTrustedClient($request);
         $this->rememberRequestedAcrValues($request);
         $this->enforceMaxAge($request);
 
-        $authRequest = $this->withErrorHandling(
-            fn (): AuthorizationRequestInterface => $this->server->validateAuthorizationRequest($psrRequest),
-        );
+        $authRequest = $this->validator->validate($request);
 
         $prompt = $this->prompt($request);
 
         if ($this->guard->guest()) {
             $prompt->contains('none')
-                ? throw OAuthServerException::loginRequired($authRequest)
+                ? throw OAuthServerException::loginRequired($authRequest->redirectUri, $authRequest->state)
                 : $this->promptForLogin($request);
         }
 
@@ -78,24 +69,23 @@ class AuthorizationController
         $request->session()->forget('promptedForLogin');
 
         $user = $this->guard->user();
-        $authRequest->setUser(new UserEntity((string) $user?->getAuthIdentifier()));
+        $authRequest->userId = (string) $user?->getAuthIdentifier();
 
         $scopes = $this->parseScopes($authRequest);
-        $client = $this->clients->find($authRequest->getClient()->getIdentifier());
+        $client = $this->clients->find($authRequest->clientId);
 
         if ($prompt->doesntContain('consent')
             && $client !== null
             && $user !== null
             && ($client->skipsConsent() || $this->hasGrantedScopes($user, $client, $scopes))) {
-            return $this->respondToInertia($request, $this->approveRequest($authRequest, $psrResponse));
+            return $this->respondToInertia($request, $this->codes->approve($authRequest));
         }
 
         if ($prompt->contains('none')) {
-            throw OAuthServerException::consentRequired($authRequest);
+            throw OAuthServerException::consentRequired($authRequest->redirectUri, $authRequest->state);
         }
 
-        $request->session()->put('authToken', $authToken = Str::random());
-        $request->session()->put('authRequest', serialize($authRequest));
+        $authToken = $this->pending->stash($request, $authRequest);
 
         return $viewResponse->withParameters([
             'client' => $client,
@@ -120,11 +110,9 @@ class AuthorizationController
     }
 
     /** @return list<Scope> */
-    protected function parseScopes(AuthorizationRequestInterface $authRequest): array
+    protected function parseScopes(AuthorizeRequest $authRequest): array
     {
-        return collect($authRequest->getScopes())
-            ->map(fn (ScopeEntityInterface $scope): string => $scope->getIdentifier())
-            ->unique()
+        return collect($authRequest->scopes)
             ->map(fn (string $id): ?Scope => $this->scopeRepository->find($id))
             ->filter()
             ->values()
@@ -151,15 +139,6 @@ class AuthorizationController
         return collect($scopes)->pluck('id')->diff(
             $activeTokens->pluck('scopes')->flatten()
         )->isEmpty();
-    }
-
-    protected function approveRequest(AuthorizationRequestInterface $authRequest, ResponseInterface $psrResponse): Response
-    {
-        $authRequest->setAuthorizationApproved(true);
-
-        return $this->withErrorHandling(fn (): Response => $this->convertResponse(
-            $this->server->completeAuthorizationRequest($authRequest, $psrResponse)
-        ), $authRequest->getGrantTypeId() === 'implicit');
     }
 
     protected function promptForLogin(Request $request): never

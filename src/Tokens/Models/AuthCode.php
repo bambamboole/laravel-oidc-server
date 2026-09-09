@@ -11,11 +11,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
+ * An authorization code as handed to the client, with everything the token
+ * endpoint needs to redeem it: the PKCE challenge, the redirect URI it was
+ * bound to, and the login-time facts the id_token repeats.
+ *
  * @property string $id
  * @property string $realm_id
  * @property string $user_id
  * @property string $client_id
  * @property array<int, string> $scopes
+ * @property ?string $redirect_uri
+ * @property string $code_challenge
+ * @property string $code_challenge_method
+ * @property ?string $nonce
+ * @property ?int $auth_time
+ * @property ?string $context_id
  * @property bool $revoked
  * @property ?Carbon $expires_at
  */
@@ -40,6 +50,7 @@ class AuthCode extends Model
     {
         return [
             'scopes' => 'array',
+            'auth_time' => 'int',
             'revoked' => 'bool',
             'expires_at' => 'datetime',
         ];

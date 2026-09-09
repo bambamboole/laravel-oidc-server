@@ -18,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property string $client_id
  * @property ?string $name
  * @property array<int, string> $scopes
+ * @property ?string $auth_code_id The authorization code this token, or the refresh chain it sits in, descends from.
  * @property bool $revoked
  * @property ?Carbon $expires_at
  */

@@ -3,16 +3,13 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
-use Bambamboole\LaravelOidc\Server\Protocol\League\EncryptionKey;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity as BridgeClient;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\CreateUserFromSocialAccount;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Users\CreateUser;
 use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
 use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
@@ -34,9 +31,6 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
-use League\OAuth2\Server\CryptKey;
-use League\OAuth2\Server\CryptTrait;
-use League\OAuth2\Server\Exception\OAuthServerException;
 use Symfony\Component\HttpFoundation\Response;
 
 uses(TestCase::class)
@@ -157,24 +151,6 @@ function parseIdToken(string $jwt): UnencryptedToken
 }
 
 /**
- * Locks both halves of a rejected-flow assertion: the closure must throw an
- * OAuthServerException, and its RFC 6749 error type must match. A closure
- * that does not throw fails on the instance expectation.
- */
-function expectOAuthServerError(Closure $callback, string $errorType): void
-{
-    $thrown = null;
-
-    try {
-        $callback();
-    } catch (OAuthServerException $thrown) {
-    }
-
-    expect($thrown)->toBeInstanceOf(OAuthServerException::class)
-        ->and($thrown?->getErrorType())->toBe($errorType);
-}
-
-/**
  * The domain-level counterpart: the closure must throw an
  * ExchangeDeniedException carrying the given RFC 6749 / 8693 error code.
  */
@@ -192,31 +168,8 @@ function expectExchangeDenied(Closure $callback, string $error): void
 }
 
 /**
- * Mirrors League\OAuth2\Server\ResponseTypes\BearerTokenResponse::generateHttpResponse(),
- * which is how Passport actually produces refresh_token values on the wire.
- *
- * @param  array<string, mixed>  $payload
- */
-function encryptRefreshTokenPayload(array $payload): string
-{
-    $encrypter = new class
-    {
-        use CryptTrait;
-
-        public function encryptPayload(string $data): string
-        {
-            return $this->encrypt($data);
-        }
-    };
-
-    $encrypter->setEncryptionKey(app(EncryptionKey::class)->value());
-
-    return $encrypter->encryptPayload((string) json_encode($payload));
-}
-
-/**
- * Creates a persisted refresh-token + linked access-token pair and returns the
- * encrypted refresh token value League/Passport would hand back to a client.
+ * Persists a refresh token with its linked access token and returns the value
+ * a client would present at the token, introspection or revocation endpoint.
  *
  * @return array{0: string, 1: RefreshToken, 2: Token}
  */
@@ -230,7 +183,7 @@ function issueRefreshToken(mixed $test, ?string $clientId = null, bool $expired 
         'realm_id' => Token::currentRealm(),
         'id' => $accessTokenId,
         'user_id' => $test->user->id,
-        'client_id' => $test->client->id,
+        'client_id' => $clientId ?? $test->client->id,
         'scopes' => ['openid'],
         'revoked' => false,
         'expires_at' => now()->addHour(),
@@ -241,24 +194,15 @@ function issueRefreshToken(mixed $test, ?string $clientId = null, bool $expired 
         'id' => $refreshTokenId,
         'access_token_id' => $accessTokenId,
         'revoked' => false,
-        'expires_at' => now()->addDay(),
+        'expires_at' => $expired ? now()->subDay() : now()->addDay(),
     ])->save();
 
-    $encrypted = encryptRefreshTokenPayload([
-        'client_id' => $clientId ?? $test->client->id,
-        'refresh_token_id' => $refreshTokenId,
-        'access_token_id' => $accessTokenId,
-        'scopes' => ['openid'],
-        'user_id' => $test->user->id,
-        'expire_time' => $expired ? now()->subDay()->timestamp : now()->addDay()->timestamp,
-    ]);
-
-    return [$encrypted, $refreshToken, $accessToken];
+    return [$refreshTokenId, $refreshToken, $accessToken];
 }
 
 /**
- * Mints an RFC 9068 access token addressed to $clientId and persists a matching
- * Passport token row so TokenInspector::accessToken() resolves it.
+ * Mints an RFC 9068 access token addressed to $clientId and persists the
+ * matching token row so TokenInspector::accessToken() resolves it.
  *
  * @param  string[]  $scopeIds
  */
@@ -270,37 +214,26 @@ function mintExchangeSubjectToken(
     bool $revoked = false,
     bool $userless = false,
 ): string {
-    $tokenId = Str::random(80);
-    $expiresAt ??= new DateTimeImmutable('+1 hour');
-
-    $subject = new AccessTokenEntity(
-        $userId,
-        array_map(fn (string $scope) => new ScopeEntity($scope), $scopeIds),
-        new BridgeClient($clientId, 'RP', ['https://rp.test/cb']),
+    $minted = app(AccessTokenMinter::class)->mint(
+        $userless ? null : $userId,
+        $clientId,
+        $scopeIds,
+        ttlUntil($expiresAt ?? new DateTimeImmutable('+1 hour')),
+        [$clientId],
     );
-    $subject->setIdentifier($tokenId);
-    $subject->setAudience($clientId);
-    $subject->setExpiryDateTime($expiresAt);
-    $subject->setPrivateKey(new CryptKey(__DIR__.'/fixtures/oauth-private.key', null, false));
 
-    (new Token)->forceFill([
-        'realm_id' => Token::currentRealm(),
-        'id' => $tokenId,
-        'user_id' => $userless ? null : $userId,
-        'client_id' => $clientId,
-        'scopes' => $scopeIds,
-        'revoked' => $revoked,
-        'expires_at' => $expiresAt,
-    ])->save();
+    if ($revoked) {
+        Token::query()->whereKey($minted->jti)->update(['revoked' => true]);
+    }
 
-    return $subject->toString();
+    return $minted->jwt;
 }
 
 /**
  * Mints an RFC 9068 at+jwt access token addressed to the given resource audiences only (no client
- * id prepended) and persists a matching Passport token row. CheckAudience is now a self-contained
- * resource-server validator, so this exercises the auth:api-free path: the aud claim need not carry
- * a client id, and revocation/expiry are read from the persisted row.
+ * id prepended) and persists a matching token row. CheckAudience is a self-contained resource-server
+ * validator: the aud claim need not carry a client id, and revocation/expiry are read from the
+ * persisted row.
  *
  * @param  string[]  $audience
  */
@@ -311,32 +244,25 @@ function resourceServerBearer(
     bool $expired = false,
     ?string $subjectId = null,
 ): string {
-    $tokenId = Str::random(80);
-    $expiresAt = $expired ? new DateTimeImmutable('-1 hour') : new DateTimeImmutable('+1 hour');
-    $clientId = (string) $test->client->id;
-    $subjectId ??= (string) $test->user->id;
-
-    $accessToken = new AccessTokenEntity(
-        $subjectId,
-        [new ScopeEntity('openid')],
-        new BridgeClient($clientId, 'RP', ['https://rp.test/cb']),
+    $minted = app(AccessTokenMinter::class)->mint(
+        $subjectId ?? (string) $test->user->id,
+        (string) $test->client->client_id,
+        ['openid'],
+        ttlUntil($expired ? new DateTimeImmutable('-1 hour') : new DateTimeImmutable('+1 hour')),
+        $audience,
     );
-    $accessToken->setIdentifier($tokenId);
-    $accessToken->setAudience(...$audience);
-    $accessToken->setExpiryDateTime($expiresAt);
-    $accessToken->setPrivateKey(new CryptKey(__DIR__.'/fixtures/oauth-private.key', null, false));
 
-    (new Token)->forceFill([
-        'realm_id' => Token::currentRealm(),
-        'id' => $tokenId,
-        'user_id' => $subjectId,
-        'client_id' => $test->client->id,
-        'scopes' => ['openid'],
-        'revoked' => $revoked,
-        'expires_at' => $expiresAt,
-    ])->save();
+    if ($revoked) {
+        Token::query()->whereKey($minted->jti)->update(['revoked' => true]);
+    }
 
-    return $accessToken->toString();
+    return $minted->jwt;
+}
+
+/** A TTL that lands on the given instant; negative when it lies in the past. */
+function ttlUntil(DateTimeImmutable $expiresAt): DateInterval
+{
+    return (new DateTimeImmutable)->diff($expiresAt);
 }
 
 /**

@@ -76,8 +76,7 @@ final class AuthSessionState
     }
 
     /**
-     * League's AuthorizationRequestInterface has no acr accessor, so the raw
-     * acr_values query param is stashed here at authorize time for the
+     * The raw acr_values query param, stashed at authorize time for the
      * post-login pipeline. An empty list clears the key — each authorize
      * request syncs it, so values never outlive the flow that requested them.
      *

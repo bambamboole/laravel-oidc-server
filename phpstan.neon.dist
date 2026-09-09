@@ -37,7 +37,7 @@ parameters:
             identifier: argument.templateType
             message: '#Unable to resolve the template type TValue in call to function expect#'
             path: tests/Testing/InteractsWithOidcTest.php
-        # These three files compose InteractsWithOidc via a file-local uses() call (Pest's dynamic
+        # These files compose InteractsWithOidc via a file-local uses() call (Pest's dynamic
         # trait composition), so actingAsIdentity()/authorizeAndApprove()/pkce() are genuinely
         # available on $this and on the `TestCase $test` helper parameter at runtime. Unlike
         # tests/Testing/, tests/Flow/ mostly holds files that do NOT use the trait, so a directory-wide
@@ -56,4 +56,6 @@ parameters:
                 - tests/Flow/Rfc9068FlowTest.php
                 - tests/Flow/MaxAgeTest.php
                 - tests/Audit/AuditTokenTest.php
+                - tests/Protocol/AuthorizeEndpointTest.php
+                - tests/Protocol/TokenEndpointTest.php
                 - tests/Protocol/UserinfoEndpointTest.php

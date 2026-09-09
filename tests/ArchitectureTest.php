@@ -8,7 +8,7 @@ $server = 'Bambamboole\LaravelOidc\Server';
  * Every domain may use Shared. Anything beyond that must be listed here: the
  * cross-domain contracts live in Shared, so a new entry means a new coupling
  * that Shared could not express. Realms is the foundation Shared builds on,
- * Protocol is the league adapter that composes everything below, and
+ * Protocol is the OAuth/OIDC endpoint layer that composes everything below, and
  * Installation and Consents sit on top as orchestration. Testing is the
  * consumer-facing test kit and the root service provider wires all domains,
  * so neither is constrained.
@@ -42,8 +42,3 @@ foreach ($dependencies as $domain => $allowed) {
         // The Client model owns its token relations; that is the one edge back into Tokens.
         ->ignoring($domain === 'Clients' ? ["{$server}\\Tokens\\Models\\Token", "{$server}\\Tokens\\Models\\AuthCode"] : []);
 }
-
-arch('league/oauth2-server stays inside Protocol')
-    ->expect($server)
-    ->not->toUse('League\OAuth2\Server')
-    ->ignoring("{$server}\\Protocol");

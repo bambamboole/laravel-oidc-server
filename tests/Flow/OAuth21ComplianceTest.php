@@ -74,10 +74,7 @@ function completeComplianceAuthorization(TestCase $test, array $overrides = []):
 
 // OAuth 2.1 §4.1.3 / §7.5 — exact redirect-URI matching
 it('rejects an authorization request whose redirect_uri is not an exact registered match', function () {
-    // League's RedirectUriValidator fails the exact-match check via
-    // AbstractGrant::validateRedirectUri(), which throws
-    // OAuthServerException::invalidClient() — a 401 `invalid_client`,
-    // not a 400. It still never redirects to the unvalidated URI.
+    // RFC 6749 §4.1.2.1: an unregistered redirect URI is never redirected to.
     $response = $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/authorize?'.http_build_query([
         'client_id' => $this->client->id,
         'redirect_uri' => 'https://rp.test/callback/extra',
@@ -85,8 +82,8 @@ it('rejects an authorization request whose redirect_uri is not an exact register
         'scope' => 'openid',
     ]));
 
-    $response->assertStatus(401);
-    expect($response->json('error'))->toBe('invalid_client');
+    $response->assertStatus(400);
+    expect($response->json('error'))->toBe('invalid_request');
 });
 
 // OAuth 2.1 §1.5 — the ROPC (password) grant is removed / not supported

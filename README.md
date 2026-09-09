@@ -43,7 +43,6 @@ views and actions.
 
 - PHP `^8.4`
 - Laravel 12 or 13
-- `league/oauth2-server` `^9.2` — the OAuth2 core the package builds on
 
 ## Installation
 
@@ -71,19 +70,24 @@ See the **[Installation guide](https://bambamboole.github.io/laravel-oidc/introd
 for the full walkthrough, and **[Configuration](https://bambamboole.github.io/laravel-oidc/introduction/configuration/)**
 for every `config/oidc.php` key.
 
-## Built on league/oauth2-server
+## A package-owned OAuth2 core
 
-Under the hood, the OAuth2 core is **`league/oauth2-server`**. The package owns everything above
-it — its own tables and models for clients, tokens, refresh tokens and authorization codes, its
-own repositories and grants, and the full `/oauth/*` route surface, so that:
+The package implements the OAuth 2.1 / OpenID Connect core itself: client authentication, the
+authorization request, authorization codes with PKCE, refresh-token rotation, and the token
+endpoint's grants live in the `Protocol` domain on top of the package's own tables and models.
+This means:
 
-- OIDC scopes, `max_age`, `prompt`, and the `id_token` response type are wired in.
-- **PKCE is required on every authorization request** (OAuth 2.1 §4.1.1/§7.6), for confidential
-  clients too.
-- The authorization server is built per request, so rotating the signing key takes effect without
-  restarting the workers.
-- No client-management JSON API ships with the package; provision clients with
-  `oidc:provision-client` or dynamic client registration.
+- The authorization, token and approve/deny routes are registered by this package using its own
+  controllers, so `max_age`, `prompt`, OIDC scopes and the `id_token` are wired in.
+- **PKCE with `S256` is required on every authorization request**, per OAuth 2.1 §4.1.1/§7.6 —
+  for confidential clients as well as public ones. A request missing it is answered with an
+  `invalid_request` error on the client's redirect URI.
+- Authorization codes and refresh tokens are opaque, single-use database records. A replayed code
+  or a reused refresh token revokes every token that descends from it.
+- The signing key is read on every request, so a key rotation takes effect without restarting
+  the workers.
+- No client-management JSON API ships with the package. Provision clients with
+  `oidc:provision-client`, or through dynamic client registration.
 
 ## Documentation
 

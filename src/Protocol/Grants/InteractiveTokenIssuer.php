@@ -1,0 +1,155 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
+
+use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
+use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
+use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AuthorizationCodeEvent;
+use DateTimeImmutable;
+
+/**
+ * Issues the token set of an interactive grant (authorization code and its
+ * refreshes): the access token stamped with the authentication context's
+ * claims and linked to it, the rotated refresh token, and the id_token.
+ *
+ * Authorization-code triggers run before anything is persisted (a deny stops
+ * issuance) and their claims are stamped after the context's, so a trigger
+ * can override a stale login-time claim.
+ */
+final readonly class InteractiveTokenIssuer
+{
+    use ResolvesTokenUser;
+
+    public function __construct(
+        private AccessTokenMinter $minter,
+        private AccessTokenPipeline $pipeline,
+        private AccessTokenContextLink $contextLink,
+        private IdTokenBuilder $idTokens,
+        private Auditor $auditor,
+        private RealmResolver $realms,
+    ) {}
+
+    /**
+     * @param  list<string>  $scopes
+     * @param  string|null  $authCodeId  the code this token descends from, so a replayed code or refresh token can revoke the whole chain
+     */
+    public function issue(
+        Client $client,
+        string $userId,
+        array $scopes,
+        string $grantType,
+        ?AuthenticationContext $context,
+        ?string $nonce,
+        ?int $authTime,
+        ?string $authCodeId,
+        bool $withRefreshToken,
+    ): TokenResponse {
+        $api = $this->runTriggers($client, $userId, $scopes, $grantType);
+
+        if ($api?->isDenied() === true) {
+            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: $userId, clientId: $client->client_id, context: array_filter([
+                'grant_type' => $grantType,
+                'reason' => 'pipeline_denied',
+                'deny_reason' => $api->denyReason(),
+            ]));
+
+            throw OAuthServerException::accessDenied($api->denyReason());
+        }
+
+        $tokens = $this->realms->current()->tokens();
+
+        $accessToken = $this->minter->mint(
+            $userId,
+            $client->client_id,
+            $scopes,
+            $tokens->accessToken(),
+            extraClaims: [...($context !== null ? $context->access_token_claims : []), ...($api?->accessTokenClaims() ?? [])],
+        );
+
+        if ($context !== null) {
+            $this->contextLink->link($accessToken->jti, $context->id);
+        }
+
+        if ($authCodeId !== null) {
+            Token::query()->whereKey($accessToken->jti)->update(['auth_code_id' => $authCodeId]);
+        }
+
+        $refreshToken = $withRefreshToken ? $this->issueRefreshToken($accessToken) : null;
+
+        $idToken = in_array('openid', $scopes, true)
+            ? $this->idTokens->build(new IdTokenRequest(
+                userId: $userId,
+                clientId: $client->client_id,
+                scopes: $scopes,
+                accessToken: $accessToken->jwt,
+                nonce: $nonce,
+                authTime: $authTime,
+                amr: $context !== null ? $context->amr : [],
+                idTokenClaims: $context !== null ? $context->id_token_claims : [],
+                sid: $context?->sid,
+            ))
+            : null;
+
+        $this->auditor->log(AuditEventType::TokenIssued, userId: $userId, clientId: $client->client_id, sid: $context?->sid, context: [
+            'grant_type' => $grantType,
+            'jti' => $accessToken->jti,
+            'scopes' => $scopes,
+        ]);
+
+        return new TokenResponse($accessToken, $refreshToken, $idToken);
+    }
+
+    /**
+     * @param  list<string>  $scopes
+     */
+    private function runTriggers(Client $client, string $userId, array $scopes, string $grantType): ?AccessTokenApi
+    {
+        if (! $this->pipeline->has('authorization_code')) {
+            return null;
+        }
+
+        $user = $this->resolveUser($userId);
+
+        if ($user === null) {
+            return null;
+        }
+
+        return $this->pipeline->run('authorization_code', new AuthorizationCodeEvent(
+            user: $user,
+            client: $client,
+            scopes: $scopes,
+            grantType: $grantType,
+        ));
+    }
+
+    private function issueRefreshToken(MintedAccessToken $accessToken): string
+    {
+        $id = bin2hex(random_bytes(40));
+
+        RefreshToken::query()->forceCreate([
+            'id' => $id,
+            'access_token_id' => $accessToken->jti,
+            'revoked' => false,
+            'expires_at' => (new DateTimeImmutable)->add($this->realms->current()->tokens()->refreshToken()),
+        ]);
+
+        return $id;
+    }
+}

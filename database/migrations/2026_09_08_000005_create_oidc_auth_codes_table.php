@@ -15,6 +15,12 @@ return new class extends Migration
             $table->foreignUuid('user_id')->index();
             $table->foreignUuid('client_id')->index();
             $table->json('scopes')->nullable();
+            $table->string('redirect_uri', 2048)->nullable();
+            $table->string('code_challenge', 128);
+            $table->string('code_challenge_method', 8);
+            $table->string('nonce')->nullable();
+            $table->unsignedBigInteger('auth_time')->nullable();
+            $table->uuid('context_id')->nullable();
             $table->boolean('revoked')->default(false);
             $table->dateTime('expires_at')->nullable()->index();
         });

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignUuid('client_id')->index();
             $table->string('name')->nullable();
             $table->json('scopes')->nullable();
+            $table->char('auth_code_id', 80)->nullable()->index();
             $table->boolean('revoked')->default(false);
             $table->timestamps();
             $table->dateTime('expires_at')->nullable()->index();

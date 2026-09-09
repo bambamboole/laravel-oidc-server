@@ -140,7 +140,7 @@ it('denies client credentials before persisting an access token', function () {
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
         'scope' => '',
-    ])->assertStatus(401)
+    ])->assertStatus(400)
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 

@@ -6,7 +6,6 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientCredentials;
 use Bambamboole\LaravelOidc\Server\Clients\Concerns\AuthenticatesConfidentialClient;
-use Bambamboole\LaravelOidc\Server\Protocol\League\RefreshTokenPayload;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
@@ -19,12 +18,12 @@ class IntrospectionController
 {
     use AuthenticatesConfidentialClient;
 
-    public function __invoke(Request $request, ClientCredentials $credentials, TokenInspector $inspector, RefreshTokenPayload $refreshTokens): JsonResponse
+    public function __invoke(Request $request, ClientCredentials $credentials, TokenInspector $inspector): JsonResponse
     {
         [$clientId, $tokenValue] = $this->authenticateConfidentialClient($request, $credentials);
 
         if ($this->isRefreshTokenHint($request)) {
-            return $this->introspectRefreshToken($tokenValue, $clientId, $refreshTokens);
+            return $this->introspectRefreshToken($tokenValue, $clientId);
         }
 
         $parsed = $inspector->parse($tokenValue);
@@ -55,36 +54,33 @@ class IntrospectionController
         ], fn (mixed $value): bool => $value !== null));
     }
 
-    private function introspectRefreshToken(string $tokenValue, string $clientId, RefreshTokenPayload $refreshTokens): JsonResponse
+    private function introspectRefreshToken(string $tokenValue, string $clientId): JsonResponse
     {
-        $payload = $refreshTokens->decode($tokenValue);
-
-        if ($payload === null || (string) ($payload->client_id ?? '') !== $clientId) {
-            return response()->json(['active' => false]);
-        }
-
-        $refreshTokenId = $payload->refresh_token_id ?? null;
         // A refresh token carries no realm of its own; it inherits the one of
         // the access token it was issued alongside.
-        $refreshToken = is_string($refreshTokenId)
-            ? RefreshToken::query()
-                ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
-                ->find($refreshTokenId)
-            : null;
-        $expireTime = $payload->expire_time ?? null;
+        $refreshToken = RefreshToken::query()
+            ->with('accessToken')
+            ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
+            ->find($tokenValue);
+        $accessToken = $refreshToken?->accessToken;
 
         if (! $refreshToken instanceof RefreshToken
+            || ! $accessToken instanceof Token
+            || (string) $accessToken->getAttribute('client_id') !== $clientId
             || (bool) $refreshToken->getAttribute('revoked')
-            || ! is_int($expireTime)
-            || $expireTime < time()) {
+            || ! $refreshToken->expires_at instanceof CarbonInterface
+            || $refreshToken->expires_at->isPast()) {
             return response()->json(['active' => false]);
         }
+
+        $scopes = $accessToken->getAttribute('scopes');
 
         return response()->json(array_filter([
             'active' => true,
+            'scope' => implode(' ', is_array($scopes) ? $scopes : []),
             'client_id' => $clientId,
-            'sub' => $this->subject($payload->user_id ?? null),
-            'exp' => $expireTime,
+            'sub' => $this->subject($accessToken->getAttribute('user_id')),
+            'exp' => $refreshToken->expires_at->getTimestamp(),
         ], fn (mixed $value): bool => $value !== null));
     }
 

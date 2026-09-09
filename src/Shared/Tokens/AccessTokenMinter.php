@@ -7,9 +7,9 @@ namespace Bambamboole\LaravelOidc\Server\Shared\Tokens;
 use DateInterval;
 
 /**
- * Mints and persists an RFC 9068 access token outside a grant flow (session
- * tokens, personal access tokens, token exchange). The protocol layer binds
- * the league-backed implementation.
+ * Mints and persists an RFC 9068 access token: for the token endpoint's
+ * grants as well as outside a grant flow (session tokens, personal access
+ * tokens, token exchange).
  */
 interface AccessTokenMinter
 {

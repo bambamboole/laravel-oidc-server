@@ -114,7 +114,7 @@ it('denies token exchange before persisting an access token', function () {
         'subject_token_type' => ACCESS_TOKEN_URN,
         'audience' => 'https://api.internal/orders',
         'scope' => 'orders:read',
-    ])->assertStatus(401)
+    ])->assertStatus(400)
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 

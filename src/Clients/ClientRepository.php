@@ -10,9 +10,8 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Model-level client administration. The league-facing lookup lives in
- * {@see \Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ClientRepository}
- * and delegates secret checks to {@see self::validateSecret()}.
+ * Model-level client administration; the token endpoint authenticates
+ * clients through {@see self::validateSecret()}.
  */
 class ClientRepository
 {
