@@ -98,12 +98,12 @@ Route::middleware([ResolveRealm::class, ...$shared])
                 });
             });
 
-            Route::get('oauth/authorize', [AuthorizationController::class, 'authorize'])->name('oidc.authorize');
+            Route::match(['get', 'post'], 'oauth/authorize', [AuthorizationController::class, 'authorize'])->name('oidc.authorize');
             Route::match(['get', 'post'], 'oauth/logout', EndSessionController::class)->name('oidc.logout');
 
             Route::middleware($authenticated)->group(function (): void {
-                Route::post('oauth/authorize', [ApproveAuthorizationController::class, 'approve'])->name('oidc.approve');
-                Route::delete('oauth/authorize', [DenyAuthorizationController::class, 'deny'])->name('oidc.deny');
+                Route::post('oauth/authorize/consent', [ApproveAuthorizationController::class, 'approve'])->name('oidc.approve');
+                Route::delete('oauth/authorize/consent', [DenyAuthorizationController::class, 'deny'])->name('oidc.deny');
             });
         });
 

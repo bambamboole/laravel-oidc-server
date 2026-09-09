@@ -60,8 +60,8 @@ it('does not log out when max_age references an unknown client', function () {
     $response = $this->actingAsIdentity($this->user, authTime: time() - 3600)
         ->get('/realms/default/oauth/authorize?'.$query.'&max_age=1');
 
-    expect($response->getStatusCode())->toBeGreaterThanOrEqual(400)
-        ->and(auth('identity')->check())->toBeTrue();
+    $response->assertStatus(400)->assertJsonPath('error', 'invalid_request');
+    expect(auth('identity')->check())->toBeTrue();
 });
 
 it('forces re-authentication when max_age is zero', function () {

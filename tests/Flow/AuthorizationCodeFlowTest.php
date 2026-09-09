@@ -341,7 +341,7 @@ it('does not leak state from a failed token request into a later one', function 
         ]))
         ->assertOk();
 
-    $approve1 = $this->post('/realms/default/oauth/authorize', ['auth_token' => $view1->json('authToken')])
+    $approve1 = $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view1->json('authToken')])
         ->assertRedirect();
     parse_str(parse_url($approve1->headers->get('Location'), PHP_URL_QUERY), $params1);
 
@@ -370,7 +370,7 @@ it('does not leak state from a failed token request into a later one', function 
         ]))
         ->assertOk();
 
-    $approve2 = $this->post('/realms/default/oauth/authorize', ['auth_token' => $view2->json('authToken')])
+    $approve2 = $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view2->json('authToken')])
         ->assertRedirect();
     parse_str(parse_url($approve2->headers->get('Location'), PHP_URL_QUERY), $params2);
 

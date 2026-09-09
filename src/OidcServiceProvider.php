@@ -17,6 +17,7 @@ use Bambamboole\LaravelOidc\Server\Installation\InstallationServiceProvider;
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Keys\KeysServiceProvider;
 use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
+use Bambamboole\LaravelOidc\Server\Realms\RealmPath;
 use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\EndOidcSession;
@@ -30,6 +31,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\TokensServiceProvider;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Console\AboutCommand;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
@@ -80,6 +82,10 @@ class OidcServiceProvider extends ServiceProvider
         Event::listen(Logout::class, RecordLogoutAudit::class);
         Event::listen(Logout::class, ForgetSessionToken::class);
         Event::listen(Logout::class, EndOidcSession::class);
+
+        // OIDC Core §3.1.2.1: clients POST authorization requests cross-site,
+        // so the web group's forgery check must not apply to that route.
+        PreventRequestForgery::except(RealmPath::SEGMENT.'/*/oauth/authorize');
 
         $this->loadRoutesFrom(__DIR__.'/../routes/oidc.php');
 

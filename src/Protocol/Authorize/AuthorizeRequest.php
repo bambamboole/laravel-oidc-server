@@ -15,6 +15,10 @@ final class AuthorizeRequest
      * @param  string  $redirectUri  the URI the response goes to, resolved against the registration
      * @param  bool  $redirectUriRequested  whether the client sent one; if so the token request must repeat it
      * @param  list<string>  $scopes
+     * @param  list<string>  $prompt  the validated prompt values, in request order
+     * @param  int|null  $maxAge  seconds since authentication the client tolerates
+     * @param  list<string>  $acrValues
+     * @param  string|null  $idTokenHintSubject  the sub of a verified id_token_hint
      */
     public function __construct(
         public readonly string $clientId,
@@ -25,6 +29,10 @@ final class AuthorizeRequest
         public readonly string $codeChallenge,
         public readonly string $codeChallengeMethod,
         public readonly ?string $nonce,
+        public readonly array $prompt = [],
+        public readonly ?int $maxAge = null,
+        public readonly array $acrValues = [],
+        public readonly ?string $idTokenHintSubject = null,
         public ?string $userId = null,
     ) {}
 }

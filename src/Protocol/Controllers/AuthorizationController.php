@@ -26,6 +26,16 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * The authorization endpoint (OAuth 2.1 §4.1.1, OpenID Connect Core §3.1.2),
+ * reached by GET or POST (§3.1.2.1). The request is validated before anything
+ * touches the session, then `max_age` and `prompt` decide whether the
+ * current login may be reused.
+ *
+ * This provider holds one account per browser session, so `select_account`
+ * has no account to switch to and is treated exactly like `login`: the
+ * session is torn down and the user authenticates again.
+ */
 class AuthorizationController
 {
     use RespondsToInertiaExternalRedirects;
@@ -44,39 +54,38 @@ class AuthorizationController
 
     public function authorize(Request $request, AuthorizationViewResponse $viewResponse): Response|AuthorizationViewResponse
     {
-        $this->removeConsentPromptForTrustedClient($request);
-        $this->rememberRequestedAcrValues($request);
-        $this->enforceMaxAge($request);
-
         $authRequest = $this->validator->validate($request);
 
-        $prompt = $this->prompt($request);
+        $this->rememberRequestedAcrValues($authRequest);
 
-        if ($this->guard->guest()) {
+        $prompt = $this->prompt($authRequest);
+        $user = $this->guard->user();
+
+        if ($user === null) {
             $prompt->contains('none')
                 ? throw OAuthServerException::loginRequired($authRequest->redirectUri, $authRequest->state)
                 : $this->promptForLogin($request);
         }
 
-        if ($prompt->contains('login') && ! $request->session()->get('promptedForLogin', false)) {
-            $this->guard->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        // OIDC Core §3.1.2.1: the hint names the user the client expects; a
+        // session belonging to somebody else must not be reused.
+        if ($authRequest->idTokenHintSubject !== null && $authRequest->idTokenHintSubject !== (string) $user->getAuthIdentifier()) {
+            throw OAuthServerException::loginRequired($authRequest->redirectUri, $authRequest->state);
+        }
 
-            $this->promptForLogin($request);
+        if ($this->exceedsMaxAge($authRequest) || $prompt->contains('login') || $prompt->contains('select_account')) {
+            $this->reauthenticate($request, $authRequest, $prompt);
         }
 
         $request->session()->forget('promptedForLogin');
 
-        $user = $this->guard->user();
-        $authRequest->userId = (string) $user?->getAuthIdentifier();
+        $authRequest->userId = (string) $user->getAuthIdentifier();
 
         $scopes = $this->parseScopes($authRequest);
         $client = $this->clients->find($authRequest->clientId);
 
         if ($prompt->doesntContain('consent')
             && $client !== null
-            && $user !== null
             && ($client->skipsConsent() || $this->hasGrantedScopes($user, $client, $scopes))) {
             return $this->respondToInertia($request, $this->codes->approve($authRequest));
         }
@@ -97,16 +106,18 @@ class AuthorizationController
     }
 
     /**
-     * OIDC Core §3.1.2.1: `none` overrides every other value, because the whole
-     * point is that nothing interactive may happen.
+     * A trusted first-party client never shows consent, so its `consent`
+     * prompt is dropped.
      *
      * @return Collection<int, string>
      */
-    protected function prompt(Request $request): Collection
+    protected function prompt(AuthorizeRequest $authRequest): Collection
     {
-        $prompt = $request->string('prompt')->explode(' ')->map(fn (string $value): string => trim($value))->filter()->values();
+        $prompt = collect($authRequest->prompt);
 
-        return $prompt->contains('none') ? collect(['none']) : $prompt;
+        return $this->firstPartyClient->isTrusted($authRequest->clientId)
+            ? $prompt->reject(fn (string $value): bool => $value === 'consent')->values()
+            : $prompt;
     }
 
     /** @return list<Scope> */
@@ -122,7 +133,7 @@ class AuthorizationController
     /** @param  list<Scope>  $scopes */
     protected function hasGrantedScopes(Authenticatable $user, Client $client, array $scopes): bool
     {
-        if ($this->isTrustedClient($client->client_id)) {
+        if ($this->firstPartyClient->isTrusted($client->client_id)) {
             return true;
         }
 
@@ -151,39 +162,42 @@ class AuthorizationController
         );
     }
 
-    protected function enforceMaxAge(Request $request): void
+    /**
+     * OIDC Core §3.1.2.1: a login older than `max_age` must be renewed; a
+     * missing auth_time counts as stale.
+     */
+    protected function exceedsMaxAge(AuthorizeRequest $authRequest): bool
     {
-        $maxAge = $request->query('max_age');
-
-        if ($maxAge === null || ! is_numeric($maxAge) || $this->guard->guest()) {
-            return;
+        if ($authRequest->maxAge === null) {
+            return false;
         }
 
-        // A stale-but-valid session must never be torn down before the request
-        // itself is trustworthy. Without a resolvable, non-revoked client the
-        // logout would be a cross-site logout vector (e.g. an <img> tag hitting
-        // /oauth/authorize?max_age=1). Defer to request validation to reject.
-        $clientId = $request->query('client_id');
+        return time() - ($this->sessionState->authTime() ?? 0) >= $authRequest->maxAge;
+    }
 
-        if (! is_string($clientId) || $this->clients->findActive($clientId) === null) {
-            return;
+    /**
+     * OIDC Core §3.1.2.6: with `prompt=none` a stale login is reported as
+     * `login_required` and the session is left intact. Otherwise the session
+     * is torn down and the user sent to login; `promptedForLogin` marks the
+     * return trip so the forced login does not loop.
+     *
+     * @param  Collection<int, string>  $prompt
+     */
+    protected function reauthenticate(Request $request, AuthorizeRequest $authRequest, Collection $prompt): void
+    {
+        if ($prompt->contains('none')) {
+            throw OAuthServerException::loginRequired($authRequest->redirectUri, $authRequest->state);
         }
 
-        // Mirrors the prompt=login loop guard: after the forced login redirect
-        // returns here, promptedForLogin is set, so we don't force again.
         if ($request->session()->get('promptedForLogin', false)) {
             return;
         }
 
-        $authTime = $this->sessionState->authTime() ?? 0;
+        $this->guard->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
-        if (time() - $authTime >= (int) $maxAge) {
-            $this->guard->logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-
-            $this->promptForLogin($request);
-        }
+        $this->promptForLogin($request);
     }
 
     /**
@@ -192,34 +206,8 @@ class AuthorizationController
      * to see it. Synced on every authorize request so a flow without acr_values
      * clears an earlier flow's leftovers.
      */
-    private function rememberRequestedAcrValues(Request $request): void
+    private function rememberRequestedAcrValues(AuthorizeRequest $authRequest): void
     {
-        $acrValues = $request->query('acr_values');
-
-        $this->sessionState->putRequestedAcrValues(is_string($acrValues)
-            ? array_values(array_filter(explode(' ', $acrValues), static fn (string $value): bool => $value !== ''))
-            : []);
-    }
-
-    private function removeConsentPromptForTrustedClient(Request $request): void
-    {
-        if (! $this->isTrustedClient($request->query('client_id'))) {
-            return;
-        }
-
-        $prompt = $request->string('prompt')
-            ->explode(' ')
-            ->map(fn (string $value): string => trim($value))
-            ->reject(fn (string $value): bool => $value === 'consent')
-            ->filter()
-            ->implode(' ');
-
-        $request->query->set('prompt', $prompt);
-    }
-
-    private function isTrustedClient(mixed $clientId): bool
-    {
-        return (is_string($clientId) || is_int($clientId))
-            && $this->firstPartyClient->isTrusted($clientId);
+        $this->sessionState->putRequestedAcrValues($authRequest->acrValues);
     }
 }

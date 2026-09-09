@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
 use DateInterval;
@@ -19,8 +20,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Turns an approved authorization request into the code redirect (OAuth 2.1
- * §4.1.2), snapshotting the login into an authentication context the token
- * endpoint links every descendant token to.
+ * §4.1.2, with the RFC 9207 §2 `iss` parameter), snapshotting the login into
+ * an authentication context the token endpoint links every descendant token to.
  */
 final readonly class AuthorizationCodeIssuer
 {
@@ -32,6 +33,7 @@ final readonly class AuthorizationCodeIssuer
         private OidcSessionRepository $sessions,
         private AuthSessionState $sessionState,
         private RealmResolver $realms,
+        private IssuerResolver $issuer,
     ) {}
 
     public function approve(AuthorizeRequest $request): RedirectResponse
@@ -39,7 +41,7 @@ final readonly class AuthorizationCodeIssuer
         $userId = $request->userId ?? throw new LogicException('An authorization request cannot be approved without a user.');
 
         $client = $this->clients->findActive($request->clientId)
-            ?? throw OAuthServerException::invalidClient('The client is unknown.');
+            ?? throw OAuthServerException::invalidRequest('The client is unknown.');
 
         $authTime = $this->sessionState->authTime() ?? time();
         $sid = $this->sessionState->sid();
@@ -69,6 +71,7 @@ final readonly class AuthorizationCodeIssuer
         return new RedirectResponse($this->appendQuery($request->redirectUri, array_filter([
             'code' => $code,
             'state' => $request->state,
+            'iss' => $this->issuer->url(),
         ], fn (?string $value): bool => $value !== null)));
     }
 

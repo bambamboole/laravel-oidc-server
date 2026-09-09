@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Shared\Protocol;
 
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
@@ -12,8 +13,9 @@ use Illuminate\Http\RedirectResponse;
 /**
  * An OAuth error, rendered as the HTTP response the protocol prescribes: a
  * redirect back to the client where one is validated (RFC 6749 §4.1.2.1), a
- * JSON body otherwise (§5.2, RFC 6750 §3). Extends HttpResponseException so
- * Laravel renders it without reporting it.
+ * JSON body otherwise (§5.2, RFC 6750 §3). Every redirect carries the RFC
+ * 9207 §2 `iss` parameter, error responses included. Extends
+ * HttpResponseException so Laravel renders it without reporting it.
  */
 final class OAuthServerException extends HttpResponseException
 {
@@ -31,6 +33,7 @@ final class OAuthServerException extends HttpResponseException
                 'error' => $error,
                 'error_description' => $description,
                 'state' => $state,
+                'iss' => app(IssuerResolver::class)->url(),
             ], fn (?string $value): bool => $value !== null)))
             : new JsonResponse(['error' => $error, 'error_description' => $description], $status, [
                 'Cache-Control' => 'no-store',
@@ -110,6 +113,18 @@ final class OAuthServerException extends HttpResponseException
     public static function consentRequired(string $redirectUri, ?string $state): self
     {
         return new self('consent_required', 'The authorization server requires end-user consent.', 401, $redirectUri, $state);
+    }
+
+    /** OpenID Connect Core §3.1.2.6 / §6: the request parameter is not supported. */
+    public static function requestNotSupported(string $redirectUri, ?string $state): self
+    {
+        return new self('request_not_supported', 'The authorization server does not support the request parameter.', 400, $redirectUri, $state);
+    }
+
+    /** OpenID Connect Core §3.1.2.6 / §6: the request_uri parameter is not supported. */
+    public static function requestUriNotSupported(string $redirectUri, ?string $state): self
+    {
+        return new self('request_uri_not_supported', 'The authorization server does not support the request_uri parameter.', 400, $redirectUri, $state);
     }
 
     public static function serverError(string $description): self

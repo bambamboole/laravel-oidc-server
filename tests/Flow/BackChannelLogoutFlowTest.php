@@ -53,7 +53,7 @@ function completeBackChannelLogoutAuthorization(TestCase $test, string $sid): Te
         ]))
         ->assertOk();
 
-    $approve = $test->post('/realms/default/oauth/authorize', ['auth_token' => $view->json('authToken')])
+    $approve = $test->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')])
         ->assertRedirect();
 
     parse_str(parse_url($approve->headers->get('Location'), PHP_URL_QUERY), $params);

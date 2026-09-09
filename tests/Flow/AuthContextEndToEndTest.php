@@ -39,7 +39,7 @@ it('reports amr=[pwd] and acr=1 end to end for a password-only login', function 
         'code_challenge_method' => 'S256',
     ]))->assertOk();
 
-    $approve = $this->post('/realms/default/oauth/authorize', ['auth_token' => $view->json('authToken')])->assertRedirect();
+    $approve = $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')])->assertRedirect();
     parse_str(parse_url($approve->headers->get('Location'), PHP_URL_QUERY), $params);
 
     $token = $this->post('/realms/default/oauth/token', [

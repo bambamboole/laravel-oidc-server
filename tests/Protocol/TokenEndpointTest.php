@@ -47,7 +47,7 @@ function obtainAuthorizationCode(TestCase $test, PkcePair $pkce, array $override
         ], $overrides)))
         ->assertOk();
 
-    $approve = $test->post('/realms/default/oauth/authorize', ['auth_token' => $view->json('authToken')])->assertRedirect();
+    $approve = $test->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')])->assertRedirect();
     parse_str((string) parse_url((string) $approve->headers->get('Location'), PHP_URL_QUERY), $params);
 
     return $params['code'];

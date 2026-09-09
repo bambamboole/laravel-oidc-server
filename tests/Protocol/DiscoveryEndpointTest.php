@@ -35,7 +35,7 @@ it('honours a configured issuer and strips trailing slashes', function () {
         ->assertJsonPath('issuer', 'https://id.example.com/realms/default');
 });
 
-it('advertises the OAuth 2.1 / RFC 8414 metadata fields', function () {
+it('advertises the OAuth 2.1 / RFC 8414 / RFC 9207 metadata fields', function () {
     $doc = $this->getJson('/realms/default/.well-known/openid-configuration')->assertOk();
 
     expect($doc->json('grant_types_supported'))->toContain('client_credentials')
@@ -43,6 +43,7 @@ it('advertises the OAuth 2.1 / RFC 8414 metadata fields', function () {
         ->and($doc->json('claims_parameter_supported'))->toBeFalse()
         ->and($doc->json('request_parameter_supported'))->toBeFalse()
         ->and($doc->json('request_uri_parameter_supported'))->toBeFalse()
+        ->and($doc->json('authorization_response_iss_parameter_supported'))->toBeTrue()
         ->and($doc->json('introspection_endpoint_auth_methods_supported'))->toBe(['client_secret_basic', 'client_secret_post'])
         ->and($doc->json('revocation_endpoint_auth_methods_supported'))->toBe(['client_secret_basic', 'client_secret_post', 'none']);
 });
