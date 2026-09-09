@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
-use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\MissingAuthViewException;
+use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Forms\ConsentPrompt;
+use Bambamboole\LaravelOidc\Server\Forms\ConsentView;
+use Bambamboole\LaravelOidc\Server\Forms\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use DateInterval;

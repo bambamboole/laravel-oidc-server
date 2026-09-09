@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Session\OidcSession;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Token\LogoutTokenBuilder;
 use Lcobucci\JWT\Encoding\JoseEncoder;

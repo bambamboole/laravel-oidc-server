@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PersonalAccessTokenEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Models\Token;

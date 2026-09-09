@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Auth\Models\AccessTokenContext;
-use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
-use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\Server\Auth\Models\SessionParticipant;
+use Bambamboole\LaravelOidc\Server\Context\AccessTokenContext;
+use Bambamboole\LaravelOidc\Server\Context\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Session\OidcSession;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Session\SessionParticipant;
 
 it('prunes expired contexts and keeps live ones', function () {
     $live = new AuthenticationContext;

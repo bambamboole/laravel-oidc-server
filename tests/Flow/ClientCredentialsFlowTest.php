@@ -6,8 +6,8 @@ declare(strict_types=1);
  * OAuth 2.1 §4.2 (client credentials grant)
  */
 
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\ClientCredentialsEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\ClientCredentialsEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Models\Token;

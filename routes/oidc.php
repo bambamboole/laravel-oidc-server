@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\AuthenticatedSessionController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\ConfirmablePasswordController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\EmailVerificationPromptController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\FactorEnrollmentController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\LinkedAccountController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\NewPasswordController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\PasskeyAuthenticatedSessionController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\PasswordResetLinkController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\RegisteredUserController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\SendEmailVerificationNotificationController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\ShowConfirmedPasswordStatusController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\SocialAuthenticationController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\TwoFactorChallengeController;
-use Bambamboole\LaravelOidc\Server\Auth\Controllers\VerifyEmailController;
-use Bambamboole\LaravelOidc\Server\Auth\Middleware\AuthenticateIdentity;
+use Bambamboole\LaravelOidc\Server\Authentication\AuthenticateIdentity;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\AuthenticatedSessionController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\ConfirmablePasswordController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\EmailVerificationPromptController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\NewPasswordController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\PasskeyAuthenticatedSessionController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\PasswordResetLinkController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\RegisteredUserController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\SendEmailVerificationNotificationController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\ShowConfirmedPasswordStatusController;
+use Bambamboole\LaravelOidc\Server\Authentication\Controllers\VerifyEmailController;
+use Bambamboole\LaravelOidc\Server\Brokering\Controllers\LinkedAccountController;
+use Bambamboole\LaravelOidc\Server\Brokering\Controllers\SocialAuthenticationController;
+use Bambamboole\LaravelOidc\Server\Credential\Controllers\FactorEnrollmentController;
+use Bambamboole\LaravelOidc\Server\Credential\Controllers\TwoFactorChallengeController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\AccessTokenController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\ApproveAuthorizationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Console;
 
-use Bambamboole\LaravelOidc\Server\Auth\Models\AccessTokenContext;
-use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
-use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\Server\Auth\Models\SessionParticipant;
+use Bambamboole\LaravelOidc\Server\Context\AccessTokenContext;
+use Bambamboole\LaravelOidc\Server\Context\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Session\OidcSession;
+use Bambamboole\LaravelOidc\Server\Session\SessionParticipant;
 use Bambamboole\LaravelOidc\Server\Token\TokenLifetimes;
 use DateTimeImmutable;
 use Illuminate\Console\Command;

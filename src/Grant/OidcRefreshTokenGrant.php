@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Grant;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Grant\Concerns\HasAuthenticationContextIssuance;

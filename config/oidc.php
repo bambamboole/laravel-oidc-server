@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Audit\LogSink;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\RecoveryCodeProvider;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\WebAuthnFactorProvider;
+use Bambamboole\LaravelOidc\Server\Credential\RecoveryCodeProvider;
+use Bambamboole\LaravelOidc\Server\Credential\TotpFactorProvider;
+use Bambamboole\LaravelOidc\Server\Credential\WebAuthnFactorProvider;
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 
 return [

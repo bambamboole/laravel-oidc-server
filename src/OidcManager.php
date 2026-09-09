@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server;
 
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PostLoginPipeline;
-use Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider;
-use Bambamboole\LaravelOidc\Server\Auth\Social\SocialProviderRegistry;
-use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningResult;
@@ -20,6 +19,7 @@ use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRegistry;
 use Bambamboole\LaravelOidc\Server\Token\CurrentAccessToken;
+use Bambamboole\LaravelOidc\Server\User\UserActionManager;
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Container\Container;

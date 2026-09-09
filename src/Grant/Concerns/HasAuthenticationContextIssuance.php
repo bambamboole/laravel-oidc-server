@@ -6,11 +6,11 @@ namespace Bambamboole\LaravelOidc\Server\Grant\Concerns;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AuthorizationCodeEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AuthorizationCodeEvent;
 use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
+use Bambamboole\LaravelOidc\Server\Context\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Token\ResolvesTokenUser;
 use DateInterval;

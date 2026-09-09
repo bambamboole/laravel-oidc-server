@@ -6,8 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\PersonalAccess;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PersonalAccessTokenEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Bridge\Client as ClientEntity;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Models\Token;

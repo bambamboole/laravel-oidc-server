@@ -6,8 +6,8 @@ declare(strict_types=1);
  * OpenID Connect Core 1.0 §3.1.2.1 (acr_values)
  */
 
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Workbench\App\Models\User;

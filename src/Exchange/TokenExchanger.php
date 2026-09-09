@@ -6,8 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Exchange;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Models\Client;

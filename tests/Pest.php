@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
-use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
 use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Forms\ConsentPrompt;
+use Bambamboole\LaravelOidc\Server\Forms\ConsentView;
 use Bambamboole\LaravelOidc\Server\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Models\RefreshToken;

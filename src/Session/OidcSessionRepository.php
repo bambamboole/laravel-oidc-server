@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Session;
 
-use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
-use Bambamboole\LaravelOidc\Server\Auth\Models\SessionParticipant;
 use DateInterval;
 
 class OidcSessionRepository

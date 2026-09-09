@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
-use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationPrompt;
-use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\LoginPrompt;
-use Bambamboole\LaravelOidc\Server\Auth\Views\LoginView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordConfirmationView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetPrompt;
-use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestPrompt;
-use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetRequestView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterView;
-use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengePrompt;
-use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\Forms\ConsentPrompt;
+use Bambamboole\LaravelOidc\Server\Forms\ConsentView;
+use Bambamboole\LaravelOidc\Server\Forms\EmailVerificationPrompt;
+use Bambamboole\LaravelOidc\Server\Forms\EmailVerificationView;
+use Bambamboole\LaravelOidc\Server\Forms\LoginPrompt;
+use Bambamboole\LaravelOidc\Server\Forms\LoginView;
+use Bambamboole\LaravelOidc\Server\Forms\PasswordConfirmationView;
+use Bambamboole\LaravelOidc\Server\Forms\PasswordResetPrompt;
+use Bambamboole\LaravelOidc\Server\Forms\PasswordResetRequestPrompt;
+use Bambamboole\LaravelOidc\Server\Forms\PasswordResetRequestView;
+use Bambamboole\LaravelOidc\Server\Forms\PasswordResetView;
+use Bambamboole\LaravelOidc\Server\Forms\RegisterView;
+use Bambamboole\LaravelOidc\Server\Forms\TwoFactorChallengePrompt;
+use Bambamboole\LaravelOidc\Server\Forms\TwoFactorChallengeView;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

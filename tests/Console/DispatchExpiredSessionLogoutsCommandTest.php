@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\BackChannel\SendBackChannelLogout;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Session\OidcSession;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Illuminate\Support\Facades\Bus;
 

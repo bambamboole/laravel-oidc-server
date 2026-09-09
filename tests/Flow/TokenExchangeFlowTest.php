@@ -6,8 +6,8 @@ declare(strict_types=1);
  * RFC 8693 (OAuth 2.0 Token Exchange); RFC 6749 §5.2 (error responses)
  */
 
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Exchange\ExchangeGrantResult;

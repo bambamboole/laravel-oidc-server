@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Grant;
 
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
-use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
+use Bambamboole\LaravelOidc\Server\Context\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Grant\Concerns\HasAuthenticationContextIssuance;
 use Bambamboole\LaravelOidc\Server\Responses\IdTokenResponse;
