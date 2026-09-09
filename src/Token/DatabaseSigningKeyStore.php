@@ -17,6 +17,7 @@ final class DatabaseSigningKeyStore implements SigningKeyStore
     public function signingKey(): SigningKey
     {
         $record = SigningKeyRecord::query()
+            ->inRealm()
             ->whereNull('retired_at')
             ->whereNotNull('private_key')
             ->orderByDesc('created_at')
@@ -37,6 +38,7 @@ final class DatabaseSigningKeyStore implements SigningKeyStore
         $signing = $this->signingKey();
 
         $retained = SigningKeyRecord::query()
+            ->inRealm()
             ->whereNotNull('retired_at')
             ->orderByDesc('retired_at')
             ->get()
@@ -49,9 +51,10 @@ final class DatabaseSigningKeyStore implements SigningKeyStore
     public function rotate(GeneratedSigningKeys $keys): void
     {
         DB::transaction(function () use ($keys): void {
-            SigningKeyRecord::query()->whereNull('retired_at')->update(['retired_at' => now()]);
+            SigningKeyRecord::query()->inRealm()->whereNull('retired_at')->update(['retired_at' => now()]);
 
             SigningKeyRecord::query()->create([
+                'realm_id' => SigningKeyRecord::currentRealm(),
                 'kid' => $keys->kid,
                 'public_key' => $keys->publicKeyPem,
                 'private_key' => $keys->privateKeyPem,

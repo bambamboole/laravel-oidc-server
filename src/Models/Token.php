@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Models;
 
+use Bambamboole\LaravelOidc\Server\Models\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -11,6 +12,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id The token's jti.
+ * @property string $realm_id
  * @property ?string $user_id
  * @property string $client_id
  * @property ?string $name
@@ -20,6 +22,8 @@ use Illuminate\Support\Carbon;
  */
 class Token extends Model
 {
+    use BelongsToRealm;
+
     protected $table = 'oidc_access_tokens';
 
     protected $primaryKey = 'id';

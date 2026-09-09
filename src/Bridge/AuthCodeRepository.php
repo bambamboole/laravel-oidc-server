@@ -20,6 +20,7 @@ class AuthCodeRepository implements AuthCodeRepositoryInterface
     public function persistNewAuthCode(AuthCodeEntityInterface $authCodeEntity): void
     {
         AuthCodeModel::query()->forceCreate([
+            'realm_id' => AuthCodeModel::currentRealm(),
             'id' => $authCodeEntity->getIdentifier(),
             'user_id' => $authCodeEntity->getUserIdentifier(),
             'client_id' => $this->storageKey($authCodeEntity->getClient()),

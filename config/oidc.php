@@ -9,6 +9,11 @@ use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\WebAuthnFactorProvider;
 use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
 
 return [
+    // Identifier of the realm every request belongs to. The package stores it
+    // on its own rows and scopes every lookup by it; what a realm *is* belongs
+    // to the application. Bind a RealmResolver to derive it per request.
+    'realm' => env('OIDC_REALM', 'default'),
+
     'issuer' => env('OIDC_ISSUER'),
 
     // RS256 signing keypair as PEM strings (\n-escaped single lines are fine).

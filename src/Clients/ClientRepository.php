@@ -17,7 +17,7 @@ class ClientRepository
 {
     public function find(string $clientId): ?Client
     {
-        return Client::query()->where('client_id', $clientId)->first();
+        return Client::query()->inRealm()->where('client_id', $clientId)->first();
     }
 
     public function findActive(string $clientId): ?Client
@@ -30,6 +30,7 @@ class ClientRepository
     public function personalAccessClient(?string $provider = null): Client
     {
         $client = Client::query()
+            ->inRealm()
             ->whereJsonContains('grant_types', 'personal_access')
             ->when($provider !== null, fn ($query) => $query->where('provider', $provider))
             ->orderBy('created_at')
@@ -90,6 +91,7 @@ class ClientRepository
         $client->setAttribute($client->getKeyName(), $client->newUniqueId());
 
         $client->forceFill([
+            'realm_id' => Client::currentRealm(),
             // A generated client answers to its own key until someone gives it a
             // readable name; the two stay separate so renaming never touches tokens.
             'client_id' => $clientId ?? $client->getKey(),

@@ -25,6 +25,7 @@ class AccessTokenRepository implements AccessTokenRepositoryInterface
     public function persistNewAccessToken(AccessTokenEntityInterface $accessTokenEntity): void
     {
         Token::query()->forceCreate([
+            'realm_id' => Token::currentRealm(),
             'id' => $accessTokenEntity->getIdentifier(),
             'user_id' => $accessTokenEntity->getUserIdentifier(),
             'client_id' => $this->storageKey($accessTokenEntity->getClient()),

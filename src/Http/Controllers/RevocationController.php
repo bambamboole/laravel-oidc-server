@@ -32,11 +32,14 @@ class RevocationController
                 $accessTokenId = $payload->access_token_id ?? null;
 
                 if (is_string($refreshTokenId)) {
-                    RefreshToken::query()->whereKey($refreshTokenId)->update(['revoked' => true]);
+                    RefreshToken::query()
+                        ->whereKey($refreshTokenId)
+                        ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
+                        ->update(['revoked' => true]);
                 }
 
                 if (is_string($accessTokenId)) {
-                    Token::query()->whereKey($accessTokenId)->update(['revoked' => true]);
+                    Token::query()->inRealm()->whereKey($accessTokenId)->update(['revoked' => true]);
                 }
 
                 if (is_string($refreshTokenId) || is_string($accessTokenId)) {

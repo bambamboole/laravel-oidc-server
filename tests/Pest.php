@@ -155,6 +155,7 @@ function issueRefreshToken(mixed $test, ?string $clientId = null, bool $expired 
 
     $accessToken = new Token;
     $accessToken->forceFill([
+        'realm_id' => Token::currentRealm(),
         'id' => $accessTokenId,
         'user_id' => $test->user->id,
         'client_id' => $test->client->id,
@@ -211,6 +212,7 @@ function mintExchangeSubjectToken(
     $subject->setPrivateKey(new CryptKey(__DIR__.'/fixtures/oauth-private.key', null, false));
 
     (new Token)->forceFill([
+        'realm_id' => Token::currentRealm(),
         'id' => $tokenId,
         'user_id' => $userless ? null : $userId,
         'client_id' => $clientId,
@@ -253,6 +255,7 @@ function resourceServerBearer(
     $accessToken->setPrivateKey(new CryptKey(__DIR__.'/fixtures/oauth-private.key', null, false));
 
     (new Token)->forceFill([
+        'realm_id' => Token::currentRealm(),
         'id' => $tokenId,
         'user_id' => $subjectId,
         'client_id' => $test->client->id,
@@ -326,6 +329,7 @@ function persistedIdTokenAsBearer(mixed $test): string
         ->toString();
 
     (new Token)->forceFill([
+        'realm_id' => Token::currentRealm(),
         'id' => $tokenId,
         'user_id' => $test->user->id,
         'client_id' => $test->client->id,

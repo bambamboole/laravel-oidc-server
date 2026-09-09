@@ -56,7 +56,7 @@ class TokenInspector
     {
         $jti = $parsed->claims()->get('jti');
 
-        return is_string($jti) ? Token::query()->find($jti) : null;
+        return is_string($jti) ? Token::query()->inRealm()->find($jti) : null;
     }
 
     public function refreshTokenPayload(string $encrypted): ?object

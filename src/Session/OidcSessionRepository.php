@@ -13,6 +13,7 @@ class OidcSessionRepository
     public function start(string $userId): string
     {
         $session = new OidcSession;
+        $session->realm_id = OidcSession::currentRealm();
         $session->user_id = $userId;
         $session->created_at = now();
         $session->expires_at = now()->add(
@@ -25,7 +26,7 @@ class OidcSessionRepository
 
     public function find(string $sid): ?OidcSession
     {
-        return OidcSession::query()->find($sid);
+        return OidcSession::query()->inRealm()->find($sid);
     }
 
     /**

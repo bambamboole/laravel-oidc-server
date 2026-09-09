@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Models;
 
+use Bambamboole\LaravelOidc\Server\Models\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string $realm_id
  * @property string $user_id
  * @property ?string $sid
  * @property list<string> $amr
@@ -22,7 +24,7 @@ use Illuminate\Support\Carbon;
  */
 class AuthenticationContext extends Model
 {
-    use HasUuids;
+    use BelongsToRealm, HasUuids;
 
     public $timestamps = false;
 

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Models;
 
+use Bambamboole\LaravelOidc\Server\Models\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string $realm_id
  * @property string $user_id
  * @property string $client_id
  * @property array<int, string> $scopes
@@ -18,6 +20,8 @@ use Illuminate\Support\Carbon;
  */
 class AuthCode extends Model
 {
+    use BelongsToRealm;
+
     protected $table = 'oidc_auth_codes';
 
     protected $primaryKey = 'id';

@@ -63,7 +63,13 @@ class IntrospectionController
         }
 
         $refreshTokenId = $payload->refresh_token_id ?? null;
-        $refreshToken = is_string($refreshTokenId) ? RefreshToken::query()->find($refreshTokenId) : null;
+        // A refresh token carries no realm of its own; it inherits the one of
+        // the access token it was issued alongside.
+        $refreshToken = is_string($refreshTokenId)
+            ? RefreshToken::query()
+                ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
+                ->find($refreshTokenId)
+            : null;
         $expireTime = $payload->expire_time ?? null;
 
         if (! $refreshToken instanceof RefreshToken

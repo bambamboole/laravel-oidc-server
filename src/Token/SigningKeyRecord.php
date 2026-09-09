@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Token;
 
+use Bambamboole\LaravelOidc\Server\Models\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string $realm_id
  * @property string $kid
  * @property string $public_key
  * @property ?string $private_key
@@ -21,7 +23,7 @@ use Illuminate\Support\Carbon;
  */
 class SigningKeyRecord extends Model
 {
-    use HasUuids;
+    use BelongsToRealm, HasUuids;
 
     protected $table = 'oidc_signing_keys';
 

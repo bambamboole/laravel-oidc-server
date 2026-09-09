@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Models;
 
+use Bambamboole\LaravelOidc\Server\Models\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
+ * @property string $realm_id
  * @property string $client_id
  * @property string $name
  * @property ?string $secret
@@ -35,7 +37,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class Client extends Model
 {
-    use HasUuids;
+    use BelongsToRealm, HasUuids;
 
     protected $table = 'oidc_clients';
 

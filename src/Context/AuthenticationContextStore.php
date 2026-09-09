@@ -15,6 +15,7 @@ class AuthenticationContextStore
     public function create(array $attributes): string
     {
         $context = new AuthenticationContext;
+        $context->realm_id = AuthenticationContext::currentRealm();
         $context->user_id = $attributes['user_id'];
         $context->sid = $attributes['sid'];
         $context->amr = $attributes['amr'];
@@ -31,6 +32,6 @@ class AuthenticationContextStore
 
     public function find(string $id): ?AuthenticationContext
     {
-        return AuthenticationContext::query()->find($id);
+        return AuthenticationContext::query()->inRealm()->find($id);
     }
 }

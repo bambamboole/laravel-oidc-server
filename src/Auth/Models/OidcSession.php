@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Models;
 
+use Bambamboole\LaravelOidc\Server\Models\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 /**
  * @property string $sid
+ * @property string $realm_id
  * @property string $user_id
  * @property ?Carbon $created_at
  * @property ?Carbon $expires_at
@@ -18,7 +20,7 @@ use Illuminate\Support\Carbon;
  */
 class OidcSession extends Model
 {
-    use HasUuids;
+    use BelongsToRealm, HasUuids;
 
     public $timestamps = false;
 

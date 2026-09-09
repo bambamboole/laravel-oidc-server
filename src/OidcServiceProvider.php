@@ -52,6 +52,7 @@ use Bambamboole\LaravelOidc\Server\Contracts\AuthorizationViewResponse;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Contracts\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Exchange\DefaultExchangePolicy;
@@ -140,6 +141,7 @@ class OidcServiceProvider extends ServiceProvider
 
         Passkeys::ignoreRoutes();
 
+        $this->app->scoped(RealmResolver::class, ConfiguredRealmResolver::class);
         $this->app->scoped(IssuerResolver::class, ConfiguredIssuerResolver::class);
         $this->app->singleton(ScopeRepository::class, DefaultScopeRepository::class);
         $this->app->bind(ScopeRepositoryInterface::class, BridgeScopeRepository::class);
