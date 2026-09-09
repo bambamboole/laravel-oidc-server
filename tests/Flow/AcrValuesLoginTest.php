@@ -8,9 +8,9 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
-use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
 
 beforeEach(function () {

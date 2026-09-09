@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Bridge\AccessToken;
+use Bambamboole\LaravelOidc\Server\Bridge\Client;
 use Bambamboole\LaravelOidc\Server\ConfiguredIssuerResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
-use Laravel\Passport\Bridge\AccessToken;
-use Laravel\Passport\Bridge\Client;
-use Laravel\Passport\Bridge\Scope;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
@@ -32,7 +32,7 @@ function issuerResolverTestIdToken(): UnencryptedToken
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $accessToken = new AccessToken(
         (string) $user->id,
-        [new Scope('openid')],
+        [new BridgeScope('openid')],
         new Client('client-uuid', 'RP', ['https://rp.test/callback']),
     );
     $accessToken->setIdentifier('token-id');

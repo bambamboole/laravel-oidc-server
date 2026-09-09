@@ -4,15 +4,26 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Scopes;
 
-use Laravel\Passport\Scope as PassportScope;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Contracts\Support\Jsonable;
 
-final class Scope extends PassportScope
+/** @implements Arrayable<string, string> */
+final class Scope implements Arrayable, Jsonable
 {
     public function __construct(
-        string $id,
-        string $description = '',
+        public string $id,
+        public string $description = '',
         public bool $hidden = false,
-    ) {
-        parent::__construct($id, $description);
+    ) {}
+
+    /** @return array{id: string, description: string} */
+    public function toArray(): array
+    {
+        return ['id' => $this->id, 'description' => $this->description];
+    }
+
+    public function toJson($options = 0): string
+    {
+        return (string) json_encode($this->toArray(), $options);
     }
 }

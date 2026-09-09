@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PersonalAccessTokenEvent;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Workbench\App\Models\User;
 
@@ -41,7 +41,7 @@ it('denies personal-access issuance before persisting an access token', function
     expect(fn () => $this->user->createToken('cli', ['openid']))
         ->toThrow(OAuthServerException::class);
 
-    expect(Passport::token()->newQuery()->count())->toBe(0);
+    expect(Token::query()->count())->toBe(0);
 });
 
 it('does not fire the personal-access trigger for other grants', function () {

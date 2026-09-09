@@ -4,23 +4,20 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Scopes;
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository as ScopeRepositoryContract;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Illuminate\Support\Collection;
-use Laravel\Passport\Bridge\Scope as BridgeScope;
-use Laravel\Passport\Bridge\ScopeRepository as PassportBridgeScopeRepository;
-use Laravel\Passport\Client;
-use Laravel\Passport\ClientRepository;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
+use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 
-class BridgeScopeRepository extends PassportBridgeScopeRepository
+class BridgeScopeRepository implements ScopeRepositoryInterface
 {
     public function __construct(
-        ClientRepository $clients,
+        protected readonly ClientRepository $clients,
         private readonly ScopeRepositoryContract $scopes,
-    ) {
-        parent::__construct($clients);
-    }
+    ) {}
 
     public function getScopeEntityByIdentifier(string $identifier): ?ScopeEntityInterface
     {
@@ -31,15 +28,19 @@ class BridgeScopeRepository extends PassportBridgeScopeRepository
         return $this->scopes->find($identifier) instanceof Scope ? new BridgeScope($identifier) : null;
     }
 
+    /**
+     * @param  array<int, ScopeEntityInterface>  $scopes
+     * @return array<int, ScopeEntityInterface>
+     */
     public function finalizeScopes(
         array $scopes,
         string $grantType,
         ClientEntityInterface $clientEntity,
         ?string $userIdentifier = null,
-        ?string $authCodeId = null
+        ?string $authCodeId = null,
     ): array {
         $entities = collect($scopes)
-            ->unless(in_array($grantType, ['password', 'personal_access', 'client_credentials']),
+            ->unless(in_array($grantType, ['personal_access', 'client_credentials'], true),
                 fn (Collection $scopes): Collection => $scopes->reject(
                     fn (ScopeEntityInterface $scope): bool => $scope->getIdentifier() === '*'
                 )

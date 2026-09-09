@@ -12,6 +12,8 @@ use RuntimeException;
 use SensitiveParameter;
 
 /**
+ * @method static void tokensCan(array<string, string> $scopes)
+ * @method static \Illuminate\Contracts\Auth\Authenticatable actingAs(\Illuminate\Contracts\Auth\Authenticatable $user, list<string> $scopes = [], string $guard = 'oidc')
  * @method static void postLogin(Closure $hook)
  * @method static void clientCredentials(Closure $trigger)
  * @method static void tokenExchange(Closure $trigger)

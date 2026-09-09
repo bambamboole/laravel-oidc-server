@@ -6,8 +6,8 @@ declare(strict_types=1);
  * RFC 7009 (OAuth 2.0 Token Revocation)
  */
 
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Token;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -18,11 +18,7 @@ beforeEach(function () {
     app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
     $result = $this->user->createToken('t', ['openid']);
 
-    $token = $result->getToken();
-
-    if (! $token instanceof Token) {
-        throw new RuntimeException('Expected the personal access token to be persisted.');
-    }
+    $token = $result->token;
 
     $token->forceFill(['client_id' => $this->client->id])->save();
     $this->jwt = $result->accessToken;

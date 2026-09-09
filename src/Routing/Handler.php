@@ -19,6 +19,7 @@ use Bambamboole\LaravelOidc\Server\Auth\Controllers\SocialAuthenticationControll
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\TwoFactorChallengeController;
 use Bambamboole\LaravelOidc\Server\Auth\Controllers\VerifyEmailController;
 use Bambamboole\LaravelOidc\Server\Auth\Middleware\AuthenticateIdentity;
+use Bambamboole\LaravelOidc\Server\Http\Controllers\AccessTokenController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\ApproveAuthorizationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationServerMetadataController;
@@ -38,8 +39,6 @@ use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Laravel\Passkeys\Http\Controllers\PasskeyConfirmationController;
 use Laravel\Passkeys\Http\Controllers\PasskeyLoginController;
-use Laravel\Passport\Http\Controllers\AccessTokenController;
-use Laravel\Passport\Http\Controllers\TransientTokenController;
 
 /**
  * The canonical registry of every HTTP endpoint the package can register.
@@ -97,7 +96,6 @@ enum Handler: string
     case Revoke = 'oidc.revoke';
     case Authorize = 'oidc.authorize';
     case IssueToken = 'oidc.token';
-    case TokenRefresh = 'oidc.token.refresh';
     case Approve = 'oidc.approve';
     case Deny = 'oidc.deny';
 
@@ -369,11 +367,6 @@ enum Handler: string
                 controller: [AccessTokenController::class, 'issueToken'],
                 middleware: ['throttle'],
             ),
-            self::TokenRefresh => new HandlerConfig(
-                route: 'oauth/token/refresh',
-                controller: [TransientTokenController::class, 'refresh'],
-                middleware: ['web', $authenticated],
-            ),
             self::Approve => new HandlerConfig(
                 route: 'oauth/authorize',
                 controller: [ApproveAuthorizationController::class, 'approve'],
@@ -410,7 +403,6 @@ enum Handler: string
             self::Introspect,
             self::Revoke,
             self::IssueToken,
-            self::TokenRefresh,
             self::ClientRegistration,
             self::Approve => 'post',
             self::Deny, self::TwoFactorRevoke, self::SocialDestroy => 'delete',

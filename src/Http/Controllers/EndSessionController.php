@@ -8,11 +8,11 @@ use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\RespondsToInertiaExternalRedirects;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Passport\Passport;
 use Lcobucci\JWT\Token\Plain;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
 use Lcobucci\JWT\Validation\Validator;
@@ -38,7 +38,7 @@ class EndSessionController
                 app(BackChannelLogoutNotifier::class)->notify($sid);
             }
 
-            Auth::guard(config('passport.guard', null))->logout();
+            Auth::guard(config('oidc.auth.guard'))->logout();
 
             if ($request->hasSession()) {
                 $request->session()->invalidate();
@@ -77,7 +77,7 @@ class EndSessionController
 
     private function hintMatchesCurrentUser(Plain $hint): bool
     {
-        $user = Auth::guard(config('passport.guard', null))->user();
+        $user = Auth::guard(config('oidc.auth.guard'))->user();
 
         if ($user === null) {
             return true;
@@ -112,14 +112,12 @@ class EndSessionController
         }
 
         $clientId = $hint->claims()->get('aud')[0] ?? null;
-        $client = $clientId !== null ? Passport::client()::query()->find($clientId) : null;
+        $client = is_string($clientId) ? Client::query()->where('client_id', $clientId)->first() : null;
 
         if ($client === null) {
             return null;
         }
 
-        $registered = json_decode((string) $client->getRawOriginal('post_logout_redirect_uris'), true) ?? [];
-
-        return in_array($uri, $registered, true) ? $uri : null;
+        return in_array($uri, $client->post_logout_redirect_uris ?? [], true) ? $uri : null;
     }
 }

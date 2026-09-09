@@ -5,7 +5,7 @@ namespace Bambamboole\LaravelOidc\Server\Exchange;
 
 use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
-use Laravel\Passport\Client;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use League\OAuth2\Server\Exception\OAuthServerException;
 
 class DefaultExchangePolicy implements ExchangePolicy

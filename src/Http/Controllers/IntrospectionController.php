@@ -6,13 +6,12 @@ namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Http\ClientCredentials;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\AuthenticatesConfidentialClient;
+use Bambamboole\LaravelOidc\Server\Models\RefreshToken;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Laravel\Passport\Passport;
-use Laravel\Passport\RefreshToken;
-use Laravel\Passport\Token;
 use Lcobucci\JWT\Token\Plain;
 
 class IntrospectionController
@@ -64,7 +63,7 @@ class IntrospectionController
         }
 
         $refreshTokenId = $payload->refresh_token_id ?? null;
-        $refreshToken = is_string($refreshTokenId) ? Passport::refreshToken()->newQuery()->find($refreshTokenId) : null;
+        $refreshToken = is_string($refreshTokenId) ? RefreshToken::query()->find($refreshTokenId) : null;
         $expireTime = $payload->expire_time ?? null;
 
         if (! $refreshToken instanceof RefreshToken

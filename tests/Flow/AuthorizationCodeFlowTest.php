@@ -11,18 +11,18 @@ use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AuthorizationCodeEvent;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\ApproveAuthorizationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\DenyAuthorizationController;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Testing\TestResponse;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
@@ -33,7 +33,7 @@ uses(InteractsWithOidc::class);
 
 beforeEach(function () {
     $this->withoutMiddleware(ValidateCsrfToken::class);
-    Passport::authorizationView(fn (array $parameters) => response()->json([
+    fakeConsentViewUsing(fn (array $parameters) => response()->json([
         'authToken' => $parameters['authToken'],
         'scopes' => $parameters['scopes'],
     ]));
@@ -126,7 +126,7 @@ it('merges authorization-code trigger claims into issued and refreshed access to
 });
 
 it('denies authorization-code issuance before persisting when a trigger denies', function () {
-    $persistedTokenCount = Passport::token()->newQuery()->count();
+    $persistedTokenCount = Token::query()->count();
 
     Oidc::authorizationCode(function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
         $api->deny('user_blocked');
@@ -137,7 +137,7 @@ it('denies authorization-code issuance before persisting when a trigger denies',
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 
-    expect(Passport::token()->newQuery()->count())->toBe($persistedTokenCount);
+    expect(Token::query()->count())->toBe($persistedTokenCount);
 });
 
 // OIDC Core §3.1.2.1 / §5.4 (openid scope)

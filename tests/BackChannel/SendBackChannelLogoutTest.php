@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\BackChannel\SendBackChannelLogout;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use Laravel\Passport\ClientRepository;
 
 it('posts a logout_token to the client backchannel_logout_uri', function () {
     Http::fake();

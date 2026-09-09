@@ -5,11 +5,11 @@ declare(strict_types=1);
  * RFC 9068 (access token) + RFC 7009 (revocation) — session root-token lifecycle (package two-token model)
  */
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
-use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -46,7 +46,7 @@ it('establishes a token on login when a valid first-party client is configured',
     expect(session('oidc.session_token')['jwt'] ?? null)->toBeString();
 });
 
-it('ignores logins on guards other than the passport guard', function () {
+it('ignores logins on guards other than the OIDC auth guard', function () {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
     config(['oidc.first_party.client_id' => (string) $client->id]);
 
@@ -55,7 +55,7 @@ it('ignores logins on guards other than the passport guard', function () {
     expect(session('oidc.session_token'))->toBeNull();
 });
 
-it('ignores logouts on guards other than the passport guard', function () {
+it('ignores logouts on guards other than the OIDC auth guard', function () {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
     config(['oidc.first_party.client_id' => (string) $client->id]);
     app(SessionTokenProvider::class)->establish($this->user);

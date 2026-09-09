@@ -6,9 +6,9 @@ declare(strict_types=1);
  * RFC 7662 (OAuth 2.0 Token Introspection)
  */
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Token;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -25,7 +25,7 @@ function issueAccessTokenViaPersonalClient(mixed $test): array
     app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
     $result = $test->user->createToken('t', ['openid', 'email']);
 
-    $token = $result->getToken();
+    $token = $result->token;
 
     if (! $token instanceof Token) {
         throw new RuntimeException('Expected the personal access token to be persisted.');
@@ -76,7 +76,7 @@ it('reports active for a valid access token of the same client', function () {
 it('reports inactive for revoked tokens', function () {
     [$jwt, $token] = issueAccessTokenViaPersonalClient($this);
     $token->forceFill(['client_id' => $this->client->id])->save();
-    $token->revoke();
+    $token->forceFill(['revoked' => true])->save();
 
     $this->postJson('/oauth/introspect', [
         'client_id' => $this->client->id,
@@ -138,7 +138,7 @@ it('reports active for a valid refresh token of the same client', function () {
 
 it('reports inactive for a revoked refresh token', function () {
     [$refreshTokenValue, $refreshToken] = issueRefreshToken($this);
-    $refreshToken->revoke();
+    $refreshToken->forceFill(['revoked' => true])->save();
 
     $this->postJson('/oauth/introspect', [
         'client_id' => $this->client->id,

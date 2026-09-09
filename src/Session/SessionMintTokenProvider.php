@@ -7,6 +7,8 @@ namespace Bambamboole\LaravelOidc\Server\Session;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use DateInterval;
@@ -14,7 +16,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Facades\Auth;
-use Laravel\Passport\Passport;
 use RuntimeException;
 
 /**
@@ -55,7 +56,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
 
     public function establish(Authenticatable $user): void
     {
-        $client = Passport::client()->newQuery()->find(app(FirstPartyClientConfig::class)->clientId());
+        $client = Client::query()->find(app(FirstPartyClientConfig::class)->clientId());
 
         if ($client === null) {
             throw new RuntimeException('The oidc.first_party.client_id is not configured or does not exist.');
@@ -64,7 +65,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
         $prior = $this->session()->get($this->key());
 
         if (is_array($prior) && is_string($prior['jti'] ?? null)) {
-            Passport::token()->newQuery()->whereKey($prior['jti'])->update(['revoked' => true]);
+            Token::query()->whereKey($prior['jti'])->update(['revoked' => true]);
         }
 
         $ttl = (int) config('oidc.session_token.ttl', 3600);
@@ -88,7 +89,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
         $stored = $this->session()->get($this->key());
 
         if (is_array($stored) && is_string($stored['jti'] ?? null)) {
-            Passport::token()->newQuery()->whereKey($stored['jti'])->update(['revoked' => true]);
+            Token::query()->whereKey($stored['jti'])->update(['revoked' => true]);
         }
 
         $this->session()->forget($this->key());

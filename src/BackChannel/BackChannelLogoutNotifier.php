@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\BackChannel;
 
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
-use Laravel\Passport\Passport;
 
 class BackChannelLogoutNotifier
 {
@@ -22,7 +22,7 @@ class BackChannelLogoutNotifier
         $clientIds = $this->registry->participantClientIds($sid);
 
         if ($clientIds !== []) {
-            $notifiable = Passport::client()->newQuery()
+            $notifiable = Client::query()
                 ->whereIn('id', $clientIds)
                 ->whereNotNull('backchannel_logout_uri')
                 ->pluck('id');

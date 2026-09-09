@@ -2,18 +2,19 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Http\Middleware\CheckScopes;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Http\Middleware\CheckToken;
-use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
-    Passport::tokensCan([
+    Oidc::tokensCan([
         'openid' => 'Authenticate',
     ]);
 
@@ -22,7 +23,7 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
     $this->client->forceFill([
         'grant_types' => [...(array) $this->client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
-        'allowed_exchange_audiences' => json_encode([app(IssuerResolver::class)->url(), 'https://other.example']),
+        'allowed_exchange_audiences' => [app(IssuerResolver::class)->url(), 'https://other.example'],
     ])->save();
 
     Route::middleware('auth:oidc')->get('/probe', fn () => ['id' => auth()->id()]);
@@ -76,7 +77,7 @@ it('rejects a revoked exchanged token', function () {
     $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])->assertOk();
 
     $jti = parseAccessToken($token)->claims()->get('jti');
-    Passport::token()->newQuery()->whereKey($jti)->update(['revoked' => true]);
+    Token::query()->whereKey($jti)->update(['revoked' => true]);
 
     // The oidc guard caches the resolved user on itself after the first call, so a second
     // request in the same test would silently reuse it instead of re-validating; drop
@@ -99,8 +100,8 @@ it('authenticates a PAT-shaped token identically to a classic authorization-code
         ->assertJson(['id' => $this->user->getKey()]);
 });
 
-it('passes Passport CheckToken scope middleware placed after auth:oidc when the token has the scope', function () {
-    Route::middleware(['auth:oidc', CheckToken::using('openid')])
+it('passes the scope middleware placed after auth:oidc when the token has the scope', function () {
+    Route::middleware(['auth:oidc', CheckScopes::using('openid')])
         ->get('/probe/scoped', fn () => ['id' => auth()->id()]);
 
     $token = exchangedTokenFor($this, app(IssuerResolver::class)->url());
@@ -110,8 +111,8 @@ it('passes Passport CheckToken scope middleware placed after auth:oidc when the 
         ->assertJson(['id' => $this->user->getKey()]);
 });
 
-it('rejects Passport CheckToken scope middleware placed after auth:oidc when the token lacks the scope', function () {
-    Route::middleware(['auth:oidc', CheckToken::using('admin')])
+it('rejects the scope middleware placed after auth:oidc when the token lacks the scope', function () {
+    Route::middleware(['auth:oidc', CheckScopes::using('admin')])
         ->get('/probe/scoped-missing', fn () => ['id' => auth()->id()]);
 
     $token = exchangedTokenFor($this, app(IssuerResolver::class)->url());

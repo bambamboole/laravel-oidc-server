@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\ParallelTesting;
 use Laravel\Passkeys\Passkeys;
-use Laravel\Passport\Passport;
 use Orchestra\Testbench\Concerns\WithLaravelMigrations;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as BaseTestCase;
@@ -38,7 +37,7 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('database.default', 'sqlite');
         $app['config']->set('database.connections.sqlite.database', $database);
         $app['config']->set('auth.providers.users.model', User::class);
-        $app['config']->set('auth.guards.api', ['driver' => 'passport', 'provider' => 'users']);
+        $app['config']->set('auth.guards.api', ['driver' => 'oidc', 'provider' => 'users']);
         $app['config']->set('session.driver', 'array');
     }
 
@@ -48,13 +47,11 @@ abstract class TestCase extends BaseTestCase
 
         Http::preventStrayRequests();
 
-        Passport::$validateKeyPermissions = false;
-        Passport::loadKeysFrom(__DIR__.'/fixtures');
+        config(['oidc.keys.path' => __DIR__.'/fixtures']);
     }
 
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(dirname(__DIR__).'/vendor/laravel/passport/database/migrations');
         $this->loadMigrationsFrom(dirname(__DIR__).'/workbench/database/migrations');
         $this->loadMigrationsFrom(Passkeys::migrationPath());
         $this->loadMigrationsFrom(dirname(__DIR__).'/database/migrations');

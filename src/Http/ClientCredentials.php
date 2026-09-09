@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http;
 
+use Bambamboole\LaravelOidc\Server\Bridge\ClientRepository;
 use Illuminate\Http\Request;
-use Laravel\Passport\Bridge\ClientRepository;
 
 final class ClientCredentials
 {

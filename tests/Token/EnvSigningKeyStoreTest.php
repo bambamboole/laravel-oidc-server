@@ -6,7 +6,6 @@ use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\SigningKey;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
-use Laravel\Passport\Passport;
 
 /**
  * @return array{0: EnvSigningKeyStore, 1: string}
@@ -52,7 +51,7 @@ it('rotates by writing the new keypair and rolling the current public key', func
 
 it('omits the previous key when no current key exists', function () {
     config(['oidc.public_key' => null, 'passport.public_key' => null]);
-    Passport::loadKeysFrom(temporaryTestDirectory('env-store-nokeys'));
+    config(['oidc.keys.path' => temporaryTestDirectory('env-store-nokeys')]);
 
     [$store, $path] = envStoreFixture();
 

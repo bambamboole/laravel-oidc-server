@@ -12,10 +12,9 @@ it('exposes per-flow lifetime defaults', function () {
         ->and(config('oidc.session.absolute_lifetime'))->toBe(2592000);
 });
 
-it('ships empty passport seams by default', function () {
-    expect(config()->has('oidc.passport'))->toBeTrue()
-        ->and(config('oidc.passport.token_model'))->toBeNull()
-        ->and(config('oidc.passport.scopes'))->toBe([]);
+it('ships an empty scope catalog by default', function () {
+    expect(config()->has('oidc.scopes'))->toBeTrue()
+        ->and(config('oidc.scopes.catalog'))->toBe([]);
 });
 
 it('ships no protected resources and disabled dynamic client registration by default', function () {

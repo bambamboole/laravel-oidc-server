@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Token;
 
+use Bambamboole\LaravelOidc\Server\Bridge\AccessTokenRepository;
+use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
+use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use DateInterval;
 use DateTimeImmutable;
-use Laravel\Passport\Bridge\AccessTokenRepository;
-use Laravel\Passport\Bridge\Client as BridgeClient;
-use Laravel\Passport\Bridge\Scope as BridgeScope;
-use Laravel\Passport\Client;
 use League\OAuth2\Server\CryptKey;
 
 class AccessTokenMinter
@@ -22,10 +22,22 @@ class AccessTokenMinter
     /**
      * @param  string[]  $scopeIds
      * @param  string[]  $audiences
+     * @param  array<string, mixed>  $extraClaims
      */
-    public function mint(?string $userId, Client $client, array $scopeIds, DateInterval $ttl, array $audiences = []): OidcAccessToken
-    {
-        $bridgeClient = new BridgeClient((string) $client->getKey(), (string) $client->getAttribute('name'), [], true);
+    public function mint(
+        ?string $userId,
+        Client $client,
+        array $scopeIds,
+        DateInterval $ttl,
+        array $audiences = [],
+        array $extraClaims = [],
+    ): OidcAccessToken {
+        $bridgeClient = new BridgeClient(
+            identifier: $client->client_id,
+            name: $client->name,
+            isConfidential: true,
+            key: $client->getKey(),
+        );
         $scopes = array_map(fn (string $id): BridgeScope => new BridgeScope($id), $scopeIds);
 
         $token = new OidcAccessToken($userId, $scopes, $bridgeClient);
@@ -35,6 +47,10 @@ class AccessTokenMinter
 
         if ($audiences !== []) {
             $token->setAudience(...$audiences);
+        }
+
+        foreach ($extraClaims as $name => $value) {
+            $token->addExtraClaim($name, $value);
         }
 
         $this->tokens->persistNewAccessToken($token);

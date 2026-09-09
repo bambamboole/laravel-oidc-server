@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http\Middleware;
 
+use Bambamboole\LaravelOidc\Server\Contracts\OAuthenticatable;
 use Bambamboole\LaravelOidc\Server\Http\OAuthError;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessTokenGuard;
 use Closure;
 use Illuminate\Http\Request;
-use Laravel\Passport\Contracts\OAuthenticatable;
 use Symfony\Component\HttpFoundation\Response;
 
 /**

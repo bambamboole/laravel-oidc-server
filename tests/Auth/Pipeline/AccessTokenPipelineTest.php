@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AuthorizationCodeEvent;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\ClientCredentialsEvent;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
-use Laravel\Passport\Bridge\Client;
+use Bambamboole\LaravelOidc\Server\Bridge\Client;
 use Workbench\App\Models\User;
 
 function clientCredentialsPipelineEvent(): ClientCredentialsEvent

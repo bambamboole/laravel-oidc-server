@@ -5,8 +5,8 @@ declare(strict_types=1);
  * RFC 8693 (token exchange) + RFC 9068 (issued access token) — session-token → browser-token issuance
  */
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Laravel\Passport\ClientRepository;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -21,7 +21,7 @@ beforeEach(function () {
     // (see SessionTokenGuardTest for the default resolution).
     config(['oidc.session_token.guard' => 'web']);
     $this->appClient = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
-    $this->appClient->forceFill(['allowed_exchange_audiences' => json_encode(['https://api.orders.test'])])->save();
+    $this->appClient->forceFill(['allowed_exchange_audiences' => ['https://api.orders.test']])->save();
     config(['oidc.first_party.client_id' => (string) $this->appClient->id, 'app.url' => 'https://op.test']);
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->startSession();

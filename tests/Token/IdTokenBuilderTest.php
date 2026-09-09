@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Bridge\AccessToken;
+use Bambamboole\LaravelOidc\Server\Bridge\Client;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
-use Laravel\Passport\Bridge\AccessToken;
-use Laravel\Passport\Bridge\Client;
-use Laravel\Passport\Bridge\Scope;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -31,7 +31,7 @@ function parseUnencrypted(string $jwt): UnencryptedToken
 function makeAccessToken(User $user): AccessToken
 {
     $client = new Client('client-uuid', 'RP', ['https://rp.test/callback']);
-    $token = new class((string) $user->id, [new Scope('openid'), new Scope('email')], $client) extends AccessToken
+    $token = new class((string) $user->id, [new BridgeScope('openid'), new BridgeScope('email')], $client) extends AccessToken
     {
         private ?string $serialized = null;
 

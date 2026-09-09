@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Token;
 
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
-use Laravel\Passport\Passport;
 use RuntimeException;
 use Throwable;
 
@@ -61,15 +60,13 @@ final class EnvSigningKeyStore implements SigningKeyStore
 
     private function key(string $type): string
     {
-        foreach (["oidc.{$type}_key", "passport.{$type}_key"] as $configKey) {
-            $key = str_replace('\n', "\n", (string) config($configKey));
+        $key = str_replace('\n', "\n", (string) config("oidc.{$type}_key"));
 
-            if ($key !== '') {
-                return $key;
-            }
+        if ($key !== '') {
+            return $key;
         }
 
-        $path = Passport::keyPath("oauth-{$type}.key");
+        $path = rtrim((string) (config('oidc.keys.path') ?: storage_path()), '/')."/oauth-{$type}.key";
         $contents = is_readable($path) ? file_get_contents($path) : false;
 
         if ($contents === false) {

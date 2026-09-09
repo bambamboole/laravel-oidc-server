@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Server\BackChannel\SendBackChannelLogout;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Illuminate\Support\Facades\Bus;
-use Laravel\Passport\ClientRepository;
 
 it('dispatches a job only for participants with a backchannel_logout_uri', function () {
     Bus::fake();

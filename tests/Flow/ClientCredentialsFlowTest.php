@@ -8,9 +8,9 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\ClientCredentialsEvent;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 
 beforeEach(function () {
     $this->client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
@@ -56,7 +56,7 @@ it('runs the client-credentials trigger once and applies its access-token claims
 });
 
 it('binds the token to an allowlisted requested resource', function () {
-    $this->client->forceFill(['allowed_exchange_audiences' => json_encode(['https://mail.test'])])->save();
+    $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
 
     $response = $this->post('/oauth/token', [
         'grant_type' => 'client_credentials',
@@ -85,7 +85,7 @@ it('defaults the audience to the client itself without a resource parameter', fu
 });
 
 it('rejects a resource the client is not allowed to target', function () {
-    $this->client->forceFill(['allowed_exchange_audiences' => json_encode(['https://mail.test'])])->save();
+    $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
 
     $this->post('/oauth/token', [
         'grant_type' => 'client_credentials',
@@ -110,7 +110,7 @@ it('rejects a resource that is not an absolute URI', function () {
 });
 
 it('exposes the requested audiences to the client-credentials trigger', function () {
-    $this->client->forceFill(['allowed_exchange_audiences' => json_encode(['https://mail.test'])])->save();
+    $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
     $seen = null;
 
     Oidc::clientCredentials(function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$seen): void {
@@ -129,7 +129,7 @@ it('exposes the requested audiences to the client-credentials trigger', function
 });
 
 it('denies client credentials before persisting an access token', function () {
-    $persistedTokenCount = Passport::token()->newQuery()->count();
+    $persistedTokenCount = Token::query()->count();
 
     Oidc::clientCredentials(function (ClientCredentialsEvent $event, AccessTokenApi $api): void {
         $api->deny('client_blocked');
@@ -144,5 +144,5 @@ it('denies client credentials before persisting an access token', function () {
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 
-    expect(Passport::token()->newQuery()->count())->toBe($persistedTokenCount);
+    expect(Token::query()->count())->toBe($persistedTokenCount);
 });

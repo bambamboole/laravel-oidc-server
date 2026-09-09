@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Laravel\Passport\Client;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 
 final readonly class FirstPartyClientProvisioningResult
 {

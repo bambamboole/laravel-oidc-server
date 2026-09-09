@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Bridge\Client;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
-use Laravel\Passport\Bridge\Client;
-use Laravel\Passport\Bridge\Scope;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
@@ -16,7 +16,7 @@ use League\OAuth2\Server\CryptKey;
 function makeOidcAccessToken(array $scopeIds = ['openid', 'email']): OidcAccessToken
 {
     $client = new Client('client-uuid', 'RP', ['https://rp.test/cb']);
-    $token = new OidcAccessToken('42', array_map(fn ($s) => new Scope($s), $scopeIds), $client);
+    $token = new OidcAccessToken('42', array_map(fn ($s) => new BridgeScope($s), $scopeIds), $client);
     $token->setIdentifier('token-id');
     $token->setExpiryDateTime(new DateTimeImmutable('+1 hour'));
     $token->setPrivateKey(new CryptKey(__DIR__.'/../fixtures/oauth-private.key', null, false));

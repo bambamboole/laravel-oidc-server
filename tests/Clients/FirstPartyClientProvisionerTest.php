@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
+use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
 it('creates a confidential managed client and returns its plain secret once', function () {
@@ -25,7 +26,7 @@ it('creates a confidential managed client and returns its plain secret once', fu
     expect($result->wasCreated)->toBeTrue()
         ->and($result->clientSecret)->toBeString()->not->toBeEmpty()
         ->and(Hash::check($result->clientSecret, (string) $result->client->getRawOriginal('secret')))->toBeTrue()
-        ->and($result->client->getRawOriginal('oidc_provisioning_key'))->toBe('first-party')
+        ->and($result->client->getRawOriginal('provisioning_key'))->toBe('first-party')
         ->and($result->client->getAttribute('redirect_uris'))->toBe(['https://app.test/login/callback'])
         ->and(json_decode((string) $result->client->getRawOriginal('post_logout_redirect_uris'), true, flags: JSON_THROW_ON_ERROR))->toBe(['https://app.test'])
         ->and(json_decode((string) $result->client->getRawOriginal('allowed_exchange_audiences'), true, flags: JSON_THROW_ON_ERROR))->toBe(['https://api.test/orders'])
@@ -45,7 +46,7 @@ it('reports both creation and rotation on the create-then-rotate path so rollbac
     expect($result->wasCreated)->toBeTrue()
         ->and($result->secretRotated)->toBeTrue()
         ->and($result->rollback())->toBeTrue()
-        ->and(Passport::client()->newQuery()->find($result->clientId))->toBeNull();
+        ->and(Client::query()->find($result->clientId))->toBeNull();
 });
 
 it('reconciles the managed client without rotating its secret', function () {
@@ -168,7 +169,7 @@ it('adopts an explicit eligible client after verifying its credential', function
         ->and($result->clientId)->toBe((string) $legacy->getKey())
         ->and($result->clientSecret)->toBe($legacy->plainSecret)
         ->and($result->client->getRawOriginal('secret'))->toBe($storedSecret)
-        ->and($result->client->getRawOriginal('oidc_provisioning_key'))->toBe('first-party');
+        ->and($result->client->getRawOriginal('provisioning_key'))->toBe('first-party');
 });
 
 it('rejects a mismatched adoption credential without mutating the client', function () {
@@ -316,13 +317,13 @@ it('rejects exchange audiences when token exchange is disabled', function () {
         allowedExchangeAudiences: ['https://api.test/orders'],
     ))->toThrow(FirstPartyClientProvisioningException::class, 'disabled');
 
-    expect(Passport::client()->newQuery()->where('oidc_provisioning_key', 'first-party')->exists())->toBeFalse();
+    expect(Client::query()->where('provisioning_key', 'first-party')->exists())->toBeFalse();
 });
 
 it('does not revoke existing tokens when rotating the client secret', function () {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('First-party app', ['https://app.test/login/callback']);
-    $token = Passport::token()->newQuery()->create([
+    $token = Token::query()->create([
         'id' => 'existing-token',
         'client_id' => $created->clientId,
         'scopes' => [],
@@ -353,7 +354,7 @@ it('rejects invalid provisioning input before writing', function (
         allowedExchangeAudiences: $audiences,
     ))->toThrow(FirstPartyClientProvisioningException::class, $message);
 
-    expect(Passport::client()->newQuery()->where('oidc_provisioning_key', 'first-party')->exists())
+    expect(Client::query()->where('provisioning_key', 'first-party')->exists())
         ->toBeFalse();
 })->with([
     'blank name' => [' ', ['https://app.test/callback'], [], 'name'],
@@ -396,8 +397,8 @@ it('rejects adoption when another managed client already exists', function () {
         adoptClientId: (string) $other->getKey(),
     ))->toThrow(FirstPartyClientProvisioningException::class, 'different client');
 
-    expect($managed->client->refresh()->getRawOriginal('oidc_provisioning_key'))->toBe('first-party')
-        ->and($other->refresh()->getRawOriginal('oidc_provisioning_key'))->toBeNull();
+    expect($managed->client->refresh()->getRawOriginal('provisioning_key'))->toBe('first-party')
+        ->and($other->refresh()->getRawOriginal('provisioning_key'))->toBeNull();
 });
 
 it('normalizes metadata and removes exchange capability when audiences become empty', function () {
@@ -409,8 +410,8 @@ it('normalizes metadata and removes exchange capability when audiences become em
         [' https://api.test/second ', 'https://api.test/first', 'https://api.test/second'],
     );
 
-    $normalized = Passport::client()->newQuery()
-        ->where('oidc_provisioning_key', 'first-party')
+    $normalized = Client::query()
+        ->where('provisioning_key', 'first-party')
         ->firstOrFail();
 
     expect($normalized->getAttribute('name'))->toBe('First-party app')
@@ -431,10 +432,9 @@ it('preserves an explicit adoption target when recovering from a provisioning ke
     $clients = app(ClientRepository::class);
     $winner = $clients->createAuthorizationCodeGrantClient('Winner', ['https://winner.test/callback']);
     $loser = $clients->createAuthorizationCodeGrantClient('Loser', ['https://loser.test/callback']);
-    $winner->forceFill(['oidc_provisioning_key' => 'first-party'])->save();
+    $winner->forceFill(['provisioning_key' => 'first-party'])->save();
 
-    $clientModel = Passport::client();
-    $clientModelClass = $clientModel::class;
+    $clientModelClass = Client::class;
     $scopeApplications = 0;
 
     $clientModelClass::addGlobalScope(
@@ -456,7 +456,7 @@ it('preserves an explicit adoption target when recovering from a provisioning ke
         ))->toThrow(FirstPartyClientProvisioningException::class, 'different client');
 
         expect($winner->refresh()->getAttribute('name'))->toBe('Winner')
-            ->and($loser->refresh()->getRawOriginal('oidc_provisioning_key'))->toBeNull();
+            ->and($loser->refresh()->getRawOriginal('provisioning_key'))->toBeNull();
     } finally {
         $clientModelClass::clearBootedModels();
     }
@@ -466,10 +466,9 @@ it('revalidates the winning credential when recovering from a provisioning key r
     $winner = app(ClientRepository::class)
         ->createAuthorizationCodeGrantClient('Winner', ['https://winner.test/callback']);
     $winningSecret = $winner->plainSecret;
-    $winner->forceFill(['oidc_provisioning_key' => 'first-party'])->save();
+    $winner->forceFill(['provisioning_key' => 'first-party'])->save();
 
-    $clientModel = Passport::client();
-    $clientModelClass = $clientModel::class;
+    $clientModelClass = Client::class;
     $scopeApplications = 0;
 
     $clientModelClass::addGlobalScope(

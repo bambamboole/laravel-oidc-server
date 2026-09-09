@@ -8,18 +8,18 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
+use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScopeRepository;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Token\ResolvesTokenUser;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Token\TokenLifetimes;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
-use Laravel\Passport\Bridge\Client as BridgeClient;
-use Laravel\Passport\Bridge\ScopeRepository;
-use Laravel\Passport\Client;
-use Laravel\Passport\Passport;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 
@@ -33,7 +33,8 @@ class TokenExchanger
         private readonly ExchangePolicy $policy,
         private readonly TokenInspector $inspector,
         private readonly AccessTokenMinter $minter,
-        private readonly ScopeRepository $scopes,
+        private readonly TokenLifetimes $lifetimes,
+        private readonly BridgeScopeRepository $scopes,
         private readonly AccessTokenPipeline $pipeline,
         private readonly Auditor $auditor,
     ) {}
@@ -120,7 +121,7 @@ class TokenExchanger
             throw OAuthServerException::accessDenied($api->denyReason());
         }
 
-        $ttl = $this->cappedTtl($accessTokenTTL ?? Passport::tokensExpireIn(), $result->expiresAt);
+        $ttl = $this->cappedTtl($accessTokenTTL ?? $this->lifetimes->accessToken(), $result->expiresAt);
 
         $token = $this->minter->mint($result->userId, $requestingClient, $scopeIds, $ttl, $result->audience);
 

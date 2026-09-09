@@ -7,11 +7,10 @@ namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Contracts\OAuthenticatable;
 use Bambamboole\LaravelOidc\Server\Http\OAuthError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Laravel\Passport\AccessToken;
-use Laravel\Passport\Contracts\OAuthenticatable;
 
 class UserinfoController
 {
@@ -24,13 +23,7 @@ class UserinfoController
         }
 
         $token = $user->currentAccessToken();
-        $scopes = [];
-        $clientId = null;
-
-        if ($token instanceof AccessToken) {
-            $scopes = $token->oauth_scopes;
-            $clientId = $token->oauth_client_id;
-        }
+        $scopes = $token?->scopes() ?? [];
 
         if (! in_array('openid', $scopes, true)) {
             OAuthError::bearer('insufficient_scope', 403, withRealm: true);
@@ -41,8 +34,8 @@ class UserinfoController
             $claims->resolve(new ClaimsRequest(
                 user: $user,
                 audience: ClaimsAudience::Userinfo,
-                clientId: $clientId,
-                scopes: array_values($scopes),
+                clientId: $token->clientId(),
+                scopes: $scopes,
             )),
         ));
     }

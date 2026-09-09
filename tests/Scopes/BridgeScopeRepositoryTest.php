@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
-use Laravel\Passport\Bridge\Client as BridgeClient;
-use Laravel\Passport\Bridge\Scope as BridgeScope;
-use Laravel\Passport\Bridge\ScopeRepository as PassportBridgeScopeRepository;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
-use Laravel\Passport\Token;
+use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScopeRepository as PassportBridgeScopeRepository;
 use Workbench\App\Models\User;
 
 it('is bound over passport\'s bridge scope repository', function () {
@@ -28,7 +27,7 @@ it('returns null for unknown scopes', function () {
 });
 
 it('finalizes scopes through the contract', function () {
-    Passport::tokensCan(['project:update' => 'Update projects']);
+    Oidc::tokensCan(['project:update' => 'Update projects']);
     $client = new BridgeClient('client-id', 'Test', ['https://rp.test/callback']);
 
     $finalized = app(PassportBridgeScopeRepository::class)->finalizeScopes(
@@ -79,8 +78,7 @@ it('issues a personal access token with the wildcard scope', function () {
     app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
 
     $result = $user->createToken('wildcard', ['*']);
-    $token = $result->getToken();
+    $token = $result->token;
 
-    expect($token)->toBeInstanceOf(Token::class);
     expect($token->getAttribute('scopes'))->toBe(['*']);
 });

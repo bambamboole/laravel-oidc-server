@@ -21,7 +21,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Pipeline\NullDeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
-use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\EmailVerificationView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\LoginView;
@@ -32,6 +31,11 @@ use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
 use Bambamboole\LaravelOidc\Server\BackChannel\BackChannelLogoutNotifier;
+use Bambamboole\LaravelOidc\Server\Bridge\AccessTokenRepository;
+use Bambamboole\LaravelOidc\Server\Bridge\AuthCodeRepository;
+use Bambamboole\LaravelOidc\Server\Bridge\ClientRepository as BridgeClientRepository;
+use Bambamboole\LaravelOidc\Server\Bridge\RefreshTokenRepository;
+use Bambamboole\LaravelOidc\Server\Bridge\UserRepository;
 use Bambamboole\LaravelOidc\Server\Claims\DefaultClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
@@ -39,10 +43,12 @@ use Bambamboole\LaravelOidc\Server\Console\DispatchExpiredSessionLogoutsCommand;
 use Bambamboole\LaravelOidc\Server\Console\InstallSelfCommand;
 use Bambamboole\LaravelOidc\Server\Console\ProvisionClientCommand;
 use Bambamboole\LaravelOidc\Server\Console\PruneAuthenticationContextsCommand;
+use Bambamboole\LaravelOidc\Server\Console\PurgeTokensCommand;
 use Bambamboole\LaravelOidc\Server\Console\RotateKeysCommand;
 use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
+use Bambamboole\LaravelOidc\Server\Contracts\AuthorizationViewResponse;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
@@ -55,9 +61,10 @@ use Bambamboole\LaravelOidc\Server\Grant\OidcClientCredentialsGrant;
 use Bambamboole\LaravelOidc\Server\Grant\OidcRefreshTokenGrant;
 use Bambamboole\LaravelOidc\Server\Grant\TokenExchangeGrant;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\AuthorizationController;
-use Bambamboole\LaravelOidc\Server\Responses\IdTokenResponse;
+use Bambamboole\LaravelOidc\Server\Http\Responses\ConsentViewResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\BridgeScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
+use Bambamboole\LaravelOidc\Server\Server\AuthorizationServerFactory;
 use Bambamboole\LaravelOidc\Server\Session\EndOidcSession;
 use Bambamboole\LaravelOidc\Server\Session\EstablishSessionToken;
 use Bambamboole\LaravelOidc\Server\Session\ForgetSessionToken;
@@ -68,12 +75,11 @@ use Bambamboole\LaravelOidc\Server\Session\StartOidcSession;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessTokenGuard;
-use Bambamboole\LaravelOidc\Server\Token\OidcAccessTokenRepository;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Token\TokenLifetimes;
 use DateInterval;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -81,24 +87,22 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passkeys\Contracts\PasskeyUser;
 use Laravel\Passkeys\Passkeys;
-use Laravel\Passport\Bridge\AccessTokenRepository as PassportBridgeAccessTokenRepository;
-use Laravel\Passport\Bridge\AuthCodeRepository;
-use Laravel\Passport\Bridge\RefreshTokenRepository;
-use Laravel\Passport\Bridge\ScopeRepository as PassportBridgeScopeRepository;
-use Laravel\Passport\Passport;
 use League\OAuth2\Server\AuthorizationServer;
+use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
+use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
+use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
+use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
+use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
+use League\OAuth2\Server\Repositories\UserRepositoryInterface;
 use League\OAuth2\Server\RequestEvent;
-use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
 class OidcServiceProvider extends ServiceProvider
@@ -106,16 +110,6 @@ class OidcServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/oidc.php', 'oidc');
-
-        // Feed the OIDC signing keys into Passport's config so its token guard
-        // verifies with the same keypair the package signs with.
-        foreach (['private', 'public'] as $type) {
-            $key = (string) config("oidc.{$type}_key");
-
-            if ($key !== '') {
-                config()->set("passport.{$type}_key", $key);
-            }
-        }
 
         $identityGuard = (string) config('oidc.auth.guard', 'identity');
 
@@ -125,8 +119,6 @@ class OidcServiceProvider extends ServiceProvider
                 'provider' => (string) config('oidc.auth.provider', 'users'),
             ]);
         }
-
-        config()->set('passport.guard', $identityGuard);
 
         $apiGuard = (string) config('oidc.api_guard', 'oidc');
 
@@ -146,13 +138,11 @@ class OidcServiceProvider extends ServiceProvider
             fn (OidcAccessTokenGuard $guard) => $app->refresh('request', $guard, 'setRequest'),
         )));
 
-        Passport::ignoreRoutes();
-        Passport::useAccessTokenEntity(OidcAccessToken::class);
         Passkeys::ignoreRoutes();
 
         $this->app->scoped(IssuerResolver::class, ConfiguredIssuerResolver::class);
         $this->app->singleton(ScopeRepository::class, DefaultScopeRepository::class);
-        $this->app->bind(PassportBridgeScopeRepository::class, BridgeScopeRepository::class);
+        $this->app->bind(ScopeRepositoryInterface::class, BridgeScopeRepository::class);
         $this->app->singleton(ClaimsResolver::class, DefaultClaimsResolver::class);
         $this->app->singleton(UserActionManager::class);
         $this->app->singleton(TotpFactorProvider::class);
@@ -190,7 +180,16 @@ class OidcServiceProvider extends ServiceProvider
         $this->app->singleton(TokenExchanger::class);
         $this->app->singleton(SessionTokenProvider::class, SessionMintTokenProvider::class);
         $this->app->singleton(AccessTokenPipeline::class);
-        $this->app->bind(PassportBridgeAccessTokenRepository::class, OidcAccessTokenRepository::class);
+        $this->app->bind(AccessTokenRepositoryInterface::class, AccessTokenRepository::class);
+        $this->app->bind(ClientRepositoryInterface::class, BridgeClientRepository::class);
+        $this->app->bind(RefreshTokenRepositoryInterface::class, RefreshTokenRepository::class);
+        $this->app->bind(AuthCodeRepositoryInterface::class, AuthCodeRepository::class);
+        $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->bind(AuthorizationViewResponse::class, ConsentViewResponse::class);
+        $this->app->singleton(TokenLifetimes::class);
+        $this->app->scoped(AuthorizationServer::class, fn (Application $app): AuthorizationServer => $app
+            ->make(AuthorizationServerFactory::class)
+            ->make());
         $this->app->singleton(PostLoginPipeline::class);
         $this->app->singleton(AuthenticationContextStore::class);
         $this->app->singleton(OidcSessionRepository::class);
@@ -218,10 +217,11 @@ class OidcServiceProvider extends ServiceProvider
 
         $this->app->when(AuthorizationController::class)
             ->needs(StatefulGuard::class)
-            ->give(fn () => Auth::guard(config('passport.guard', null)));
+            ->give(fn () => Auth::guard((string) config('oidc.auth.guard', 'identity')));
 
         $this->app->extend(AuthorizationServer::class, function (AuthorizationServer $server, Application $app): AuthorizationServer {
-            $accessTokenTtl = new DateInterval('PT'.(int) config('oidc.token_lifetimes.access_token').'S');
+            $lifetimes = $app->make(TokenLifetimes::class);
+            $accessTokenTtl = $lifetimes->accessToken();
 
             $grant = new OidcAuthCodeGrant(
                 $app->make(AuthCodeRepository::class),
@@ -234,7 +234,7 @@ class OidcServiceProvider extends ServiceProvider
                 $app->make(AuthSessionState::class),
                 $app->make(Auditor::class),
             );
-            $grant->setRefreshTokenTTL(Passport::refreshTokensExpireIn());
+            $grant->setRefreshTokenTTL($lifetimes->refreshToken());
 
             $server->enableGrantType($grant, $accessTokenTtl);
 
@@ -246,12 +246,12 @@ class OidcServiceProvider extends ServiceProvider
                 $app->make(OidcSessionRepository::class),
                 $app->make(Auditor::class),
             );
-            $refreshGrant->setRefreshTokenTTL(Passport::refreshTokensExpireIn());
+            $refreshGrant->setRefreshTokenTTL($lifetimes->refreshToken());
             $server->enableGrantType($refreshGrant, $accessTokenTtl);
 
             $server->enableGrantType(
                 new OidcClientCredentialsGrant($app->make(AccessTokenPipeline::class), $app->make(Auditor::class)),
-                new DateInterval('PT'.(int) config('oidc.token_lifetimes.client_credentials').'S'),
+                $lifetimes->clientCredentials(),
             );
 
             if (config('oidc.token_exchange.enabled', true)) {
@@ -259,7 +259,7 @@ class OidcServiceProvider extends ServiceProvider
                     new TokenExchangeGrant(
                         $app->make(TokenExchanger::class),
                     ),
-                    Passport::tokensExpireIn(),
+                    $accessTokenTtl,
                 );
             }
 
@@ -302,30 +302,6 @@ class OidcServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $tokenModel = config('oidc.passport.token_model');
-
-        if (is_string($tokenModel) && $tokenModel !== '') {
-            Passport::useTokenModel($tokenModel);
-        }
-
-        Passport::useAuthorizationServerResponseType($this->app->make(IdTokenResponse::class));
-
-        // The only Passport view seam the package wires: every consent
-        // render resolves the ConsentView contract from the container, so
-        // overriding consent (or getting the "missing view" exception) is
-        // identical to every other auth surface.
-        Passport::authorizationView(
-            fn (array $parameters): Responsable|Response => $this->app->make(ConsentView::class)->respond(
-                new ConsentPrompt(
-                    client: $parameters['client'],
-                    user: $parameters['user'],
-                    scopes: $parameters['scopes'],
-                    authToken: $parameters['authToken'],
-                ),
-                Request::instance(),
-            ),
-        );
-
         // RecordLoginAudit runs after StartOidcSession so the sid it captures
         // exists; RecordLogoutAudit runs before the teardown listeners so the
         // sid is still readable from the session.
@@ -372,6 +348,7 @@ class OidcServiceProvider extends ServiceProvider
                 InstallSelfCommand::class,
                 PruneAuthenticationContextsCommand::class,
                 DispatchExpiredSessionLogoutsCommand::class,
+                PurgeTokensCommand::class,
                 RotateKeysCommand::class,
             ]);
         }

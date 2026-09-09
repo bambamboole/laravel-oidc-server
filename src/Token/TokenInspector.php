@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Illuminate\Contracts\Encryption\Encrypter;
-use Laravel\Passport\Passport;
-use Laravel\Passport\Token;
+use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Server\EncryptionKey;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -57,12 +56,12 @@ class TokenInspector
     {
         $jti = $parsed->claims()->get('jti');
 
-        return is_string($jti) ? Passport::token()->newQuery()->find($jti) : null;
+        return is_string($jti) ? Token::query()->find($jti) : null;
     }
 
     public function refreshTokenPayload(string $encrypted): ?object
     {
-        $this->encryptionKey ??= Passport::tokenEncryptionKey(app(Encrypter::class));
+        $this->encryptionKey ??= app(EncryptionKey::class)->value();
 
         try {
             $payload = json_decode($this->decrypt($encrypted));

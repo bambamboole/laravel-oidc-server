@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
-use Laravel\Passport\Token;
 use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
 beforeEach(function () {
     $this->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class]);
-    Passport::authorizationView(fn (array $parameters) => response()->json([
+    fakeConsentViewUsing(fn (array $parameters) => response()->json([
         'authToken' => $parameters['authToken'],
     ]));
 
@@ -129,10 +128,10 @@ it('audits a client credentials token issuance', function () {
 });
 
 it('audits a token exchange and its failure paths', function () {
-    Passport::tokensCan(['openid' => 'Authenticate', 'orders:read' => 'Read orders']);
+    Oidc::tokensCan(['openid' => 'Authenticate', 'orders:read' => 'Read orders']);
     $this->client->forceFill([
         'grant_types' => [...(array) $this->client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
-        'allowed_exchange_audiences' => json_encode(['https://api.internal/orders']),
+        'allowed_exchange_audiences' => ['https://api.internal/orders'],
     ])->save();
 
     $sink = fakeAudit();
@@ -173,7 +172,7 @@ it('audits a personal access token issuance', function () {
 
     $result = $this->user->createToken('cli', ['openid']);
 
-    $token = $result->getToken();
+    $token = $result->token;
 
     $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditEvent $event): bool => $event->context['grant_type'] === 'personal_access'
         && $event->userId === (string) $this->user->id
@@ -183,11 +182,7 @@ it('audits a personal access token issuance', function () {
 it('audits an access token revocation', function () {
     app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
     $result = $this->user->createToken('t', ['openid']);
-    $token = $result->getToken();
-
-    if (! $token instanceof Token) {
-        throw new RuntimeException('Expected the personal access token to be persisted.');
-    }
+    $token = $result->token;
 
     $token->forceFill(['client_id' => $this->client->id])->save();
 

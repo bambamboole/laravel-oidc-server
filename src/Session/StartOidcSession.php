@@ -16,7 +16,7 @@ class StartOidcSession
 
     public function handle(Login $event): void
     {
-        if ($event->guard !== config('passport.guard')) {
+        if ($event->guard !== config('oidc.auth.guard')) {
             return;
         }
 

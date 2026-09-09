@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Auth\Views;
 
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Laravel\Passport\Client;
 
 final readonly class ConsentPrompt
 {

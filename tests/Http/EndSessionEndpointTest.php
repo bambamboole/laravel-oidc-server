@@ -6,20 +6,20 @@ declare(strict_types=1);
  * OpenID Connect RP-Initiated Logout 1.0 §2 (id_token_hint, post_logout_redirect_uri, state), §4 (security/CSRF)
  */
 
+use Bambamboole\LaravelOidc\Server\Bridge\AccessToken;
+use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
-use Laravel\Passport\Bridge\AccessToken;
-use Laravel\Passport\Bridge\Client as BridgeClient;
-use Laravel\Passport\Bridge\Scope as BridgeScope;
-use Laravel\Passport\ClientRepository;
 use League\OAuth2\Server\CryptKey;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
-    $this->client->forceFill(['post_logout_redirect_uris' => json_encode(['https://rp.test/logged-out'])])->save();
+    $this->client->forceFill(['post_logout_redirect_uris' => ['https://rp.test/logged-out']])->save();
 });
 
 function issueIdToken(TestCase $test, ?User $subject = null): string
@@ -59,7 +59,7 @@ it('answers an Inertia logout request with a 409 + X-Inertia-Location instead of
 
 it('preserves an existing query string when appending state', function () {
     $this->client->forceFill([
-        'post_logout_redirect_uris' => json_encode(['https://rp.test/logged-out?tenant=abc']),
+        'post_logout_redirect_uris' => ['https://rp.test/logged-out?tenant=abc'],
     ])->save();
 
     $response = $this->actingAs($this->user, 'identity')->get('/oauth/logout?'.http_build_query([

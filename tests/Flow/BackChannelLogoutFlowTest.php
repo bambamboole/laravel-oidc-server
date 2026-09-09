@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\BackChannel\SendBackChannelLogout;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Session\EndOidcSession;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
@@ -11,8 +12,6 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Testing\TestResponse;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
 it('revokes the session and fans out on the Logout event', function () {
@@ -26,7 +25,7 @@ it('revokes the session and fans out on the Logout event', function () {
     $client->forceFill(['backchannel_logout_uri' => 'https://a.test/bclo'])->save();
     app(OidcSessionRepository::class)->recordParticipant($sid, (string) $client->id);
 
-    app(EndOidcSession::class)->handle(new Logout(config('passport.guard'), $user));
+    app(EndOidcSession::class)->handle(new Logout(config('oidc.auth.guard'), $user));
 
     expect(app(OidcSessionRepository::class)->find($sid)->revoked_at)->not->toBeNull();
     Bus::assertDispatchedTimes(SendBackChannelLogout::class, 1);
@@ -72,7 +71,7 @@ function completeBackChannelLogoutAuthorization(TestCase $test, string $sid): Te
 describe('via /oauth/logout', function () {
     beforeEach(function () {
         $this->withoutMiddleware(ValidateCsrfToken::class);
-        Passport::authorizationView(fn (array $parameters) => response()->json([
+        fakeConsentViewUsing(fn (array $parameters) => response()->json([
             'authToken' => $parameters['authToken'],
         ]));
 

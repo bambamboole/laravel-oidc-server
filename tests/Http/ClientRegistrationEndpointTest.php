@@ -6,10 +6,10 @@ declare(strict_types=1);
  * RFC 7591 §3 (dynamic client registration)
  */
 
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Routing\HandlerRegistrar;
 use Illuminate\Support\Facades\Route;
-use Laravel\Passport\Passport;
 
 /**
  * @param  array<string, mixed>  $overrides
@@ -55,7 +55,7 @@ it('registers a public client and returns the RFC 7591 response', function () {
         ->and($response->json('grant_types'))->toContain('authorization_code', 'refresh_token')
         ->and($response->json())->not->toHaveKey('client_secret');
 
-    $client = Passport::client()->newQuery()->whereKey($response->json('client_id'))->firstOrFail();
+    $client = Client::query()->whereKey($response->json('client_id'))->firstOrFail();
 
     expect($client->confidential())->toBeFalse();
 });
@@ -67,7 +67,7 @@ it('restricts the registered client to the configured default scopes', function 
         'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
     ])->assertCreated()->assertJsonPath('scope', 'mcp:use openid');
 
-    $client = Passport::client()->newQuery()->whereKey($response->json('client_id'))->firstOrFail();
+    $client = Client::query()->whereKey($response->json('client_id'))->firstOrFail();
 
     expect($client->getAttribute('scopes'))->toBe(['mcp:use', 'openid']);
 });

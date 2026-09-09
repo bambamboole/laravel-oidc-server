@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\OidcManager;
-use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
 
 it('honors first-party config mutated after the singletons were resolved', function () {

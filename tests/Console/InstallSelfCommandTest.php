@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Illuminate\Support\Facades\File;
-use Laravel\Passport\Passport;
 
 function installSelfEnv(string $contents = "APP_NAME=Testing\n"): string
 {
@@ -20,7 +20,7 @@ it('provisions the first-party client and writes both env halves', function () {
 
     $this->artisan('oidc:install-self', ['--force' => true])->assertSuccessful();
 
-    $client = Passport::client()->newQuery()->where('oidc_provisioning_key', 'first-party')->firstOrFail();
+    $client = Client::query()->where('provisioning_key', 'first-party')->firstOrFail();
     $clientId = (string) $client->getKey();
     $contents = (string) File::get($env);
 
@@ -50,7 +50,7 @@ it('forwards configured provisioning options to the first-party client', functio
 
     $this->artisan('oidc:install-self', ['--force' => true])->assertSuccessful();
 
-    $client = Passport::client()->newQuery()->where('oidc_provisioning_key', 'first-party')->firstOrFail();
+    $client = Client::query()->where('provisioning_key', 'first-party')->firstOrFail();
 
     expect($client->getAttribute('redirect_uris'))->toBe(['https://app.test/login/callback', 'https://app.test/other/callback'])
         ->and(json_decode((string) $client->getRawOriginal('post_logout_redirect_uris'), true))
@@ -66,7 +66,7 @@ it('provisions without token exchange when no audiences are configured', functio
 
     $this->artisan('oidc:install-self', ['--force' => true])->assertSuccessful();
 
-    $client = Passport::client()->newQuery()->where('oidc_provisioning_key', 'first-party')->firstOrFail();
+    $client = Client::query()->where('provisioning_key', 'first-party')->firstOrFail();
 
     expect(json_decode((string) $client->getRawOriginal('allowed_exchange_audiences'), true))->toBe([])
         ->and($client->getAttribute('grant_types'))->not->toContain('urn:ietf:params:oauth:grant-type:token-exchange');
@@ -86,7 +86,7 @@ it('adopts the existing client on a second run instead of minting a new one', fu
 
     $secondContents = (string) File::get($env);
 
-    expect(Passport::client()->newQuery()->count())->toBe(1)
+    expect(Client::query()->count())->toBe(1)
         ->and($secondContents)->toContain('OIDC_FIRST_PARTY_CLIENT='.$clientId[1])
         ->and($secondContents)->toContain('OIDC_RP_CLIENT_SECRET='.$secret[1]);
 });
@@ -98,14 +98,14 @@ it('rotates the client secret when run again with --fresh', function () {
     $this->artisan('oidc:install-self', ['--force' => true])->assertSuccessful();
 
     preg_match('/^OIDC_RP_CLIENT_SECRET=(.+)$/m', (string) File::get($env), $secret);
-    $clientId = (string) Passport::client()->newQuery()->firstOrFail()->getKey();
+    $clientId = (string) Client::query()->firstOrFail()->getKey();
 
     $this->artisan('oidc:install-self', ['--force' => true, '--fresh' => true])->assertSuccessful();
 
     $contents = (string) File::get($env);
     preg_match('/^OIDC_RP_CLIENT_SECRET=(.+)$/m', $contents, $rotated);
 
-    expect(Passport::client()->newQuery()->count())->toBe(1)
+    expect(Client::query()->count())->toBe(1)
         ->and($contents)->toContain('OIDC_FIRST_PARTY_CLIENT='.$clientId)
         ->and($rotated[1])->not->toBe($secret[1]);
 });

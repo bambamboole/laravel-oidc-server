@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Exchange;
 
-use Laravel\Passport\Client;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 
 final readonly class ExchangeRequest
 {

@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Contracts\ScopeCatalog;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
-use Laravel\Passport\Passport;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use LogicException;
 
@@ -30,7 +29,7 @@ class DefaultScopeRepository implements ScopeRepository
     public function all(): Collection
     {
         return collect($this->catalog())
-            ->union(Passport::$scopes)
+            ->union(ScopeRegistry::all())
             ->union(self::OIDC_SCOPES)
             ->map(fn (string $description, string $id) => new Scope($id, $description))
             ->values();
@@ -49,7 +48,7 @@ class DefaultScopeRepository implements ScopeRepository
             return $this->catalog;
         }
 
-        $configured = config('oidc.passport.scopes', []);
+        $configured = config('oidc.scopes.catalog', []);
 
         if (is_string($configured)) {
             $catalog = $this->app->make($configured);

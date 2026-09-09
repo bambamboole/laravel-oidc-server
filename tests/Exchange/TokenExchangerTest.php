@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Exchange\IssuedToken;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
-use Laravel\Passport\ClientRepository;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
@@ -16,7 +16,7 @@ beforeEach(function () {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     // The app client performs the exchange; its allowlist authorizes the target audience.
     $this->appClient = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
-    $this->appClient->forceFill(['allowed_exchange_audiences' => json_encode(['https://api.orders.test'])])->save();
+    $this->appClient->forceFill(['allowed_exchange_audiences' => ['https://api.orders.test']])->save();
     // A root token issued TO the app client (aud defaults to the app client id) — reciprocity passes via client_id match.
     $this->root = app(AccessTokenMinter::class)
         ->mint((string) $this->user->id, $this->appClient, ['openid', 'email'], new DateInterval('PT1H'))

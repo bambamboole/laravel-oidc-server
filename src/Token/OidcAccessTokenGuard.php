@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Token;
 
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Contracts\OAuthenticatable;
 use Bambamboole\LaravelOidc\Server\Http\Middleware\CheckAudience;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use DateTimeInterface;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -13,8 +15,6 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Traits\Macroable;
-use Laravel\Passport\AccessToken;
-use Laravel\Passport\Token;
 
 /**
  * Purpose-built `auth:oidc` guard: a self-contained RFC 9068 resource-server validator (signature,
@@ -27,7 +27,7 @@ use Laravel\Passport\Token;
  *
  * The user provider comes from this guard's own `auth.guards.{name}.provider` config entry (handed
  * in by `Auth::extend()`), not from {@see ResolvesTokenUser} — that trait resolves via
- * `passport.guard`'s provider instead, which is this package's *identity* guard, not necessarily
+ * the OIDC auth guard's provider instead, which is this package's *identity* guard, not necessarily
  * the one configured for this guard.
  */
 class OidcAccessTokenGuard implements Guard
@@ -67,14 +67,9 @@ class OidcAccessTokenGuard implements Guard
             return null;
         }
 
-        $accessToken = new AccessToken([
-            'oauth_access_token_id' => $token->getKey(),
-            'oauth_client_id' => $token->getAttribute('client_id'),
-            'oauth_user_id' => $userId,
-            'oauth_scopes' => $token->getAttribute('scopes') ?? [],
-        ]);
-
-        return $this->user = $user->withAccessToken($accessToken);
+        return $this->user = $user instanceof OAuthenticatable
+            ? $user->withAccessToken(new CurrentAccessToken($token))
+            : $user;
     }
 
     /**

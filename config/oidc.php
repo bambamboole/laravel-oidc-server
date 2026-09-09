@@ -23,6 +23,9 @@ return [
         'id_token' => (int) env('OIDC_ID_TOKEN_TTL', 3600),
         // Machine-to-machine (client_credentials): no refresh, no session; client re-requests. Own TTL.
         'client_credentials' => (int) env('OIDC_M2M_ACCESS_TOKEN_TTL', 3600),
+        // Idle cap on an interactive session: a refresh token unused for this long is dead.
+        // The absolute cap is oidc.session.absolute_lifetime and always wins.
+        'refresh_token' => (int) env('OIDC_REFRESH_TOKEN_TTL', 1209600),
     ],
 
     'session' => [
@@ -34,20 +37,15 @@ return [
 
     'api_guard' => env('OIDC_API_GUARD', 'oidc'),
 
-    'passport' => [
-        // Eloquent token model handed to Passport::useTokenModel(); a
-        // class-string of a Laravel\Passport\Token subclass. Null keeps
-        // Passport's default model.
-        'token_model' => null,
-
-        // API scope catalog consulted by the scope repository at
-        // enumeration time (consent, discovery, issuance): an inline
-        // [scope => description] map, or the class-string of a ScopeCatalog
-        // implementation resolved from the container. A catalog's scopes()
-        // may hit the database — failures fall back to an empty catalog so
-        // key- and db-less artisan runs never break; an invalid class-string
-        // fails loudly at first enumeration.
-        'scopes' => [],
+    'scopes' => [
+        // API scope catalog consulted by the scope repository at enumeration
+        // time (consent, discovery, issuance): an inline [scope => description]
+        // map, or the class-string of a ScopeCatalog implementation resolved
+        // from the container. A catalog's scopes() may hit the database —
+        // failures fall back to an empty catalog so key- and db-less artisan
+        // runs never break; an invalid class-string fails loudly at first
+        // enumeration.
+        'catalog' => [],
     ],
 
     'claims_supported' => [
@@ -138,6 +136,10 @@ return [
     */
     'keys' => [
         'store' => EnvSigningKeyStore::class,
+
+        // Directory EnvSigningKeyStore falls back to for oauth-{private,public}.key
+        // when no PEM is configured. Null means storage_path().
+        'path' => env('OIDC_KEY_PATH'),
     ],
 
     'key_size' => (int) env('OIDC_KEY_SIZE', 2048),

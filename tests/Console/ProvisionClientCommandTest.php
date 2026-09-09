@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 
 function clientCommandEnv(string $contents = "APP_NAME=Testing\n"): string
 {
@@ -31,7 +31,7 @@ it('creates and prints first-party credentials without changing env', function (
     ]);
     $output = trim(Artisan::output());
     preg_match('/^OIDC_RP_CLIENT_SECRET=(.+)$/m', $output, $secretMatch);
-    $client = Passport::client()->newQuery()->where('oidc_provisioning_key', 'first-party')->firstOrFail();
+    $client = Client::query()->where('provisioning_key', 'first-party')->firstOrFail();
     $clientId = (string) $client->getKey();
     $plainSecret = $secretMatch[1] ?? null;
 
@@ -111,7 +111,7 @@ it('adopts an eligible client without printing its stored hash', function () {
         ->assertSuccessful();
 
     expect(File::get($env))->toBe("APP_NAME=Testing\n")
-        ->and($client->refresh()->getRawOriginal('oidc_provisioning_key'))->toBe('first-party');
+        ->and($client->refresh()->getRawOriginal('provisioning_key'))->toBe('first-party');
 });
 
 it('leaves env unchanged after a provisioning failure', function () {

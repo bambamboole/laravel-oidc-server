@@ -8,10 +8,10 @@ declare(strict_types=1);
  * chain MCP clients drive.
  */
 
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Routing\HandlerRegistrar;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Illuminate\Support\Facades\Route;
-use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
@@ -26,7 +26,7 @@ it('lets a dynamically registered client complete the PKCE authorization code fl
         'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
     ])->assertCreated();
 
-    $client = Passport::client()->newQuery()->whereKey($registration->json('client_id'))->firstOrFail();
+    $client = Client::query()->whereKey($registration->json('client_id'))->firstOrFail();
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 
     $result = $this->authorizeAndApprove($user, $client, 'openid', [

@@ -2,15 +2,14 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Hash;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
     $this->withoutMiddleware(ValidateCsrfToken::class);
-    Passport::authorizationView(fn (array $parameters) => response()->json([
+    fakeConsentViewUsing(fn (array $parameters) => response()->json([
         'authToken' => $parameters['authToken'],
     ]));
 

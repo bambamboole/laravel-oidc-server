@@ -5,17 +5,16 @@ declare(strict_types=1);
  * OAuth 2.1 (draft-ietf-oauth-v2-1) baseline compliance regressions.
  */
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Testing\TestResponse;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
     $this->withoutMiddleware(ValidateCsrfToken::class);
-    Passport::authorizationView(fn (array $parameters) => response()->json([
+    fakeConsentViewUsing(fn (array $parameters) => response()->json([
         'authToken' => $parameters['authToken'],
         'scopes' => $parameters['scopes'],
     ]));

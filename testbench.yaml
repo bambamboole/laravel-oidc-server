@@ -1,7 +1,6 @@
 laravel: '@testbench'
 
 providers:
-  - Laravel\Passport\PassportServiceProvider
   - Laravel\Passkeys\PasskeysServiceProvider
   - Bambamboole\LaravelOidc\Server\OidcServiceProvider
   - Workbench\App\Providers\WorkbenchServiceProvider

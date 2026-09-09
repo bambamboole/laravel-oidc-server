@@ -12,7 +12,7 @@ class RecordLogoutAudit
 
     public function handle(Logout $event): void
     {
-        if ($event->guard !== config('passport.guard') || $event->user === null) {
+        if ($event->guard !== config('oidc.auth.guard') || $event->user === null) {
             return;
         }
 

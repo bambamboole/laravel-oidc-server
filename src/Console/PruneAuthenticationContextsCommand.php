@@ -8,9 +8,9 @@ use Bambamboole\LaravelOidc\Server\Auth\Models\AccessTokenContext;
 use Bambamboole\LaravelOidc\Server\Auth\Models\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Auth\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Auth\Models\SessionParticipant;
+use Bambamboole\LaravelOidc\Server\Token\TokenLifetimes;
 use DateTimeImmutable;
 use Illuminate\Console\Command;
-use Laravel\Passport\Passport;
 
 class PruneAuthenticationContextsCommand extends Command
 {
@@ -24,7 +24,7 @@ class PruneAuthenticationContextsCommand extends Command
 
         // Link rows outlive their context so refresh can distinguish "expired" from "never linked".
         // Retain them until no live refresh token could reference them: absolute + refresh idle window.
-        $idleSeconds = (new DateTimeImmutable)->add(Passport::refreshTokensExpireIn())->getTimestamp()
+        $idleSeconds = (new DateTimeImmutable)->add(app(TokenLifetimes::class)->refreshToken())->getTimestamp()
             - (new DateTimeImmutable)->getTimestamp();
         $horizon = now()->subSeconds((int) config('oidc.session.absolute_lifetime') + $idleSeconds);
         $links = AccessTokenContext::query()->where('created_at', '<', $horizon)->delete();

@@ -6,12 +6,10 @@ namespace Bambamboole\LaravelOidc\Server\Clients;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Laravel\Passport\Client;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use SensitiveParameter;
 
 final readonly class FirstPartyClientProvisioner
@@ -69,7 +67,7 @@ final readonly class FirstPartyClientProvisioner
             ));
         } catch (QueryException $exception) {
             if ($this->isUniqueConstraint($exception)
-                && Passport::client()->newQuery()->where('oidc_provisioning_key', self::ProvisioningKey)->exists()) {
+                && Client::query()->where('provisioning_key', self::ProvisioningKey)->exists()) {
                 return $this->recordProvisioned($this->transactionalProvision(
                     $name,
                     $redirectUris,
@@ -109,9 +107,7 @@ final readonly class FirstPartyClientProvisioner
         bool $rotateSecret,
         #[SensitiveParameter] ?string $existingClientSecret,
     ): FirstPartyClientProvisioningResult {
-        $connection = config('passport.connection');
-
-        return DB::connection(is_string($connection) ? $connection : null)->transaction(function () use (
+        return DB::transaction(function () use (
             $name,
             $redirectUris,
             $postLogoutRedirectUris,
@@ -120,8 +116,8 @@ final readonly class FirstPartyClientProvisioner
             $rotateSecret,
             $existingClientSecret,
         ): FirstPartyClientProvisioningResult {
-            $client = Passport::client()->newQuery()
-                ->where('oidc_provisioning_key', self::ProvisioningKey)
+            $client = Client::query()
+                ->where('provisioning_key', self::ProvisioningKey)
                 ->lockForUpdate()
                 ->first();
             $created = false;
@@ -133,7 +129,7 @@ final readonly class FirstPartyClientProvisioner
             }
 
             if ($client === null && $adoptClientId !== null) {
-                $client = Passport::client()->newQuery()->lockForUpdate()->find($adoptClientId);
+                $client = Client::query()->lockForUpdate()->find($adoptClientId);
 
                 if ($client === null) {
                     throw new FirstPartyClientProvisioningException("The adoption client [{$adoptClientId}] does not exist.");
@@ -162,10 +158,10 @@ final readonly class FirstPartyClientProvisioner
             $client->forceFill([
                 'name' => $name,
                 'redirect_uris' => $redirectUris,
-                'post_logout_redirect_uris' => json_encode($postLogoutRedirectUris, JSON_THROW_ON_ERROR),
-                'allowed_exchange_audiences' => json_encode($allowedExchangeAudiences, JSON_THROW_ON_ERROR),
+                'post_logout_redirect_uris' => $postLogoutRedirectUris,
+                'allowed_exchange_audiences' => $allowedExchangeAudiences,
                 'grant_types' => $grantTypes,
-                'oidc_provisioning_key' => self::ProvisioningKey,
+                'provisioning_key' => self::ProvisioningKey,
             ])->save();
 
             $secret = $created ? $client->plainSecret : $existingClientSecret;

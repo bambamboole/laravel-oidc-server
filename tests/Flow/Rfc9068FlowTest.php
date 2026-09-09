@@ -5,10 +5,10 @@ declare(strict_types=1);
  * RFC 9068 (JWT profile for OAuth 2.0 access tokens); RFC 6750 §2.1 (bearer usage)
  */
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
@@ -18,7 +18,7 @@ uses(InteractsWithOidc::class);
 
 beforeEach(function () {
     $this->withoutMiddleware(ValidateCsrfToken::class);
-    Passport::authorizationView(fn (array $p) => response()->json(['authToken' => $p['authToken']]));
+    fakeConsentViewUsing(fn (array $p) => response()->json(['authToken' => $p['authToken']]));
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
 });
@@ -56,6 +56,6 @@ it('issues an RFC 9068 access token through the real flow with context-store cla
 });
 
 it('still authenticates the RFC 9068 token on an auth:oidc route (no guard regression)', function () {
-    Passport::actingAs($this->user, ['openid'], 'oidc');
+    Oidc::actingAs($this->user, ['openid'], 'oidc');
     $this->getJson('/oauth/userinfo')->assertOk();
 });

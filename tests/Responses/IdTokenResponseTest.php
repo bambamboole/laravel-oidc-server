@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Bridge\AccessToken;
+use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
 use Bambamboole\LaravelOidc\Server\Responses\IdTokenResponse;
-use Laravel\Passport\Bridge\AccessToken;
-use Laravel\Passport\Bridge\Client as BridgeClient;
-use Laravel\Passport\Bridge\Scope as BridgeScope;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;

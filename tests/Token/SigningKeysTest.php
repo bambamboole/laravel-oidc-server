@@ -1,16 +1,15 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Bridge\AccessToken;
+use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Bambamboole\LaravelOidc\Server\Token\SigningKey;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
-use Laravel\Passport\Bridge\AccessToken;
-use Laravel\Passport\Bridge\Client as BridgeClient;
-use Laravel\Passport\Bridge\Scope as BridgeScope;
-use Laravel\Passport\Passport;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -32,26 +31,6 @@ it('resolves keys from oidc config with escaped newlines', function () {
         ->toBe(trim((string) file_get_contents(__DIR__.'/../fixtures/oauth-public.key')));
 });
 
-it('prefers the oidc config key over the passport config key', function () {
-    config([
-        'oidc.public_key' => escapedFixtureKey('oauth-public.key'),
-        'passport.public_key' => 'stale-passport-key',
-    ]);
-
-    expect(signingPublicKey())
-        ->toBe(trim((string) file_get_contents(__DIR__.'/../fixtures/oauth-public.key')));
-});
-
-it('falls back to the passport config key when no oidc key is set', function () {
-    config([
-        'oidc.public_key' => null,
-        'passport.public_key' => escapedFixtureKey('oauth-public.key'),
-    ]);
-
-    expect(signingPublicKey())
-        ->toBe(trim((string) file_get_contents(__DIR__.'/../fixtures/oauth-public.key')));
-});
-
 it('falls back to key files when no config key is set', function () {
     config(['oidc.public_key' => null, 'passport.public_key' => null]);
 
@@ -61,7 +40,7 @@ it('falls back to key files when no config key is set', function () {
 
 it('fails loud when neither config key nor key file exists', function () {
     config(['oidc.private_key' => null, 'passport.private_key' => null]);
-    Passport::loadKeysFrom('/nonexistent');
+    config(['oidc.keys.path' => '/nonexistent']);
 
     signingPrivateKey();
 })->throws(RuntimeException::class, 'OIDC_PRIVATE_KEY');

@@ -15,7 +15,7 @@ trait ResolvesTokenUser
             return null;
         }
 
-        $guard = config('passport.guard') ?? config('auth.defaults.guard');
+        $guard = config('oidc.auth.guard');
         $provider = Auth::createUserProvider(config("auth.guards.{$guard}.provider"));
 
         return $provider?->retrieveById($userIdentifier);

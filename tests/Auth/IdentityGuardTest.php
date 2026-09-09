@@ -6,7 +6,6 @@ use Workbench\App\Models\User;
 
 it('registers package authentication under the identity guard and auth prefix', function () {
     expect(config('oidc.auth.guard'))->toBe('identity')
-        ->and(config('passport.guard'))->toBe('identity')
         ->and(config('auth.guards.identity'))->toBe([
             'driver' => 'session',
             'provider' => 'users',

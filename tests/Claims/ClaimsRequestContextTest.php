@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Bridge\AccessToken;
+use Bambamboole\LaravelOidc\Server\Bridge\Client;
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
-use Laravel\Passport\Bridge\AccessToken;
-use Laravel\Passport\Bridge\Client;
-use Laravel\Passport\Bridge\Scope;
-use Laravel\Passport\ClientRepository;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
@@ -51,7 +51,7 @@ function claimsContextIdToken(User $user, string $clientId, array $scopes): Unen
 {
     $accessToken = new AccessToken(
         (string) $user->id,
-        array_map(fn (string $id): Scope => new Scope($id), $scopes),
+        array_map(fn (string $id): BridgeScope => new BridgeScope($id), $scopes),
         new Client($clientId, 'RP', ['https://rp.test/callback']),
     );
     $accessToken->setIdentifier('token-id');

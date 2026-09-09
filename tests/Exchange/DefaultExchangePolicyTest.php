@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Exchange\DefaultExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Exchange\ExchangeRequest;
-use Laravel\Passport\Client;
-use Laravel\Passport\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use League\OAuth2\Server\Exception\OAuthServerException;
 
 /** @param  string[]  $audiences */
 function exchangePolicyClient(array $audiences = ['https://api.internal/orders']): Client
 {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
-    $client->forceFill(['allowed_exchange_audiences' => json_encode($audiences)])->save();
+    $client->forceFill(['allowed_exchange_audiences' => $audiences])->save();
 
     return $client;
 }

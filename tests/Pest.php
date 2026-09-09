@@ -1,21 +1,25 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
+use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
+use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
 use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
 use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Models\RefreshToken;
+use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
+use Bambamboole\LaravelOidc\Server\Server\EncryptionKey;
 use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
-use Illuminate\Contracts\Encryption\Encrypter as EncrypterContract;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Laravel\Passport\Bridge\Client as BridgeClient;
-use Laravel\Passport\Bridge\Scope as BridgeScope;
-use Laravel\Passport\Passport;
-use Laravel\Passport\RefreshToken;
-use Laravel\Passport\Token;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
@@ -25,12 +29,13 @@ use Lcobucci\JWT\UnencryptedToken;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\CryptTrait;
 use League\OAuth2\Server\Exception\OAuthServerException;
+use Symfony\Component\HttpFoundation\Response;
 
 // Passport::$scopes is a real PHP static that survives the per-test app
-// rebuild; without the afterEach reset, a file calling Passport::tokensCan()
+// rebuild; without the afterEach reset, a file calling Oidc::tokensCan()
 // poisons every test that runs after it.
 uses(TestCase::class)
-    ->afterEach(fn () => Passport::tokensCan([]))
+    ->afterEach(fn () => Oidc::tokensCan([]))
     ->in(__DIR__);
 uses(RefreshDatabase::class)->in(__DIR__);
 
@@ -132,7 +137,7 @@ function encryptRefreshTokenPayload(array $payload): string
         }
     };
 
-    $encrypter->setEncryptionKey(Passport::tokenEncryptionKey(app(EncrypterContract::class)));
+    $encrypter->setEncryptionKey(app(EncryptionKey::class)->value());
 
     return $encrypter->encryptPayload((string) json_encode($payload));
 }
@@ -148,7 +153,7 @@ function issueRefreshToken(mixed $test, ?string $clientId = null, bool $expired 
     $accessTokenId = Str::random(80);
     $refreshTokenId = Str::random(80);
 
-    $accessToken = Passport::token();
+    $accessToken = new Token;
     $accessToken->forceFill([
         'id' => $accessTokenId,
         'user_id' => $test->user->id,
@@ -158,7 +163,7 @@ function issueRefreshToken(mixed $test, ?string $clientId = null, bool $expired 
         'expires_at' => now()->addHour(),
     ])->save();
 
-    $refreshToken = Passport::refreshToken();
+    $refreshToken = new RefreshToken;
     $refreshToken->forceFill([
         'id' => $refreshTokenId,
         'access_token_id' => $accessTokenId,
@@ -205,7 +210,7 @@ function mintExchangeSubjectToken(
     $subject->setExpiryDateTime($expiresAt);
     $subject->setPrivateKey(new CryptKey(__DIR__.'/fixtures/oauth-private.key', null, false));
 
-    Passport::token()->forceFill([
+    (new Token)->forceFill([
         'id' => $tokenId,
         'user_id' => $userless ? null : $userId,
         'client_id' => $clientId,
@@ -247,7 +252,7 @@ function resourceServerBearer(
     $accessToken->setExpiryDateTime($expiresAt);
     $accessToken->setPrivateKey(new CryptKey(__DIR__.'/fixtures/oauth-private.key', null, false));
 
-    Passport::token()->forceFill([
+    (new Token)->forceFill([
         'id' => $tokenId,
         'user_id' => $subjectId,
         'client_id' => $test->client->id,
@@ -264,6 +269,28 @@ function resourceServerBearer(
  * matching Passport token row. CheckAudience validates the signature and persisted row but
  * still rejects it on its typ guard, since the header typ is not at+jwt.
  */
+/**
+ * Binds the consent view to a closure receiving the same parameter bag the
+ * authorize controller hands the view seam.
+ */
+function fakeConsentViewUsing(Closure $callback): void
+{
+    app()->instance(ConsentView::class, new class($callback) implements ConsentView
+    {
+        public function __construct(private readonly Closure $callback) {}
+
+        public function respond(ConsentPrompt $prompt, Request $request): Responsable|Response
+        {
+            return ($this->callback)([
+                'client' => $prompt->client,
+                'user' => $prompt->user,
+                'scopes' => $prompt->scopes,
+                'authToken' => $prompt->authToken,
+            ]);
+        }
+    });
+}
+
 function signingPublicKey(): string
 {
     return app(SigningKeys::class)->signingKey()->publicKeyPem;
@@ -298,7 +325,7 @@ function persistedIdTokenAsBearer(mixed $test): string
         ->getToken($config->signer(), $config->signingKey())
         ->toString();
 
-    Passport::token()->forceFill([
+    (new Token)->forceFill([
         'id' => $tokenId,
         'user_id' => $test->user->id,
         'client_id' => $test->client->id,

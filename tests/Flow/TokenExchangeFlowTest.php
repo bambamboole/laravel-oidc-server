@@ -8,20 +8,20 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\TokenExchangeEvent;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Exchange\ExchangeGrantResult;
 use Bambamboole\LaravelOidc\Server\Exchange\ExchangeRequest;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
 const ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
 
 beforeEach(function () {
-    Passport::tokensCan([
+    Oidc::tokensCan([
         'openid' => 'Authenticate',
         'orders:read' => 'Read orders',
         'orders:write' => 'Write orders',
@@ -32,7 +32,7 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
     $this->client->forceFill([
         'grant_types' => [...(array) $this->client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
-        'allowed_exchange_audiences' => json_encode(['https://api.internal/orders']),
+        'allowed_exchange_audiences' => ['https://api.internal/orders'],
     ])->save();
     $this->secret = $this->client->plainSecret;
 });
@@ -100,7 +100,7 @@ it('runs the token-exchange trigger once with finalized context and applies its 
 
 it('denies token exchange before persisting an access token', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
-    $persistedTokenCount = Passport::token()->newQuery()->count();
+    $persistedTokenCount = Token::query()->count();
 
     Oidc::tokenExchange(function (TokenExchangeEvent $event, AccessTokenApi $api): void {
         $api->deny('exchange_blocked');
@@ -118,7 +118,7 @@ it('denies token exchange before persisting an access token', function () {
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 
-    expect(Passport::token()->newQuery()->count())->toBe($persistedTokenCount);
+    expect(Token::query()->count())->toBe($persistedTokenCount);
 });
 
 it('keeps the package-owned actor chain when a token-exchange trigger attempts to replace it', function () {
@@ -255,7 +255,7 @@ it('rejects a public client with invalid_client', function () {
     $public = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Public', ['https://p/cb'], confidential: false);
     $public->forceFill([
         'grant_types' => [...(array) $public->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
-        'allowed_exchange_audiences' => json_encode(['https://api.internal/orders']),
+        'allowed_exchange_audiences' => ['https://api.internal/orders'],
     ])->save();
     $subject = mintExchangeSubjectToken((string) $public->id, (string) $this->user->id, ['openid']);
 
@@ -273,7 +273,7 @@ it('allows a trusted public client to exchange its own token', function () {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Mobile', ['https://rp.test/cb'], confidential: false);
     $client->forceFill([
         'grant_types' => [...(array) $client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
-        'allowed_exchange_audiences' => json_encode(['https://api.example.com']),
+        'allowed_exchange_audiences' => ['https://api.example.com'],
     ])->save();
     config()->set('oidc.trusted_clients', [(string) $client->getKey()]);
 
@@ -293,7 +293,7 @@ it('allows a trusted public client to exchange its own token', function () {
 
 it('rejects a trusted public client whose grant_types lack token exchange', function () {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Mobile', ['https://rp.test/cb'], confidential: false);
-    $client->forceFill(['allowed_exchange_audiences' => json_encode(['https://api.example.com'])])->save();
+    $client->forceFill(['allowed_exchange_audiences' => ['https://api.example.com']])->save();
     config()->set('oidc.trusted_clients', [(string) $client->getKey()]);
 
     $subject = mintExchangeSubjectToken((string) $client->getKey(), $this->user->getKey(), ['openid']);

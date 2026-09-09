@@ -8,11 +8,11 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Http\ClientCredentials;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\AuthenticatesConfidentialClient;
+use Bambamboole\LaravelOidc\Server\Models\RefreshToken;
+use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Laravel\Passport\Passport;
-use Laravel\Passport\Token;
 
 class RevocationController
 {
@@ -32,11 +32,11 @@ class RevocationController
                 $accessTokenId = $payload->access_token_id ?? null;
 
                 if (is_string($refreshTokenId)) {
-                    Passport::refreshToken()->newQuery()->whereKey($refreshTokenId)->update(['revoked' => true]);
+                    RefreshToken::query()->whereKey($refreshTokenId)->update(['revoked' => true]);
                 }
 
                 if (is_string($accessTokenId)) {
-                    Passport::token()->newQuery()->whereKey($accessTokenId)->update(['revoked' => true]);
+                    Token::query()->whereKey($accessTokenId)->update(['revoked' => true]);
                 }
 
                 if (is_string($refreshTokenId) || is_string($accessTokenId)) {
@@ -54,8 +54,8 @@ class RevocationController
         $token = $inspector->accessToken($tokenValue);
 
         if ($token instanceof Token && (string) $token->getAttribute('client_id') === $clientId) {
-            $token->revoke();
-            Passport::refreshToken()->newQuery()->where('access_token_id', $token->getKey())->update(['revoked' => true]);
+            Token::query()->whereKey($token->getKey())->update(['revoked' => true]);
+            RefreshToken::query()->where('access_token_id', $token->getKey())->update(['revoked' => true]);
 
             $this->auditor->log(AuditEventType::TokenRevoked, clientId: $clientId, context: [
                 'token_type_hint' => 'access_token',

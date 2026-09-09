@@ -9,10 +9,9 @@ use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\ClientCredentialsEvent;
 use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use DateInterval;
-use Laravel\Passport\Client;
-use Laravel\Passport\Passport;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
@@ -137,7 +136,7 @@ class OidcClientCredentialsGrant extends ClientCredentialsGrant
             return;
         }
 
-        $model = Passport::client()->newQuery()->find($client->getIdentifier());
+        $model = Client::query()->find($client->getIdentifier());
         $allowed = $model instanceof Client ? AllowedAudiences::of($model) : [];
 
         if (array_diff($this->requestedAudiences, $allowed) !== []) {

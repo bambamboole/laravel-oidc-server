@@ -43,7 +43,7 @@ views and actions.
 
 - PHP `^8.4`
 - Laravel 12 or 13
-- `laravel/passport` `^13.4` — the OAuth2 core the package builds on
+- `league/oauth2-server` `^9.2` — the OAuth2 core the package builds on
 
 ## Installation
 
@@ -71,19 +71,19 @@ See the **[Installation guide](https://bambamboole.github.io/laravel-oidc/introd
 for the full walkthrough, and **[Configuration](https://bambamboole.github.io/laravel-oidc/introduction/configuration/)**
 for every `config/oidc.php` key.
 
-## Built on Passport
+## Built on league/oauth2-server
 
-Under the hood, the OAuth2 core is **Laravel Passport 13** — the package extends and
-reconfigures it rather than reimplementing an authorization server. On registration it calls
-`Passport::ignoreRoutes()` and registers the full `/oauth/*` route surface itself, so that:
+Under the hood, the OAuth2 core is **`league/oauth2-server`**. The package owns everything above
+it — its own tables and models for clients, tokens, refresh tokens and authorization codes, its
+own repositories and grants, and the full `/oauth/*` route surface, so that:
 
-- OIDC scopes, `max_age`, and the `id_token` response type are wired in.
+- OIDC scopes, `max_age`, `prompt`, and the `id_token` response type are wired in.
 - **PKCE is required on every authorization request** (OAuth 2.1 §4.1.1/§7.6), for confidential
   clients too.
-- Passport's optional JSON API management routes are **not** registered — register them
-  yourself if you need them.
-- The access-token entity is swapped to `OidcAccessToken` and the response type to
-  `IdTokenResponse`.
+- The authorization server is built per request, so rotating the signing key takes effect without
+  restarting the workers.
+- No client-management JSON API ships with the package; provision clients with
+  `oidc:provision-client` or dynamic client registration.
 
 ## Documentation
 

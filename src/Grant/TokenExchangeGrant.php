@@ -6,8 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Grant;
 
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use DateInterval;
-use Laravel\Passport\Passport;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Grant\AbstractGrant;
 use League\OAuth2\Server\RequestEvent;
@@ -63,7 +63,7 @@ class TokenExchangeGrant extends AbstractGrant
             throw OAuthServerException::invalidRequest('audience');
         }
 
-        $passportClient = Passport::client()->newQuery()->find($client->getIdentifier());
+        $passportClient = Client::query()->find($client->getIdentifier());
         if ($passportClient === null) {
             throw OAuthServerException::invalidClient($request);
         }

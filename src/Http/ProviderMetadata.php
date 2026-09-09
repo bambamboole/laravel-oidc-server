@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
-use Laravel\Passport\Passport;
 
 /**
  * Builds the provider metadata document served both as the OIDC Discovery 1.0
@@ -28,10 +27,6 @@ final readonly class ProviderMetadata
     public function document(): array
     {
         $grantTypes = ['authorization_code', 'refresh_token', 'client_credentials'];
-
-        if (Passport::$deviceCodeGrantEnabled) {
-            $grantTypes[] = 'urn:ietf:params:oauth:grant-type:device_code';
-        }
 
         if (config('oidc.token_exchange.enabled', true)) {
             $grantTypes[] = 'urn:ietf:params:oauth:grant-type:token-exchange';

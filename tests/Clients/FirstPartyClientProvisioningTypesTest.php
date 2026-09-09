@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningResult;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 
 it('prevents duplicate managed rows as the concurrency backstop', function () {
-    expect(Schema::hasColumn('oauth_clients', 'oidc_provisioning_key'))->toBeTrue();
+    expect(Schema::hasColumn('oidc_clients', 'provisioning_key'))->toBeTrue();
 
     $clients = app(ClientRepository::class);
     $first = $clients->createAuthorizationCodeGrantClient('One', ['https://one.test/callback']);
     $second = $clients->createAuthorizationCodeGrantClient('Two', ['https://two.test/callback']);
 
-    $first->forceFill(['oidc_provisioning_key' => 'first-party'])->save();
+    $first->forceFill(['provisioning_key' => 'first-party'])->save();
 
-    expect(fn () => $second->forceFill(['oidc_provisioning_key' => 'first-party'])->save())
+    expect(fn () => $second->forceFill(['provisioning_key' => 'first-party'])->save())
         ->toThrow(QueryException::class);
 });
 
@@ -62,7 +62,7 @@ it('rolls back a created client by deleting it', function () {
     );
 
     expect($result->rollback())->toBeTrue()
-        ->and(Passport::client()->newQuery()->find($key))->toBeNull();
+        ->and(Client::query()->find($key))->toBeNull();
 });
 
 it('does not roll back an adopted or reconciled client', function () {
@@ -79,7 +79,7 @@ it('does not roll back an adopted or reconciled client', function () {
     );
 
     expect($result->rollback())->toBeFalse()
-        ->and(Passport::client()->newQuery()->find($key))->not->toBeNull();
+        ->and(Client::query()->find($key))->not->toBeNull();
 });
 
 it('exposes provider env variables with the trusted flag', function () {

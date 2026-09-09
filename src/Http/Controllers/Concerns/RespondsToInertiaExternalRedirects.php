@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
  */
 trait RespondsToInertiaExternalRedirects
 {
-    private function respondToInertia(Request $request, Response $response): Response
+    protected function respondToInertia(Request $request, Response $response): Response
     {
         if (! $request->hasHeader('X-Inertia') || ! $response->isRedirect() || ! $response->headers->has('Location')) {
             return $response;

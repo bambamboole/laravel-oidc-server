@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Laravel\Passport\Client;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 
 /**
  * The per-client audience allowlist (`allowed_exchange_audiences`) governs
@@ -16,9 +16,6 @@ final class AllowedAudiences
     /** @return list<string> */
     public static function of(Client $client): array
     {
-        $raw = $client->getRawOriginal('allowed_exchange_audiences');
-        $decoded = is_string($raw) ? json_decode($raw, true) : null;
-
-        return is_array($decoded) ? array_values(array_filter($decoded, is_string(...))) : [];
+        return array_values(array_filter($client->allowed_exchange_audiences ?? [], is_string(...)));
     }
 }

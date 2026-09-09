@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeCatalog;
 use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Illuminate\Support\Facades\Exceptions;
-use Laravel\Passport\Passport;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 
 class RepositoryCountingCatalog implements ScopeCatalog
@@ -31,8 +31,8 @@ class RepositoryThrowingCatalog implements ScopeCatalog
 
 beforeEach(fn () => $this->repository = new DefaultScopeRepository(app()));
 
-it('exposes passport scopes plus the oidc standard scopes', function () {
-    Passport::tokensCan(['project:update' => 'Update projects']);
+it('exposes registered scopes plus the oidc standard scopes', function () {
+    Oidc::tokensCan(['project:update' => 'Update projects']);
 
     $ids = $this->repository->all()->map(fn (Scope $scope) => $scope->id);
 
@@ -40,7 +40,7 @@ it('exposes passport scopes plus the oidc standard scopes', function () {
 });
 
 it('does not duplicate oidc scopes the app already defines', function () {
-    Passport::tokensCan(['openid' => 'Custom openid description']);
+    Oidc::tokensCan(['openid' => 'Custom openid description']);
 
     expect($this->repository->all()->filter(fn (Scope $scope) => $scope->id === 'openid'))->toHaveCount(1)
         ->and($this->repository->find('openid')->description)->toBe('Custom openid description');
@@ -65,7 +65,7 @@ it('finalize drops scopes not in the catalog', function () {
 });
 
 it('includes an inline configured scope map', function () {
-    config()->set('oidc.passport.scopes', ['inline:scope' => 'Inline']);
+    config()->set('oidc.scopes.catalog', ['inline:scope' => 'Inline']);
 
     $ids = app(ScopeRepository::class)->all()->map(fn (Scope $scope) => $scope->id);
 
@@ -73,7 +73,7 @@ it('includes an inline configured scope map', function () {
 });
 
 it('includes a class-string catalog resolved from the container', function () {
-    config()->set('oidc.passport.scopes', RepositoryCountingCatalog::class);
+    config()->set('oidc.scopes.catalog', RepositoryCountingCatalog::class);
 
     $ids = app(ScopeRepository::class)->all()->map(fn (Scope $scope) => $scope->id);
 
@@ -82,7 +82,7 @@ it('includes a class-string catalog resolved from the container', function () {
 
 it('resolves the catalog once per repository instance', function () {
     RepositoryCountingCatalog::$calls = 0;
-    config()->set('oidc.passport.scopes', RepositoryCountingCatalog::class);
+    config()->set('oidc.scopes.catalog', RepositoryCountingCatalog::class);
 
     $repository = app(ScopeRepository::class);
     $repository->all();
@@ -93,7 +93,7 @@ it('resolves the catalog once per repository instance', function () {
 
 it('does not consult the catalog until scopes are enumerated', function () {
     RepositoryCountingCatalog::$calls = 0;
-    config()->set('oidc.passport.scopes', RepositoryCountingCatalog::class);
+    config()->set('oidc.scopes.catalog', RepositoryCountingCatalog::class);
 
     app(ScopeRepository::class);
 
@@ -101,8 +101,8 @@ it('does not consult the catalog until scopes are enumerated', function () {
 });
 
 it('prefers a catalog description over tokensCan and built-in oidc scopes', function () {
-    config()->set('oidc.passport.scopes', ['profile' => 'Catalog wording', 'api:x' => 'X']);
-    Passport::tokensCan(['api:x' => 'Passport wording']);
+    config()->set('oidc.scopes.catalog', ['profile' => 'Catalog wording', 'api:x' => 'X']);
+    Oidc::tokensCan(['api:x' => 'Passport wording']);
 
     $repository = app(ScopeRepository::class);
 
@@ -111,13 +111,13 @@ it('prefers a catalog description over tokensCan and built-in oidc scopes', func
 });
 
 it('still honours scopes registered through tokensCan', function () {
-    Passport::tokensCan(['legacy:scope' => 'Registered directly']);
+    Oidc::tokensCan(['legacy:scope' => 'Registered directly']);
 
     expect(app(ScopeRepository::class)->find('legacy:scope'))->not->toBeNull();
 });
 
 it('falls back to an empty catalog when the catalog throws', function () {
-    config()->set('oidc.passport.scopes', RepositoryThrowingCatalog::class);
+    config()->set('oidc.scopes.catalog', RepositoryThrowingCatalog::class);
 
     $ids = app(ScopeRepository::class)->all()->map(fn (Scope $scope) => $scope->id);
 
@@ -126,7 +126,7 @@ it('falls back to an empty catalog when the catalog throws', function () {
 
 it('suppresses catalog failure reports when running in console', function () {
     Exceptions::fake();
-    config()->set('oidc.passport.scopes', RepositoryThrowingCatalog::class);
+    config()->set('oidc.scopes.catalog', RepositoryThrowingCatalog::class);
 
     app(ScopeRepository::class)->all();
 
@@ -140,7 +140,7 @@ it('reports catalog failures when not running in console', function () {
     // repository takes the web-request branch that surfaces the failure.
     (new ReflectionProperty($this->app, 'isRunningInConsole'))->setValue($this->app, false);
 
-    config()->set('oidc.passport.scopes', RepositoryThrowingCatalog::class);
+    config()->set('oidc.scopes.catalog', RepositoryThrowingCatalog::class);
 
     app(ScopeRepository::class)->all();
 
@@ -148,13 +148,13 @@ it('reports catalog failures when not running in console', function () {
 });
 
 it('rejects a catalog class that does not implement the contract', function () {
-    config()->set('oidc.passport.scopes', stdClass::class);
+    config()->set('oidc.scopes.catalog', stdClass::class);
 
     app(ScopeRepository::class)->all();
 })->throws(LogicException::class);
 
 it('treats an explicit null scopes config as an empty catalog', function () {
-    config()->set('oidc.passport.scopes', null);
+    config()->set('oidc.scopes.catalog', null);
 
     $ids = app(ScopeRepository::class)->all()->map(fn (Scope $scope) => $scope->id);
 

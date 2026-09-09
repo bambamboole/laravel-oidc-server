@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
-use Laravel\Passport\ClientRepository;
 use Workbench\App\Models\User;
 
 function mintInspectorToken(): string

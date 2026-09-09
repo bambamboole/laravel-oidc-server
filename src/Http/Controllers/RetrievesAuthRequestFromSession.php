@@ -4,21 +4,20 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
+use Bambamboole\LaravelOidc\Server\Bridge\Client;
+use Bambamboole\LaravelOidc\Server\Bridge\User;
+use Bambamboole\LaravelOidc\Server\Exceptions\InvalidAuthTokenException;
 use Bambamboole\LaravelOidc\Server\Grant\OidcAuthorizationRequest;
+use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Exception;
 use Illuminate\Http\Request;
-use Laravel\Passport\Bridge\Client;
-use Laravel\Passport\Bridge\Scope;
-use Laravel\Passport\Bridge\User;
-use Laravel\Passport\Exceptions\InvalidAuthTokenException;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequest;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequestInterface;
 
 /**
- * Fork of Laravel\Passport\Http\Controllers\RetrievesAuthRequestFromSession that adds
- * OidcAuthorizationRequest to the unserialize allow-list; Passport's whitelist omits our
- * subclass, so the persisted request would otherwise come back as __PHP_Incomplete_Class
- * and drop the nonce carried through the consent step.
+ * The authorize request survives the consent step as a serialized string. The
+ * allow-list must name OidcAuthorizationRequest, or the request comes back as
+ * __PHP_Incomplete_Class and drops the nonce it carries.
  */
 trait RetrievesAuthRequestFromSession
 {
@@ -26,7 +25,7 @@ trait RetrievesAuthRequestFromSession
         OidcAuthorizationRequest::class,
         AuthorizationRequest::class,
         Client::class,
-        Scope::class,
+        BridgeScope::class,
         User::class,
     ];
 
@@ -42,19 +41,13 @@ trait RetrievesAuthRequestFromSession
         $authRequest = $request->session()->pull('authRequest')
             ?? throw new Exception('Authorization request was not present in the session.');
 
-        // Passport 13.x stored the request object directly in the session before it moved to
-        // serialize()/unserialize() with an allow-list. Handle both so any 13.x patch works.
-        if ($authRequest instanceof AuthorizationRequestInterface) {
-            return $authRequest;
-        }
-
         return unserialize($authRequest, ['allowed_classes' => self::ALLOWED_AUTH_REQUEST_CLASSES]);
     }
 
     /**
-     * Non-destructive variant for observers (e.g. consent auditing): the
+     * Non-destructive variant for observers (e.g. consent auditing); the
      * authoritative pull with auth_token verification stays in
-     * getAuthRequestFromSession(), which Passport's parent controller runs.
+     * getAuthRequestFromSession().
      */
     protected function peekAuthRequestFromSession(Request $request): ?AuthorizationRequestInterface
     {

@@ -12,7 +12,7 @@ it('records oidc metadata without starting the session store on an oidc guard lo
 
     expect($session->isStarted())->toBeFalse();
 
-    Auth::guard((string) config('passport.guard'))->login($user);
+    Auth::guard((string) config('oidc.auth.guard'))->login($user);
 
     expect($session->get('oidc.auth_time'))->toBeInt()
         ->and($session->get('oidc.sid'))->toBeString()
@@ -23,7 +23,7 @@ it('records oidc metadata without starting the session store on an oidc guard lo
 it('does not create oidc metadata or a session when authenticating once by id', function () {
     $user = User::create(['name' => 'M', 'email' => 'm2@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 
-    Auth::guard((string) config('passport.guard'))->onceUsingId($user->id);
+    Auth::guard((string) config('oidc.auth.guard'))->onceUsingId($user->id);
 
     $session = app('session.store');
 

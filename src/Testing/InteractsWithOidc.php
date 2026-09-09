@@ -8,6 +8,8 @@ use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Auth\Views\MissingAuthViewException;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use DateInterval;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -19,8 +21,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
-use Laravel\Passport\Client;
-use Laravel\Passport\ClientRepository;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Response;
 

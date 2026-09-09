@@ -6,7 +6,6 @@ use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Bambamboole\LaravelOidc\Server\Token\SigningKey;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Illuminate\Support\Facades\File;
-use Laravel\Passport\Passport;
 
 function rotateKeysEnv(string $contents = "APP_NAME=Testing\n"): string
 {
@@ -77,7 +76,7 @@ it('aborts without writing when the confirmation is declined', function () {
 
 it('omits the previous key on a first-time generation with no current key', function () {
     config(['passport.private_key' => null, 'passport.public_key' => null]);
-    Passport::loadKeysFrom(temporaryTestDirectory('nokeys'));
+    config(['oidc.keys.path' => temporaryTestDirectory('nokeys')]);
     $env = rotateKeysEnv();
 
     $this->artisan('oidc:rotate-keys', ['--force' => true])->assertSuccessful();
@@ -101,7 +100,7 @@ it('skips generation with --if-missing when keys already exist', function () {
 
 it('generates without confirmation with --if-missing when no keys exist', function () {
     config(['passport.private_key' => null, 'passport.public_key' => null]);
-    Passport::loadKeysFrom(temporaryTestDirectory('nokeys-if-missing'));
+    config(['oidc.keys.path' => temporaryTestDirectory('nokeys-if-missing')]);
     $env = rotateKeysEnv();
 
     $this->artisan('oidc:rotate-keys', ['--if-missing' => true])->assertSuccessful();

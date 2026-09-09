@@ -5,15 +5,14 @@ declare(strict_types=1);
  * OpenID Connect Core 1.0 §3.1.2.1 (max_age, prompt), §2 (auth_time), §3.1.2.6 (login_required/consent_required)
  */
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
-use Laravel\Passport\ClientRepository;
-use Laravel\Passport\Passport;
 use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
 beforeEach(function () {
-    Passport::authorizationView(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
+    fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
 

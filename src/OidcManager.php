@@ -12,12 +12,17 @@ use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningResult;
+use Bambamboole\LaravelOidc\Server\Contracts\OAuthenticatable;
 use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Exchange\IssuedToken;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Scopes\ScopeRegistry;
+use Bambamboole\LaravelOidc\Server\Token\CurrentAccessToken;
 use Closure;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Container\Container;
-use Laravel\Passport\Passport;
 use RuntimeException;
 use SensitiveParameter;
 
@@ -29,6 +34,35 @@ use SensitiveParameter;
 class OidcManager
 {
     public function __construct(private readonly Container $app) {}
+
+    /**
+     * Register scopes the provider understands, on top of `oidc.scopes.catalog`.
+     *
+     * @param  array<string, string>  $scopes
+     */
+    public function tokensCan(array $scopes): void
+    {
+        ScopeRegistry::tokensCan($scopes);
+    }
+
+    /**
+     * Authenticate a user for the given guard with a token that grants the
+     * listed scopes, without persisting anything. Test-time only.
+     *
+     * @param  list<string>  $scopes
+     */
+    public function actingAs(Authenticatable $user, array $scopes = [], string $guard = 'oidc'): Authenticatable
+    {
+        if ($user instanceof OAuthenticatable) {
+            $user->withAccessToken(new CurrentAccessToken(new Token(['scopes' => $scopes])));
+        }
+
+        $auth = $this->app->make('auth');
+        $auth->guard($guard)->setUser($user);
+        $auth->shouldUse($guard);
+
+        return $user;
+    }
 
     public function createUsersUsing(callable|string $action): void
     {
@@ -122,7 +156,7 @@ class OidcManager
             throw new RuntimeException('No session token is available for the current user.');
         }
 
-        $client = Passport::client()->newQuery()->find($this->app->make(FirstPartyClientConfig::class)->clientId());
+        $client = Client::query()->find($this->app->make(FirstPartyClientConfig::class)->clientId());
 
         if ($client === null) {
             throw new RuntimeException('The oidc.first_party.client_id is not configured or does not exist.');
