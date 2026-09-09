@@ -6,8 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Http\ClientCredentials;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\AuthenticatesConfidentialClient;
-use Bambamboole\LaravelOidc\Server\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Token\RefreshToken;
+use Bambamboole\LaravelOidc\Server\Token\Token;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;

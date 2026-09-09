@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Models\Client;
-
 final readonly class FirstPartyClientProvisioningResult
 {
     public function __construct(

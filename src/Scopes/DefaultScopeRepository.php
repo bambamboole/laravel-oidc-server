@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Scopes;
 
-use Bambamboole\LaravelOidc\Server\Contracts\ScopeCatalog;
-use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
 use League\OAuth2\Server\Entities\ClientEntityInterface;

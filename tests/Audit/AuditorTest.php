@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
+use Bambamboole\LaravelOidc\Server\Audit\AuditSink;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;

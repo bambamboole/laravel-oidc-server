@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Bambamboole\LaravelOidc\Server\Models\Token;
-
 /**
  * The access token backing the current request, attached to the authenticated
  * user by the `oidc` guard.

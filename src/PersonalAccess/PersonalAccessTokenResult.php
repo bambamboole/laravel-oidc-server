@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\PersonalAccess;
 
-use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Token\Token;
 
 final readonly class PersonalAccessTokenResult
 {

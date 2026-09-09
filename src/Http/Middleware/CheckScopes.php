@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http\Middleware;
 
-use Bambamboole\LaravelOidc\Server\Contracts\OAuthenticatable;
 use Bambamboole\LaravelOidc\Server\Http\OAuthError;
+use Bambamboole\LaravelOidc\Server\User\OAuthenticatable;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

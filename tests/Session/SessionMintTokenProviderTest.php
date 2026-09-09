@@ -6,8 +6,8 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
-use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Session\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Token\Token;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;

@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Claims\DefaultClaimsResolver;
-use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Workbench\App\Models\User;
 

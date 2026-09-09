@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Bambamboole\LaravelOidc\Server\Contracts\OAuthenticatable;
 use Bambamboole\LaravelOidc\Server\Http\Middleware\CheckAudience;
-use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Realm\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\User\OAuthenticatable;
 use DateTimeInterface;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;

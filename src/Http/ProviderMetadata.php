@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Http;
 
-use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Realm\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Illuminate\Support\Facades\Route;
 
 /**

@@ -6,7 +6,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
+use Bambamboole\LaravelOidc\Server\Session\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;

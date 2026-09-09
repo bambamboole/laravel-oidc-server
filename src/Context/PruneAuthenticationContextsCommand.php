@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Console;
+namespace Bambamboole\LaravelOidc\Server\Context;
 
-use Bambamboole\LaravelOidc\Server\Context\AccessTokenContext;
-use Bambamboole\LaravelOidc\Server\Context\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Session\OidcSession;
 use Bambamboole\LaravelOidc\Server\Session\SessionParticipant;
 use Bambamboole\LaravelOidc\Server\Token\TokenLifetimes;

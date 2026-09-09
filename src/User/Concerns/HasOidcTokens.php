@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\User\Concerns;
 
-use Bambamboole\LaravelOidc\Server\Models\Client;
-use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\PersonalAccess\PersonalAccessTokenFactory;
 use Bambamboole\LaravelOidc\Server\PersonalAccess\PersonalAccessTokenResult;
 use Bambamboole\LaravelOidc\Server\Token\CurrentAccessToken;
+use Bambamboole\LaravelOidc\Server\Token\Token;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 

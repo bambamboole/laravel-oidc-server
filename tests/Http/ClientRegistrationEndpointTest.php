@@ -6,7 +6,7 @@ declare(strict_types=1);
  * RFC 7591 §3 (dynamic client registration)
  */
 
-use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Illuminate\Support\Facades\Route;
 
 /**

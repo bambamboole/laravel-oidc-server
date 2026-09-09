@@ -9,7 +9,7 @@ use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\ClientCredentialsEvent;
 use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
-use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Token\OidcAccessToken;
 use DateInterval;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;

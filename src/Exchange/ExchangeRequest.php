@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Exchange;
 
-use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 
 final readonly class ExchangeRequest
 {

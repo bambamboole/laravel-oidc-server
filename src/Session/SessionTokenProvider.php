@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Contracts;
+namespace Bambamboole\LaravelOidc\Server\Session;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 

@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Testing;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Contracts\AuditSink;
+use Bambamboole\LaravelOidc\Server\Audit\AuditSink;
 use Closure;
 use PHPUnit\Framework\Assert;
 

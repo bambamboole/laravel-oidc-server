@@ -2,11 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Console;
+namespace Bambamboole\LaravelOidc\Server\Token;
 
-use Bambamboole\LaravelOidc\Server\Models\AuthCode;
-use Bambamboole\LaravelOidc\Server\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Models\Token;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 

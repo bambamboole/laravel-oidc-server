@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Claims;
 
-use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
 use Illuminate\Database\Eloquent\Model;
 
 class DefaultClaimsResolver implements ClaimsResolver

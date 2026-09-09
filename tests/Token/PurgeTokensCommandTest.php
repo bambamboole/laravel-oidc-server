@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Models\AuthCode;
-use Bambamboole\LaravelOidc\Server\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Token\AuthCode;
+use Bambamboole\LaravelOidc\Server\Token\RefreshToken;
+use Bambamboole\LaravelOidc\Server\Token\Token;
 use Workbench\App\Models\User;
 
 beforeEach(function () {

@@ -4,13 +4,30 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Server;
 
+use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Bridge\AuthCodeRepository;
+use Bambamboole\LaravelOidc\Server\Bridge\RefreshTokenRepository;
+use Bambamboole\LaravelOidc\Server\Context\AccessTokenContextLink;
+use Bambamboole\LaravelOidc\Server\Context\AuthenticationContextStore;
+use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
+use Bambamboole\LaravelOidc\Server\Grant\OidcAuthCodeGrant;
+use Bambamboole\LaravelOidc\Server\Grant\OidcClientCredentialsGrant;
+use Bambamboole\LaravelOidc\Server\Grant\OidcRefreshTokenGrant;
+use Bambamboole\LaravelOidc\Server\Grant\TokenExchangeGrant;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Responses\IdTokenResponse;
+use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Token\TokenLifetimes;
+use DateInterval;
 use League\OAuth2\Server\AuthorizationServer;
 use League\OAuth2\Server\CryptKey;
 use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
+use League\OAuth2\Server\RequestEvent;
 
 /**
  * Builds the league server per request rather than once: the signing key is read
@@ -26,11 +43,21 @@ final readonly class AuthorizationServerFactory
         private SigningKeys $keys,
         private EncryptionKey $encryptionKey,
         private IdTokenResponse $responseType,
+        private TokenLifetimes $lifetimes,
+        private AuthCodeRepository $authCodes,
+        private RefreshTokenRepository $refreshTokens,
+        private AccessTokenContextLink $contextLink,
+        private AccessTokenPipeline $pipeline,
+        private AuthenticationContextStore $contexts,
+        private OidcSessionRepository $sessions,
+        private AuthSessionState $sessionState,
+        private Auditor $auditor,
+        private TokenExchanger $exchanger,
     ) {}
 
     public function make(): AuthorizationServer
     {
-        return new AuthorizationServer(
+        $server = new AuthorizationServer(
             $this->clients,
             $this->accessTokens,
             $this->scopes,
@@ -38,5 +65,66 @@ final readonly class AuthorizationServerFactory
             $this->encryptionKey->value(),
             $this->responseType,
         );
+
+        $this->enableGrants($server);
+        $this->auditClientAuthenticationFailures($server);
+
+        return $server;
+    }
+
+    private function enableGrants(AuthorizationServer $server): void
+    {
+        $accessTokenTtl = $this->lifetimes->accessToken();
+
+        $authCodeGrant = new OidcAuthCodeGrant(
+            $this->authCodes,
+            $this->refreshTokens,
+            new DateInterval('PT10M'),
+            $this->contextLink,
+            $this->pipeline,
+            $this->contexts,
+            $this->sessions,
+            $this->sessionState,
+            $this->auditor,
+        );
+        $authCodeGrant->setRefreshTokenTTL($this->lifetimes->refreshToken());
+        $server->enableGrantType($authCodeGrant, $accessTokenTtl);
+
+        $refreshGrant = new OidcRefreshTokenGrant(
+            $this->refreshTokens,
+            $this->contextLink,
+            $this->pipeline,
+            $this->contexts,
+            $this->sessions,
+            $this->auditor,
+        );
+        $refreshGrant->setRefreshTokenTTL($this->lifetimes->refreshToken());
+        $server->enableGrantType($refreshGrant, $accessTokenTtl);
+
+        $server->enableGrantType(
+            new OidcClientCredentialsGrant($this->pipeline, $this->auditor),
+            $this->lifetimes->clientCredentials(),
+        );
+
+        if (config('oidc.token_exchange.enabled', true)) {
+            $server->enableGrantType(new TokenExchangeGrant($this->exchanger), $accessTokenTtl);
+        }
+    }
+
+    private function auditClientAuthenticationFailures(AuthorizationServer $server): void
+    {
+        $listener = function (RequestEvent $event): void {
+            $body = $event->getRequest()->getParsedBody();
+            $clientId = is_array($body) ? ($body['client_id'] ?? null) : null;
+            $clientId = is_string($clientId) ? $clientId : ($event->getRequest()->getQueryParams()['client_id'] ?? null);
+
+            $this->auditor->log(AuditEventType::ClientAuthenticationFailed, clientId: is_string($clientId) ? $clientId : null, context: [
+                'endpoint' => trim($event->getRequest()->getUri()->getPath(), '/'),
+                'reason' => $event->eventName(),
+            ]);
+        };
+
+        $server->getEmitter()->subscribeTo(RequestEvent::CLIENT_AUTHENTICATION_FAILED, $listener);
+        $server->getEmitter()->subscribeTo(RequestEvent::REFRESH_TOKEN_CLIENT_FAILED, $listener);
     }
 }

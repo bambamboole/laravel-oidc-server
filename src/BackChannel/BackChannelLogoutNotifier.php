@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\BackChannel;
 
-use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Session\OidcSessionRepository;
 
 class BackChannelLogoutNotifier

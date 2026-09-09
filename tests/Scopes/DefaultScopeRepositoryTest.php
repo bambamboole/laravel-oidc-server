@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Contracts\ScopeCatalog;
-use Bambamboole\LaravelOidc\Server\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Scopes\ScopeCatalog;
+use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Illuminate\Support\Facades\Exceptions;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 

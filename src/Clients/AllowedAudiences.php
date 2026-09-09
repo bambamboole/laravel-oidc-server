@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Models\Client;
-
 /**
  * The per-client audience allowlist (`allowed_exchange_audiences`) governs
  * every audience-carrying grant: token exchange and client-credentials

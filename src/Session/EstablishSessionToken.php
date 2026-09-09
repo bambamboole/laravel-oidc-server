@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Session;
 
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
-use Bambamboole\LaravelOidc\Server\Contracts\SessionTokenProvider;
 use Illuminate\Auth\Events\Login;
 use Throwable;
 

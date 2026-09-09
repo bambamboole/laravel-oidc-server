@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Models;
+namespace Bambamboole\LaravelOidc\Server\Token;
 
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Realm\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

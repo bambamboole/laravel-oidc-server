@@ -8,7 +8,7 @@ declare(strict_types=1);
  * chain MCP clients drive.
  */
 
-use Bambamboole\LaravelOidc\Server\Models\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Workbench\App\Models\User;
 

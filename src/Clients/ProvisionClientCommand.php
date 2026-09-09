@@ -2,10 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Console;
+namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentWriteException;
 use Illuminate\Console\Command;

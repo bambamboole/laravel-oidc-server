@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Bridge;
 
+use Bambamboole\LaravelOidc\Server\Clients\Client as ClientModel;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository as ClientModelRepository;
-use Bambamboole\LaravelOidc\Server\Models\Client as ClientModel;
 use Illuminate\Contracts\Hashing\Hasher;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Repositories\ClientRepositoryInterface;

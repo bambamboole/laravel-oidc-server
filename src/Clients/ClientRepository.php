@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Models\Client;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 use RuntimeException;

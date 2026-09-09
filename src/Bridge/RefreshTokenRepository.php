@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Bridge;
 
-use Bambamboole\LaravelOidc\Server\Models\RefreshToken as RefreshTokenModel;
+use Bambamboole\LaravelOidc\Server\Token\RefreshToken as RefreshTokenModel;
 use League\OAuth2\Server\Entities\RefreshTokenEntityInterface;
 use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
 

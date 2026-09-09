@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Contracts;
+namespace Bambamboole\LaravelOidc\Server\User;
 
-use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\PersonalAccess\PersonalAccessTokenResult;
 use Bambamboole\LaravelOidc\Server\Token\CurrentAccessToken;
+use Bambamboole\LaravelOidc\Server\Token\Token;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 

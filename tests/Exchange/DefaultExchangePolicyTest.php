@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Exchange\DefaultExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Exchange\ExchangeRequest;
-use Bambamboole\LaravelOidc\Server\Models\Client;
 use League\OAuth2\Server\Exception\OAuthServerException;
 
 /** @param  string[]  $audiences */

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Bridge;
 
-use Bambamboole\LaravelOidc\Server\Models\AuthCode as AuthCodeModel;
+use Bambamboole\LaravelOidc\Server\Token\AuthCode as AuthCodeModel;
 use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;

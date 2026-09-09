@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Contracts;
-
-use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
+namespace Bambamboole\LaravelOidc\Server\Claims;
 
 interface ClaimsResolver
 {

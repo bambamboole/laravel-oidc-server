@@ -2,11 +2,8 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Http\Responses;
+namespace Bambamboole\LaravelOidc\Server\Forms;
 
-use Bambamboole\LaravelOidc\Server\Contracts\AuthorizationViewResponse;
-use Bambamboole\LaravelOidc\Server\Forms\ConsentPrompt;
-use Bambamboole\LaravelOidc\Server\Forms\ConsentView;
 use Illuminate\Contracts\Support\Responsable;
 
 /**

@@ -6,9 +6,9 @@ namespace Bambamboole\LaravelOidc\Server\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
-use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
-use Bambamboole\LaravelOidc\Server\Contracts\OAuthenticatable;
+use Bambamboole\LaravelOidc\Server\Claims\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Http\OAuthError;
+use Bambamboole\LaravelOidc\Server\User\OAuthenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

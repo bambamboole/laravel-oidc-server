@@ -9,13 +9,13 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Exchange\ExchangeGrantResult;
+use Bambamboole\LaravelOidc\Server\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Exchange\ExchangeRequest;
 use Bambamboole\LaravelOidc\Server\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\Token\Token;
 use Workbench\App\Models\User;
 
 const ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
