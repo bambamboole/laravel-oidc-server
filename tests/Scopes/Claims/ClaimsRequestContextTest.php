@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Lcobucci\JWT\Encoding\JoseEncoder;

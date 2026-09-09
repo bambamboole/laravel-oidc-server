@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyRecord;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Support\Facades\DB;
 
@@ -22,7 +23,7 @@ function useDatabaseSigningKeys(): DatabaseSigningKeyStore
     $store = new DatabaseSigningKeyStore;
 
     app()->instance(SigningKeyStore::class, $store);
-    app()->instance(SigningKeys::class, new SigningKeys($store));
+    app()->instance(SigningKeys::class, new StoredSigningKeys($store));
 
     return $store;
 }

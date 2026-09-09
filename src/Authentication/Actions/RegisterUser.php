@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Users\Actions\CreateUser;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Users\CreateUser;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Container\Container;

@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\PendingAuthorization;
-use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
-use Bambamboole\LaravelOidc\Server\Credentials\PendingMfaChallenge;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Server\Shared\Credentials\SecondFactorGate;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -23,12 +24,12 @@ use Illuminate\Support\Facades\Log;
  * password reset, passkey) must finalize through here — a path that calls
  * guard->login() directly bypasses the policy and leaves amr untracked.
  */
-final class InteractiveLoginFinalizer
+final class InteractiveLoginFinalizer implements LoginFinalizer
 {
     use ResolvesIdentityGuard;
 
     public function __construct(
-        private readonly FactorRegistry $factors,
+        private readonly SecondFactorGate $secondFactor,
         private readonly AuthSessionState $sessionState,
         private readonly PostLoginPipeline $pipeline,
         private readonly DeviceRecognizer $deviceRecognizer,
@@ -78,9 +79,9 @@ final class InteractiveLoginFinalizer
 
         $this->sessionState->putClaims($api->idTokenClaims(), $api->accessTokenClaims());
 
-        $enrollments = $this->factors->configuredChallengeableEnrollments($user);
+        $challengeable = $this->secondFactor->hasChallengeableFactors($user);
 
-        if ($api->mfaRequired() && $enrollments === []) {
+        if ($api->mfaRequired() && ! $challengeable) {
             Log::warning('oidc: login denied, MFA required but no challengeable factor', ['method' => $method]);
             $this->auditor->log(AuditEventType::LoginFailed, userId: (string) $user->getAuthIdentifier(), context: [
                 'method' => $method,
@@ -91,13 +92,8 @@ final class InteractiveLoginFinalizer
             return LoginOutcome::Denied;
         }
 
-        if ($enrollments !== [] && ($challengeEnrolledFactors || $api->mfaRequired())) {
-            (new PendingMfaChallenge(
-                userId: $user->getAuthIdentifier(),
-                remember: $remember,
-                factor: $enrollments[0]->providerKey,
-                factorId: $enrollments[0]->id,
-            ))->store();
+        if ($challengeable && ($challengeEnrolledFactors || $api->mfaRequired())) {
+            $this->secondFactor->beginChallenge($user, $remember);
 
             return LoginOutcome::MfaChallenge;
         }

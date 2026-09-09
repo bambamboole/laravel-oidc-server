@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Keys;
 
-use Bambamboole\LaravelOidc\Server\Realms\Concerns\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

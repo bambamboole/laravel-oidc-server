@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;

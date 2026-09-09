@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Context;
 
-use Bambamboole\LaravelOidc\Server\Realms\Concerns\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;

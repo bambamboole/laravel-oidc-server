@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Authentication\Actions\AuthenticateWithPassword;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;

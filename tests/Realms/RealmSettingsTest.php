@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
-use Bambamboole\LaravelOidc\Server\Realms\Realm;
-use Bambamboole\LaravelOidc\Server\Realms\RealmRepository;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\BrokeringSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\ClientSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\CredentialSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\KeySettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\LoginSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\ScopeSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\SessionSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\TokenSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\BrokeringSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\CredentialSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\KeySettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\LoginSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ScopeSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\SessionSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\TokenSettings;
 use Illuminate\Support\Facades\Route;
 
 /** A realm the way an application model would implement it: its own settings, the rest configured. */

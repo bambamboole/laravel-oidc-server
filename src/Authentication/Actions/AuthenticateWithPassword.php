@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
 use SensitiveParameter;

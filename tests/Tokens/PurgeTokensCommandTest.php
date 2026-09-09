@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContext;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
@@ -79,4 +80,23 @@ it('purges refresh tokens and authorization codes too', function () {
     expect(Token::query()->count())->toBe(0)
         ->and(RefreshToken::query()->count())->toBe(0)
         ->and(AuthCode::query()->count())->toBe(0);
+});
+
+it('prunes access-token context links beyond the session-plus-refresh retention horizon', function () {
+    $stale = new AccessTokenContext;
+    $stale->access_token_id = 'stale';
+    $stale->context_id = 'ctx';
+    $stale->created_at = now()->subDays(400);
+    $stale->save();
+
+    $fresh = new AccessTokenContext;
+    $fresh->access_token_id = 'fresh';
+    $fresh->context_id = 'ctx';
+    $fresh->created_at = now();
+    $fresh->save();
+
+    $this->artisan('oidc:purge')->assertSuccessful();
+
+    expect(AccessTokenContext::query()->where('access_token_id', 'stale')->exists())->toBeFalse()
+        ->and(AccessTokenContext::query()->where('access_token_id', 'fresh')->exists())->toBeTrue();
 });

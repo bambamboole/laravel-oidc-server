@@ -16,7 +16,6 @@ use Bambamboole\LaravelOidc\Server\Credentials\CredentialsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Installation\InstallationServiceProvider;
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Keys\KeysServiceProvider;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
 use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
@@ -26,8 +25,8 @@ use Bambamboole\LaravelOidc\Server\Sessions\ForgetSessionToken;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenGuard;
 use Bambamboole\LaravelOidc\Server\Sessions\StartOidcSession;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Tokens\TokensServiceProvider;
-use Bambamboole\LaravelOidc\Server\Users\UsersServiceProvider;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Console\AboutCommand;
@@ -48,7 +47,6 @@ class OidcServiceProvider extends ServiceProvider
         RealmsServiceProvider::class,
         KeysServiceProvider::class,
         ScopesServiceProvider::class,
-        UsersServiceProvider::class,
         CredentialsServiceProvider::class,
         BrokeringServiceProvider::class,
         ClientsServiceProvider::class,

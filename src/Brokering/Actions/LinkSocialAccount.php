@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Brokering\Actions;
 
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountAlreadyLinkedException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 

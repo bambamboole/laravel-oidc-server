@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Lcobucci\JWT\Encoding\JoseEncoder;

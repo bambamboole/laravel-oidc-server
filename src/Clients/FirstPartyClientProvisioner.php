@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;

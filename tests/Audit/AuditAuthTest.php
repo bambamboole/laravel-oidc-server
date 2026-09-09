@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Server\Credentials\RecoveryCodeProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;

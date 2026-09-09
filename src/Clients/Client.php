@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Realms\Concerns\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Illuminate\Database\Eloquent\Casts\Attribute;

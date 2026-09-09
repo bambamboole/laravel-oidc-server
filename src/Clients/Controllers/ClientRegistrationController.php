@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Clients\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Clients\Actions\RegisterClient;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRegistrationException;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;

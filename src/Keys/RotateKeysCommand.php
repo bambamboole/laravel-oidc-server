@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Keys;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Illuminate\Console\Command;
 use RuntimeException;
 use Throwable;

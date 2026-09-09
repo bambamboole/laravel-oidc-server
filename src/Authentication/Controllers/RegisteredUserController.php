@@ -6,8 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Actions\RegisterUser;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;

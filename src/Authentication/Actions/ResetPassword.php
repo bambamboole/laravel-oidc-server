@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\PasswordResetResult;
-use Bambamboole\LaravelOidc\Server\Users\Actions\ResetUserPassword;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;

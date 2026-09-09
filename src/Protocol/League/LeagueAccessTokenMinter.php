@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Protocol\League;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity as BridgeClient;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AccessTokenRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\MintedAccessToken;
 use DateInterval;

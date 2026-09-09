@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\AuditSink;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
 use Closure;
 use PHPUnit\Framework\Assert;
 

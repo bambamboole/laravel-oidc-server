@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**

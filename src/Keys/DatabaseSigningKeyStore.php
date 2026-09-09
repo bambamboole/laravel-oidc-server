@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Keys;
 
+use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 

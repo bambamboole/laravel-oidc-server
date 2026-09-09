@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Scopes;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Scopes\ScopeCatalog;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
-use Bambamboole\LaravelOidc\Server\Realms\Concerns\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;

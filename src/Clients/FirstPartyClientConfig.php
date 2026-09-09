@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
-use Bambamboole\LaravelOidc\Server\Realms\Settings\ClientSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
 
 final readonly class FirstPartyClientConfig
 {

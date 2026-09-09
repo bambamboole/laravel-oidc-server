@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 
 it('exposes per-flow lifetime defaults', function () {
     expect(config('oidc.token_lifetimes.access_token'))->toBe(900)

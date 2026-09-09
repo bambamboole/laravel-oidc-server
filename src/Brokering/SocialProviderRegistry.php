@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Closure;
 
 /**

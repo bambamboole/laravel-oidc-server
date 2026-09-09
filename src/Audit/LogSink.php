@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Audit;
 
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
 use DateTimeInterface;
 use Illuminate\Support\Facades\Log;
 

@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
-use Bambamboole\LaravelOidc\Server\Realms\Settings\BrokeringSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\ClientSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\CredentialSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\KeySettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\LoginSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\ScopeSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\SessionSettings;
-use Bambamboole\LaravelOidc\Server\Realms\Settings\TokenSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\BrokeringSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\CredentialSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\KeySettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\LoginSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ScopeSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\SessionSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\TokenSettings;
 
 /**
  * A realm whose settings are the `config('oidc.*')` values. The default for

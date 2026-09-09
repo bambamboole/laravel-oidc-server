@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Keys;
 
+use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Illuminate\Http\JsonResponse;
 
 class JwksController

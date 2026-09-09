@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Guard;
 
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckAudience;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;

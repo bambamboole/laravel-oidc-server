@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContext;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
@@ -17,7 +19,12 @@ class PurgeTokensCommand extends Command
         {--expired : Only purge expired records}
         {--hours=168 : Purge records that expired or were revoked at least this many hours ago}';
 
-    protected $description = 'Delete revoked and expired access tokens, refresh tokens and authorization codes';
+    protected $description = 'Delete revoked and expired access tokens, refresh tokens and authorization codes, and stale access-token context links';
+
+    public function __construct(private readonly RealmResolver $realms)
+    {
+        parent::__construct();
+    }
 
     public function handle(): int
     {
@@ -45,6 +52,24 @@ class PurgeTokensCommand extends Command
             $this->components->info("Purged {$deleted} record(s) from [".(new $model)->getTable().'].');
         }
 
+        $this->pruneContextLinks();
+
         return self::SUCCESS;
+    }
+
+    /**
+     * Link rows outlive their authentication context so refresh can distinguish
+     * "expired" from "unknown". They are retained until no live refresh token
+     * could reference them: absolute session lifetime plus refresh lifetime,
+     * independent of the --hours window.
+     */
+    private function pruneContextLinks(): void
+    {
+        $realm = $this->realms->current();
+        $horizon = now()->subSeconds($realm->sessions()->absoluteLifetime + $realm->tokens()->refreshTokenLifetime);
+
+        $deleted = AccessTokenContext::query()->where('created_at', '<', $horizon)->delete();
+
+        $this->components->info("Purged {$deleted} record(s) from [".(new AccessTokenContext)->getTable().'].');
     }
 }

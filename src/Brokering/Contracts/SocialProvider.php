@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Brokering\Contracts;
 
 use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 

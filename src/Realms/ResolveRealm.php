@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;

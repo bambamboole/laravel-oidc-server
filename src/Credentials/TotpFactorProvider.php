@@ -13,7 +13,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Credentials\Enums\FactorRole;
 use Bambamboole\LaravelOidc\Server\Credentials\Enums\FactorSetupKind;
 use Bambamboole\LaravelOidc\Server\Credentials\Models\TotpFactor;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;

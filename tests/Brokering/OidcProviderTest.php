@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Brokering\OidcProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
-use Bambamboole\LaravelOidc\Server\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Lcobucci\JWT\Configuration;

@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorVerification;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Workbench\App\Models\User;
 

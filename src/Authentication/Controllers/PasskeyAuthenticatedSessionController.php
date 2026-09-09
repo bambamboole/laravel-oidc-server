@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Authentication\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Passkeys\Actions\VerifyPasskey;

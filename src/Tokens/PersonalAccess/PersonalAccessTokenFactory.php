@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\PersonalAccess;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;

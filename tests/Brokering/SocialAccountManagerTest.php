@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Auth\GenericUser;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\UserProvider;

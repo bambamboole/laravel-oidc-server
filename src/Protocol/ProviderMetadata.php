@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Support\Facades\Route;
 
 /**

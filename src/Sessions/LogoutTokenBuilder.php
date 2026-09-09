@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions;
 
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use DateTimeImmutable;
 
 class LogoutTokenBuilder

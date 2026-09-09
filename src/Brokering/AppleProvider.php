@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Brokering;
 
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use DateTimeImmutable;
 use Illuminate\Http\Request;
 use Lcobucci\JWT\Encoding\ChainedFormatter;

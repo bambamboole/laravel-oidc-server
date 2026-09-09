@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Illuminate\Http\JsonResponse;
 
 /**

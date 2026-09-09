@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\League\Grants;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Grants\Concerns\HasAuthenticationContextIssuance;
 use Bambamboole\LaravelOidc\Server\Protocol\League\IdTokenResponse;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use DateInterval;

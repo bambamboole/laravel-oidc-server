@@ -13,7 +13,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewExceptio
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
-use Bambamboole\LaravelOidc\Server\Users\OAuthenticatable;
+use Bambamboole\LaravelOidc\Server\Tokens\OAuthenticatable;
 use DateInterval;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;

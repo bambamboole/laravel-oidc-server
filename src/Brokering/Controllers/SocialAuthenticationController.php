@@ -4,10 +4,6 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Brokering\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Brokering\Actions\LinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\InvalidStateException;
@@ -16,8 +12,12 @@ use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountAlreadyLinkedException
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -33,7 +33,7 @@ class SocialAuthenticationController
         private readonly SocialProviderRegistry $providers,
         private readonly SocialAccountManager $accounts,
         private readonly LinkSocialAccount $linkAccount,
-        private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly LoginFinalizer $finalizer,
         private readonly Auditor $auditor,
     ) {}
 

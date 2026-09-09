@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Clients\Actions\RegisterClient;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRegistrationException;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 
 it('registers a public authorization-code client from RFC 7591 metadata', function () {
     $audit = fakeAudit();

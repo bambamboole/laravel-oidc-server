@@ -5,8 +5,8 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Brokering\AbstractOAuth2Provider;
 use Bambamboole\LaravelOidc\Server\Brokering\InvalidStateException;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
 use Bambamboole\LaravelOidc\Server\Brokering\TokenResponse;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Audit;
 
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Illuminate\Auth\Events\Login;
 

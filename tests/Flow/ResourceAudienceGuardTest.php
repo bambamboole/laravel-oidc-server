@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckScopes;

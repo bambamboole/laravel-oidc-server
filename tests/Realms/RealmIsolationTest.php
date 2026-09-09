@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
 use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Realms\Realm;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Workbench\App\Models\User;
@@ -83,7 +84,7 @@ it('does not resolve an access token from another realm', function () {
 it('keeps signing keys per realm', function () {
     $store = new DatabaseSigningKeyStore;
     app()->instance(SigningKeyStore::class, $store);
-    app()->instance(SigningKeys::class, new SigningKeys($store));
+    app()->instance(SigningKeys::class, new StoredSigningKeys($store));
 
     enterRealm('acme');
     $store->rotate((new SigningKeyGenerator($store, app(RealmResolver::class)))->generate());

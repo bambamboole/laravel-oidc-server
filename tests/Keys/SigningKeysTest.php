@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Keys\GeneratedSigningKeys;
-use Bambamboole\LaravelOidc\Server\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Lcobucci\JWT\Encoding\JoseEncoder;
@@ -78,7 +78,7 @@ it('signs id_tokens with env-provided keys', function () {
 });
 
 it('reads every key through the store it was given', function () {
-    $keys = new SigningKeys(new class implements SigningKeyStore
+    $keys = new StoredSigningKeys(new class implements SigningKeyStore
     {
         public function signingKey(): SigningKey
         {

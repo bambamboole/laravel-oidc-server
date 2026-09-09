@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\League\Grants\Concerns;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;

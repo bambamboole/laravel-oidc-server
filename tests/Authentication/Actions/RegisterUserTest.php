@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Authentication\Actions\RegisterUser;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;

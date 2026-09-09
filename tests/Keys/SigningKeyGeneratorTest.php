@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 
 it('generates a usable keypair with a matching kid', function () {
     $generated = app(SigningKeyGenerator::class)->generate();

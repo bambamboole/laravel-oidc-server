@@ -7,7 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Credentials;
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\EnrollableFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Credentials\Models\RecoveryCode;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

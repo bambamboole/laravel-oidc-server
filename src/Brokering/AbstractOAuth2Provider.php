@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;

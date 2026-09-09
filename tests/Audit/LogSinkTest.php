@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\LogSink;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
 

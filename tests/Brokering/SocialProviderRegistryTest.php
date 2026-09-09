@@ -7,7 +7,7 @@ use Bambamboole\LaravelOidc\Server\Brokering\GoogleProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\OidcProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 

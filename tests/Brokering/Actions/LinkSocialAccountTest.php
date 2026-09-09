@@ -6,7 +6,7 @@ use Bambamboole\LaravelOidc\Server\Brokering\Actions\LinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Actions\UnlinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountAlreadyLinkedException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Auth\Access\AuthorizationException;
 use Workbench\App\Models\User;
 

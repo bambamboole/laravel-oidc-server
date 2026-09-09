@@ -6,8 +6,9 @@ namespace Bambamboole\LaravelOidc\Server\Credentials;
 
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
-use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
+use Bambamboole\LaravelOidc\Server\Shared\Credentials\SecondFactorGate;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passkeys\Contracts\PasskeyUser;
@@ -21,6 +22,7 @@ class CredentialsServiceProvider extends ServiceProvider
         $this->app->singleton(TotpFactorProvider::class);
         $this->app->singleton(RecoveryCodeProvider::class);
         $this->app->singleton(WebAuthnFactorProvider::class);
+        $this->app->singleton(SecondFactorGate::class, EnrolledFactorGate::class);
         $this->app->singleton(FactorRegistry::class, function (Application $app): FactorRegistry {
             $registry = new FactorRegistry($app->make(RealmResolver::class));
 

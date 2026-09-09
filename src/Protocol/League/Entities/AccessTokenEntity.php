@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\League\Entities;
 
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
 use Bambamboole\LaravelOidc\Server\Tokens\MintedAccessToken;
 use DateTimeImmutable;

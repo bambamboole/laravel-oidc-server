@@ -1,26 +1,26 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditSink;
-use Bambamboole\LaravelOidc\Server\Brokering\Actions\CreateUserFromSocialAccount;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialUser;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
-use Bambamboole\LaravelOidc\Server\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Protocol\League\EncryptionKey;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity as BridgeClient;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
-use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\CreateUserFromSocialAccount;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Users\CreateUser;
+use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
 use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckAudience;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
-use Bambamboole\LaravelOidc\Server\Users\Actions\CreateUser;
-use Bambamboole\LaravelOidc\Server\Users\Actions\ResetUserPassword;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Contracts\Support\Responsable;

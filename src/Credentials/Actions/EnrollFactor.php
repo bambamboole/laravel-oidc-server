@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Credentials\Actions;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\EnrollableFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**

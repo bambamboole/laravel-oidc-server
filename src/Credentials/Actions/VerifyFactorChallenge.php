@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Credentials\Actions;
 
-use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorChallenge;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorVerification;
 use Bambamboole\LaravelOidc\Server\Credentials\PendingMfaChallenge;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
