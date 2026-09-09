@@ -123,12 +123,12 @@ final readonly class FirstPartyClientProvisioner
 
             if ($client !== null
                 && $adoptClientId !== null
-                && (string) $client->getKey() !== $adoptClientId) {
+                && $client->client_id !== $adoptClientId) {
                 throw new FirstPartyClientProvisioningException('A different client already owns the first-party provisioning key.');
             }
 
             if ($client === null && $adoptClientId !== null) {
-                $client = Client::query()->lockForUpdate()->find($adoptClientId);
+                $client = Client::query()->inRealm()->where('client_id', $adoptClientId)->lockForUpdate()->first();
 
                 if ($client === null) {
                     throw new FirstPartyClientProvisioningException("The adoption client [{$adoptClientId}] does not exist.");
@@ -172,7 +172,7 @@ final readonly class FirstPartyClientProvisioner
 
             return new FirstPartyClientProvisioningResult(
                 client: $client->refresh(),
-                clientId: (string) $client->getKey(),
+                clientId: $client->client_id,
                 clientSecret: $secret,
                 wasCreated: $created,
                 secretRotated: $rotateSecret,

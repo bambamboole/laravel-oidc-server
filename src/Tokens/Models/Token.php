@@ -52,6 +52,11 @@ class Token extends Model
         return $this->belongsTo(Client::class, 'client_id');
     }
 
+    public function issuedTo(Client $client): bool
+    {
+        return (string) $this->client_id === (string) $client->getKey();
+    }
+
     /** @return HasOne<RefreshToken, $this> */
     public function refreshToken(): HasOne
     {

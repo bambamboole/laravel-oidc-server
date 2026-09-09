@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Middleware;
 
-use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthError;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\AccessTokenBearer;
 use Closure;
 use Illuminate\Http\Request;
@@ -26,12 +26,12 @@ class CheckScopes
         $user = $request->user();
 
         if (! $user instanceof AccessTokenBearer || $user->currentAccessToken() === null) {
-            OAuthError::bearer('invalid_token', 401);
+            throw OAuthServerException::invalidToken();
         }
 
         foreach ($scopes as $scope) {
             if (! $user->currentAccessToken()->can($scope)) {
-                OAuthError::bearer('insufficient_scope', 403);
+                throw OAuthServerException::insufficientScope();
             }
         }
 

@@ -44,7 +44,7 @@ it('advertises the OAuth 2.1 / RFC 8414 metadata fields', function () {
         ->and($doc->json('request_parameter_supported'))->toBeFalse()
         ->and($doc->json('request_uri_parameter_supported'))->toBeFalse()
         ->and($doc->json('introspection_endpoint_auth_methods_supported'))->toBe(['client_secret_basic', 'client_secret_post'])
-        ->and($doc->json('revocation_endpoint_auth_methods_supported'))->toBe(['client_secret_basic', 'client_secret_post']);
+        ->and($doc->json('revocation_endpoint_auth_methods_supported'))->toBe(['client_secret_basic', 'client_secret_post', 'none']);
 });
 
 it('advertises back-channel logout support', function () {

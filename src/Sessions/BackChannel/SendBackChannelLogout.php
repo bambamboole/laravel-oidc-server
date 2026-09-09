@@ -21,15 +21,16 @@ class SendBackChannelLogout implements ShouldQueue
 
     public int $tries = 3;
 
+    /** @param  string  $clientKey  the client's primary key, as recorded on the session participant */
     public function __construct(
         public readonly string $sid,
-        public readonly string $clientId,
+        public readonly string $clientKey,
     ) {}
 
     public function handle(OidcSessionRepository $registry, LogoutTokenBuilder $builder): void
     {
         $session = $registry->find($this->sid);
-        $client = Client::query()->find($this->clientId);
+        $client = Client::query()->find($this->clientKey);
 
         if ($session === null || $client === null) {
             return;
@@ -40,6 +41,6 @@ class SendBackChannelLogout implements ShouldQueue
             return;
         }
 
-        Http::asForm()->post($uri, ['logout_token' => $builder->build($session, $this->clientId)])->throw();
+        Http::asForm()->post($uri, ['logout_token' => $builder->build($session, $client->client_id)])->throw();
     }
 }

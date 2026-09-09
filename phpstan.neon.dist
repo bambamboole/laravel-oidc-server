@@ -56,6 +56,7 @@ parameters:
                 - tests/Flow/Rfc9068FlowTest.php
                 - tests/Flow/MaxAgeTest.php
                 - tests/Audit/AuditTokenTest.php
+                - tests/Clients/ClientIdentityTest.php
                 - tests/Protocol/AuthorizeEndpointTest.php
                 - tests/Protocol/TokenEndpointTest.php
                 - tests/Protocol/UserinfoEndpointTest.php

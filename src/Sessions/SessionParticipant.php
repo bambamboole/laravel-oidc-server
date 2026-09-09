@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property string $sid
- * @property string $client_id
+ * @property string $client_id The client's primary key.
  * @property ?Carbon $created_at
  */
 class SessionParticipant extends Model

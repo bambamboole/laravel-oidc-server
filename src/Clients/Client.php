@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $name
  * @property ?string $secret
  * @property ?string $provider
- * @property string $token_endpoint_auth_method
+ * @property TokenEndpointAuthMethod $token_endpoint_auth_method
  * @property array<int, string> $redirect_uris
  * @property array<int, string> $post_logout_redirect_uris
  * @property array<int, string> $grant_types
@@ -57,6 +57,7 @@ class Client extends Model
             'redirect_uris' => 'array',
             'post_logout_redirect_uris' => 'array',
             'grant_types' => 'array',
+            'token_endpoint_auth_method' => TokenEndpointAuthMethod::class,
             'scopes' => 'array',
             'allowed_exchange_audiences' => 'array',
             'backchannel_logout_session_required' => 'bool',

@@ -37,7 +37,7 @@ it('rejects with insufficient_scope a token whose aud the guard accepts but Chec
     $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
-        ->assertHeader('WWW-Authenticate', 'Bearer error="insufficient_scope"');
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="insufficient_scope"');
 });
 
 it('rejects an id_token presented as a bearer (typ is not at+jwt)', function () {
@@ -92,5 +92,5 @@ it('rejects with invalid_token when CheckAudience runs without a preceding guard
     $this->getJson('/test/orders-unguarded', ['Authorization' => "Bearer $jwt"])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
-        ->assertHeader('WWW-Authenticate', 'Bearer error="invalid_token"');
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token"');
 });

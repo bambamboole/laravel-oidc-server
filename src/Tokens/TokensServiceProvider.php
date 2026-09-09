@@ -42,7 +42,7 @@ class TokensServiceProvider extends ServiceProvider
         $this->app->singleton(AccessTokenContextLink::class);
         $this->app->bind(SignedJwtParser::class, TokenInspector::class);
         $this->app->singleton(AccessTokenMinter::class, JwtAccessTokenMinter::class);
-        $this->app->singleton(AccessTokenRevoker::class, StoredAccessTokenRevoker::class);
+        $this->app->singleton(AccessTokenRevoker::class, TokenRevoker::class);
         $this->app->singleton(ExchangePolicy::class, DefaultExchangePolicy::class);
         $this->app->singleton(TokenExchanger::class);
     }

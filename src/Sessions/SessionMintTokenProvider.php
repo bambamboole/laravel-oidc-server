@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
@@ -27,6 +27,7 @@ use RuntimeException;
 class SessionMintTokenProvider implements SessionTokenProvider
 {
     public function __construct(
+        private readonly ClientRepository $clients,
         private readonly AccessTokenMinter $minter,
         private readonly AccessTokenRevoker $revoker,
         private readonly ScopeRepository $scopes,
@@ -58,7 +59,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
 
     public function establish(Authenticatable $user): void
     {
-        $client = Client::query()->find(app(FirstPartyClientConfig::class)->clientId());
+        $client = $this->clients->findActive((string) app(FirstPartyClientConfig::class)->clientId());
 
         if ($client === null) {
             throw new RuntimeException('The oidc.first_party.client_id is not configured or does not exist.');

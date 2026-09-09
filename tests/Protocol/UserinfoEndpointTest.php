@@ -21,7 +21,7 @@ it('returns an RFC 6750 error on an unauthenticated userinfo request', function 
     $response = $this->getJson('/realms/default/oauth/userinfo');
     $response->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="OIDC", error="invalid_token"');
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token"');
 });
 
 it('returns insufficient_scope when the token lacks openid', function () {
@@ -29,7 +29,7 @@ it('returns insufficient_scope when the token lacks openid', function () {
     $this->getJson('/realms/default/oauth/userinfo')
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="OIDC", error="insufficient_scope"');
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="insufficient_scope"');
 });
 
 it('returns sub plus scope-filtered claims', function () {

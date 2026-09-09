@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Protocol;
+namespace Bambamboole\LaravelOidc\Server\Shared\Protocol;
 
-use Bambamboole\LaravelOidc\Server\Protocol\Http\RedirectUri;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 
 /**
- * An RFC 6749 §4.1.2.1 / §5.2 error, rendered as the HTTP response the
- * protocol prescribes: a redirect back to the client where one is validated,
- * a JSON error otherwise. Extends HttpResponseException so Laravel renders it
- * without reporting it.
+ * An OAuth error, rendered as the HTTP response the protocol prescribes: a
+ * redirect back to the client where one is validated (RFC 6749 §4.1.2.1), a
+ * JSON body otherwise (§5.2, RFC 6750 §3). Extends HttpResponseException so
+ * Laravel renders it without reporting it.
  */
 final class OAuthServerException extends HttpResponseException
 {
@@ -27,7 +27,7 @@ final class OAuthServerException extends HttpResponseException
         array $headers = [],
     ) {
         parent::__construct($redirectUri !== null
-            ? new RedirectResponse(RedirectUri::append($redirectUri, array_filter([
+            ? new RedirectResponse(self::appendQuery($redirectUri, array_filter([
                 'error' => $error,
                 'error_description' => $description,
                 'state' => $state,
@@ -46,9 +46,22 @@ final class OAuthServerException extends HttpResponseException
         return new self('invalid_request', $description, 400, $redirectUri, $state);
     }
 
+    /** RFC 6749 §5.2: the challenge names the realm the client failed to authenticate against. */
     public static function invalidClient(string $description = 'Client authentication failed.'): self
     {
-        return new self('invalid_client', $description, 401, headers: ['WWW-Authenticate' => 'Basic realm="OIDC"']);
+        return new self('invalid_client', $description, 401, headers: ['WWW-Authenticate' => 'Basic realm="'.self::realm().'"']);
+    }
+
+    /** RFC 6750 §3.1. */
+    public static function invalidToken(string $description = 'The access token is invalid.'): self
+    {
+        return new self('invalid_token', $description, 401, headers: ['WWW-Authenticate' => self::bearerChallenge('invalid_token')]);
+    }
+
+    /** RFC 6750 §3.1. */
+    public static function insufficientScope(string $description = 'The access token does not grant the required scope.'): self
+    {
+        return new self('insufficient_scope', $description, 403, headers: ['WWW-Authenticate' => self::bearerChallenge('insufficient_scope')]);
     }
 
     public static function invalidGrant(string $description): self
@@ -102,5 +115,26 @@ final class OAuthServerException extends HttpResponseException
     public static function serverError(string $description): self
     {
         return new self('server_error', $description, 500);
+    }
+
+    private static function bearerChallenge(string $error): string
+    {
+        return 'Bearer realm="'.self::realm().'", error="'.$error.'"';
+    }
+
+    private static function realm(): string
+    {
+        return app(RealmResolver::class)->current()->id();
+    }
+
+    /**
+     * Appends response parameters to a client's redirect URI, keeping any
+     * query the registered URI already carries.
+     *
+     * @param  array<string, string>  $parameters
+     */
+    private static function appendQuery(string $uri, array $parameters): string
+    {
+        return $uri.(str_contains($uri, '?') ? '&' : '?').http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
     }
 }

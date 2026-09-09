@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('secret')->nullable();
             $table->string('provider')->nullable();
-            $table->string('token_endpoint_auth_method')->default('client_secret_basic');
+            $table->string('token_endpoint_auth_method');
             $table->json('redirect_uris');
             $table->json('post_logout_redirect_uris')->nullable();
             $table->json('grant_types');

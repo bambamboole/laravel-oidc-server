@@ -6,10 +6,9 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Authorize;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\Http\RedirectUri;
-use Bambamboole\LaravelOidc\Server\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
 use DateInterval;
@@ -64,13 +63,19 @@ final readonly class AuthorizationCodeIssuer
         ]);
 
         if ($sid !== null) {
-            $this->sessions->recordParticipant($sid, $client->client_id);
+            $this->sessions->recordParticipant($sid, (string) $client->getKey());
         }
 
-        return new RedirectResponse(RedirectUri::append($request->redirectUri, array_filter([
+        return new RedirectResponse($this->appendQuery($request->redirectUri, array_filter([
             'code' => $code,
             'state' => $request->state,
         ], fn (?string $value): bool => $value !== null)));
+    }
+
+    /** @param  array<string, string>  $parameters */
+    private function appendQuery(string $uri, array $parameters): string
+    {
+        return $uri.(str_contains($uri, '?') ? '&' : '?').http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
     }
 
     public function deny(AuthorizeRequest $request): Response

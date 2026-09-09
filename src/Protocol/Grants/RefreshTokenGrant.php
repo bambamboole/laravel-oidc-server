@@ -8,15 +8,16 @@ use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
-use Bambamboole\LaravelOidc\Server\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 use Illuminate\Http\Request;
 
 /**
@@ -35,7 +36,7 @@ final readonly class RefreshTokenGrant implements Grant
         private AuthenticationContextStore $contexts,
         private AccessTokenContextLink $contextLink,
         private OidcSessionRepository $sessions,
-        private TokenLineage $lineage,
+        private TokenRevoker $revoker,
         private Auditor $auditor,
     ) {}
 
@@ -62,7 +63,7 @@ final readonly class RefreshTokenGrant implements Grant
             throw OAuthServerException::invalidGrant('The refresh token is invalid.');
         }
 
-        if ((string) $accessToken->client_id !== (string) $client->getKey()) {
+        if (! $accessToken->issuedTo($client)) {
             $this->auditor->log(AuditEventType::ClientAuthenticationFailed, clientId: $client->client_id, context: [
                 'endpoint' => $request->path(),
                 'reason' => 'refresh_token_client_mismatch',
@@ -73,7 +74,7 @@ final readonly class RefreshTokenGrant implements Grant
 
         if ($refreshToken->revoked) {
             if ($accessToken->auth_code_id !== null) {
-                $this->lineage->revoke($accessToken->auth_code_id);
+                $this->revoker->revokeChain($accessToken->auth_code_id);
             }
 
             $this->deny('refresh_token_reused', 'The refresh token has been revoked.');
@@ -108,8 +109,7 @@ final readonly class RefreshTokenGrant implements Grant
         $scopes = $this->scopes->finalize($requested, self::TYPE, $client, (string) $userId);
         $context = $this->activeContext($accessToken);
 
-        Token::query()->whereKey($accessToken->id)->update(['revoked' => true]);
-        RefreshToken::query()->whereKey($refreshToken->id)->update(['revoked' => true]);
+        $this->revoker->revoke($accessToken->id);
 
         return $this->issuer->issue(
             client: $client,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Sessions\Actions\EndSession;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
@@ -23,6 +23,7 @@ class EndSessionController
     use RespondsToInertiaExternalRedirects;
 
     public function __construct(
+        private readonly ClientRepository $clients,
         private readonly EndSession $endSession,
         private readonly RealmResolver $realms,
     ) {}
@@ -107,7 +108,7 @@ class EndSessionController
         }
 
         $clientId = $hint->claims()->get('aud')[0] ?? null;
-        $client = is_string($clientId) ? Client::query()->where('client_id', $clientId)->first() : null;
+        $client = is_string($clientId) ? $this->clients->find($clientId) : null;
 
         if ($client === null) {
             return null;

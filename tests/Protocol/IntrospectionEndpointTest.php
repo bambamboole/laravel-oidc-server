@@ -38,7 +38,7 @@ it('rejects requests without client authentication', function () {
     $this->postJson('/realms/default/oauth/introspect', ['token' => 'x'])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
-        ->assertHeader('WWW-Authenticate', 'Basic realm="OIDC"');
+        ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
 });
 
 it('omits sub and exp when the token has no user or expiry', function () {

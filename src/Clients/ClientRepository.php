@@ -5,36 +5,24 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Model-level client administration; the token endpoint authenticates
- * clients through {@see self::validateSecret()}.
+ * Client lookup and administration. `client_id` is the identifier relying
+ * parties send and every artifact that leaves the process carries; the
+ * primary key is what foreign keys and in-process comparisons use.
  */
 class ClientRepository
 {
-    public function __construct(private readonly Hasher $hasher) {}
-
-    /**
-     * A public client authenticates with no secret; a confidential client only
-     * with the one hashed on its record.
-     */
-    public function validateSecret(Client $client, ?string $clientSecret): bool
-    {
-        if (! $client->confidential()) {
-            return $clientSecret === null || $clientSecret === '';
-        }
-
-        return $clientSecret !== null
-            && $clientSecret !== ''
-            && $this->hasher->check($clientSecret, (string) $client->getAttributes()['secret']);
-    }
-
     public function find(string $clientId): ?Client
     {
         return Client::query()->inRealm()->where('client_id', $clientId)->first();
+    }
+
+    public function findByKey(string $key): ?Client
+    {
+        return Client::query()->inRealm()->find($key);
     }
 
     public function findActive(string $clientId): ?Client
@@ -117,6 +105,7 @@ class ClientRepository
             'redirect_uris' => $redirectUris,
             'post_logout_redirect_uris' => [],
             'grant_types' => $grantTypes,
+            'token_endpoint_auth_method' => $confidential ? TokenEndpointAuthMethod::ClientSecretPost : TokenEndpointAuthMethod::None,
             'allowed_exchange_audiences' => [],
             'revoked' => false,
             'owner_type' => $user !== null ? $user::class : null,

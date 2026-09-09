@@ -17,7 +17,7 @@ class ProvisionClientCommand extends Command
         {--post-logout-redirect-uri=* : Registered post-logout redirect URI}
         {--audience=* : Allowed token-exchange audience}
         {--trusted : Skip consent for this first-party client}
-        {--adopt= : Adopt an existing Passport client ID}
+        {--adopt= : Adopt the existing client with this client_id}
         {--rotate : Rotate the client secret explicitly}
         {--write-env : Write provider client ID and trusted state to .env}';
 

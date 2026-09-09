@@ -91,12 +91,12 @@ class TokenExchanger
             user: $user,
             client: $requestingClient,
             scopes: $scopeIds,
-            audience: $result->audience[0] ?? (string) $requestingClient->getKey(),
+            audience: $result->audience[0] ?? $requestingClient->client_id,
             subjectClaims: $claims,
         ), $result->context);
 
         if ($api->isDenied()) {
-            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: $result->userId, clientId: (string) $requestingClient->getKey(), context: array_filter([
+            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: $result->userId, clientId: $requestingClient->client_id, context: array_filter([
                 'grant_type' => self::GRANT_URN,
                 'reason' => 'pipeline_denied',
                 'deny_reason' => $api->denyReason(),
@@ -107,7 +107,7 @@ class TokenExchanger
 
         $ttl = $this->cappedTtl($accessTokenTTL ?? $this->realms->current()->tokens()->accessToken(), $result->expiresAt);
 
-        $act = ['client_id' => (string) $requestingClient->getKey()];
+        $act = ['client_id' => $requestingClient->client_id];
 
         if (isset($claims['act']) && is_array($claims['act'])) {
             $act['act'] = $claims['act'];
@@ -115,7 +115,7 @@ class TokenExchanger
 
         $token = $this->minter->mint($result->userId, $requestingClient->client_id, $scopeIds, $ttl, $result->audience, $api->accessTokenClaims(), $act);
 
-        $this->auditor->log(AuditEventType::TokenIssued, userId: $result->userId, clientId: (string) $requestingClient->getKey(), context: [
+        $this->auditor->log(AuditEventType::TokenIssued, userId: $result->userId, clientId: $requestingClient->client_id, context: [
             'grant_type' => self::GRANT_URN,
             'jti' => $token->jti,
             'audience' => $result->audience,
@@ -127,7 +127,7 @@ class TokenExchanger
 
     private function deny(Client $requestingClient, string $reason, string $message): never
     {
-        $this->auditor->log(AuditEventType::TokenIssuanceFailed, clientId: (string) $requestingClient->getKey(), context: [
+        $this->auditor->log(AuditEventType::TokenIssuanceFailed, clientId: $requestingClient->client_id, context: [
             'grant_type' => self::GRANT_URN,
             'reason' => $reason,
         ]);

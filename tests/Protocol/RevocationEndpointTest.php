@@ -51,7 +51,7 @@ it('rejects unauthenticated revocation', function () {
     $this->postJson('/realms/default/oauth/revoke', ['token' => $this->jwt])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
-        ->assertHeader('WWW-Authenticate', 'Basic realm="OIDC"');
+        ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
 });
 
 it('revokes a refresh token and its linked access token for its own client', function () {
@@ -81,4 +81,18 @@ it('silently ignores refresh tokens of other clients per rfc 7009', function () 
 
     expect($refreshToken->refresh()->getAttribute('revoked'))->toBeFalse()
         ->and($accessToken->refresh()->getAttribute('revoked'))->toBeFalse();
+});
+
+it('lets a public client revoke its own refresh token', function () {
+    $public = app(ClientRepository::class)->createAuthorizationCodeGrantClient('SPA', ['https://spa.test/cb'], confidential: false);
+    [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this, (string) $public->id);
+
+    $this->postJson('/realms/default/oauth/revoke', [
+        'client_id' => $public->client_id,
+        'token' => $refreshTokenValue,
+        'token_type_hint' => 'refresh_token',
+    ])->assertOk();
+
+    expect($refreshToken->refresh()->getAttribute('revoked'))->toBeTrue()
+        ->and($accessToken->refresh()->getAttribute('revoked'))->toBeTrue();
 });

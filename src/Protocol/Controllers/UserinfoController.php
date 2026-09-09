@@ -7,7 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
-use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthError;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Tokens\OAuthenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,14 +19,14 @@ class UserinfoController
         $user = $request->user(config('oidc.api_guard', 'oidc'));
 
         if (! $user instanceof OAuthenticatable) {
-            OAuthError::bearer('invalid_token', 401, withRealm: true);
+            throw OAuthServerException::invalidToken();
         }
 
         $token = $user->currentAccessToken();
         $scopes = $token?->scopes() ?? [];
 
         if (! in_array('openid', $scopes, true)) {
-            OAuthError::bearer('insufficient_scope', 403, withRealm: true);
+            throw OAuthServerException::insufficientScope();
         }
 
         return response()->json(array_merge(

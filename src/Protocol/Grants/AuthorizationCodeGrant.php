@@ -7,12 +7,13 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Pkce;
-use Bambamboole\LaravelOidc\Server\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
+use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 use Illuminate\Http\Request;
 
 /**
@@ -28,7 +29,7 @@ final readonly class AuthorizationCodeGrant implements Grant
         private InteractiveTokenIssuer $issuer,
         private ScopeGrant $scopes,
         private AuthenticationContextStore $contexts,
-        private TokenLineage $lineage,
+        private TokenRevoker $revoker,
         private Auditor $auditor,
     ) {}
 
@@ -56,7 +57,7 @@ final readonly class AuthorizationCodeGrant implements Grant
             throw OAuthServerException::invalidGrant('The authorization code has expired.');
         }
 
-        if ((string) $authCode->client_id !== (string) $client->getKey()) {
+        if (! $authCode->issuedTo($client)) {
             throw OAuthServerException::invalidGrant('The authorization code was not issued to this client.');
         }
 
@@ -128,7 +129,7 @@ final readonly class AuthorizationCodeGrant implements Grant
 
     private function replayed(AuthCode $authCode, Client $client): never
     {
-        $this->lineage->revoke($authCode->id);
+        $this->revoker->revokeChain($authCode->id);
 
         $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: (string) $authCode->user_id, clientId: $client->client_id, context: [
             'grant_type' => self::TYPE,

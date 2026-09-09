@@ -32,15 +32,16 @@ class OidcSessionRepository
      * it generates the uuid key — while the unique (sid, client_id) index
      * still absorbs concurrent inserts.
      */
-    public function recordParticipant(string $sid, string $clientId): void
+    /** @param  string  $clientKey  the client's primary key */
+    public function recordParticipant(string $sid, string $clientKey): void
     {
         SessionParticipant::query()->createOrFirst(
-            ['sid' => $sid, 'client_id' => $clientId],
+            ['sid' => $sid, 'client_id' => $clientKey],
             ['created_at' => now()],
         );
     }
 
-    /** @return array<int, string> */
+    /** @return array<int, string> the participating clients' primary keys */
     public function participantClientIds(string $sid): array
     {
         return SessionParticipant::query()->where('sid', $sid)->pluck('client_id')->all();

@@ -30,14 +30,14 @@ class ClientRegistrationController
         }
 
         $response = [
-            'client_id' => (string) $client->getKey(),
+            'client_id' => $client->client_id,
             'client_id_issued_at' => Carbon::now()->getTimestamp(),
             'client_secret_expires_at' => 0,
             'client_name' => (string) $client->getAttribute('name'),
             'redirect_uris' => $client->redirect_uris,
             'grant_types' => $client->getAttribute('grant_types'),
             'response_types' => ['code'],
-            'token_endpoint_auth_method' => 'none',
+            'token_endpoint_auth_method' => $client->token_endpoint_auth_method->value,
         ];
 
         $scopes = $client->getAttribute('scopes');

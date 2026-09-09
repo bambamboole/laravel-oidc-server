@@ -18,7 +18,7 @@ class DefaultExchangePolicy implements ExchangePolicy
 
         $subjectAudience = $this->normalize($claims['aud'] ?? []);
         $subjectClientId = is_string($claims['client_id'] ?? null) ? $claims['client_id'] : null;
-        $clientId = (string) $request->client->getKey();
+        $clientId = $request->client->client_id;
 
         if (! in_array($clientId, $subjectAudience, true) && $subjectClientId !== $clientId) {
             throw ExchangeDeniedException::accessDenied('The subject token was not issued to the requesting client.');

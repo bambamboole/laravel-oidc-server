@@ -75,7 +75,7 @@ final readonly class ProviderMetadata
 
         if (Route::has('oidc.revoke')) {
             $document['revocation_endpoint'] = $this->endpoint('oidc.revoke');
-            $document['revocation_endpoint_auth_methods_supported'] = ['client_secret_basic', 'client_secret_post'];
+            $document['revocation_endpoint_auth_methods_supported'] = ['client_secret_basic', 'client_secret_post', 'none'];
         }
 
         if ($realm->clients()->dynamicRegistration) {

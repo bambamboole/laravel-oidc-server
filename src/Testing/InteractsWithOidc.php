@@ -142,7 +142,7 @@ trait InteractsWithOidc
         $client ??= $this->createOidcClient('First-Party App', ['https://app.test/callback']);
 
         config([
-            'oidc.first_party.client_id' => (string) $client->getKey(),
+            'oidc.first_party.client_id' => $client->client_id,
             'oidc.first_party.trusted' => true,
         ]);
 
@@ -155,7 +155,7 @@ trait InteractsWithOidc
     }
 
     /**
-     * Mint a real signed access token (with a persisted Passport token row)
+     * Mint a real signed access token (with a persisted token record)
      * without driving the HTTP authorization flow. Creates and memoizes a
      * default client when none is given.
      *
@@ -234,7 +234,7 @@ trait InteractsWithOidc
             }
 
             $query = array_merge([
-                'client_id' => (string) $client->getKey(),
+                'client_id' => $client->client_id,
                 'redirect_uri' => $client->redirect_uris[0] ?? 'https://rp.test/callback',
                 'response_type' => 'code',
                 'scope' => $scopes,
@@ -272,7 +272,7 @@ trait InteractsWithOidc
 
             $tokenRequest = [
                 'grant_type' => 'authorization_code',
-                'client_id' => (string) $client->getKey(),
+                'client_id' => $client->client_id,
                 'redirect_uri' => $query['redirect_uri'],
                 'code' => $callback['code'],
                 'code_verifier' => $pkce->verifier,

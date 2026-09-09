@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Middleware;
 
-use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthError;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\AccessTokenBearer;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\OidcAccessTokenGuard;
 use Closure;
@@ -30,13 +30,13 @@ class CheckAudience
         $user = $request->user();
 
         if (! $user instanceof AccessTokenBearer || $user->currentAccessToken() === null) {
-            OAuthError::bearer('invalid_token', 401);
+            throw OAuthServerException::invalidToken();
         }
 
         $tokenAudiences = (array) $request->attributes->get('oidc_token_audience', []);
 
         if (array_intersect($audiences, $tokenAudiences) === []) {
-            OAuthError::bearer('insufficient_scope', 403);
+            throw OAuthServerException::insufficientScope();
         }
 
         return $next($request);

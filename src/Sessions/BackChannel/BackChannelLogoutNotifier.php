@@ -19,16 +19,16 @@ class BackChannelLogoutNotifier
             return;
         }
 
-        $clientIds = $this->registry->participantClientIds($sid);
+        $clientKeys = $this->registry->participantClientIds($sid);
 
-        if ($clientIds !== []) {
+        if ($clientKeys !== []) {
             $notifiable = Client::query()
-                ->whereIn('id', $clientIds)
+                ->whereIn('id', $clientKeys)
                 ->whereNotNull('backchannel_logout_uri')
                 ->pluck('id');
 
-            foreach ($notifiable as $clientId) {
-                SendBackChannelLogout::dispatch($sid, (string) $clientId);
+            foreach ($notifiable as $clientKey) {
+                SendBackChannelLogout::dispatch($sid, (string) $clientKey);
             }
         }
 

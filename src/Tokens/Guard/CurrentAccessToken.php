@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens\Guard;
 
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 
 /**
  * The access token backing the current request, attached to the authenticated
@@ -40,6 +41,6 @@ final class CurrentAccessToken
 
     public function revoke(): bool
     {
-        return (bool) Token::query()->whereKey($this->id())->update(['revoked' => true]);
+        return app(TokenRevoker::class)->revoke($this->id());
     }
 }

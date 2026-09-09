@@ -46,7 +46,7 @@ final class RegisterClient
             $client->forceFill(['scopes' => $scopes])->save();
         }
 
-        $this->auditor->log(AuditEventType::ClientRegistered, clientId: (string) $client->getKey(), context: [
+        $this->auditor->log(AuditEventType::ClientRegistered, clientId: $client->client_id, context: [
             'client_name' => (string) $client->getAttribute('name'),
             'redirect_uris' => $redirectUris,
         ]);

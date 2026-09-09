@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
@@ -85,6 +86,7 @@ it('rejects an unknown grant_type before authenticating the client', function ()
 // RFC 6749 §2.3.1 (client_secret_basic)
 it('authenticates a client through HTTP Basic credentials', function () {
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+    $client->forceFill(['token_endpoint_auth_method' => TokenEndpointAuthMethod::ClientSecretBasic])->save();
 
     $response = $this->withBasicAuth($client->client_id, (string) $client->plainSecret)
         ->post('/realms/default/oauth/token', ['grant_type' => 'client_credentials'])
@@ -95,10 +97,30 @@ it('authenticates a client through HTTP Basic credentials', function () {
         ->and($response->headers->get('Pragma'))->toBe('no-cache');
 });
 
-it('rejects a token request without client_id', function () {
+// RFC 6749 §2.3.1 — one authentication method per request, and the registered one
+it('rejects a client that presents its secret through both Basic and body credentials', function () {
+    $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+
+    $this->withBasicAuth($client->client_id, (string) $client->plainSecret)
+        ->post('/realms/default/oauth/token', [
+            'grant_type' => 'client_credentials',
+            'client_secret' => $client->plainSecret,
+        ])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
+});
+
+it('rejects a client that authenticates with a method it is not registered for', function () {
+    $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+
+    $this->withBasicAuth($client->client_id, (string) $client->plainSecret)
+        ->post('/realms/default/oauth/token', ['grant_type' => 'client_credentials'])
+        ->assertStatus(401)
+        ->assertJsonPath('error', 'invalid_client');
+});
+
+it('rejects a token request without client authentication', function () {
     $this->post('/realms/default/oauth/token', ['grant_type' => 'client_credentials'])
-        ->assertStatus(400)
-        ->assertJsonPath('error', 'invalid_request');
+        ->assertStatus(401)
+        ->assertJsonPath('error', 'invalid_client');
 });
 
 it('rejects a wrong client secret with a Basic challenge', function () {
@@ -110,7 +132,7 @@ it('rejects a wrong client secret with a Basic challenge', function () {
         'client_secret' => 'wrong',
     ])->assertStatus(401)
         ->assertJsonPath('error', 'invalid_client')
-        ->assertHeader('WWW-Authenticate', 'Basic realm="OIDC"');
+        ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
 });
 
 it('rejects a public client that presents a secret', function () {
