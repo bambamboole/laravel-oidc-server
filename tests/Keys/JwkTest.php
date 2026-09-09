@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Keys\Jwk;
 
 it('derives a JWK from a PEM public key', function () {
     $jwk = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));

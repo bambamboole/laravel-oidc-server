@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Token;
 
 use Bambamboole\LaravelOidc\Server\Bridge\AccessToken;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Realm\IssuerResolver;
 use DateTimeImmutable;
 use Lcobucci\JWT\Token;

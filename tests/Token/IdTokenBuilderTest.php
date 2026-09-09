@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Bridge\AccessToken;
 use Bambamboole\LaravelOidc\Server\Bridge\Client;
+use Bambamboole\LaravelOidc\Server\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
-use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;

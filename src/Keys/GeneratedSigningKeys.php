@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Token;
+namespace Bambamboole\LaravelOidc\Server\Keys;
 
 final readonly class GeneratedSigningKeys
 {

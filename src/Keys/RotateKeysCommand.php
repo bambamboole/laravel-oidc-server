@@ -1,13 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Console;
+namespace Bambamboole\LaravelOidc\Server\Keys;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 use Illuminate\Console\Command;
 use RuntimeException;
 use Throwable;

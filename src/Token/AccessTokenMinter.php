@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Token;
 
 use Bambamboole\LaravelOidc\Server\Bridge\AccessTokenRepository;
 use Bambamboole\LaravelOidc\Server\Bridge\Client as BridgeClient;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Models\Client;
 use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use DateInterval;

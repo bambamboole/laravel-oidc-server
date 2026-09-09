@@ -6,7 +6,7 @@ use Bambamboole\LaravelOidc\Server\Auth\Social\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
-use Bambamboole\LaravelOidc\Server\Token\Jwk;
+use Bambamboole\LaravelOidc\Server\Keys\Jwk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Testing\TestResponse;

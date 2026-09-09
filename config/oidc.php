@@ -6,7 +6,7 @@ use Bambamboole\LaravelOidc\Server\Audit\LogSink;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\RecoveryCodeProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\WebAuthnFactorProvider;
-use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 
 return [
     // Identifier of the realm every request belongs to. The package stores it

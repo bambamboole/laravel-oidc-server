@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Token;
+namespace Bambamboole\LaravelOidc\Server\Keys;
 
 use Bambamboole\LaravelOidc\Server\Realm\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Builder;

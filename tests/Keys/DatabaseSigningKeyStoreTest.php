@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Token\DatabaseSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Token\Jwk;
-use Bambamboole\LaravelOidc\Server\Token\SigningKey;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeyRecord;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeyRecord;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Token\TokenInspector;
 use Illuminate\Support\Facades\DB;
 

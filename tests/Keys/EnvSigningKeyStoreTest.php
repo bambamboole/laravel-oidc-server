@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Keys\GeneratedSigningKeys;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Support\EnvironmentFile;
-use Bambamboole\LaravelOidc\Server\Token\EnvSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
-use Bambamboole\LaravelOidc\Server\Token\SigningKey;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
 
 /**
  * @return array{0: EnvSigningKeyStore, 1: string}

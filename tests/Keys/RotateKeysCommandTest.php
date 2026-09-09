@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Token\GeneratedSigningKeys;
-use Bambamboole\LaravelOidc\Server\Token\Jwk;
-use Bambamboole\LaravelOidc\Server\Token\SigningKey;
-use Bambamboole\LaravelOidc\Server\Token\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Keys\GeneratedSigningKeys;
+use Bambamboole\LaravelOidc\Server\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
 use Illuminate\Support\Facades\File;
 
 function rotateKeysEnv(string $contents = "APP_NAME=Testing\n"): string

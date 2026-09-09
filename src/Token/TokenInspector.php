@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Token;
 
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Models\Token;
 use Bambamboole\LaravelOidc\Server\Server\EncryptionKey;
 use Lcobucci\JWT\Encoding\JoseEncoder;
