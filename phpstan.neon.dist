@@ -1,6 +1,6 @@
 includes:
     - vendor/larastan/larastan/extension.neon
-    - vendor/mrpunyapal/peststan/extension.neon
+    - vendor/pestphp/pest-plugin-phpstan/extension.neon
 
 parameters:
     paths:
@@ -8,14 +8,12 @@ parameters:
         - tests
         - workbench/app
     level: 6
-    peststan:
-        testCaseClass: Bambamboole\LaravelOidc\Server\Tests\TestCase
     ignoreErrors:
         # InteractsWithOidc ships for consumers to `use` in their own test suites; it is never
         # composed via a literal `use TraitName;` statement inside this repo (only via Pest's dynamic
-        # uses() in tests/Testing/Pest.php and tests/Testing/InteractsWithOidcTest.php), so PHPStan's
-        # static trait-usage scanner cannot see it being applied. It is exercised by the 5 tests in
-        # tests/Testing/InteractsWithOidcTest.php.
+        # uses() in tests/Testing/InteractsWithOidcTest.php and the tests/Flow, tests/Protocol,
+        # tests/Audit and tests/Clients files), so PHPStan's static trait-usage scanner cannot see it
+        # being applied. It is exercised by the tests in tests/Testing/InteractsWithOidcTest.php.
         -
             identifier: trait.unused
             message: '#Trait Bambamboole\\LaravelOidc\\Server\\Testing\\InteractsWithOidc is used zero times#'
@@ -27,36 +25,21 @@ parameters:
             identifier: trait.unused
             message: '#Trait Bambamboole\\LaravelOidc\\Server\\Testing\\FakesAuthViews is used zero times#'
             path: src/Testing/FakesAuthViews.php
-        # peststan resolves this file's `$this` type as an intersection of TestCase and the
-        # InteractsWithOidc trait (via tests/Testing/Pest.php). PHPStan's generic-template resolution
-        # collapses to *NEVER* when a method call is dispatched through an intersection type that
-        # includes a bare trait, even though `pkce(): PkcePair` and `actingAsIdentity(): static` both
-        # have concrete, unambiguous return types. This is a known rough edge of intersecting trait
-        # types in PHPStan's type system, not a bug in the trait — the runtime assertions pass.
+        # pest-plugin-phpstan types `$this` from the file-local uses(InteractsWithOidc::class) calls,
+        # but a trait method declared `: static` comes back typed as the bare trait, so the next call
+        # in a chain such as `$this->actingAsIdentity($user)->get(...)` is reported against an
+        # "unknown class". The trait methods are exercised at runtime by the same tests.
         -
-            identifier: argument.templateType
-            message: '#Unable to resolve the template type TValue in call to function expect#'
-            path: tests/Testing/InteractsWithOidcTest.php
-        # These files compose InteractsWithOidc via a file-local uses() call (Pest's dynamic
-        # trait composition), so actingAsIdentity()/authorizeAndApprove()/pkce() are genuinely
-        # available on $this and on the `TestCase $test` helper parameter at runtime. Unlike
-        # tests/Testing/, tests/Flow/ mostly holds files that do NOT use the trait, so a directory-wide
-        # Pest.php shim (the mechanism tests/Testing/Pest.php uses) is the wrong fix here: peststan
-        # would then resolve `$this` as the TestCase&InteractsWithOidc intersection for every file in
-        # the directory, and that intersection triggers PHPStan's *NEVER*-collapse bug (see the
-        # argument.templateType entry above) on ordinary Pest matcher chains in sibling files that never
-        # touch the trait (confirmed against tests/Flow/TokenExchangeFlowTest.php). Scoped ignores are
-        # the narrower, correct fix.
+            identifier: class.notFound
+            message: '#on an unknown class Bambamboole\\LaravelOidc\\Server\\Testing\\InteractsWithOidc#'
+            path: tests/*
+        # The plugin only types `$this`. The `TestCase $test` helper parameters in these two files
+        # receive the trait-composed test case at runtime, which PHPStan cannot see; a
+        # `TestCase&InteractsWithOidc` PHPDoc is rejected as an unresolvable type because traits
+        # are not types.
         -
             identifier: method.notFound
-            message: '#Call to an undefined method Bambamboole\\LaravelOidc\\Server\\Tests\\TestCase::(actingAsIdentity|actingAsOidcUser|authorizeAndApprove|pkce)\(\)#'
+            message: '#Call to an undefined method Bambamboole\\LaravelOidc\\Server\\Tests\\TestCase::(actingAsIdentity|authorizeAndApprove)\(\)#'
             paths:
                 - tests/Flow/AuthorizationCodeFlowTest.php
-                - tests/Flow/DynamicClientRegistrationFlowTest.php
-                - tests/Flow/Rfc9068FlowTest.php
-                - tests/Flow/MaxAgeTest.php
-                - tests/Audit/AuditTokenTest.php
-                - tests/Clients/ClientIdentityTest.php
-                - tests/Protocol/AuthorizeEndpointTest.php
                 - tests/Protocol/TokenEndpointTest.php
-                - tests/Protocol/UserinfoEndpointTest.php

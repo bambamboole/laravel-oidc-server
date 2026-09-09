@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
-use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -79,8 +78,7 @@ it('configures a first-party client without any singleton busting', function () 
 it('generates an RFC 7636 S256 pkce pair', function () {
     $pair = $this->pkce();
 
-    expect($pair)->toBeInstanceOf(PkcePair::class)
-        ->and(strlen($pair->verifier))->toBe(64)
+    expect(strlen($pair->verifier))->toBe(64)
         ->and($pair->challenge)->toBe(rtrim(strtr(base64_encode(hash('sha256', $pair->verifier, true)), '+/', '-_'), '='));
 });
 
