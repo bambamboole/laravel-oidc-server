@@ -9,9 +9,11 @@ use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Grants\Concerns\HasAuthenticationContextIssuance;
 use Bambamboole\LaravelOidc\Server\Protocol\League\IdTokenResponse;
 use Bambamboole\LaravelOidc\Server\Protocol\League\OidcAuthorizationRequest;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
 use DateInterval;
@@ -47,8 +49,11 @@ class OidcAuthCodeGrant extends AuthCodeGrant
         private readonly OidcSessionRepository $sessions,
         private readonly AuthSessionState $sessionState,
         Auditor $auditor,
+        private readonly RealmResolver $realms,
+        ClientRepository $clientModels,
     ) {
         parent::__construct($authCodeRepository, $refreshTokenRepository, $authCodeTTL);
+        $this->clientModels = $clientModels;
         $this->authCodeTTL = $authCodeTTL;
         $this->contextLink = $contextLink;
         $this->accessTokenPipeline = $accessTokenPipeline;
@@ -200,9 +205,7 @@ class OidcAuthCodeGrant extends AuthCodeGrant
         $session = $sid !== null ? $this->sessions->find($sid) : null;
 
         $expiresAt = $session?->expires_at?->toDateTimeImmutable()
-            ?? (new DateTimeImmutable)->add(
-                new DateInterval('PT'.(int) config('oidc.session.absolute_lifetime').'S'),
-            );
+            ?? (new DateTimeImmutable)->add($this->realms->current()->sessions()->absolute());
 
         return $this->contextStore->create([
             'user_id' => $userId,

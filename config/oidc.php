@@ -8,10 +8,17 @@ use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\WebAuthnFactorProvider;
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 
+// Two kinds of values live here. Per-realm defaults are what ConfiguredRealm
+// reads; an application with a realm model overrides them per realm through
+// the Realm contract: token_lifetimes, session, scopes, claims_supported,
+// token_exchange, dcr, key_size, logout_redirect, first_party.{client_id,trusted},
+// trusted_clients, login_route, session_token.{ttl,refresh_skew,scopes},
+// auth.{username,home,two_factor} and social. Everything else is
+// deployment-wide: issuer, guards, key store, audit sink, routes.
 return [
-    // Identifier of the realm every request belongs to. The package stores it
-    // on its own rows and scopes every lookup by it; what a realm *is* belongs
-    // to the application. Bind a RealmResolver to derive it per request.
+    // Identifier of the realm requests belong to outside a matched route —
+    // console commands, queued jobs — and of the only realm in a single-realm
+    // deployment. Bind a RealmRepository to serve realms from your own model.
     'realm' => env('OIDC_REALM', 'default'),
 
     'issuer' => env('OIDC_ISSUER'),

@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Scopes;
 
+use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
-use League\OAuth2\Server\Entities\ClientEntityInterface;
 use LogicException;
 
 class DefaultScopeRepository implements ScopeRepository
@@ -22,7 +23,10 @@ class DefaultScopeRepository implements ScopeRepository
     /** @var array<string, string>|null */
     private ?array $catalog = null;
 
-    public function __construct(private readonly Application $app) {}
+    public function __construct(
+        private readonly Application $app,
+        private readonly RealmResolver $realms,
+    ) {}
 
     public function all(): Collection
     {
@@ -46,10 +50,10 @@ class DefaultScopeRepository implements ScopeRepository
             return $this->catalog;
         }
 
-        $configured = config('oidc.scopes.catalog', []);
+        $configured = $this->realms->current()->scopes()->catalog;
 
         if (! is_string($configured)) {
-            return is_array($configured) ? $configured : [];
+            return $configured;
         }
 
         $catalog = $this->app->make($configured);
@@ -66,7 +70,7 @@ class DefaultScopeRepository implements ScopeRepository
         return $this->all()->first(fn (Scope $scope) => $scope->id === $identifier);
     }
 
-    public function finalize(array $requested, string $grantType, ClientEntityInterface $client, ?string $userIdentifier = null): array
+    public function finalize(array $requested, string $grantType, ?Client $client, ?string $userIdentifier = null): array
     {
         return array_values(array_filter(
             $requested,

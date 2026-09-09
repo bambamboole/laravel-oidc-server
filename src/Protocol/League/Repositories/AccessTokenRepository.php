@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\League\Repositories;
 
+use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
@@ -20,7 +20,7 @@ class AccessTokenRepository implements AccessTokenRepositoryInterface
         array $scopes,
         ?string $userIdentifier = null,
     ): AccessTokenEntityInterface {
-        return new OidcAccessToken($userIdentifier, $scopes, $clientEntity);
+        return new AccessTokenEntity($userIdentifier, $scopes, $clientEntity);
     }
 
     public function persistNewAccessToken(AccessTokenEntityInterface $accessTokenEntity): void

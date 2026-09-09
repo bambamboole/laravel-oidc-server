@@ -8,10 +8,10 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesIdentityGuard;
-use Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns\ResolvesPendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
 use Bambamboole\LaravelOidc\Server\Credentials\PendingMfaChallenge;
+use Bambamboole\LaravelOidc\Server\Protocol\League\PendingAuthorizationRequest;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -26,7 +26,6 @@ use Illuminate\Support\Facades\Log;
 final class InteractiveLoginFinalizer
 {
     use ResolvesIdentityGuard;
-    use ResolvesPendingAuthorization;
 
     public function __construct(
         private readonly FactorRegistry $factors,
@@ -34,6 +33,7 @@ final class InteractiveLoginFinalizer
         private readonly PostLoginPipeline $pipeline,
         private readonly DeviceRecognizer $deviceRecognizer,
         private readonly Auditor $auditor,
+        private readonly PendingAuthorizationRequest $pending,
     ) {}
 
     /**
@@ -53,8 +53,8 @@ final class InteractiveLoginFinalizer
 
         $api = $this->pipeline->run(new LoginEvent(
             user: $user,
-            client: $this->pendingClient($request),
-            scopes: $this->pendingScopes($request),
+            client: $this->pending->client($request),
+            scopes: $this->pending->scopes($request),
             requestedAcrValues: $this->sessionState->requestedAcrValues(),
             ip: $request->ip(),
             userAgent: $request->userAgent(),

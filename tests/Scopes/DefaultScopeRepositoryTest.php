@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeCatalog;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Illuminate\Support\Facades\Exceptions;
-use League\OAuth2\Server\Entities\ClientEntityInterface;
 
 class RepositoryCountingCatalog implements ScopeCatalog
 {
@@ -28,7 +28,7 @@ class RepositoryThrowingCatalog implements ScopeCatalog
     }
 }
 
-beforeEach(fn () => $this->repository = new DefaultScopeRepository(app()));
+beforeEach(fn () => $this->repository = new DefaultScopeRepository(app(), app(RealmResolver::class)));
 
 it('exposes registered scopes plus the oidc standard scopes', function () {
     config(['oidc.scopes.catalog' => ['project:update' => 'Update projects']]);
@@ -51,12 +51,10 @@ it('finds a scope by identifier and returns null for unknown ones', function () 
 });
 
 it('finalize drops scopes not in the catalog', function () {
-    $client = Mockery::mock(ClientEntityInterface::class);
-
     $result = $this->repository->finalize(
         [new Scope('openid'), new Scope('unknown')],
         'authorization_code',
-        $client,
+        null,
         '1',
     );
 

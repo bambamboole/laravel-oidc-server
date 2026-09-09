@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Credentials;
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\EnrollableFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Credentials\Models\RecoveryCode;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -17,6 +18,8 @@ use LogicException;
 
 class RecoveryCodeProvider implements EnrollableFactorProvider
 {
+    public function __construct(private readonly RealmResolver $realms) {}
+
     public function key(): string
     {
         return 'recovery_code';
@@ -44,7 +47,7 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
     public function generate(Authenticatable $user): array
     {
         $codes = collect()->times(
-            (int) config('oidc.auth.two_factor.recovery_codes', 8),
+            $this->realms->current()->credentials()->recoveryCodes,
             static fn (): string => Str::random(10).'-'.Str::random(10),
         )->all();
 

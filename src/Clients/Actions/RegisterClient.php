@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRegistrationException;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 
 /**
  * RFC 7591 dynamic client registration. Registers public (secret-less)
@@ -21,6 +22,7 @@ final class RegisterClient
     public function __construct(
         private readonly ClientRepository $clients,
         private readonly Auditor $auditor,
+        private readonly RealmResolver $realms,
     ) {}
 
     /**
@@ -38,8 +40,7 @@ final class RegisterClient
             confidential: false,
         );
 
-        /** @var array<int, string> $scopes */
-        $scopes = array_values(config('oidc.dcr.default_scopes', []));
+        $scopes = $this->realms->current()->clients()->defaultScopes;
 
         if ($scopes !== []) {
             $client->forceFill(['scopes' => $scopes])->save();
@@ -121,16 +122,14 @@ final class RegisterClient
         }
 
         if (! in_array($scheme, ['http', 'https'], true)) {
-            /** @var array<int, string> $schemes */
-            $schemes = config('oidc.dcr.allowed_redirect_schemes', []);
+            $schemes = $this->realms->current()->clients()->allowedRedirectSchemes;
 
             return in_array($scheme, array_map(strtolower(...), $schemes), true)
                 ? null
                 : "The redirect URI scheme [{$scheme}] is not allowed.";
         }
 
-        /** @var array<int, string> $domains */
-        $domains = config('oidc.dcr.allowed_redirect_domains', ['*']);
+        $domains = $this->realms->current()->clients()->allowedRedirectDomains;
 
         if (in_array('*', $domains, true) || in_array($host, array_map(strtolower(...), $domains), true)) {
             return null;

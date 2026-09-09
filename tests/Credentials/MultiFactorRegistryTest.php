@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorVerification;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Workbench\App\Models\User;
 
@@ -41,7 +42,7 @@ it('registers factor providers by stable key and aggregates enrollments', functi
         }
     };
 
-    $registry = new FactorRegistry;
+    $registry = new FactorRegistry(app(RealmResolver::class));
     $registry->register($provider);
 
     expect($registry->get('custom'))->toBe($provider)

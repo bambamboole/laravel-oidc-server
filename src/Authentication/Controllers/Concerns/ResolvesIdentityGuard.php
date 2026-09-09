@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Controllers\Concerns;
 
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +22,7 @@ trait ResolvesIdentityGuard
 
     private function homeUrl(): string
     {
-        return (string) config('oidc.auth.home', '/dashboard');
+        return app(RealmResolver::class)->current()->login()->home;
     }
 
     private function currentUser(Request $request): ?Authenticatable

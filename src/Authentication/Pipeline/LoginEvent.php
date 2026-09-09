@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\Contracts\DeviceRecognizer;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
-use League\OAuth2\Server\Entities\ClientEntityInterface;
 
 final readonly class LoginEvent
 {
@@ -18,7 +18,7 @@ final readonly class LoginEvent
      */
     public function __construct(
         public Authenticatable $user,
-        public ?ClientEntityInterface $client,
+        public ?Client $client,
         public array $scopes,
         public array $requestedAcrValues,
         public ?string $ip,

@@ -122,9 +122,7 @@ Route::middleware([ResolveRealm::class, ...$shared])
             Route::post('oauth/introspect', IntrospectionController::class)->name('oidc.introspect');
             Route::post('oauth/revoke', RevocationController::class)->name('oidc.revoke');
 
-            if (config('oidc.dcr.enabled', false)) {
-                Route::post('oauth/register', ClientRegistrationController::class)->name('oidc.register');
-            }
+            Route::post('oauth/register', ClientRegistrationController::class)->name('oidc.register');
         });
     });
 

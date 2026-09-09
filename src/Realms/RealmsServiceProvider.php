@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -11,8 +12,12 @@ class RealmsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->scoped(RealmResolver::class, fn (): RealmResolver => new RouteRealmResolver(new ConfiguredRealmResolver));
-        $this->app->scoped(IssuerResolver::class, RealmIssuerResolver::class);
+        $this->app->singleton(RealmRepository::class, ConfiguredRealmRepository::class);
+        $this->app->singleton(RealmResolver::class, fn (Application $app): RealmResolver => new RouteRealmResolver(
+            $app->make(RealmRepository::class),
+            new ConfiguredRealmResolver($app->make(RealmRepository::class)),
+        ));
+        $this->app->singleton(IssuerResolver::class, RealmIssuerResolver::class);
     }
 
     public function boot(): void

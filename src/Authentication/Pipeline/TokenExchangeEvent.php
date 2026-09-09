@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Illuminate\Contracts\Auth\Authenticatable;
-use League\OAuth2\Server\Entities\ClientEntityInterface;
 
 final readonly class TokenExchangeEvent
 {
@@ -15,7 +15,7 @@ final readonly class TokenExchangeEvent
      */
     public function __construct(
         public Authenticatable $user,
-        public ClientEntityInterface $client,
+        public Client $client,
         public array $scopes,
         public string $audience,
         public array $subjectClaims,

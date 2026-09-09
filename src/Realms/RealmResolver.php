@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
 /**
- * The realm the current request belongs to. The package stores this identifier
- * on its own rows and scopes every lookup by it; what a realm *is* — its name,
- * branding, administrators — belongs to the application.
+ * The realm the current request belongs to.
  *
- * Bound as a scoped binding. Anything longer-lived than a request (a singleton
- * such as the signing key store) must call this per use rather than hold it.
+ * Bound as a singleton and held by other singletons, so an implementation
+ * must derive the realm from the current request on every call rather than
+ * remember it — under Octane the same instance serves many requests.
  */
 interface RealmResolver
 {
-    public function current(): string;
+    public function current(): Realm;
 }

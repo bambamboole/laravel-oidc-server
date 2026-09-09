@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Grants\Concerns\HasAuthenticationContextIssuance;
 use Bambamboole\LaravelOidc\Server\Protocol\League\IdTokenResponse;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
@@ -38,8 +39,10 @@ class OidcRefreshTokenGrant extends RefreshTokenGrant
         private readonly AuthenticationContextStore $contextStore,
         private readonly OidcSessionRepository $sessions,
         Auditor $auditor,
+        ClientRepository $clientModels,
     ) {
         parent::__construct($refreshTokenRepository);
+        $this->clientModels = $clientModels;
         $this->contextLink = $contextLink;
         $this->accessTokenPipeline = $accessTokenPipeline;
         $this->auditor = $auditor;

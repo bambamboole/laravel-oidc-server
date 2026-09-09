@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Closure;
 
 /**
@@ -14,6 +15,8 @@ use Closure;
  */
 class SocialProviderRegistry
 {
+    public function __construct(private readonly RealmResolver $realms) {}
+
     /**
      * @var array<string, class-string<SocialProvider>>
      */
@@ -39,9 +42,9 @@ class SocialProviderRegistry
 
     public function get(string $key): ?SocialProvider
     {
-        $config = config("oidc.social.providers.{$key}");
+        $config = $this->realms->current()->brokering()->provider($key);
 
-        if (! is_array($config) || ! is_string($config['client_id'] ?? null) || $config['client_id'] === '') {
+        if ($config === null || ! is_string($config['client_id'] ?? null) || $config['client_id'] === '') {
             return null;
         }
 
@@ -63,7 +66,7 @@ class SocialProviderRegistry
     {
         $providers = [];
 
-        foreach (array_keys((array) config('oidc.social.providers', [])) as $key) {
+        foreach (array_keys($this->realms->current()->brokering()->providers) as $key) {
             $provider = $this->get((string) $key);
 
             if ($provider !== null) {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
 use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,7 @@ final readonly class ProviderMetadata
     public function __construct(
         private ScopeRepository $scopes,
         private IssuerResolver $issuer,
+        private RealmResolver $realms,
     ) {}
 
     /**
@@ -26,9 +28,10 @@ final readonly class ProviderMetadata
      */
     public function document(): array
     {
+        $realm = $this->realms->current();
         $grantTypes = ['authorization_code', 'refresh_token', 'client_credentials'];
 
-        if (config('oidc.token_exchange.enabled', true)) {
+        if ($realm->clients()->tokenExchange) {
             $grantTypes[] = 'urn:ietf:params:oauth:grant-type:token-exchange';
         }
 
@@ -47,7 +50,7 @@ final readonly class ProviderMetadata
                 ->map(fn (Scope $scope) => $scope->id)
                 ->values()
                 ->all(),
-            'claims_supported' => config('oidc.claims_supported'),
+            'claims_supported' => $realm->scopes()->claimsSupported,
             'claims_parameter_supported' => false,
             'request_parameter_supported' => false,
             'request_uri_parameter_supported' => false,
@@ -75,7 +78,7 @@ final readonly class ProviderMetadata
             $document['revocation_endpoint_auth_methods_supported'] = ['client_secret_basic', 'client_secret_post'];
         }
 
-        if (Route::has('oidc.register')) {
+        if ($realm->clients()->dynamicRegistration) {
             $document['registration_endpoint'] = $this->endpoint('oidc.register');
         }
 

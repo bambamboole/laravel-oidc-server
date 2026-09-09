@@ -36,7 +36,7 @@ it('runs the client-credentials trigger once and applies its access-token claims
     app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
         $triggerCount++;
 
-        expect($event->client->getIdentifier())->toBe((string) $this->client->id)
+        expect((string) $event->client->getKey())->toBe((string) $this->client->id)
             ->and($event->scopes)->toBe([]);
 
         $api->setAccessTokenClaim('tenant', 'acme');

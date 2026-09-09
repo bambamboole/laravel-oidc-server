@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AccessTokenRepos
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AuthCodeRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\RefreshTokenRepository;
+use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\UserRepository;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
@@ -17,6 +18,7 @@ use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
 use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
 use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
+use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 use League\OAuth2\Server\Repositories\UserRepositoryInterface;
 
 class ProtocolServiceProvider extends ServiceProvider
@@ -28,6 +30,7 @@ class ProtocolServiceProvider extends ServiceProvider
         $this->app->bind(RefreshTokenRepositoryInterface::class, RefreshTokenRepository::class);
         $this->app->bind(AuthCodeRepositoryInterface::class, AuthCodeRepository::class);
         $this->app->bind(UserRepositoryInterface::class, UserRepository::class);
+        $this->app->bind(ScopeRepositoryInterface::class, ScopeRepository::class);
 
         $this->app->scoped(AuthorizationServer::class, fn (Application $app): AuthorizationServer => $app
             ->make(AuthorizationServerFactory::class)

@@ -13,6 +13,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Credentials\Enums\FactorRole;
 use Bambamboole\LaravelOidc\Server\Credentials\Enums\FactorSetupKind;
 use Bambamboole\LaravelOidc\Server\Credentials\Models\TotpFactor;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -22,7 +23,10 @@ use PragmaRX\Google2FA\Google2FA;
 
 class TotpFactorProvider implements EnrollableFactorProvider
 {
-    public function __construct(private readonly Google2FA $engine) {}
+    public function __construct(
+        private readonly Google2FA $engine,
+        private readonly RealmResolver $realms,
+    ) {}
 
     public function key(): string
     {
@@ -54,7 +58,7 @@ class TotpFactorProvider implements EnrollableFactorProvider
     {
         return $this->factors($user)->create([
             'name' => $name ?? 'Authenticator app',
-            'secret' => $this->engine->generateSecretKey((int) config('oidc.auth.two_factor.secret_length', 16)),
+            'secret' => $this->engine->generateSecretKey($this->realms->current()->credentials()->totpSecretLength),
         ]);
     }
 
@@ -197,7 +201,7 @@ class TotpFactorProvider implements EnrollableFactorProvider
 
     private function window(): int
     {
-        return (int) config('oidc.auth.two_factor.window', 1);
+        return $this->realms->current()->credentials()->totpWindow;
     }
 
     private function factorFor(Authenticatable $user, FactorEnrollment $enrollment): TotpFactor

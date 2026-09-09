@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Users\Actions\CreateUserFromSocialAccount;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
@@ -16,6 +17,7 @@ class SocialAccountManager
 {
     public function __construct(
         private readonly Container $container,
+        private readonly RealmResolver $realms,
     ) {}
 
     public function findAccount(string $provider, string $providerUserId): ?SocialAccount
@@ -43,7 +45,9 @@ class SocialAccountManager
             return $user instanceof Authenticatable ? $user : null;
         }
 
-        if (config('oidc.social.link_by_verified_email', true) && $socialUser->emailVerified && $socialUser->email !== null) {
+        $brokering = $this->realms->current()->brokering();
+
+        if ($brokering->linkByVerifiedEmail && $socialUser->emailVerified && $socialUser->email !== null) {
             $user = $users->retrieveByCredentials(['email' => $socialUser->email]);
 
             if ($user !== null) {
@@ -53,7 +57,7 @@ class SocialAccountManager
             }
         }
 
-        if (config('oidc.social.auto_provision', true) && $this->container->bound(CreateUserFromSocialAccount::class)) {
+        if ($brokering->autoProvision && $this->container->bound(CreateUserFromSocialAccount::class)) {
             $user = $this->container->make(CreateUserFromSocialAccount::class)($socialUser, $provider);
             $this->link($user, $provider, $socialUser);
 

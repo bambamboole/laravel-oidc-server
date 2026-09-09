@@ -8,13 +8,13 @@ use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AuthorizationCodeEven
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\ClientCredentialsEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\TokenExchangeEvent;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Workbench\App\Models\User;
 
 function clientCredentialsPipelineEvent(): ClientCredentialsEvent
 {
     return new ClientCredentialsEvent(
-        client: new ClientEntity('client-id', 'Machine client', []),
+        client: (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'Machine client']),
         scopes: ['orders:read'],
     );
 }
@@ -26,7 +26,7 @@ function tokenExchangePipelineEvent(): TokenExchangeEvent
 
     return new TokenExchangeEvent(
         user: $user,
-        client: new ClientEntity('client-id', 'Exchange client', []),
+        client: (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'Exchange client']),
         scopes: ['orders:read'],
         audience: 'https://api.internal/orders',
         subjectClaims: ['sub' => 'subject-id'],
@@ -43,7 +43,7 @@ it('runs client-credentials triggers in registration order', function () {
     });
     $pipeline->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$order): void {
         $order[] = 'second';
-        $api->setAccessTokenClaim('client', $event->client->getIdentifier());
+        $api->setAccessTokenClaim('client', $event->client->client_id);
     });
 
     $api = $pipeline->run('client_credentials', clientCredentialsPipelineEvent());
@@ -166,7 +166,7 @@ function personalAccessPipelineEvent(): PersonalAccessTokenEvent
 
     return new PersonalAccessTokenEvent(
         user: $user,
-        client: new ClientEntity('client-id', 'PAT client', []),
+        client: (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'PAT client']),
         scopes: ['openid'],
     );
 }
@@ -178,7 +178,7 @@ function authorizationCodePipelineEvent(string $grantType = 'authorization_code'
 
     return new AuthorizationCodeEvent(
         user: $user,
-        client: new ClientEntity('client-id', 'Interactive client', []),
+        client: (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'Interactive client']),
         scopes: ['openid', 'email'],
         grantType: $grantType,
     );

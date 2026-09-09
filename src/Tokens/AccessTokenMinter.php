@@ -6,8 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Tokens;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity as BridgeClient;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\AccessTokenRepository;
 use DateInterval;
@@ -33,7 +33,7 @@ class AccessTokenMinter
         DateInterval $ttl,
         array $audiences = [],
         array $extraClaims = [],
-    ): OidcAccessToken {
+    ): AccessTokenEntity {
         $bridgeClient = new BridgeClient(
             identifier: $client->client_id,
             name: $client->name,
@@ -42,7 +42,7 @@ class AccessTokenMinter
         );
         $scopes = array_map(fn (string $id): ScopeEntity => new ScopeEntity($id), $scopeIds);
 
-        $token = new OidcAccessToken($userId, $scopes, $bridgeClient);
+        $token = new AccessTokenEntity($userId, $scopes, $bridgeClient);
         $token->setIdentifier(bin2hex(random_bytes(40)));
         $token->setExpiryDateTime((new DateTimeImmutable)->add($ttl));
         $token->setPrivateKey(new CryptKey($this->signingKeys->signingKey()->privateKey(), null, false));

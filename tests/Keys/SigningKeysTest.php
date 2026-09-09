@@ -6,17 +6,14 @@ use Bambamboole\LaravelOidc\Server\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity as BridgeClient;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
-use League\OAuth2\Server\CryptKey;
 use Workbench\App\Models\User;
 
 function escapedFixtureKey(string $file): string
@@ -62,13 +59,12 @@ it('signs id_tokens with env-provided keys', function () {
     ]);
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-    $client = new BridgeClient('client-uuid', 'RP', ['https://rp.test/callback']);
-    $accessToken = new AccessTokenEntity((string) $user->id, [new ScopeEntity('openid')], $client);
-    $accessToken->setIdentifier('env-token-id');
-    $accessToken->setExpiryDateTime(new DateTimeImmutable('+1 hour'));
-    $accessToken->setPrivateKey(new CryptKey(__DIR__.'/../fixtures/oauth-private.key', null, false));
-
-    $jwt = app(IdTokenBuilder::class)->build($accessToken, null, null);
+    $jwt = app(IdTokenBuilder::class)->build(new IdTokenRequest(
+        userId: (string) $user->id,
+        clientId: 'client-uuid',
+        scopes: ['openid'],
+        accessToken: 'access-token-jwt',
+    ));
 
     $parsed = (new Parser(new JoseEncoder))->parse($jwt);
     $valid = (new Validator)->validate($parsed, new SignedWith(

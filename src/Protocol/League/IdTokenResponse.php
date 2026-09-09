@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Protocol\League;
 
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\ResponseTypes\BearerTokenResponse;
@@ -86,7 +87,17 @@ class IdTokenResponse extends BearerTokenResponse
         $isExchange = $grantType === self::EXCHANGE_URN;
 
         if (! $isExchange && in_array('openid', $scopes, true) && $accessToken->getUserIdentifier() !== null) {
-            $params['id_token'] = $this->builder->build($accessToken, $nonce, $authTime, $amr, $idTokenClaims, $sid);
+            $params['id_token'] = $this->builder->build(new IdTokenRequest(
+                userId: (string) $accessToken->getUserIdentifier(),
+                clientId: $accessToken->getClient()->getIdentifier(),
+                scopes: array_values($scopes),
+                accessToken: $accessToken->toString(),
+                nonce: $nonce,
+                authTime: $authTime,
+                amr: $amr,
+                idTokenClaims: $idTokenClaims,
+                sid: $sid,
+            ));
         }
 
         if ($isExchange) {

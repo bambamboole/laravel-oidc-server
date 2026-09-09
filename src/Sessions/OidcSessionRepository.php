@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions;
 
-use DateInterval;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 
 class OidcSessionRepository
 {
+    public function __construct(private readonly RealmResolver $realms) {}
+
     public function start(string $userId): string
     {
         $session = new OidcSession;
         $session->realm_id = OidcSession::currentRealm();
         $session->user_id = $userId;
         $session->created_at = now();
-        $session->expires_at = now()->add(
-            new DateInterval('PT'.(int) config('oidc.session.absolute_lifetime').'S'),
-        );
+        $session->expires_at = now()->add($this->realms->current()->sessions()->absolute());
         $session->save();
 
         return $session->sid;

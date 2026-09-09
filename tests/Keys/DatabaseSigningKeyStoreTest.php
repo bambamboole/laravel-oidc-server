@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyRecord;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Support\Facades\DB;
 
@@ -29,7 +30,7 @@ function useDatabaseSigningKeys(): DatabaseSigningKeyStore
 function databaseStoreRotate(): SigningKey
 {
     $store = useDatabaseSigningKeys();
-    $generated = (new SigningKeyGenerator($store))->generate();
+    $generated = (new SigningKeyGenerator($store, app(RealmResolver::class)))->generate();
     $store->rotate($generated);
 
     return new SigningKey($generated->publicKeyPem, $generated->privateKeyPem, $generated->kid);

@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinal
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,7 @@ class AuthenticatedSessionController
     public function __construct(
         private readonly AuthenticateWithPassword $authenticate,
         private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly RealmResolver $realms,
     ) {}
 
     /**
@@ -42,7 +44,7 @@ class AuthenticatedSessionController
 
     public function store(Request $request): JsonResponse|RedirectResponse
     {
-        $username = (string) config('oidc.auth.username', 'email');
+        $username = $this->realms->current()->login()->usernameField;
 
         $request->validate([
             $username => ['required', 'string'],

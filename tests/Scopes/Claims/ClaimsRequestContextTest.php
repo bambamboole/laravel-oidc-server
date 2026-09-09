@@ -3,18 +3,15 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
-use League\OAuth2\Server\CryptKey;
 use Workbench\App\Models\User;
 
 /** Captures the request the package hands the resolver, and echoes it back as claims. */
@@ -49,17 +46,13 @@ function recordClaimsRequests(): ClaimsContextRecorder
 /** @param  list<string>  $scopes */
 function claimsContextIdToken(User $user, string $clientId, array $scopes): UnencryptedToken
 {
-    $accessToken = new AccessTokenEntity(
-        (string) $user->id,
-        array_map(fn (string $id): ScopeEntity => new ScopeEntity($id), $scopes),
-        new ClientEntity($clientId, 'RP', ['https://rp.test/callback']),
-    );
-    $accessToken->setIdentifier('token-id');
-    $accessToken->setExpiryDateTime(new DateTimeImmutable('+1 hour'));
-    $accessToken->setPrivateKey(new CryptKey(__DIR__.'/../../fixtures/oauth-private.key', null, false));
-
     $parsed = (new Parser(new JoseEncoder))->parse(
-        app(IdTokenBuilder::class)->build($accessToken, null, null),
+        app(IdTokenBuilder::class)->build(new IdTokenRequest(
+            userId: (string) $user->id,
+            clientId: $clientId,
+            scopes: $scopes,
+            accessToken: 'access-token-jwt',
+        )),
     );
 
     if (! $parsed instanceof UnencryptedToken) {

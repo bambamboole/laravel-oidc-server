@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
-use League\OAuth2\Server\Entities\ClientEntityInterface;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 
 final readonly class ClientCredentialsEvent
 {
@@ -13,7 +13,7 @@ final readonly class ClientCredentialsEvent
      * @param  list<string>  $audiences  RFC 8707 `resource` values the token will be bound to
      */
     public function __construct(
-        public ClientEntityInterface $client,
+        public Client $client,
         public array $scopes,
         public array $audiences = [],
     ) {}

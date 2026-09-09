@@ -7,13 +7,10 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity as BridgeClient;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
-use League\OAuth2\Server\CryptKey;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -25,13 +22,13 @@ beforeEach(function () {
 function issueIdToken(TestCase $test, ?User $subject = null): string
 {
     $user = $subject ?? $test->user;
-    $client = new BridgeClient((string) $test->client->id, 'RP', ['https://rp.test/callback']);
-    $token = new AccessTokenEntity((string) $user->id, [new ScopeEntity('openid')], $client);
-    $token->setIdentifier('tid');
-    $token->setExpiryDateTime(new DateTimeImmutable('+1 hour'));
-    $token->setPrivateKey(new CryptKey(__DIR__.'/../fixtures/oauth-private.key', null, false));
 
-    return app(IdTokenBuilder::class)->build($token, null, null);
+    return app(IdTokenBuilder::class)->build(new IdTokenRequest(
+        userId: (string) $user->id,
+        clientId: (string) $test->client->id,
+        scopes: ['openid'],
+        accessToken: 'access-token-jwt',
+    ));
 }
 
 it('logs out and redirects to a registered post_logout_redirect_uri', function () {

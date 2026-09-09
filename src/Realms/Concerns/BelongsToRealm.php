@@ -25,6 +25,6 @@ trait BelongsToRealm
 
     public static function currentRealm(): string
     {
-        return app(RealmResolver::class)->current();
+        return app(RealmResolver::class)->current()->id();
     }
 }

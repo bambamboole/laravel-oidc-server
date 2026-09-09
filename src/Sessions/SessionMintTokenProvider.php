@@ -6,11 +6,11 @@ namespace Bambamboole\LaravelOidc\Server\Sessions;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
-use DateInterval;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Session\Session;
@@ -28,6 +28,7 @@ class SessionMintTokenProvider implements SessionTokenProvider
     public function __construct(
         private readonly AccessTokenMinter $minter,
         private readonly ScopeRepository $scopes,
+        private readonly RealmResolver $realms,
     ) {}
 
     public function currentToken(): ?string
@@ -67,12 +68,11 @@ class SessionMintTokenProvider implements SessionTokenProvider
             Token::query()->whereKey($prior['jti'])->update(['revoked' => true]);
         }
 
-        $ttl = (int) config('oidc.session_token.ttl', 3600);
         $token = $this->minter->mint(
             (string) $user->getAuthIdentifier(),
             $client,
             $this->defaultScopes(),
-            new DateInterval('PT'.$ttl.'S'),
+            $this->realms->current()->sessions()->token(),
         );
 
         $this->session()->put($this->key(), [
@@ -107,9 +107,9 @@ class SessionMintTokenProvider implements SessionTokenProvider
     /** @return string[] */
     private function defaultScopes(): array
     {
-        $configured = config('oidc.session_token.scopes');
+        $configured = $this->realms->current()->sessions()->tokenScopes;
 
-        if (is_array($configured)) {
+        if ($configured !== null) {
             return $configured;
         }
 
@@ -123,6 +123,6 @@ class SessionMintTokenProvider implements SessionTokenProvider
 
     private function skew(): int
     {
-        return (int) config('oidc.session_token.refresh_skew', 60);
+        return $this->realms->current()->sessions()->tokenRefreshSkew;
     }
 }

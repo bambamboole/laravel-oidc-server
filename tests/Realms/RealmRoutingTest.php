@@ -44,7 +44,7 @@ it('resolves the realm from the route for the request', function () {
 it('falls back to the configured realm outside a matched route', function () {
     config(['oidc.realm' => 'fallback']);
 
-    expect(app(RealmResolver::class)->current())->toBe('fallback')
+    expect(app(RealmResolver::class)->current()->id())->toBe('fallback')
         ->and(app(IssuerResolver::class)->url())->toBe('https://id.example.com/realms/fallback');
 });
 

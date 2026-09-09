@@ -7,11 +7,14 @@ namespace Bambamboole\LaravelOidc\Server\Credentials;
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\EnrollableFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use LogicException;
 
 class FactorRegistry
 {
+    public function __construct(private readonly RealmResolver $realms) {}
+
     /**
      * @var array<string, FactorProvider>
      */
@@ -130,12 +133,7 @@ class FactorRegistry
      */
     public function configuredChallengeableEnrollments(Authenticatable $user): array
     {
-        $providerKeys = array_values(array_filter(
-            (array) config('oidc.auth.two_factor.challenge_providers', ['totp']),
-            is_string(...),
-        ));
-
-        return $this->challengeableEnrollments($user, $providerKeys);
+        return $this->challengeableEnrollments($user, $this->realms->current()->credentials()->challengeProviders);
     }
 
     /**

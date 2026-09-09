@@ -5,22 +5,15 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Exchange;
 
 use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
-use League\OAuth2\Server\Exception\OAuthServerException;
 
 class DefaultExchangePolicy implements ExchangePolicy
 {
-    /**
-     * League's built-in factories use error codes 2-14; this is chosen well outside that range
-     * so it never collides with an upstream code the client might switch on.
-     */
-    private const INVALID_TARGET_ERROR_CODE = 900;
-
     public function authorize(ExchangeRequest $request): ExchangeGrantResult
     {
         $claims = $request->subjectClaims;
         $subject = (string) ($claims['sub'] ?? '');
         if ($subject === '') {
-            throw OAuthServerException::invalidGrant('The subject token has no subject.');
+            throw ExchangeDeniedException::invalidGrant('The subject token has no subject.');
         }
 
         $subjectAudience = $this->normalize($claims['aud'] ?? []);
@@ -28,22 +21,20 @@ class DefaultExchangePolicy implements ExchangePolicy
         $clientId = (string) $request->client->getKey();
 
         if (! in_array($clientId, $subjectAudience, true) && $subjectClientId !== $clientId) {
-            throw OAuthServerException::accessDenied('The subject token was not issued to the requesting client.');
+            throw ExchangeDeniedException::accessDenied('The subject token was not issued to the requesting client.');
         }
 
         $allowed = $this->allowedAudiences($request->client);
         $audience = $request->requestedAudience;
         if ($audience === null || ! in_array($audience, $allowed, true)) {
-            throw new OAuthServerException(
-                'The requested audience is not permitted for this client.', self::INVALID_TARGET_ERROR_CODE, 'invalid_target', 400,
-            );
+            throw ExchangeDeniedException::invalidTarget('The requested audience is not permitted for this client.');
         }
 
         $subjectScopes = $this->scopeList($claims['scope'] ?? '');
         $requested = $request->requestedScopes ?? $subjectScopes;
         $widened = array_diff($requested, $subjectScopes);
         if ($widened !== []) {
-            throw OAuthServerException::invalidScope(implode(' ', $widened));
+            throw ExchangeDeniedException::invalidScope(array_values($widened));
         }
 
         return new ExchangeGrantResult(

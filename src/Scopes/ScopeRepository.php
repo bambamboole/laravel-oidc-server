@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Scopes;
 
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Illuminate\Support\Collection;
-use League\OAuth2\Server\Entities\ClientEntityInterface;
 
 interface ScopeRepository
 {
@@ -15,8 +15,12 @@ interface ScopeRepository
     public function find(string $identifier): ?Scope;
 
     /**
+     * The last word on what a token gets: `$requested` is already limited to
+     * known scopes the client may hold. Null client means a grant without a
+     * registered client (hand-built tokens).
+     *
      * @param  Scope[]  $requested
      * @return Scope[]
      */
-    public function finalize(array $requested, string $grantType, ClientEntityInterface $client, ?string $userIdentifier = null): array;
+    public function finalize(array $requested, string $grantType, ?Client $client, ?string $userIdentifier = null): array;
 }

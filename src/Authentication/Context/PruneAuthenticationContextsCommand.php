@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Context;
 
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionParticipant;
 use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContext;
-use Bambamboole\LaravelOidc\Server\Tokens\TokenLifetimes;
-use DateTimeImmutable;
 use Illuminate\Console\Command;
 
 class PruneAuthenticationContextsCommand extends Command
@@ -23,9 +22,8 @@ class PruneAuthenticationContextsCommand extends Command
 
         // Link rows outlive their context so refresh can distinguish "expired" from "never linked".
         // Retain them until no live refresh token could reference them: absolute + refresh idle window.
-        $idleSeconds = (new DateTimeImmutable)->add(app(TokenLifetimes::class)->refreshToken())->getTimestamp()
-            - (new DateTimeImmutable)->getTimestamp();
-        $horizon = now()->subSeconds((int) config('oidc.session.absolute_lifetime') + $idleSeconds);
+        $realm = app(RealmResolver::class)->current();
+        $horizon = now()->subSeconds($realm->sessions()->absoluteLifetime + $realm->tokens()->refreshTokenLifetime);
         $links = AccessTokenContext::query()->where('created_at', '<', $horizon)->delete();
 
         // Sessions are deleted only after both expiry and logout notification grace windows.

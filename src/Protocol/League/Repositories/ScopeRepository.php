@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\League\Repositories;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository as ScopeRepositoryContract;
-use Illuminate\Support\Collection;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
@@ -17,8 +16,9 @@ use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 class ScopeRepository implements ScopeRepositoryInterface
 {
     public function __construct(
-        protected readonly ClientRepository $clients,
+        private readonly ClientRepository $clients,
         private readonly ScopeRepositoryContract $scopes,
+        private readonly ScopeGrant $grant,
     ) {}
 
     public function getScopeEntityByIdentifier(string $identifier): ?ScopeEntityInterface
@@ -41,35 +41,13 @@ class ScopeRepository implements ScopeRepositoryInterface
         ?string $userIdentifier = null,
         ?string $authCodeId = null,
     ): array {
-        $entities = collect($scopes)
-            ->unless(in_array($grantType, ['personal_access', 'client_credentials'], true),
-                fn (Collection $scopes): Collection => $scopes->reject(
-                    fn (ScopeEntityInterface $scope): bool => $scope->getIdentifier() === '*'
-                )
-            )
-            ->when($this->clients->findActive($clientEntity->getIdentifier()),
-                fn (Collection $scopes, Client $client): Collection => $scopes->filter(
-                    fn (ScopeEntityInterface $scope): bool => $client->hasScope($scope->getIdentifier())
-                )
-            );
-
-        $wildcard = $entities->contains(
-            fn (ScopeEntityInterface $scope): bool => $scope->getIdentifier() === '*'
+        $ids = $this->grant->finalize(
+            array_map(fn (ScopeEntityInterface $scope): string => $scope->getIdentifier(), $scopes),
+            $grantType,
+            $this->clients->findActive($clientEntity->getIdentifier()),
+            $userIdentifier,
         );
 
-        $candidates = $entities
-            ->map(fn (ScopeEntityInterface $scope): ?Scope => $this->scopes->find($scope->getIdentifier()))
-            ->filter()
-            ->values()
-            ->all();
-
-        $finalized = collect($this->scopes->finalize($candidates, $grantType, $clientEntity, $userIdentifier))
-            ->map(fn (Scope $scope): ScopeEntityInterface => new ScopeEntity($scope->id));
-
-        if ($wildcard) {
-            $finalized->prepend(new ScopeEntity('*'));
-        }
-
-        return $finalized->values()->all();
+        return array_map(fn (string $id): ScopeEntityInterface => new ScopeEntity($id), $ids);
     }
 }

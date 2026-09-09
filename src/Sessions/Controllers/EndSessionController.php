@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Concerns\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Sessions\Actions\EndSession;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Http\Request;
@@ -21,7 +22,10 @@ class EndSessionController
 {
     use RespondsToInertiaExternalRedirects;
 
-    public function __construct(private readonly EndSession $endSession) {}
+    public function __construct(
+        private readonly EndSession $endSession,
+        private readonly RealmResolver $realms,
+    ) {}
 
     public function __invoke(Request $request): Response
     {
@@ -38,7 +42,7 @@ class EndSessionController
         }
 
         if ($redirectUri === null) {
-            return redirect(config('oidc.logout_redirect', '/'));
+            return redirect($this->realms->current()->login()->logoutRedirect);
         }
 
         $state = $request->input('state');

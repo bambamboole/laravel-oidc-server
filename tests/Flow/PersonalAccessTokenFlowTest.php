@@ -7,7 +7,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
-use League\OAuth2\Server\Exception\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Tokens\TokenIssuanceDeniedException;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -39,7 +39,7 @@ it('denies personal-access issuance before persisting an access token', function
     });
 
     expect(fn () => $this->user->createToken('cli', ['openid']))
-        ->toThrow(OAuthServerException::class);
+        ->toThrow(TokenIssuanceDeniedException::class);
 
     expect(Token::query()->count())->toBe(0);
 });

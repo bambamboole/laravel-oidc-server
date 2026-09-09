@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Keys;
 
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use phpseclib3\Crypt\RSA;
 use phpseclib3\Crypt\RSA\PrivateKey;
 use Throwable;
 
 final class SigningKeyGenerator
 {
-    public function __construct(private readonly SigningKeyStore $store) {}
+    public function __construct(
+        private readonly SigningKeyStore $store,
+        private readonly RealmResolver $realms,
+    ) {}
 
     public function generate(): GeneratedSigningKeys
     {
         /** @var PrivateKey $key */
-        $key = RSA::createKey((int) config('oidc.key_size', 2048));
+        $key = RSA::createKey($this->realms->current()->keys()->keySize);
 
         $privatePem = (string) $key;
         $publicPem = (string) $key->getPublicKey();

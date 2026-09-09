@@ -8,15 +8,14 @@ use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PersonalAccessTokenEvent;
+use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Repositories\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
-use DateInterval;
+use Bambamboole\LaravelOidc\Server\Tokens\TokenIssuanceDeniedException;
 use Illuminate\Contracts\Auth\Authenticatable;
-use League\OAuth2\Server\Entities\ScopeEntityInterface;
-use League\OAuth2\Server\Exception\OAuthServerException;
 
 /**
  * Mints personal access tokens directly rather than driving an internal request
@@ -29,10 +28,11 @@ final readonly class PersonalAccessTokenFactory
 
     public function __construct(
         private ClientRepository $clients,
-        private ScopeRepository $scopes,
+        private ScopeGrant $scopes,
         private AccessTokenMinter $minter,
         private AccessTokenPipeline $pipeline,
         private Auditor $auditor,
+        private RealmResolver $realms,
     ) {}
 
     /** @param  list<string>  $scopes */
@@ -41,36 +41,15 @@ final readonly class PersonalAccessTokenFactory
         $client = $this->clients->personalAccessClient();
         $userId = (string) $user->getAuthIdentifier();
 
-        $entity = new ClientEntity(
-            identifier: $client->client_id,
-            name: $client->name,
-            redirectUri: $client->redirect_uris,
-            isConfidential: $client->confidential(),
-            key: $client->getKey(),
-            provider: $client->provider,
-            grantTypes: $client->grant_types,
-        );
+        $granted = $this->scopes->finalize($scopes, self::GRANT_TYPE, $client, $userId);
 
-        $granted = array_map(
-            fn (ScopeEntityInterface $scope): string => $scope->getIdentifier(),
-            $this->scopes->finalizeScopes(
-                array_values(array_filter(array_map(
-                    fn (string $id): ?ScopeEntityInterface => $this->scopes->getScopeEntityByIdentifier($id),
-                    $scopes,
-                ))),
-                self::GRANT_TYPE,
-                $entity,
-                $userId,
-            ),
-        );
-
-        $claims = $this->runTriggers($user, $entity, $granted);
+        $claims = $this->runTriggers($user, $client, $granted);
 
         $token = $this->minter->mint(
             userId: $userId,
             client: $client,
             scopeIds: $granted,
-            ttl: new DateInterval('PT'.(int) config('oidc.token_lifetimes.access_token').'S'),
+            ttl: $this->realms->current()->tokens()->accessToken(),
             extraClaims: $claims,
         );
 
@@ -92,7 +71,7 @@ final readonly class PersonalAccessTokenFactory
      * @param  list<string>  $granted
      * @return array<string, mixed>
      */
-    private function runTriggers(Authenticatable $user, ClientEntity $client, array $granted): array
+    private function runTriggers(Authenticatable $user, Client $client, array $granted): array
     {
         if (! $this->pipeline->has('personal_access_token')) {
             return [];
@@ -105,13 +84,13 @@ final readonly class PersonalAccessTokenFactory
         ));
 
         if ($api->isDenied()) {
-            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: (string) $user->getAuthIdentifier(), clientId: $client->getIdentifier(), context: array_filter([
+            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: (string) $user->getAuthIdentifier(), clientId: $client->client_id, context: array_filter([
                 'grant_type' => self::GRANT_TYPE,
                 'reason' => 'pipeline_denied',
                 'deny_reason' => $api->denyReason(),
             ]));
 
-            throw OAuthServerException::accessDenied($api->denyReason());
+            throw new TokenIssuanceDeniedException((string) $api->denyReason());
         }
 
         return $api->accessTokenClaims();

@@ -99,7 +99,7 @@ it('issues an id_token through the full code + pkce flow', function () {
 it('merges authorization-code trigger claims into issued and refreshed access tokens', function () {
     app(AccessTokenPipeline::class)->register('authorization_code', function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
         expect($event->user->getAuthIdentifier())->toBe($this->user->id)
-            ->and($event->client->getIdentifier())->toBe((string) $this->client->id)
+            ->and((string) $event->client->getKey())->toBe((string) $this->client->id)
             ->and($event->scopes)->toBe(['openid', 'email']);
 
         $api->setAccessTokenClaim('project_id', 'p-1');

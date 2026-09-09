@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 class ClientsServiceProvider extends ServiceProvider
@@ -12,7 +14,7 @@ class ClientsServiceProvider extends ServiceProvider
     {
         $this->app->bind(
             FirstPartyClientConfig::class,
-            fn (): FirstPartyClientConfig => FirstPartyClientConfig::fromConfig(),
+            fn (Application $app): FirstPartyClientConfig => FirstPartyClientConfig::fromSettings($app->make(RealmResolver::class)->current()->clients()),
         );
         $this->app->singleton(FirstPartyClientProvisioner::class);
     }

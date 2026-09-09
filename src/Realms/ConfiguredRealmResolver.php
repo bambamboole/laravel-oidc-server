@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
 /**
- * Single-realm default: every request belongs to the configured realm. An
- * application serving several realms binds a resolver that derives it from the
- * request instead.
+ * Single-realm default: every request belongs to the configured realm.
  */
-final class ConfiguredRealmResolver implements RealmResolver
+final readonly class ConfiguredRealmResolver implements RealmResolver
 {
-    public function current(): string
-    {
-        $realm = (string) config('oidc.realm', 'default');
+    public function __construct(private RealmRepository $realms) {}
 
-        return $realm !== '' ? $realm : 'default';
+    public function current(): Realm
+    {
+        $id = (string) config('oidc.realm', 'default');
+
+        return $this->realms->find($id !== '' ? $id : 'default') ?? new ConfiguredRealm($id !== '' ? $id : 'default');
     }
 }

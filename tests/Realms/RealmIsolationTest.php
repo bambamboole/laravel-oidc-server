@@ -8,7 +8,9 @@ use Bambamboole\LaravelOidc\Server\Keys\SigningKey;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
 use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
@@ -21,9 +23,9 @@ function enterRealm(string $realm): void
     {
         public function __construct(private readonly string $realm) {}
 
-        public function current(): string
+        public function current(): Realm
         {
-            return $this->realm;
+            return new ConfiguredRealm($this->realm);
         }
     });
 }
@@ -84,11 +86,11 @@ it('keeps signing keys per realm', function () {
     app()->instance(SigningKeys::class, new SigningKeys($store));
 
     enterRealm('acme');
-    $store->rotate((new SigningKeyGenerator($store))->generate());
+    $store->rotate((new SigningKeyGenerator($store, app(RealmResolver::class)))->generate());
     $acmeKid = $store->signingKey()->kid();
 
     enterRealm('globex');
-    $store->rotate((new SigningKeyGenerator($store))->generate());
+    $store->rotate((new SigningKeyGenerator($store, app(RealmResolver::class)))->generate());
     $globexKid = $store->signingKey()->kid();
 
     expect($globexKid)->not->toBe($acmeKid)

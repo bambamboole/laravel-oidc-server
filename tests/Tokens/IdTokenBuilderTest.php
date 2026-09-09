@@ -3,10 +3,8 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -14,7 +12,6 @@ use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
-use League\OAuth2\Server\CryptKey;
 use Workbench\App\Models\User;
 
 function parseUnencrypted(string $jwt): UnencryptedToken
@@ -28,33 +25,26 @@ function parseUnencrypted(string $jwt): UnencryptedToken
     return $token;
 }
 
-function makeAccessToken(User $user): AccessTokenEntity
+/**
+ * @param  list<string>  $amr
+ */
+function makeIdTokenRequest(User $user, ?string $nonce = null, ?int $authTime = null, array $amr = []): IdTokenRequest
 {
-    $client = new ClientEntity('client-uuid', 'RP', ['https://rp.test/callback']);
-    $token = new class((string) $user->id, [new ScopeEntity('openid'), new ScopeEntity('email')], $client) extends AccessTokenEntity
-    {
-        private ?string $serialized = null;
-
-        public function toString(): string
-        {
-            return $this->serialized ??= parent::toString();
-        }
-    };
-    $token->setIdentifier('token-id');
-    $token->setExpiryDateTime(new DateTimeImmutable('+1 hour'));
-    $token->setPrivateKey(new CryptKey(
-        __DIR__.'/../fixtures/oauth-private.key', null, false,
-    ));
-
-    return $token;
+    return new IdTokenRequest(
+        userId: (string) $user->id,
+        clientId: 'client-uuid',
+        scopes: ['openid', 'email'],
+        accessToken: 'access-token-jwt',
+        nonce: $nonce,
+        authTime: $authTime,
+        amr: $amr,
+    );
 }
 
 it('builds a signed id_token with the required claims', function () {
     config(['app.url' => 'https://op.test']);
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
-    $accessToken = makeAccessToken($user);
-
-    $jwt = app(IdTokenBuilder::class)->build($accessToken, 'n0nce', 1700000000);
+    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, nonce: 'n0nce', authTime: 1700000000));
 
     $parsed = parseUnencrypted($jwt);
 
@@ -70,7 +60,7 @@ it('builds a signed id_token with the required claims', function () {
         ->and($parsed->claims()->get('email_verified'))->toBeTrue()
         ->and($parsed->claims()->has('name'))->toBeFalse();
 
-    $accessTokenJwt = $accessToken->toString();
+    $accessTokenJwt = 'access-token-jwt';
     $expectedAtHash = rtrim(strtr(base64_encode(substr(hash('sha256', $accessTokenJwt, true), 0, 16)), '+/', '-_'), '=');
     expect($parsed->claims()->get('at_hash'))->toBe($expectedAtHash);
 
@@ -83,7 +73,7 @@ it('builds a signed id_token with the required claims', function () {
 it('omits nonce and auth_time when not provided', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
-    $jwt = app(IdTokenBuilder::class)->build(makeAccessToken($user), null, null);
+    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user));
 
     $parsed = parseUnencrypted($jwt);
     expect($parsed->claims()->has('nonce'))->toBeFalse()
@@ -93,7 +83,7 @@ it('omits nonce and auth_time when not provided', function () {
 it('emits amr and derived acr when methods are supplied', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
-    $jwt = app(IdTokenBuilder::class)->build(makeAccessToken($user), null, null, ['pwd', 'otp']);
+    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, amr: ['pwd', 'otp']));
 
     $parsed = parseUnencrypted($jwt);
     expect($parsed->claims()->get('amr'))->toBe(['pwd', 'otp'])
@@ -103,7 +93,7 @@ it('emits amr and derived acr when methods are supplied', function () {
 it('emits acr "1" for a single method', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
-    $jwt = app(IdTokenBuilder::class)->build(makeAccessToken($user), null, null, ['pwd']);
+    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, amr: ['pwd']));
 
     expect(parseUnencrypted($jwt)->claims()->get('acr'))->toBe('1');
 });
@@ -111,7 +101,7 @@ it('emits acr "1" for a single method', function () {
 it('omits amr and acr when no methods are supplied', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
-    $jwt = app(IdTokenBuilder::class)->build(makeAccessToken($user), null, null);
+    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user));
 
     $parsed = parseUnencrypted($jwt);
     expect($parsed->claims()->has('amr'))->toBeFalse()

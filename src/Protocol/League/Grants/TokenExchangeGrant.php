@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\League\Grants;
 
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use DateInterval;
 use League\OAuth2\Server\Exception\OAuthServerException;
@@ -68,20 +69,39 @@ class TokenExchangeGrant extends AbstractGrant
             throw OAuthServerException::invalidClient($request);
         }
 
-        $accessToken = $this->exchanger->exchange(
-            $subjectTokenJwt,
-            $passportClient,
-            $audience,
-            $this->scopeParam($request),
-            $accessTokenTTL,
-            $this->extensionParameters($request),
-        );
+        try {
+            $accessToken = $this->exchanger->exchange(
+                $subjectTokenJwt,
+                $passportClient,
+                $audience,
+                $this->scopeParam($request),
+                $accessTokenTTL,
+                $this->extensionParameters($request),
+            );
+        } catch (ExchangeDeniedException $denied) {
+            throw $this->toOAuthError($denied);
+        }
 
         $this->getEmitter()->emit(new RequestEvent(RequestEvent::ACCESS_TOKEN_ISSUED, $request));
         $responseType->setAccessToken($accessToken);
 
         // Exchange must never mint a refresh token; issueRefreshToken is deliberately never called.
         return $responseType;
+    }
+
+    /**
+     * League's built-in factories use error codes 2-14; invalid_target is
+     * given one well outside that range so it never collides with an
+     * upstream code the client might switch on.
+     */
+    private function toOAuthError(ExchangeDeniedException $denied): OAuthServerException
+    {
+        return match ($denied->error) {
+            'invalid_grant' => OAuthServerException::invalidGrant($denied->getMessage()),
+            'access_denied' => OAuthServerException::accessDenied($denied->getMessage()),
+            'invalid_scope' => OAuthServerException::invalidScope($denied->getMessage()),
+            default => new OAuthServerException($denied->getMessage(), 900, $denied->error, 400),
+        };
     }
 
     /** @return string[]|null */

@@ -72,7 +72,7 @@ it('runs the token-exchange trigger once with finalized context and applies its 
         $triggerCount++;
 
         expect($event->user->getAuthIdentifier())->toBe($this->user->getAuthIdentifier())
-            ->and($event->client->getIdentifier())->toBe((string) $this->client->id)
+            ->and((string) $event->client->getKey())->toBe((string) $this->client->id)
             ->and($event->scopes)->toBe(['orders:read'])
             ->and($event->audience)->toBe('https://api.internal/orders')
             ->and($event->subjectClaims['sub'] ?? null)->toBe((string) $this->user->id);

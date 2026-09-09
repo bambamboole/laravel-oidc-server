@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Clients\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Clients\Actions\RegisterClient;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRegistrationException;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -15,8 +16,10 @@ use Illuminate\Support\Carbon;
  */
 class ClientRegistrationController
 {
-    public function __invoke(Request $request, RegisterClient $register): JsonResponse
+    public function __invoke(Request $request, RegisterClient $register, RealmResolver $realms): JsonResponse
     {
+        abort_unless($realms->current()->clients()->dynamicRegistration, 404);
+
         try {
             $client = $register($request->all());
         } catch (ClientRegistrationException $exception) {

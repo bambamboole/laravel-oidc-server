@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Credentials;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passkeys\Contracts\PasskeyUser;
@@ -21,7 +22,7 @@ class CredentialsServiceProvider extends ServiceProvider
         $this->app->singleton(RecoveryCodeProvider::class);
         $this->app->singleton(WebAuthnFactorProvider::class);
         $this->app->singleton(FactorRegistry::class, function (Application $app): FactorRegistry {
-            $registry = new FactorRegistry;
+            $registry = new FactorRegistry($app->make(RealmResolver::class));
 
             foreach ((array) config('oidc.auth.factors', []) as $provider) {
                 $resolved = $app->make($provider);

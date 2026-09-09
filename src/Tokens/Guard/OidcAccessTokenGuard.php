@@ -22,7 +22,7 @@ use Illuminate\Support\Traits\Macroable;
  * `at+jwt` typ, expiry, revocation via {@see TokenInspector}) that accepts a bearer token when its
  * `aud` intersects {issuer URL, configured `oidc.resource.audiences`} OR carries the token's own
  * `client_id` claim — the latter is what makes classic (non-exchanged) tokens pass uniformly, since
- * {@see OidcAccessToken::convertToJWT()} defaults `aud` to `[$clientId]` and always sets `client_id`.
+ * {@see AccessTokenEntity::convertToJWT()} defaults `aud` to `[$clientId]` and always sets `client_id`.
  * The verified audience is stashed on the request for {@see CheckAudience}
  * to read back without re-parsing the token.
  *

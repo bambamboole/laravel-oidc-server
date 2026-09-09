@@ -53,7 +53,7 @@ it('rejects an invalid exchange with the matching OAuth error type', function (
     array $scopes,
     string $errorType,
 ) {
-    expectOAuthServerError(
+    expectExchangeDenied(
         fn () => app(TokenExchanger::class)->exchange($subjectToken ?? $this->root, $this->appClient, $audience, $scopes),
         $errorType,
     );

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Exchange;
 
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\OidcAccessToken;
-use League\OAuth2\Server\Entities\ScopeEntityInterface;
+use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 
 final readonly class IssuedToken
 {
@@ -18,19 +17,14 @@ final readonly class IssuedToken
         public array $scopes,
     ) {}
 
-    public static function fromEntity(OidcAccessToken $token, string $audience): self
+    public static function fromEntity(AccessTokenEntity $token, string $audience): self
     {
-        $scopes = array_map(
-            fn (ScopeEntityInterface $scope): string => $scope->getIdentifier(),
-            $token->getScopes(),
-        );
-
         return new self(
             accessToken: $token->toString(),
             tokenType: 'Bearer',
             expiresIn: max(0, $token->getExpiryDateTime()->getTimestamp() - time()),
             audience: $audience,
-            scopes: array_values($scopes),
+            scopes: $token->scopeIdentifiers(),
         );
     }
 }

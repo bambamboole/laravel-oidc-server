@@ -2,16 +2,13 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Realms\RealmIssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
-use League\OAuth2\Server\CryptKey;
 use Workbench\App\Models\User;
 
 function rebindIssuerResolverTo(string $url): void
@@ -30,17 +27,13 @@ function rebindIssuerResolverTo(string $url): void
 function issuerResolverTestIdToken(): UnencryptedToken
 {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-    $accessToken = new AccessTokenEntity(
-        (string) $user->id,
-        [new ScopeEntity('openid')],
-        new ClientEntity('client-uuid', 'RP', ['https://rp.test/callback']),
-    );
-    $accessToken->setIdentifier('token-id');
-    $accessToken->setExpiryDateTime(new DateTimeImmutable('+1 hour'));
-    $accessToken->setPrivateKey(new CryptKey(__DIR__.'/../fixtures/oauth-private.key', null, false));
-
     $parsed = (new Parser(new JoseEncoder))->parse(
-        app(IdTokenBuilder::class)->build($accessToken, null, null),
+        app(IdTokenBuilder::class)->build(new IdTokenRequest(
+            userId: (string) $user->id,
+            clientId: 'client-uuid',
+            scopes: ['openid'],
+            accessToken: 'access-token-jwt',
+        )),
     );
 
     if (! $parsed instanceof UnencryptedToken) {

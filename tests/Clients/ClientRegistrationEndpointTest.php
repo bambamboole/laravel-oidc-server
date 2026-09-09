@@ -25,9 +25,7 @@ function enableDynamicClientRegistration(array $overrides = []): void
     reloadOidcRoutes();
 }
 
-it('does not register the endpoint while the feature is disabled', function () {
-    expect(Route::has('oidc.register'))->toBeFalse();
-
+it('answers 404 while dynamic registration is disabled for the realm', function () {
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://rp.test/cb']])->assertNotFound();
 });
 

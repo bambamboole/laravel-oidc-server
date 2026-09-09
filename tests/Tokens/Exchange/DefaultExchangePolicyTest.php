@@ -4,8 +4,8 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\DefaultExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeRequest;
-use League\OAuth2\Server\Exception\OAuthServerException;
 
 /** @param  string[]  $audiences */
 function exchangePolicyClient(array $audiences = ['https://api.internal/orders']): Client
@@ -59,7 +59,7 @@ it('rejects a policy violation with the matching OAuth error type', function (
 
     $request = new ExchangeRequest($client, $claims, $audience, $requestedScopes, time() + 3600);
 
-    expectOAuthServerError(fn () => (new DefaultExchangePolicy)->authorize($request), $errorType);
+    expectExchangeDenied(fn () => (new DefaultExchangePolicy)->authorize($request), $errorType);
 })->with([
     'missing sub claim' => [false, 'https://api.internal/orders', null, 'invalid_grant'],
     'unlisted target audience' => [true, 'https://evil/api', null, 'invalid_target'],
@@ -71,7 +71,7 @@ it('rejects when the requesting client is not in the subject token audience (rec
     $request = new ExchangeRequest($client, exchangePolicySubjectClaims('someone-else', ['other-service'], ['openid']), 'https://api.internal/orders', null, time() + 3600);
 
     (new DefaultExchangePolicy)->authorize($request);
-})->throws(OAuthServerException::class);
+})->throws(ExchangeDeniedException::class);
 
 it('defaults issued scopes to the subject scopes when none requested', function () {
     $client = exchangePolicyClient();

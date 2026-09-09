@@ -16,6 +16,6 @@ final readonly class RealmIssuerResolver implements IssuerResolver
     {
         $origin = rtrim((string) (config('oidc.issuer') ?: config('app.url')), '/');
 
-        return $origin.RealmPath::for($this->realms->current());
+        return $origin.RealmPath::for($this->realms->current()->id());
     }
 }

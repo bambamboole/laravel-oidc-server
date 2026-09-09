@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\AccessTokenEntity;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ClientEntity;
-use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\OidcAccessToken;
 use Bambamboole\LaravelOidc\Server\Protocol\League\Entities\ScopeEntity;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -13,10 +13,10 @@ use Lcobucci\JWT\Validation\Validator;
 use League\OAuth2\Server\CryptKey;
 
 /** @param string[] $scopeIds */
-function makeOidcAccessToken(array $scopeIds = ['openid', 'email']): OidcAccessToken
+function makeAccessTokenEntity(array $scopeIds = ['openid', 'email']): AccessTokenEntity
 {
     $client = new ClientEntity('client-uuid', 'RP', ['https://rp.test/cb']);
-    $token = new OidcAccessToken('42', array_map(fn ($s) => new ScopeEntity($s), $scopeIds), $client);
+    $token = new AccessTokenEntity('42', array_map(fn ($s) => new ScopeEntity($s), $scopeIds), $client);
     $token->setIdentifier('token-id');
     $token->setExpiryDateTime(new DateTimeImmutable('+1 hour'));
     $token->setPrivateKey(new CryptKey(__DIR__.'/../../fixtures/oauth-private.key', null, false));
@@ -26,7 +26,7 @@ function makeOidcAccessToken(array $scopeIds = ['openid', 'email']): OidcAccessT
 
 it('emits an RFC 9068 at+jwt access token', function () {
     config(['app.url' => 'https://op.test']);
-    $parsed = parseAccessToken(makeOidcAccessToken()->toString());
+    $parsed = parseAccessToken(makeAccessTokenEntity()->toString());
 
     expect($parsed->headers()->get('typ'))->toBe('at+jwt')
         ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(signingPublicKey())['kid'])
@@ -42,13 +42,13 @@ it('emits an RFC 9068 at+jwt access token', function () {
 });
 
 it('keeps the legacy scopes array claim alongside the scope string', function () {
-    $parsed = parseAccessToken(makeOidcAccessToken()->toString());
+    $parsed = parseAccessToken(makeAccessTokenEntity()->toString());
 
     expect($parsed->claims()->get('scopes'))->toBe(['openid', 'email']);
 });
 
 it('uses an explicitly set audience instead of the client id', function () {
-    $token = makeOidcAccessToken();
+    $token = makeAccessTokenEntity();
     $token->setAudience('https://api.internal/orders', 'https://api.internal/billing');
 
     $parsed = parseAccessToken($token->toString());
@@ -57,18 +57,18 @@ it('uses an explicitly set audience instead of the client id', function () {
 });
 
 it('signs with the passport key so the token validates against jwks', function () {
-    $parsed = parseAccessToken(makeOidcAccessToken()->toString());
+    $parsed = parseAccessToken(makeAccessTokenEntity()->toString());
 
     expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
 });
 
 it('memoizes serialization', function () {
-    $token = makeOidcAccessToken();
+    $token = makeAccessTokenEntity();
     expect($token->toString())->toBe($token->toString());
 });
 
 it('does not let extra claims override protected access-token claims', function () {
-    $token = makeOidcAccessToken();
+    $token = makeAccessTokenEntity();
     $token->addExtraClaim('scope', 'forged');
     $token->addExtraClaim('scopes', ['forged']);
     $token->addExtraClaim('client_id', 'forged-client');
@@ -87,7 +87,7 @@ it('does not let extra claims override protected access-token claims', function 
 });
 
 it('emits a package-owned actor claim', function () {
-    $token = makeOidcAccessToken();
+    $token = makeAccessTokenEntity();
     $token->setActor(['client_id' => 'trusted']);
 
     $parsed = parseAccessToken($token->toString());

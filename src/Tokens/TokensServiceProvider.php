@@ -35,7 +35,6 @@ class TokensServiceProvider extends ServiceProvider
         )));
 
         $this->app->singleton(AccessTokenMinter::class);
-        $this->app->singleton(TokenLifetimes::class);
         $this->app->singleton(AccessTokenContextLink::class);
         $this->app->singleton(ExchangePolicy::class, DefaultExchangePolicy::class);
         $this->app->singleton(TokenExchanger::class);

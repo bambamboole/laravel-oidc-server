@@ -7,13 +7,12 @@ namespace Bambamboole\LaravelOidc\Server\Tokens;
 use Bambamboole\LaravelOidc\Server\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
 use DateTimeImmutable;
-use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
-use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use RuntimeException;
 
 class IdTokenBuilder
@@ -24,32 +23,29 @@ class IdTokenBuilder
         private readonly ClaimsResolver $claims,
         private readonly IssuerResolver $issuer,
         private readonly SigningKeys $signingKeys,
+        private readonly RealmResolver $realms,
     ) {}
 
-    /**
-     * @param  array<int, string>  $amr
-     * @param  array<string, mixed>  $idTokenClaims
-     */
-    public function build(AccessTokenEntityInterface $accessToken, ?string $nonce, ?int $authTime, array $amr = [], array $idTokenClaims = [], ?string $sid = null): string
+    public function build(IdTokenRequest $request): string
     {
         $config = $this->signingKeys->signingConfiguration();
 
-        $clientId = $accessToken->getClient()->getIdentifier();
-        $scopes = array_map(
-            fn (ScopeEntityInterface $scope) => $scope->getIdentifier(),
-            $accessToken->getScopes(),
-        );
+        $clientId = $request->clientId;
+        $nonce = $request->nonce;
+        $authTime = $request->authTime;
+        $sid = $request->sid;
+        $amr = $request->amr;
         $now = new DateTimeImmutable;
 
         $builder = $config->builder()
             ->withHeader('kid', $this->signingKeys->signingKid())
             ->issuedBy($this->issuer->url())
             ->permittedFor($clientId)
-            ->relatedTo((string) $accessToken->getUserIdentifier())
+            ->relatedTo($request->userId)
             ->issuedAt($now)
-            ->expiresAt($now->modify('+'.config('oidc.token_lifetimes.id_token').' seconds'))
+            ->expiresAt($now->modify('+'.$this->realms->current()->tokens()->idTokenLifetime.' seconds'))
             ->withClaim('azp', $clientId)
-            ->withClaim('at_hash', $this->atHash($accessToken->toString()));
+            ->withClaim('at_hash', $this->atHash($request->accessToken));
 
         if ($nonce !== null && $nonce !== '') {
             $builder = $builder->withClaim('nonce', $nonce);
@@ -64,7 +60,6 @@ class IdTokenBuilder
         }
 
         if ($amr !== []) {
-            $amr = array_values($amr);
             $builder = $builder->withClaim('amr', $amr);
 
             $acr = AuthSessionState::deriveAcr($amr);
@@ -73,22 +68,20 @@ class IdTokenBuilder
             }
         }
 
-        foreach ($idTokenClaims as $name => $value) {
+        foreach ($request->idTokenClaims as $name => $value) {
             if (! ProtocolClaims::isReserved($name)) {
                 $builder = $builder->withClaim($name, $value);
             }
         }
 
-        $user = $this->resolveUser((string) $accessToken->getUserIdentifier())
-            ?? throw new RuntimeException(
-                'Unable to resolve the user for id_token issuance: '.$accessToken->getUserIdentifier(),
-            );
+        $user = $this->resolveUser($request->userId)
+            ?? throw new RuntimeException('Unable to resolve the user for id_token issuance: '.$request->userId);
 
         $resolved = $this->claims->resolve(new ClaimsRequest(
             user: $user,
             audience: ClaimsAudience::IdToken,
             clientId: $clientId,
-            scopes: array_values($scopes),
+            scopes: $request->scopes,
         ));
 
         foreach ($resolved as $name => $value) {

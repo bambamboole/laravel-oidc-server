@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
+use Bambamboole\LaravelOidc\Server\Realms\Settings\ClientSettings;
+
 final readonly class FirstPartyClientConfig
 {
     /** @param string[] $additionalTrustedClientIds */
@@ -15,17 +17,15 @@ final readonly class FirstPartyClientConfig
 
     public static function fromConfig(): self
     {
-        $clientId = config('oidc.first_party.client_id');
-        $resolved = is_string($clientId) && $clientId !== '' ? $clientId : null;
-        $trusted = array_values(array_unique(array_map(
-            strval(...),
-            (array) config('oidc.trusted_clients', []),
-        )));
+        return self::fromSettings(ClientSettings::fromConfig());
+    }
 
+    public static function fromSettings(ClientSettings $clients): self
+    {
         return new self(
-            resolvedClientId: $resolved,
-            firstPartyTrusted: (bool) config('oidc.first_party.trusted', false),
-            additionalTrustedClientIds: $trusted,
+            resolvedClientId: $clients->firstPartyClientId,
+            firstPartyTrusted: $clients->firstPartyTrusted,
+            additionalTrustedClientIds: $clients->trustedClients,
         );
     }
 
