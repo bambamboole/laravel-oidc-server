@@ -38,7 +38,7 @@ it('mints, signs and persists a scoped at+jwt that round-trips', function () {
     $parsed = parseMinted($jwt);
 
     expect($parsed->headers()->get('typ'))->toBe('at+jwt')
-        ->and($parsed->claims()->get('iss'))->toBe('https://op.test')
+        ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
         ->and($parsed->claims()->get('sub'))->toBe((string) $user->id)
         ->and($parsed->claims()->get('client_id'))->toBe($client->id)
         ->and($parsed->claims()->get('aud'))->toBe(['https://api.test'])

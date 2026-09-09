@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Support\Facades\Http;
 
 function enableCorpProvider(): void
@@ -28,7 +27,7 @@ function enableCorpProvider(): void
 it('redirects to the upstream provider and stores the pending authorization', function () {
     enableCorpProvider();
 
-    $response = $this->get(route(Handler::SocialRedirect->value, ['provider' => 'corp']));
+    $response = $this->get(route('identity.social.redirect', ['provider' => 'corp']));
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toStartWith('https://idp.test/authorize?')
@@ -37,19 +36,19 @@ it('redirects to the upstream provider and stores the pending authorization', fu
 });
 
 it('responds 404 for an unknown or credential-less provider', function () {
-    $this->get(route(Handler::SocialRedirect->value, ['provider' => 'github']))->assertNotFound();
-    $this->get(route(Handler::SocialRedirect->value, ['provider' => 'nope']))->assertNotFound();
+    $this->get(route('identity.social.redirect', ['provider' => 'github']))->assertNotFound();
+    $this->get(route('identity.social.redirect', ['provider' => 'nope']))->assertNotFound();
 });
 
 it('bounces the form_post callback to a GET so the session cookie is available', function () {
     enableCorpProvider();
 
-    $this->post(route(Handler::SocialCallback->value, ['provider' => 'corp']), [
+    $this->post(route('identity.social.callback', ['provider' => 'corp']), [
         'code' => 'code-1',
         'state' => 'state-1',
         'user' => '{"name":{"firstName":"Mona"}}',
     ])->assertStatus(303)->assertRedirect(
-        route(Handler::SocialCallback->value, ['provider' => 'corp'])
+        route('identity.social.callback', ['provider' => 'corp'])
             .'?'.http_build_query(['code' => 'code-1', 'state' => 'state-1', 'user' => '{"name":{"firstName":"Mona"}}']),
     );
 });
@@ -57,15 +56,15 @@ it('bounces the form_post callback to a GET so the session cookie is available',
 it('redirects to login with an error when the provider reports one', function () {
     enableCorpProvider();
 
-    $this->get(route(Handler::SocialCallback->value, ['provider' => 'corp']).'?error=access_denied')
-        ->assertRedirect(route(Handler::Login->value))
+    $this->get(route('identity.social.callback', ['provider' => 'corp']).'?error=access_denied')
+        ->assertRedirect(route('identity.login'))
         ->assertSessionHasErrors('social');
 });
 
 it('redirects to login when no pending authorization exists', function () {
     enableCorpProvider();
 
-    $this->get(route(Handler::SocialCallback->value, ['provider' => 'corp']).'?code=x&state=y')
-        ->assertRedirect(route(Handler::Login->value))
+    $this->get(route('identity.social.callback', ['provider' => 'corp']).'?code=x&state=y')
+        ->assertRedirect(route('identity.login'))
         ->assertSessionHasErrors('social');
 });

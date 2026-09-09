@@ -11,7 +11,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
 use Bambamboole\LaravelOidc\Server\Auth\Views\RegisterView;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
@@ -58,10 +57,10 @@ class RegisteredUserController
         return match ($this->finalizer->finalize($request, $user, 'pwd')) {
             LoginOutcome::Denied => $request->wantsJson()
                 ? new JsonResponse('', 403)
-                : redirect()->route(Handler::Login->value),
+                : redirect()->route('identity.login'),
             LoginOutcome::MfaChallenge => $request->wantsJson()
                 ? new JsonResponse(['two_factor' => true])
-                : redirect()->route(Handler::TwoFactorLogin->value),
+                : redirect()->route('identity.two-factor.login'),
             LoginOutcome::LoggedIn => $request->wantsJson()
                 ? new JsonResponse('', 201)
                 : redirect()->intended($this->homeUrl()),

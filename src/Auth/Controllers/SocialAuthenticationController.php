@@ -16,7 +16,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -103,7 +102,7 @@ class SocialAuthenticationController
 
         return match ($this->finalizer->finalize($request, $user, $providerKey)) {
             LoginOutcome::Denied => $this->failed($request, __('We could not sign you in with this account.')),
-            LoginOutcome::MfaChallenge => redirect()->route(Handler::TwoFactorLogin->value),
+            LoginOutcome::MfaChallenge => redirect()->route('identity.two-factor.login'),
             LoginOutcome::LoggedIn => redirect()->intended($this->homeUrl()),
         };
     }
@@ -138,6 +137,6 @@ class SocialAuthenticationController
 
     private function failed(Request $request, string $message): RedirectResponse
     {
-        return redirect()->route(Handler::Login->value)->withErrors(['social' => $message]);
+        return redirect()->route('identity.login')->withErrors(['social' => $message]);
     }
 }

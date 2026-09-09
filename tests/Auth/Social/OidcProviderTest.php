@@ -90,7 +90,7 @@ function oidcCallback(string $idToken): Request
         ]),
     ]);
 
-    $request = Request::create('/auth/social/corp/callback', 'GET', ['code' => 'code-1', 'state' => 'state-1']);
+    $request = Request::create('/realms/default/auth/social/corp/callback', 'GET', ['code' => 'code-1', 'state' => 'state-1']);
     $request->setLaravelSession(app('session.store'));
 
     return $request;
@@ -99,7 +99,7 @@ function oidcCallback(string $idToken): Request
 it('reads endpoints from the discovery document for the redirect', function () {
     fakeDiscovery();
 
-    $request = Request::create('/auth/social/corp');
+    $request = Request::create('/realms/default/auth/social/corp');
     $request->setLaravelSession(app('session.store'));
 
     $response = oidcTestProvider()->redirect($request);

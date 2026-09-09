@@ -50,7 +50,7 @@ function fakeOAuth2Provider(array $config = []): AbstractOAuth2Provider
 /**
  * @param  array<string, mixed>  $query
  */
-function requestWithSession(string $uri = '/auth/social/fake/callback', array $query = []): Request
+function requestWithSession(string $uri = '/realms/default/auth/social/fake/callback', array $query = []): Request
 {
     $request = Request::create($uri, 'GET', $query);
     $request->setLaravelSession(app('session.store'));
@@ -59,7 +59,7 @@ function requestWithSession(string $uri = '/auth/social/fake/callback', array $q
 }
 
 it('redirects to the authorization endpoint with state and S256 PKCE', function () {
-    $request = requestWithSession('/auth/social/fake');
+    $request = requestWithSession('/realms/default/auth/social/fake');
 
     $response = fakeOAuth2Provider()->redirect($request);
 
@@ -79,7 +79,7 @@ it('redirects to the authorization endpoint with state and S256 PKCE', function 
 });
 
 it('stores the link intent in the pending authorization', function () {
-    $request = requestWithSession('/auth/social/fake');
+    $request = requestWithSession('/realms/default/auth/social/fake');
 
     fakeOAuth2Provider()->redirect($request, PendingAuthorization::INTENT_LINK);
 

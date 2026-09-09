@@ -97,7 +97,7 @@ it('mints a real signed access token with a persisted row', function () {
     // Passport resolves the requesting client from aud[0], so only a
     // default-audience token can authenticate against this server's own routes.
     $bearerJwt = $this->issueTokenFor($this->user, scopes: ['openid', 'email']);
-    $bearer = $this->withHeader('Authorization', 'Bearer '.$bearerJwt)->get('/oauth/userinfo');
+    $bearer = $this->withHeader('Authorization', 'Bearer '.$bearerJwt)->get('/realms/default/oauth/userinfo');
     $bearer->assertOk()->assertJsonPath('sub', (string) $this->user->id);
 });
 

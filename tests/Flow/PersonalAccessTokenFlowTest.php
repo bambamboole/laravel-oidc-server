@@ -53,7 +53,7 @@ it('does not fire the personal-access trigger for other grants', function () {
 
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $client->id,
         'client_secret' => $client->plainSecret,

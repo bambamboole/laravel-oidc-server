@@ -19,7 +19,7 @@ beforeEach(function () {
 it('issues a client_credentials token with its own configured lifetime', function () {
     config(['oidc.token_lifetimes.client_credentials' => 3600]);
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -42,7 +42,7 @@ it('runs the client-credentials trigger once and applies its access-token claims
         $api->setAccessTokenClaim('tenant', 'acme');
     });
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -58,7 +58,7 @@ it('runs the client-credentials trigger once and applies its access-token claims
 it('binds the token to an allowlisted requested resource', function () {
     $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -72,7 +72,7 @@ it('binds the token to an allowlisted requested resource', function () {
 });
 
 it('defaults the audience to the client itself without a resource parameter', function () {
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -87,7 +87,7 @@ it('defaults the audience to the client itself without a resource parameter', fu
 it('rejects a resource the client is not allowed to target', function () {
     $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -99,7 +99,7 @@ it('rejects a resource the client is not allowed to target', function () {
 });
 
 it('rejects a resource that is not an absolute URI', function () {
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -117,7 +117,7 @@ it('exposes the requested audiences to the client-credentials trigger', function
         $seen = $event->audiences;
     });
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -135,7 +135,7 @@ it('denies client credentials before persisting an access token', function () {
         $api->deny('client_blocked');
     });
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,

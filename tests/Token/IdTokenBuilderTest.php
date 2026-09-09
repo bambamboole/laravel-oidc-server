@@ -60,7 +60,7 @@ it('builds a signed id_token with the required claims', function () {
 
     expect($parsed->headers()->get('alg'))->toBe('RS256')
         ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(signingPublicKey())['kid'])
-        ->and($parsed->claims()->get('iss'))->toBe('https://op.test')
+        ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
         ->and($parsed->claims()->get('sub'))->toBe((string) $user->id)
         ->and($parsed->claims()->get('aud'))->toBe(['client-uuid'])
         ->and($parsed->claims()->get('azp'))->toBe('client-uuid')

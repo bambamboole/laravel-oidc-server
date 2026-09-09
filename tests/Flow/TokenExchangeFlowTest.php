@@ -42,7 +42,7 @@ it('exchanges a reciprocal token for a narrowed, audience-scoped access token', 
     config(['app.url' => 'https://op.test']);
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read', 'orders:write']);
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -82,7 +82,7 @@ it('runs the token-exchange trigger once with finalized context and applies its 
 
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read', 'orders:write']);
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -106,7 +106,7 @@ it('denies token exchange before persisting an access token', function () {
         $api->deny('exchange_blocked');
     });
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -133,7 +133,7 @@ it('keeps the package-owned actor chain when a token-exchange trigger attempts t
         $api->setAccessTokenClaim('act', ['client_id' => 'forged-client']);
     });
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -155,7 +155,7 @@ it('keeps the package-owned actor chain when a token-exchange trigger attempts t
 it('inherits the subject token full scope set when the scope param is omitted', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read', 'orders:write']);
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -174,7 +174,7 @@ it('inherits the subject token full scope set when the scope param is omitted', 
 // RFC 8693 §2.2.2 (invalid_target)
 it('rejects an unlisted audience with invalid_target', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT, 'client_id' => $this->client->id, 'client_secret' => $this->secret,
         'subject_token' => $subject, 'subject_token_type' => ACCESS_TOKEN_URN, 'audience' => 'https://evil/api',
     ])->assertStatus(400)->assertJsonPath('error', 'invalid_target');
@@ -189,7 +189,7 @@ it('rejects an expired subject token with invalid_grant', function () {
         expiresAt: new DateTimeImmutable('-1 hour'),
     );
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -205,7 +205,7 @@ it('rejects an expired subject token with invalid_grant', function () {
 it('rejects a revoked subject token with invalid_grant', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid'], revoked: true);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -221,7 +221,7 @@ it('rejects a revoked subject token with invalid_grant', function () {
 it('rejects a subject token not bound to a user with invalid_grant', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid'], userless: true);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -236,7 +236,7 @@ it('rejects a subject token not bound to a user with invalid_grant', function ()
 it('never mints an id_token even when the exchange requests scope openid', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -259,7 +259,7 @@ it('rejects a public client with invalid_client', function () {
     ])->save();
     $subject = mintExchangeSubjectToken((string) $public->id, (string) $this->user->id, ['openid']);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $public->id,
         'subject_token' => $subject,
@@ -279,7 +279,7 @@ it('allows a trusted public client to exchange its own token', function () {
 
     $subject = mintExchangeSubjectToken((string) $client->getKey(), $this->user->getKey(), ['openid']);
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => (string) $client->getKey(),
         'subject_token' => $subject,
@@ -298,7 +298,7 @@ it('rejects a trusted public client whose grant_types lack token exchange', func
 
     $subject = mintExchangeSubjectToken((string) $client->getKey(), $this->user->getKey(), ['openid']);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => (string) $client->getKey(),
         'subject_token' => $subject,
@@ -311,7 +311,7 @@ it('rejects a trusted public client whose grant_types lack token exchange', func
 it('rejects a wrong subject_token_type with invalid_request', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -325,7 +325,7 @@ it('rejects a wrong subject_token_type with invalid_request', function () {
 it('rejects a client without the grant', function () {
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://o/cb']);
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT, 'client_id' => $other->id, 'client_secret' => $other->plainSecret,
         'subject_token' => $subject, 'subject_token_type' => ACCESS_TOKEN_URN, 'audience' => 'https://api.internal/orders',
     ])->assertStatus(400);
@@ -352,7 +352,7 @@ it('passes extension parameters to the exchange policy', function () {
 
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -387,7 +387,7 @@ it('carries context from the exchange policy into the token-exchange trigger', f
 
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
@@ -404,13 +404,13 @@ it('carries context from the exchange policy into the token-exchange trigger', f
 
 // RFC 8414 §2 (grant_types_supported)
 it('advertises the grant in discovery when enabled', function () {
-    expect($this->getJson('/.well-known/openid-configuration')->json('grant_types_supported'))
+    expect($this->getJson('/realms/default/.well-known/openid-configuration')->json('grant_types_supported'))
         ->toContain(TestCase::TOKEN_EXCHANGE_GRANT);
 });
 
 it('omits the grant from discovery when disabled', function () {
     config(['oidc.token_exchange.enabled' => false]);
 
-    expect($this->getJson('/.well-known/openid-configuration')->json('grant_types_supported'))
+    expect($this->getJson('/realms/default/.well-known/openid-configuration')->json('grant_types_supported'))
         ->not->toContain(TestCase::TOKEN_EXCHANGE_GRANT);
 });

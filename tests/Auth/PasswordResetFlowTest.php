@@ -30,9 +30,9 @@ it('sends a password reset link through the Laravel broker', function () {
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
 
-    $this->from('/auth/forgot-password')
+    $this->from('/realms/default/auth/forgot-password')
         ->post(route('identity.password.email'), ['email' => 'm@example.com'])
-        ->assertRedirect('/auth/forgot-password')
+        ->assertRedirect('/realms/default/auth/forgot-password')
         ->assertSessionHas('status', __(Password::RESET_LINK_SENT));
 
     Notification::assertSentTo(
@@ -40,7 +40,7 @@ it('sends a password reset link through the Laravel broker', function () {
         ResetPassword::class,
         fn (ResetPassword $notification): bool => str_contains(
             (string) $notification->toMail($user)->actionUrl,
-            '/auth/reset-password/',
+            '/realms/default/auth/reset-password/',
         ),
     );
 });
@@ -84,14 +84,14 @@ it('rejects a mismatched password confirmation before reaching the reset action'
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 
-    $this->from('/auth/reset-password/'.$token)
+    $this->from('/realms/default/auth/reset-password/'.$token)
         ->post(route('identity.password.update'), [
             'token' => $token,
             'email' => 'm@example.com',
             'password' => 'new-password',
             'password_confirmation' => 'a-different-password',
         ])
-        ->assertRedirect('/auth/reset-password/'.$token)
+        ->assertRedirect('/realms/default/auth/reset-password/'.$token)
         ->assertSessionHasErrors('password');
 
     $this->assertGuest('identity');
@@ -132,14 +132,14 @@ it('surfaces a validation error the reset action raises for its own password rul
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 
-    $this->from('/auth/reset-password/'.$token)
+    $this->from('/realms/default/auth/reset-password/'.$token)
         ->post(route('identity.password.update'), [
             'token' => $token,
             'email' => 'm@example.com',
             'password' => 'too-short',
             'password_confirmation' => 'too-short',
         ])
-        ->assertRedirect('/auth/reset-password/'.$token)
+        ->assertRedirect('/realms/default/auth/reset-password/'.$token)
         ->assertSessionHasErrors('password');
 
     $this->assertGuest('identity');
@@ -153,13 +153,13 @@ it('returns validation errors for an invalid reset token', function () {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 
-    $this->from('/auth/reset-password/invalid-token')
+    $this->from('/realms/default/auth/reset-password/invalid-token')
         ->post(route('identity.password.update'), [
             'token' => 'invalid-token',
             'email' => (string) $user->getAttribute('email'),
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
         ])
-        ->assertRedirect('/auth/reset-password/invalid-token')
+        ->assertRedirect('/realms/default/auth/reset-password/invalid-token')
         ->assertSessionHasErrors('email');
 });

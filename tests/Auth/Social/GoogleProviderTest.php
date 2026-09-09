@@ -18,7 +18,7 @@ it('is pinned to the Google issuer regardless of config', function () {
 
     $provider = new GoogleProvider('google', ['client_id' => 'client-1', 'client_secret' => 'shhh', 'issuer' => 'https://evil.test']);
 
-    $request = Request::create('/auth/social/google');
+    $request = Request::create('/realms/default/auth/social/google');
     $request->setLaravelSession(app('session.store'));
 
     expect($provider->redirect($request)->headers->get('Location'))

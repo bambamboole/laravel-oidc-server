@@ -20,14 +20,14 @@ it('renders the confirm password view through the package seam', function () {
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
-    $this->actingAs($user, 'identity')->get('/auth/user/confirm-password')->assertOk()->assertSee('confirm-password-view');
+    $this->actingAs($user, 'identity')->get('/realms/default/auth/user/confirm-password')->assertOk()->assertSee('confirm-password-view');
 });
 
 it('confirms the password and records the confirmation timestamp', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->actingAs($user, 'identity')
-        ->from('/auth/user/confirm-password')
+        ->from('/realms/default/auth/user/confirm-password')
         ->post(route('identity.password.confirm.store'), ['password' => 'password'])
         ->assertRedirect('/dashboard')
         ->assertSessionHas('auth.password_confirmed_at');
@@ -37,9 +37,9 @@ it('rejects password confirmation with the wrong password', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->actingAs($user, 'identity')
-        ->from('/auth/user/confirm-password')
+        ->from('/realms/default/auth/user/confirm-password')
         ->post(route('identity.password.confirm.store'), ['password' => 'wrong-password'])
-        ->assertRedirect('/auth/user/confirm-password')
+        ->assertRedirect('/realms/default/auth/user/confirm-password')
         ->assertSessionHasErrors('password');
 
     expect(session()->has('auth.password_confirmed_at'))->toBeFalse();

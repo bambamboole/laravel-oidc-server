@@ -6,7 +6,6 @@ use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -16,7 +15,7 @@ beforeEach(function () {
 it('denies a login when the postLogin hook denies', function () {
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'm@example.com', 'password' => 'secret-password'])
+    $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])
         ->assertSessionHasErrors('email');
 
     $this->assertGuest('identity');
@@ -25,7 +24,7 @@ it('denies a login when the postLogin hook denies', function () {
 it('buffers postLogin id_token claims into the session', function () {
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->setIdTokenClaim('groups', ['admin']));
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'm@example.com', 'password' => 'secret-password']);
+    $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password']);
 
     expect(session()->get('oidc.id_token_claims'))->toBe(['groups' => ['admin']]);
 });
@@ -33,7 +32,7 @@ it('buffers postLogin id_token claims into the session', function () {
 it('buffers postLogin access_token claims into the session', function () {
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->setAccessTokenClaim('tier', 'gold'));
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'm@example.com', 'password' => 'secret-password']);
+    $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password']);
 
     expect(session()->get('oidc.access_token_claims'))->toBe(['tier' => 'gold']);
 });
@@ -41,7 +40,7 @@ it('buffers postLogin access_token claims into the session', function () {
 it('denies when requireMfa is requested but the user has no factor', function () {
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'm@example.com', 'password' => 'secret-password'])
+    $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])
         ->assertSessionHasErrors('email');
 
     $this->assertGuest('identity');
@@ -53,7 +52,7 @@ it('forces the two-factor challenge when requireMfa is requested and a factor is
 
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'm@example.com', 'password' => 'secret-password'])
+    $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])
         ->assertRedirect(route('identity.two-factor.login'))
         ->assertSessionHas('login.id', $this->user->getAuthIdentifier());
 

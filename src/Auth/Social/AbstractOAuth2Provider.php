@@ -6,7 +6,6 @@ namespace Bambamboole\LaravelOidc\Server\Auth\Social;
 
 use Bambamboole\LaravelOidc\Server\Auth\Social\Contracts\SocialProvider;
 use Bambamboole\LaravelOidc\Server\Http\Controllers\Concerns\RespondsToInertiaExternalRedirects;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -138,6 +137,6 @@ abstract class AbstractOAuth2Provider implements SocialProvider
 
     protected function redirectUrl(): string
     {
-        return route(Handler::SocialCallback->value, ['provider' => $this->key]);
+        return route('identity.social.callback', ['provider' => $this->key]);
     }
 }

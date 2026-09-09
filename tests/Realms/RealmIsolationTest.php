@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Contracts\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Realm\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Realm\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Token\DatabaseSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Token\SigningKey;
 use Bambamboole\LaravelOidc\Server\Token\SigningKeyGenerator;

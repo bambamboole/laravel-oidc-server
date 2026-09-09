@@ -28,7 +28,7 @@ it('reports amr=[pwd] and acr=1 end to end for a password-only login', function 
     $verifier = str_repeat('v', 64);
     $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
 
-    $view = $this->get('/oauth/authorize?'.http_build_query([
+    $view = $this->get('/realms/default/oauth/authorize?'.http_build_query([
         'client_id' => $this->client->id,
         'redirect_uri' => 'https://rp.test/callback',
         'response_type' => 'code',
@@ -39,10 +39,10 @@ it('reports amr=[pwd] and acr=1 end to end for a password-only login', function 
         'code_challenge_method' => 'S256',
     ]))->assertOk();
 
-    $approve = $this->post('/oauth/authorize', ['auth_token' => $view->json('authToken')])->assertRedirect();
+    $approve = $this->post('/realms/default/oauth/authorize', ['auth_token' => $view->json('authToken')])->assertRedirect();
     parse_str(parse_url($approve->headers->get('Location'), PHP_URL_QUERY), $params);
 
-    $token = $this->post('/oauth/token', [
+    $token = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'authorization_code',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,

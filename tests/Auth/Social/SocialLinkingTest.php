@@ -6,7 +6,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Social\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
@@ -68,7 +67,7 @@ function linkCallbackFor(mixed $test, string $sub = 'upstream-1'): TestResponse
         'https://idp.test/token' => Http::response(['access_token' => 'up-at', 'id_token' => $idToken, 'token_type' => 'Bearer']),
     ]);
 
-    return $test->get(route(Handler::SocialCallback->value, ['provider' => 'corp'])
+    return $test->get(route('identity.social.callback', ['provider' => 'corp'])
         .'?'.http_build_query(['code' => 'code-1', 'state' => $pending['state']]));
 }
 
@@ -78,7 +77,7 @@ it('links a provider to the authenticated user', function () {
 
     $this->actingAs($user, 'identity')
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route(Handler::SocialLink->value, ['provider' => 'corp']))
+        ->get(route('identity.social.link', ['provider' => 'corp']))
         ->assertRedirect();
 
     expect(session(PendingAuthorization::SESSION_KEY)['intent'])->toBe('link');
@@ -100,7 +99,7 @@ it('refuses to link an identity already attached to another user', function () {
 
     $this->actingAs($user, 'identity')
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route(Handler::SocialLink->value, ['provider' => 'corp']));
+        ->get(route('identity.social.link', ['provider' => 'corp']));
 
     linkCallbackFor($this)->assertRedirect('/dashboard')->assertSessionHasErrors('social');
 
@@ -113,13 +112,13 @@ it('rejects a link-intent callback when the identity session is gone', function 
 
     $this->actingAs($user, 'identity')
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->get(route(Handler::SocialLink->value, ['provider' => 'corp']))
+        ->get(route('identity.social.link', ['provider' => 'corp']))
         ->assertRedirect();
 
     auth('identity')->logout();
 
     linkCallbackFor($this)
-        ->assertRedirect(route(Handler::Login->value))
+        ->assertRedirect(route('identity.login'))
         ->assertSessionHasErrors('social');
 
     expect(SocialAccount::query()->count())->toBe(0);
@@ -128,7 +127,7 @@ it('rejects a link-intent callback when the identity session is gone', function 
 it('requires authentication to start linking', function () {
     enableCorpForLinking();
 
-    $this->get(route(Handler::SocialLink->value, ['provider' => 'corp']))->assertRedirect();
+    $this->get(route('identity.social.link', ['provider' => 'corp']))->assertRedirect();
     expect(session(PendingAuthorization::SESSION_KEY))->toBeNull();
 });
 
@@ -138,7 +137,7 @@ it('unlinks an account owned by the user', function () {
 
     $this->actingAs($user, 'identity')
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->delete(route(Handler::SocialDestroy->value, ['socialAccount' => $account->id]))
+        ->delete(route('identity.social.destroy', ['socialAccount' => $account->id]))
         ->assertRedirect();
 
     expect(SocialAccount::query()->count())->toBe(0);
@@ -152,7 +151,7 @@ it('forbids unlinking another user\'s account', function () {
 
     $this->actingAs($user, 'identity')
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->delete(route(Handler::SocialDestroy->value, ['socialAccount' => $account->id]))
+        ->delete(route('identity.social.destroy', ['socialAccount' => $account->id]))
         ->assertForbidden();
 
     expect(SocialAccount::query()->count())->toBe(1);

@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Route;
 use Workbench\App\Models\User;
 
 it('configures native passkey routes from package auth settings', function () {
-    expect(route('identity.passkey.login-options'))->toEndWith('/auth/passkeys/login/options')
-        ->and(route('identity.passkey.confirm'))->toEndWith('/auth/passkeys/confirm')
+    expect(route('identity.passkey.login-options'))->toEndWith('/realms/default/auth/passkeys/login/options')
+        ->and(route('identity.passkey.confirm'))->toEndWith('/realms/default/auth/passkeys/confirm')
         ->and(config('passkeys.guard'))->toBe(config('oidc.auth.guard'))
         ->and(config('passkeys.redirect'))->toBe(config('oidc.auth.home'));
 });

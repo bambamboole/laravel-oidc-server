@@ -50,7 +50,7 @@ it('serves the same jwks from an env-provided key', function () {
 
     config(['oidc.public_key' => escapedFixtureKey('oauth-public.key')]);
 
-    $this->getJson('/.well-known/jwks.json')
+    $this->getJson('/realms/default/.well-known/jwks.json')
         ->assertOk()
         ->assertJsonPath('keys.0.kid', $fromFile['kid']);
 });

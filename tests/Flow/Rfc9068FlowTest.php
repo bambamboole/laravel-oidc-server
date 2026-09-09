@@ -48,7 +48,7 @@ it('issues an RFC 9068 access token through the real flow with context-store cla
 
     $at = parseRfc9068AccessToken($result->accessToken);
     expect($at->headers()->get('typ'))->toBe('at+jwt')
-        ->and($at->claims()->get('iss'))->toBe('https://op.test')
+        ->and($at->claims()->get('iss'))->toBe('https://op.test/realms/default')
         ->and($at->claims()->get('scope'))->toBe('openid email')
         ->and($at->claims()->get('scopes'))->toBe(['openid', 'email'])
         ->and($at->claims()->get('tenant'))->toBe('acme')
@@ -57,5 +57,5 @@ it('issues an RFC 9068 access token through the real flow with context-store cla
 
 it('still authenticates the RFC 9068 token on an auth:oidc route (no guard regression)', function () {
     Oidc::actingAs($this->user, ['openid'], 'oidc');
-    $this->getJson('/oauth/userinfo')->assertOk();
+    $this->getJson('/realms/default/oauth/userinfo')->assertOk();
 });

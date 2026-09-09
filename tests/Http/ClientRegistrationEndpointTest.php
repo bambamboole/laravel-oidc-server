@@ -7,8 +7,6 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Models\Client;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
-use Bambamboole\LaravelOidc\Server\Routing\HandlerRegistrar;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -24,20 +22,19 @@ function enableDynamicClientRegistration(array $overrides = []): void
         ...$overrides,
     ]]);
 
-    app(HandlerRegistrar::class)->register();
-    Route::getRoutes()->refreshNameLookups();
+    reloadOidcRoutes();
 }
 
 it('does not register the endpoint while the feature is disabled', function () {
-    expect(Handler::ClientRegistration->config())->toBeFalse();
+    expect(Route::has('oidc.register'))->toBeFalse();
 
-    $this->postJson('/oauth/register', ['redirect_uris' => ['https://rp.test/cb']])->assertNotFound();
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://rp.test/cb']])->assertNotFound();
 });
 
 it('registers a public client and returns the RFC 7591 response', function () {
     enableDynamicClientRegistration();
 
-    $response = $this->postJson('/oauth/register', [
+    $response = $this->postJson('/realms/default/oauth/register', [
         'client_name' => 'Claude',
         'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
     ])->assertCreated();
@@ -63,7 +60,7 @@ it('registers a public client and returns the RFC 7591 response', function () {
 it('restricts the registered client to the configured default scopes', function () {
     enableDynamicClientRegistration(['default_scopes' => ['mcp:use', 'openid']]);
 
-    $response = $this->postJson('/oauth/register', [
+    $response = $this->postJson('/realms/default/oauth/register', [
         'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
     ])->assertCreated()->assertJsonPath('scope', 'mcp:use openid');
 
@@ -75,7 +72,7 @@ it('restricts the registered client to the configured default scopes', function 
 it('falls back to the redirect host as client name', function () {
     enableDynamicClientRegistration();
 
-    $this->postJson('/oauth/register', ['redirect_uris' => ['https://claude.ai/api/mcp/auth_callback']])
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://claude.ai/api/mcp/auth_callback']])
         ->assertCreated()
         ->assertJsonPath('client_name', 'claude.ai');
 });
@@ -83,7 +80,7 @@ it('falls back to the redirect host as client name', function () {
 it('ignores unknown RFC 7591 metadata fields', function () {
     enableDynamicClientRegistration();
 
-    $this->postJson('/oauth/register', [
+    $this->postJson('/realms/default/oauth/register', [
         'client_name' => 'Cursor',
         'redirect_uris' => ['https://cursor.com/oauth/callback'],
         'application_type' => 'native',
@@ -95,11 +92,11 @@ it('ignores unknown RFC 7591 metadata fields', function () {
 it('rejects a missing or empty redirect uri list', function () {
     enableDynamicClientRegistration();
 
-    $this->postJson('/oauth/register', ['client_name' => 'X'])
+    $this->postJson('/realms/default/oauth/register', ['client_name' => 'X'])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_client_metadata');
 
-    $this->postJson('/oauth/register', ['redirect_uris' => []])
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => []])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_client_metadata');
 });
@@ -107,7 +104,7 @@ it('rejects a missing or empty redirect uri list', function () {
 it('rejects malformed redirect uris', function (string $uri) {
     enableDynamicClientRegistration();
 
-    $this->postJson('/oauth/register', ['redirect_uris' => [$uri]])
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => [$uri]])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_redirect_uri');
 })->with([
@@ -121,16 +118,16 @@ it('rejects malformed redirect uris', function (string $uri) {
 it('rejects custom schemes unless allow-listed', function () {
     enableDynamicClientRegistration();
 
-    $this->postJson('/oauth/register', ['redirect_uris' => ['cursor://anysphere.cursor-retrieval/oauth/callback']])
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['cursor://anysphere.cursor-retrieval/oauth/callback']])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_redirect_uri');
 
     enableDynamicClientRegistration(['allowed_redirect_schemes' => ['cursor']]);
 
-    $this->postJson('/oauth/register', ['redirect_uris' => ['cursor://anysphere.cursor-retrieval/oauth/callback']])
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['cursor://anysphere.cursor-retrieval/oauth/callback']])
         ->assertCreated();
 
-    $this->postJson('/oauth/register', ['redirect_uris' => ['cursor:/callback']])
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['cursor:/callback']])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_redirect_uri');
 });
@@ -138,10 +135,10 @@ it('rejects custom schemes unless allow-listed', function () {
 it('enforces the redirect domain allowlist for http(s) uris', function () {
     enableDynamicClientRegistration(['allowed_redirect_domains' => ['claude.ai']]);
 
-    $this->postJson('/oauth/register', ['redirect_uris' => ['https://claude.ai/api/mcp/auth_callback']])
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://claude.ai/api/mcp/auth_callback']])
         ->assertCreated();
 
-    $this->postJson('/oauth/register', ['redirect_uris' => ['https://evil.test/cb']])
+    $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://evil.test/cb']])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_redirect_uri');
 });
@@ -149,5 +146,5 @@ it('enforces the redirect domain allowlist for http(s) uris', function () {
 it('throttles the registration endpoint', function () {
     enableDynamicClientRegistration();
 
-    expect(Route::getRoutes()->getByName(Handler::ClientRegistration->value)->middleware())->toContain('throttle');
+    expect(Route::getRoutes()->getByName('oidc.register')->middleware())->toContain('throttle');
 });

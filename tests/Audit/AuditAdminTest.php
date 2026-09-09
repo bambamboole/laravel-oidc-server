@@ -5,17 +5,14 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Server\Routing\HandlerRegistrar;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Route;
 
 it('audits a dynamic client registration', function () {
     config(['oidc.dcr.enabled' => true]);
-    app(HandlerRegistrar::class)->register();
-    Route::getRoutes()->refreshNameLookups();
+    reloadOidcRoutes();
     $sink = fakeAudit();
 
-    $response = $this->postJson('/oauth/register', [
+    $response = $this->postJson('/realms/default/oauth/register', [
         'client_name' => 'MCP Client',
         'redirect_uris' => ['https://mcp.test/callback'],
     ])->assertCreated();

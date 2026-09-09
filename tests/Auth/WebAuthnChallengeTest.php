@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Auth\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Passkeys\Actions\VerifyPasskey;
 use Laravel\Passkeys\Contracts\PasskeyUser;
@@ -79,7 +78,7 @@ it('issues webauthn challenge options and stores the private state', function ()
         'login.id' => $user->getAuthIdentifier(),
         'login.factor' => 'webauthn',
         'login.factor_id' => (string) $passkey->getKey(),
-    ])->getJson(route(Handler::TwoFactorChallengeOptions->value))
+    ])->getJson(route('identity.two-factor.login.options'))
         ->assertOk()
         ->assertJsonStructure(['options']);
 
@@ -87,7 +86,7 @@ it('issues webauthn challenge options and stores the private state', function ()
 });
 
 it('rejects options requests without a pending challenge', function () {
-    $this->getJson(route(Handler::TwoFactorChallengeOptions->value))->assertUnauthorized();
+    $this->getJson(route('identity.two-factor.login.options'))->assertUnauthorized();
 });
 
 it('completes a webauthn second-factor challenge end to end', function () {
@@ -95,16 +94,16 @@ it('completes a webauthn second-factor challenge end to end', function () {
     config(['oidc.auth.two_factor.challenge_providers' => ['webauthn']]);
     stubVerifiedPasskey($passkey);
 
-    $this->post(route(Handler::LoginStore->value), [
+    $this->post(route('identity.login.store'), [
         'email' => 'm@example.com',
         'password' => 'password',
-    ])->assertRedirect(route(Handler::TwoFactorLogin->value));
+    ])->assertRedirect(route('identity.two-factor.login'));
 
     $this->assertGuest('identity');
 
-    $this->getJson(route(Handler::TwoFactorChallengeOptions->value))->assertOk();
+    $this->getJson(route('identity.two-factor.login.options'))->assertOk();
 
-    $this->post(route(Handler::TwoFactorLoginStore->value), [
+    $this->post(route('identity.two-factor.login.store'), [
         'credential' => webauthnAssertionPayload(),
     ])->assertRedirect('/dashboard');
 
@@ -118,19 +117,19 @@ it('completes a challenge after switching from totp to webauthn', function () {
     $factor->forceFill(['confirmed_at' => now()])->save();
     stubVerifiedPasskey($passkey);
 
-    $this->post(route(Handler::LoginStore->value), [
+    $this->post(route('identity.login.store'), [
         'email' => 'm@example.com',
         'password' => 'password',
-    ])->assertRedirect(route(Handler::TwoFactorLogin->value))
+    ])->assertRedirect(route('identity.two-factor.login'))
         ->assertSessionHas('login.factor', 'totp');
 
-    $this->get(route(Handler::TwoFactorLoginFactor->value, ['provider' => 'webauthn']))
-        ->assertRedirect(route(Handler::TwoFactorLogin->value))
+    $this->get(route('identity.two-factor.login.factor', ['provider' => 'webauthn']))
+        ->assertRedirect(route('identity.two-factor.login'))
         ->assertSessionHas('login.factor', 'webauthn');
 
-    $this->getJson(route(Handler::TwoFactorChallengeOptions->value))->assertOk();
+    $this->getJson(route('identity.two-factor.login.options'))->assertOk();
 
-    $this->post(route(Handler::TwoFactorLoginStore->value), [
+    $this->post(route('identity.two-factor.login.store'), [
         'credential' => webauthnAssertionPayload(),
     ])->assertRedirect('/dashboard');
 
@@ -146,7 +145,7 @@ it('rejects a webauthn assertion when no challenge was issued', function () {
         'login.id' => $user->getAuthIdentifier(),
         'login.factor' => 'webauthn',
         'login.factor_id' => (string) $passkey->getKey(),
-    ])->post(route(Handler::TwoFactorLoginStore->value), [
+    ])->post(route('identity.two-factor.login.store'), [
         'credential' => webauthnAssertionPayload(),
     ])->assertSessionHasErrors('code');
 
@@ -164,9 +163,9 @@ it('accepts any of the users passkeys, not only the pinned enrollment', function
         'login.id' => $user->getAuthIdentifier(),
         'login.factor' => 'webauthn',
         'login.factor_id' => (string) $passkey->getKey(),
-    ])->getJson(route(Handler::TwoFactorChallengeOptions->value))->assertOk();
+    ])->getJson(route('identity.two-factor.login.options'))->assertOk();
 
-    $this->post(route(Handler::TwoFactorLoginStore->value), [
+    $this->post(route('identity.two-factor.login.store'), [
         'credential' => webauthnAssertionPayload(),
     ])->assertRedirect('/dashboard');
 
@@ -194,9 +193,9 @@ it('consumes the challenge state on a failed attempt', function () {
         'login.id' => $user->getAuthIdentifier(),
         'login.factor' => 'webauthn',
         'login.factor_id' => (string) $passkey->getKey(),
-    ])->getJson(route(Handler::TwoFactorChallengeOptions->value))->assertOk();
+    ])->getJson(route('identity.two-factor.login.options'))->assertOk();
 
-    $this->post(route(Handler::TwoFactorLoginStore->value), [
+    $this->post(route('identity.two-factor.login.store'), [
         'credential' => webauthnAssertionPayload(),
     ])->assertSessionHasErrors('code');
 

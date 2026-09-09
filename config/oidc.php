@@ -244,9 +244,6 @@ return [
     ],
 
     'routes' => [
-        'prefix' => '',
         'middleware' => [],
     ],
-
-    'handlers' => [],
 ];

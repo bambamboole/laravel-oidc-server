@@ -54,15 +54,15 @@ function completeComplianceAuthorization(TestCase $test, array $overrides = []):
 
     $view = $test->actingAs($test->user, 'identity')
         ->withSession(['oidc.auth_time' => time() - 60])
-        ->get('/oauth/authorize?'.http_build_query($query))
+        ->get('/realms/default/oauth/authorize?'.http_build_query($query))
         ->assertOk();
 
-    $approve = $test->post('/oauth/authorize', ['auth_token' => $view->json('authToken')])
+    $approve = $test->post('/realms/default/oauth/authorize', ['auth_token' => $view->json('authToken')])
         ->assertRedirect();
 
     parse_str(parse_url($approve->headers->get('Location'), PHP_URL_QUERY), $params);
 
-    return $test->post('/oauth/token', [
+    return $test->post('/realms/default/oauth/token', [
         'grant_type' => 'authorization_code',
         'client_id' => $test->client->id,
         'client_secret' => $test->client->plainSecret,
@@ -78,7 +78,7 @@ it('rejects an authorization request whose redirect_uri is not an exact register
     // AbstractGrant::validateRedirectUri(), which throws
     // OAuthServerException::invalidClient() — a 401 `invalid_client`,
     // not a 400. It still never redirects to the unvalidated URI.
-    $response = $this->actingAs($this->user, 'identity')->get('/oauth/authorize?'.http_build_query([
+    $response = $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/authorize?'.http_build_query([
         'client_id' => $this->client->id,
         'redirect_uri' => 'https://rp.test/callback/extra',
         'response_type' => 'code',
@@ -91,7 +91,7 @@ it('rejects an authorization request whose redirect_uri is not an exact register
 
 // OAuth 2.1 §1.5 — the ROPC (password) grant is removed / not supported
 it('does not support the password grant', function () {
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'password',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -108,14 +108,14 @@ it('does not support the password grant', function () {
 it('rotates refresh tokens: reusing the original refresh token after it has been exchanged fails', function () {
     $refreshToken = completeComplianceAuthorization($this)->assertOk()->json('refresh_token');
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
         'refresh_token' => $refreshToken,
     ])->assertOk();
 
-    $reuse = $this->post('/oauth/token', [
+    $reuse = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,

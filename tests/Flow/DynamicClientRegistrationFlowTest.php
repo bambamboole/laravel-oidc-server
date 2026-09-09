@@ -9,19 +9,16 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Models\Client;
-use Bambamboole\LaravelOidc\Server\Routing\HandlerRegistrar;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
-use Illuminate\Support\Facades\Route;
 use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
 it('lets a dynamically registered client complete the PKCE authorization code flow', function () {
     config(['oidc.dcr.enabled' => true, 'oidc.dcr.default_scopes' => []]);
-    app(HandlerRegistrar::class)->register();
-    Route::getRoutes()->refreshNameLookups();
+    reloadOidcRoutes();
 
-    $registration = $this->postJson('/oauth/register', [
+    $registration = $this->postJson('/realms/default/oauth/register', [
         'client_name' => 'MCP Client',
         'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
     ])->assertCreated();
@@ -37,5 +34,5 @@ it('lets a dynamically registered client complete the PKCE authorization code fl
 
     expect($result->accessToken)->not->toBeNull();
 
-    $this->withToken($result->accessToken)->getJson('/oauth/userinfo')->assertOk();
+    $this->withToken($result->accessToken)->getJson('/realms/default/oauth/userinfo')->assertOk();
 });

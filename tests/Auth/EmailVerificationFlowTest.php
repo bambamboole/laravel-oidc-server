@@ -24,7 +24,7 @@ it('renders the verification notice for an unverified user', function () {
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
-    $this->actingAs($user, 'identity')->get('/auth/email/verify')->assertOk()->assertSee('verify-email-view');
+    $this->actingAs($user, 'identity')->get('/realms/default/auth/email/verify')->assertOk()->assertSee('verify-email-view');
 });
 
 it('redirects verified users away from the verification notice', function () {
@@ -43,7 +43,7 @@ it('redirects verified users away from the verification notice', function () {
         'password' => 'secret',
     ]);
 
-    $this->actingAs($user, 'identity')->get('/auth/email/verify')->assertRedirect('/dashboard');
+    $this->actingAs($user, 'identity')->get('/realms/default/auth/email/verify')->assertRedirect('/dashboard');
 });
 
 it('verifies a signed email verification URL and fires the event', function () {
@@ -68,9 +68,9 @@ it('resends the email verification notification', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
     $this->actingAs($user, 'identity')
-        ->from('/auth/email/verify')
-        ->post('/auth/email/verification-notification')
-        ->assertRedirect('/auth/email/verify')
+        ->from('/realms/default/auth/email/verify')
+        ->post('/realms/default/auth/email/verification-notification')
+        ->assertRedirect('/realms/default/auth/email/verify')
         ->assertSessionHas('status', 'verification-link-sent');
 
     Notification::assertSentTo(
@@ -78,7 +78,7 @@ it('resends the email verification notification', function () {
         VerifyEmail::class,
         fn (VerifyEmail $notification): bool => str_contains(
             (string) $notification->toMail($user)->actionUrl,
-            '/auth/email/verify/',
+            '/realms/default/auth/email/verify/',
         ),
     );
 });

@@ -46,14 +46,14 @@ function selfSsoAuthorizationQuery(string|int $clientId, array $overrides = []):
 it('redirects unauthenticated authorization requests to the configured identity login route', function () {
     config(['oidc.login_route' => 'identity.login']);
 
-    $this->get('/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)))
-        ->assertRedirect('/auth/login');
+    $this->get('/realms/default/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)))
+        ->assertRedirect('/realms/default/auth/login');
 });
 
 it('accepts a literal path as the authorization login destination', function () {
     config(['oidc.login_route' => '/custom/identity-login']);
 
-    $this->get('/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)))
+    $this->get('/realms/default/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)))
         ->assertRedirect('/custom/identity-login');
 });
 
@@ -61,15 +61,15 @@ it('returns credential login to the pending authorization request without creati
     config(['oidc.login_route' => 'identity.login']);
     $this->user->forceFill(['password' => Hash::make('password')])->save();
 
-    $this->get('/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)))
-        ->assertRedirect('/auth/login');
+    $this->get('/realms/default/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)))
+        ->assertRedirect('/realms/default/auth/login');
 
     $response = $this->post(route('identity.login.store'), [
         'email' => 'm@example.com',
         'password' => 'password',
     ])->assertRedirect();
 
-    expect($response->headers->get('Location'))->toContain('/oauth/authorize?')
+    expect($response->headers->get('Location'))->toContain('/realms/default/oauth/authorize?')
         ->and(auth('identity')->check())->toBeTrue()
         ->and(auth('web')->guest())->toBeTrue();
 });
@@ -79,7 +79,7 @@ it('auto-approves trusted clients without rendering consent', function () {
 
     $response = $this->actingAs($this->user, (string) config('oidc.auth.guard'))
         ->withSession(['oidc.auth_time' => time()])
-        ->get('/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)));
+        ->get('/realms/default/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)));
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toStartWith('https://rp.test/callback?')
@@ -97,7 +97,7 @@ it('does not bypass consent for an untrusted first-party client', function () {
 
     $this->actingAs($this->user, (string) config('oidc.auth.guard'))
         ->withSession(['oidc.auth_time' => time()])
-        ->get('/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)))
+        ->get('/realms/default/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)))
         ->assertOk()
         ->assertJsonStructure(['authToken']);
 });
@@ -113,7 +113,7 @@ it('auto-approves a trusted first-party client without duplicating its id', func
 
     $response = $this->actingAs($this->user, (string) config('oidc.auth.guard'))
         ->withSession(['oidc.auth_time' => time()])
-        ->get('/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)));
+        ->get('/realms/default/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id)));
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toStartWith('https://rp.test/callback?')
@@ -125,7 +125,7 @@ it('does not show forced consent for trusted clients', function () {
 
     $response = $this->actingAs($this->user, (string) config('oidc.auth.guard'))
         ->withSession(['oidc.auth_time' => time()])
-        ->get('/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id, [
+        ->get('/realms/default/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id, [
             'prompt' => 'consent',
         ])));
 
@@ -139,7 +139,7 @@ it('satisfies prompt none for an authenticated trusted client', function () {
 
     $response = $this->actingAs($this->user, (string) config('oidc.auth.guard'))
         ->withSession(['oidc.auth_time' => time()])
-        ->get('/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id, [
+        ->get('/realms/default/oauth/authorize?'.http_build_query(selfSsoAuthorizationQuery($this->client->id, [
             'prompt' => 'none',
         ])));
 

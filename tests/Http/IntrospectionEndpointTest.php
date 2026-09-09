@@ -35,7 +35,7 @@ function issueAccessTokenViaPersonalClient(mixed $test): array
 }
 
 it('rejects requests without client authentication', function () {
-    $this->postJson('/oauth/introspect', ['token' => 'x'])
+    $this->postJson('/realms/default/oauth/introspect', ['token' => 'x'])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
         ->assertHeader('WWW-Authenticate', 'Basic realm="OIDC"');
@@ -45,7 +45,7 @@ it('omits sub and exp when the token has no user or expiry', function () {
     [$jwt, $token] = issueAccessTokenViaPersonalClient($this);
     $token->forceFill(['client_id' => $this->client->id, 'user_id' => null, 'expires_at' => null])->save();
 
-    $response = $this->postJson('/oauth/introspect', [
+    $response = $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $jwt,
@@ -60,7 +60,7 @@ it('reports active for a valid access token of the same client', function () {
     [$jwt, $token] = issueAccessTokenViaPersonalClient($this);
     $token->forceFill(['client_id' => $this->client->id])->save();
 
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $jwt,
@@ -78,7 +78,7 @@ it('reports inactive for revoked tokens', function () {
     $token->forceFill(['client_id' => $this->client->id])->save();
     $token->forceFill(['revoked' => true])->save();
 
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $jwt,
@@ -86,7 +86,7 @@ it('reports inactive for revoked tokens', function () {
 });
 
 it('reports inactive for garbage tokens without leaking errors', function () {
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => 'not-a-token',
@@ -96,7 +96,7 @@ it('reports inactive for garbage tokens without leaking errors', function () {
 it('reports inactive for tokens belonging to another client', function () {
     [$jwt] = issueAccessTokenViaPersonalClient($this);
 
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $jwt,
@@ -110,7 +110,7 @@ it('reports active for a token that names the caller in its audience', function 
         (string) $this->user->id, $requester, ['openid'], new DateInterval('PT1H'), [(string) $this->client->id],
     )->toString();
 
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $jwt,
@@ -124,7 +124,7 @@ it('reports active for a token that names the caller in its audience', function 
 it('reports active for a valid refresh token of the same client', function () {
     [$refreshTokenValue] = issueRefreshToken($this);
 
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $refreshTokenValue,
@@ -140,7 +140,7 @@ it('reports inactive for a revoked refresh token', function () {
     [$refreshTokenValue, $refreshToken] = issueRefreshToken($this);
     $refreshToken->forceFill(['revoked' => true])->save();
 
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $refreshTokenValue,
@@ -149,7 +149,7 @@ it('reports inactive for a revoked refresh token', function () {
 });
 
 it('reports inactive for a garbage refresh token without leaking errors', function () {
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => 'not-a-token',
@@ -161,7 +161,7 @@ it('reports inactive for a refresh token belonging to another client', function 
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
     [$refreshTokenValue] = issueRefreshToken($this, (string) $other->id);
 
-    $this->postJson('/oauth/introspect', [
+    $this->postJson('/realms/default/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $refreshTokenValue,

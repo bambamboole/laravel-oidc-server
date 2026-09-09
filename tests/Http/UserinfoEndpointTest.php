@@ -16,7 +16,7 @@ beforeEach(function () {
 });
 
 it('returns an RFC 6750 error on an unauthenticated userinfo request', function () {
-    $response = $this->getJson('/oauth/userinfo');
+    $response = $this->getJson('/realms/default/oauth/userinfo');
     $response->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
         ->assertHeader('WWW-Authenticate', 'Bearer realm="OIDC", error="invalid_token"');
@@ -24,7 +24,7 @@ it('returns an RFC 6750 error on an unauthenticated userinfo request', function 
 
 it('returns insufficient_scope when the token lacks openid', function () {
     Oidc::actingAs($this->user, ['email'], 'oidc');
-    $this->getJson('/oauth/userinfo')
+    $this->getJson('/realms/default/oauth/userinfo')
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
         ->assertHeader('WWW-Authenticate', 'Bearer realm="OIDC", error="insufficient_scope"');
@@ -33,7 +33,7 @@ it('returns insufficient_scope when the token lacks openid', function () {
 it('returns sub plus scope-filtered claims', function () {
     Oidc::actingAs($this->user, ['openid', 'email'], 'oidc');
 
-    $this->getJson('/oauth/userinfo')
+    $this->getJson('/realms/default/oauth/userinfo')
         ->assertOk()
         ->assertExactJson([
             'sub' => (string) $this->user->id,
@@ -55,7 +55,7 @@ it('includes scoped claims from a custom claims resolver', function () {
 
     Oidc::actingAs($this->user, ['openid', 'tenant'], 'oidc');
 
-    $this->getJson('/oauth/userinfo')
+    $this->getJson('/realms/default/oauth/userinfo')
         ->assertOk()
         ->assertExactJson([
             'sub' => (string) $this->user->id,
@@ -66,7 +66,7 @@ it('includes scoped claims from a custom claims resolver', function () {
 it('includes profile claims when granted', function () {
     Oidc::actingAs($this->user, ['openid', 'profile', 'email'], 'oidc');
 
-    $response = $this->getJson('/oauth/userinfo')->assertOk();
+    $response = $this->getJson('/realms/default/oauth/userinfo')->assertOk();
 
     expect($response->json('name'))->toBe('M')
         ->and($response->json('sub'))->toBe((string) $this->user->id);
@@ -75,5 +75,5 @@ it('includes profile claims when granted', function () {
 it('accepts POST as required by the spec', function () {
     Oidc::actingAs($this->user, ['openid'], 'oidc');
 
-    $this->postJson('/oauth/userinfo')->assertOk()->assertJson(['sub' => (string) $this->user->id]);
+    $this->postJson('/realms/default/oauth/userinfo')->assertOk()->assertJson(['sub' => (string) $this->user->id]);
 });

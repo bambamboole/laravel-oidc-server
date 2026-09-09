@@ -20,7 +20,7 @@ it('registers a user through the package action seam and logs them in', function
         ]);
     });
 
-    $response = $this->from('/auth/register')->post(route('identity.register.store'), [
+    $response = $this->from('/realms/default/auth/register')->post(route('identity.register.store'), [
         'name' => 'M',
         'email' => 'MixedCase@Example.com',
         'password' => 'password',

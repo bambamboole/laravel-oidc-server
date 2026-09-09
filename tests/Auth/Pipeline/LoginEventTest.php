@@ -19,7 +19,7 @@ it('exposes login context and derives helpers', function () {
         amr: ['pwd'],
         authTime: 1700000000,
         recognizer: new NullDeviceRecognizer,
-        request: Request::create('/auth/login', 'POST'),
+        request: Request::create('/realms/default/auth/login', 'POST'),
     );
 
     expect($event->scopes)->toBe(['openid', 'email'])

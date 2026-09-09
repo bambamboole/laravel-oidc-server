@@ -8,9 +8,9 @@ use Bambamboole\LaravelOidc\Server\Http\ProviderMetadata;
 use Illuminate\Http\JsonResponse;
 
 /**
- * RFC 8414 authorization server metadata. The optional `{path}` suffix covers
- * the path-insertion form clients derive from an issuer with a path component
- * (RFC 8414 §3.1); this issuer's metadata is the same document either way.
+ * RFC 8414 authorization server metadata, served under the path-insertion form
+ * clients derive from an issuer with a path component (§3.1). The realm sits
+ * behind the well-known segment and selects the document.
  */
 class AuthorizationServerMetadataController
 {

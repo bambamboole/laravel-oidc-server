@@ -41,7 +41,7 @@ function completeBackChannelLogoutAuthorization(TestCase $test, string $sid): Te
 
     $view = $test->actingAs($test->user, 'identity')
         ->withSession(['oidc.auth_time' => time() - 60, 'oidc.amr' => ['pwd'], 'oidc.sid' => $sid])
-        ->get('/oauth/authorize?'.http_build_query([
+        ->get('/realms/default/oauth/authorize?'.http_build_query([
             'client_id' => $test->client->id,
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',
@@ -53,12 +53,12 @@ function completeBackChannelLogoutAuthorization(TestCase $test, string $sid): Te
         ]))
         ->assertOk();
 
-    $approve = $test->post('/oauth/authorize', ['auth_token' => $view->json('authToken')])
+    $approve = $test->post('/realms/default/oauth/authorize', ['auth_token' => $view->json('authToken')])
         ->assertRedirect();
 
     parse_str(parse_url($approve->headers->get('Location'), PHP_URL_QUERY), $params);
 
-    return $test->post('/oauth/token', [
+    return $test->post('/realms/default/oauth/token', [
         'grant_type' => 'authorization_code',
         'client_id' => $test->client->id,
         'client_secret' => $test->client->plainSecret,
@@ -89,7 +89,7 @@ describe('via /oauth/logout', function () {
         $idToken = completeBackChannelLogoutAuthorization($this, $sid)->assertOk()->json('id_token');
 
         $this->actingAs($this->user, 'identity')
-            ->post('/oauth/logout', ['id_token_hint' => $idToken])
+            ->post('/realms/default/oauth/logout', ['id_token_hint' => $idToken])
             ->assertRedirect();
 
         expect(app(OidcSessionRepository::class)->find($sid)->revoked_at)->not->toBeNull();

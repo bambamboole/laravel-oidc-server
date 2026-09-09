@@ -30,7 +30,7 @@ it('emits an RFC 9068 at+jwt access token', function () {
 
     expect($parsed->headers()->get('typ'))->toBe('at+jwt')
         ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(signingPublicKey())['kid'])
-        ->and($parsed->claims()->get('iss'))->toBe('https://op.test')
+        ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
         ->and($parsed->claims()->get('sub'))->toBe('42')
         ->and($parsed->claims()->get('client_id'))->toBe('client-uuid')
         ->and($parsed->claims()->get('aud'))->toBe(['client-uuid'])

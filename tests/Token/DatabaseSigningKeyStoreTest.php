@@ -74,7 +74,7 @@ it('serves every retained kid from the jwks endpoint', function () {
     $first = databaseStoreRotate();
     $second = databaseStoreRotate();
 
-    $response = $this->getJson('/.well-known/jwks.json')->assertOk();
+    $response = $this->getJson('/realms/default/.well-known/jwks.json')->assertOk();
 
     expect(array_column($response->json('keys'), 'kid'))->toBe([$second->kid(), $first->kid()]);
 });
@@ -104,5 +104,5 @@ it('publishes the stored kid rather than re-deriving it', function () {
 
     expect(useDatabaseSigningKeys()->signingKey()->kid())->toBe('pinned-kid')
         ->and(Jwk::fromPem($generated->publicKeyPem)['kid'])->not->toBe('pinned-kid')
-        ->and($this->getJson('/.well-known/jwks.json')->json('keys.0.kid'))->toBe('pinned-kid');
+        ->and($this->getJson('/realms/default/.well-known/jwks.json')->json('keys.0.kid'))->toBe('pinned-kid');
 });

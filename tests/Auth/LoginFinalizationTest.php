@@ -13,7 +13,6 @@ use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -79,7 +78,7 @@ function finalizationPasskeyLogin(mixed $test, User $user): TestResponse
 
     return $test->withSession([
         'passkey.verification_options' => (string) json_encode(['challenge' => 'AQIDBA', 'rpId' => 'localhost', 'timeout' => 60000]),
-    ])->post(route(Handler::PasskeyLogin->value), [
+    ])->post(route('identity.passkey.login'), [
         'credential' => [
             'id' => 'AQIDBA',
             'rawId' => 'AQIDBA',
@@ -99,7 +98,7 @@ it('applies the postLogin policy to registration', function () {
     finalizationRegisterUsers();
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
-    $this->post(route(Handler::RegisterStore->value), [
+    $this->post(route('identity.register.store'), [
         'name' => 'M',
         'email' => 'm@example.com',
         'password' => 'password',
@@ -113,7 +112,7 @@ it('applies the postLogin policy to registration', function () {
 it('records amr for registration logins', function () {
     finalizationRegisterUsers();
 
-    $this->post(route(Handler::RegisterStore->value), [
+    $this->post(route('identity.register.store'), [
         'name' => 'M',
         'email' => 'm@example.com',
         'password' => 'password',
@@ -132,7 +131,7 @@ it('applies the postLogin policy to password resets', function () {
     });
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
-    $this->post(route(Handler::PasswordUpdate->value), [
+    $this->post(route('identity.password.update'), [
         'token' => $token,
         'email' => 'm@example.com',
         'password' => 'new-password',
@@ -151,7 +150,7 @@ it('records amr for password-reset logins', function () {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 
-    $this->post(route(Handler::PasswordUpdate->value), [
+    $this->post(route('identity.password.update'), [
         'token' => $token,
         'email' => 'm@example.com',
         'password' => 'new-password',
@@ -197,7 +196,7 @@ it('still requires a challenge after passkey login when the pipeline demands MFA
 
     Oidc::postLogin(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
 
-    finalizationPasskeyLogin($this, $user)->assertRedirect(route(Handler::TwoFactorLogin->value));
+    finalizationPasskeyLogin($this, $user)->assertRedirect(route('identity.two-factor.login'));
 
     $this->assertGuest('identity');
 });

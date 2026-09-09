@@ -9,7 +9,6 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\Models\TotpFactor;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use CBOR\ByteStringObject;
 use CBOR\MapObject;
 use CBOR\NegativeIntegerObject;
@@ -79,7 +78,7 @@ it('lists enrollments across all providers', function () {
     $user->passkeys()->create(['name' => 'My key', 'credential_id' => 'AQIDBA', 'credential' => ['type' => 'public-key']]);
 
     actingAsEnrollmentUser($this, $user)
-        ->getJson(route(Handler::TwoFactorFactors->value))
+        ->getJson(route('identity.two-factor.factors'))
         ->assertOk()
         ->assertJsonFragment(['provider' => 'totp'])
         ->assertJsonFragment(['provider' => 'webauthn']);
@@ -89,7 +88,7 @@ it('enrolls a factor through its provider key', function () {
     $user = enrollmentUser();
 
     $response = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->assertCreated();
 
     expect($response->json('provider'))->toBe('totp')
@@ -104,13 +103,13 @@ it('confirms an enrollment and backfills recovery codes', function () {
     $user = enrollmentUser();
 
     $enrollment = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->json();
 
     $code = app(Google2FA::class)->getCurrentOtp($enrollment['metadata']['secret']);
 
     actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnrollConfirm->value, ['provider' => 'totp']), [
+        ->postJson(route('identity.two-factor.enroll.confirm', ['provider' => 'totp']), [
             'enrollment_id' => $enrollment['id'],
             'code' => $code,
         ])->assertOk();
@@ -123,11 +122,11 @@ it('returns the existing pending enrollment instead of stacking rows', function 
     $user = enrollmentUser();
 
     $first = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->json();
 
     $second = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->assertCreated()
         ->json();
 
@@ -142,7 +141,7 @@ it('begins a fresh pending enrollment alongside a confirmed factor', function ()
     $confirmed->forceFill(['confirmed_at' => now()])->save();
 
     $enrollment = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->assertCreated()
         ->json();
 
@@ -155,11 +154,11 @@ it('rejects an enrollment confirmation with an invalid code', function () {
     $user = enrollmentUser();
 
     $enrollment = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->json();
 
     actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnrollConfirm->value, ['provider' => 'totp']), [
+        ->postJson(route('identity.two-factor.enroll.confirm', ['provider' => 'totp']), [
             'enrollment_id' => $enrollment['id'],
             'code' => '000000',
         ])->assertUnprocessable();
@@ -172,7 +171,7 @@ it('revokes an enrollment', function () {
     $factor = $user->totpFactors()->create(['name' => 'Authenticator app', 'secret' => 'SECRET', 'confirmed_at' => now()]);
 
     actingAsEnrollmentUser($this, $user)
-        ->deleteJson(route(Handler::TwoFactorRevoke->value, ['provider' => 'totp', 'enrollment' => $factor->getKey()]))
+        ->deleteJson(route('identity.two-factor.revoke', ['provider' => 'totp', 'enrollment' => $factor->getKey()]))
         ->assertNoContent();
 
     expect(TotpFactor::query()->whereKey($factor->getKey())->exists())->toBeFalse();
@@ -182,7 +181,7 @@ it('returns 404 for an unknown provider', function () {
     $user = enrollmentUser();
 
     actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'sms']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'sms']))
         ->assertNotFound();
 });
 
@@ -212,7 +211,7 @@ it('enrolls a passkey through the generic webauthn ceremony', function () {
     });
 
     $begin = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'webauthn']), ['name' => 'Yubikey'])
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'webauthn']), ['name' => 'Yubikey'])
         ->assertCreated()
         ->json();
 
@@ -221,7 +220,7 @@ it('enrolls a passkey through the generic webauthn ceremony', function () {
         ->and(session('oidc.webauthn.enrollment'))->toBeArray();
 
     actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnrollConfirm->value, ['provider' => 'webauthn']), [
+        ->postJson(route('identity.two-factor.enroll.confirm', ['provider' => 'webauthn']), [
             'enrollment_id' => 'pending',
             'credential' => webauthnAttestationPayload(),
         ])->assertOk();
@@ -233,7 +232,7 @@ it('enrolls a passkey through the generic webauthn ceremony', function () {
         ->and($user->recoveryCodes()->count())->toBeGreaterThan(0);
 
     actingAsEnrollmentUser($this, $user)
-        ->deleteJson(route(Handler::TwoFactorRevoke->value, ['provider' => 'webauthn', 'enrollment' => $passkey->getKey()]))
+        ->deleteJson(route('identity.two-factor.revoke', ['provider' => 'webauthn', 'enrollment' => $passkey->getKey()]))
         ->assertNoContent();
 
     expect($user->passkeys()->count())->toBe(0);
@@ -244,7 +243,7 @@ it('asks the browser for the authenticator the chosen option names', function ()
     $user = enrollmentUser();
 
     $begin = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'webauthn']), ['option' => 'security_key'])
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'webauthn']), ['option' => 'security_key'])
         ->assertCreated()
         ->json();
 
@@ -257,7 +256,7 @@ it('leaves the authenticator unconstrained when no option is named', function ()
     $user = enrollmentUser();
 
     $begin = actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'webauthn']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'webauthn']))
         ->assertCreated()
         ->json();
 
@@ -269,7 +268,7 @@ it('rejects an enrollment option that belongs to another provider', function () 
     $user = enrollmentUser();
 
     actingAsEnrollmentUser($this, $user)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']), ['option' => 'passkey'])
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']), ['option' => 'passkey'])
         ->assertUnprocessable()
         ->assertJsonValidationErrors('option');
 
@@ -277,5 +276,5 @@ it('rejects an enrollment option that belongs to another provider', function () 
 });
 
 it('requires authentication', function () {
-    $this->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))->assertUnauthorized();
+    $this->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))->assertUnauthorized();
 });

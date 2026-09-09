@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
 use Bambamboole\LaravelOidc\Server\Http\Middleware\CheckScopes;
 use Bambamboole\LaravelOidc\Server\Models\Token;
+use Bambamboole\LaravelOidc\Server\Realm\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Token\AccessTokenMinter;
 use Illuminate\Support\Facades\Auth;
@@ -33,7 +33,7 @@ function exchangedTokenFor(object $context, string $audience): string
 {
     $subject = mintExchangeSubjectToken((string) $context->client->getKey(), $context->user->getKey(), ['openid']);
 
-    return $context->post('/oauth/token', [
+    return $context->post('/realms/default/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => (string) $context->client->getKey(),
         'client_secret' => $context->client->plainSecret,

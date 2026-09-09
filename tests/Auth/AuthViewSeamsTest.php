@@ -43,11 +43,11 @@ it('renders account flow views through package seams', function () {
         }
     });
 
-    $this->get('/auth/register')->assertOk()->assertSee('register-view');
-    $this->get('/auth/forgot-password')->assertOk()->assertSee('forgot-password-view');
-    $this->get('/auth/reset-password/reset-token?email=m@example.com')->assertOk()->assertSee('reset-password-view:reset-token');
+    $this->get('/realms/default/auth/register')->assertOk()->assertSee('register-view');
+    $this->get('/realms/default/auth/forgot-password')->assertOk()->assertSee('forgot-password-view');
+    $this->get('/realms/default/auth/reset-password/reset-token?email=m@example.com')->assertOk()->assertSee('reset-password-view:reset-token');
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
-    $this->actingAs($user, 'identity')->get('/auth/email/verify')->assertOk()->assertSee('verify-email-view');
+    $this->actingAs($user, 'identity')->get('/realms/default/auth/email/verify')->assertOk()->assertSee('verify-email-view');
 });

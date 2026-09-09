@@ -26,7 +26,7 @@ beforeEach(function () {
 });
 
 it('revokes an access token for its own client', function () {
-    $this->postJson('/oauth/revoke', [
+    $this->postJson('/realms/default/oauth/revoke', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $this->jwt,
@@ -38,7 +38,7 @@ it('revokes an access token for its own client', function () {
 it('silently ignores tokens of other clients per rfc 7009', function () {
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
 
-    $this->postJson('/oauth/revoke', [
+    $this->postJson('/realms/default/oauth/revoke', [
         'client_id' => $other->id,
         'client_secret' => $other->plainSecret,
         'token' => $this->jwt,
@@ -48,7 +48,7 @@ it('silently ignores tokens of other clients per rfc 7009', function () {
 });
 
 it('rejects unauthenticated revocation', function () {
-    $this->postJson('/oauth/revoke', ['token' => $this->jwt])
+    $this->postJson('/realms/default/oauth/revoke', ['token' => $this->jwt])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
         ->assertHeader('WWW-Authenticate', 'Basic realm="OIDC"');
@@ -57,7 +57,7 @@ it('rejects unauthenticated revocation', function () {
 it('revokes a refresh token and its linked access token for its own client', function () {
     [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
 
-    $this->postJson('/oauth/revoke', [
+    $this->postJson('/realms/default/oauth/revoke', [
         'client_id' => $this->client->id,
         'client_secret' => $this->secret,
         'token' => $refreshTokenValue,
@@ -72,7 +72,7 @@ it('silently ignores refresh tokens of other clients per rfc 7009', function () 
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
     [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
 
-    $this->postJson('/oauth/revoke', [
+    $this->postJson('/realms/default/oauth/revoke', [
         'client_id' => $other->id,
         'client_secret' => $other->plainSecret,
         'token' => $refreshTokenValue,

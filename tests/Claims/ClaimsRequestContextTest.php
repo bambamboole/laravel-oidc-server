@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Contracts\ClaimsResolver;
-use Bambamboole\LaravelOidc\Server\Contracts\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Realm\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\BridgeScope;
 use Bambamboole\LaravelOidc\Server\Token\IdTokenBuilder;
 use Lcobucci\JWT\Encoding\JoseEncoder;
@@ -90,7 +90,7 @@ it('hands userinfo the client, scopes and userinfo audience', function () {
 
     $bearer = resourceServerBearer($this, [app(IssuerResolver::class)->url()]);
 
-    $response = $this->getJson('/oauth/userinfo', ['Authorization' => 'Bearer '.$bearer])->assertOk();
+    $response = $this->getJson('/realms/default/oauth/userinfo', ['Authorization' => 'Bearer '.$bearer])->assertOk();
 
     expect($response->json('seen_audience'))->toBe(ClaimsAudience::Userinfo->value)
         ->and($response->json('seen_scopes'))->toBe(['openid'])

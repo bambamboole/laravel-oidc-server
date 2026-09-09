@@ -18,13 +18,13 @@ it('renders the login view through the package seam', function () {
         }
     });
 
-    $this->get('/auth/login')->assertOk()->assertSee('login-view');
+    $this->get('/realms/default/auth/login')->assertOk()->assertSee('login-view');
 });
 
 it('logs a user in with canonicalized credentials and redirects home', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
-    $response = $this->from('/auth/login')->post(route('identity.login.store'), [
+    $response = $this->from('/realms/default/auth/login')->post(route('identity.login.store'), [
         'email' => 'M@Example.com',
         'password' => 'password',
     ]);
@@ -47,9 +47,9 @@ it('returns the JSON success response after login', function () {
 it('rejects invalid credentials with a validation error', function () {
     User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
-    $this->from('/auth/login')
+    $this->from('/realms/default/auth/login')
         ->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'wrong-password'])
-        ->assertRedirect('/auth/login')
+        ->assertRedirect('/realms/default/auth/login')
         ->assertSessionHasErrors('email');
 
     $this->assertGuest('identity');

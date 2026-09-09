@@ -9,7 +9,6 @@ use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -26,7 +25,7 @@ it('audits a successful password login with sid and amr', function () {
     $sink = fakeAudit();
     $user = auditTestUser();
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'audit@example.com', 'password' => 'password']);
+    $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'password']);
 
     $event = $sink->assertRecorded(AuditEventType::LoginSucceeded);
 
@@ -40,7 +39,7 @@ it('audits a login attempt with invalid credentials', function () {
     $sink = fakeAudit();
     auditTestUser();
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'audit@example.com', 'password' => 'wrong']);
+    $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'wrong']);
 
     $sink->assertRecorded(AuditEventType::LoginFailed, fn (AuditEvent $event): bool => $event->context['reason'] === 'invalid_credentials'
         && $event->context['username'] === 'audit@example.com'
@@ -53,7 +52,7 @@ it('audits a login denied by the postLogin policy', function () {
     auditTestUser();
     Oidc::postLogin(fn (LoginEvent $event, LoginApi $api) => $api->deny('blocked'));
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'audit@example.com', 'password' => 'password']);
+    $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'password']);
 
     $sink->assertRecorded(AuditEventType::LoginFailed, fn (AuditEvent $event): bool => $event->context['reason'] === 'policy_denied'
         && $event->context['deny_reason'] === 'blocked');
@@ -66,12 +65,12 @@ it('audits a full mfa challenge round trip', function () {
     $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'audit@example.com', 'password' => 'password'])
-        ->assertRedirect(route(Handler::TwoFactorLogin->value));
+    $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'password'])
+        ->assertRedirect(route('identity.two-factor.login'));
 
     $sink->assertNotRecorded(AuditEventType::LoginSucceeded);
 
-    $this->post(route(Handler::TwoFactorLoginStore->value), ['code' => '000000'])
+    $this->post(route('identity.two-factor.login.store'), ['code' => '000000'])
         ->assertSessionHasErrors('code');
 
     $sink->assertRecorded(AuditEventType::MfaChallengeFailed, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp'
@@ -80,7 +79,7 @@ it('audits a full mfa challenge round trip', function () {
 
     $code = app(Google2FA::class)->getCurrentOtp($factor->secret);
 
-    $this->post(route(Handler::TwoFactorLoginStore->value), ['code' => $code])
+    $this->post(route('identity.two-factor.login.store'), ['code' => $code])
         ->assertRedirect('/dashboard');
 
     $sink->assertRecorded(AuditEventType::MfaChallengeSucceeded, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp');
@@ -97,7 +96,7 @@ it('audits a recovery code login', function () {
     $recoveryCode = $user->recoveryCodes()->firstOrFail()->code;
 
     $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
-        ->post(route(Handler::TwoFactorLoginStore->value), ['recovery_code' => $recoveryCode])
+        ->post(route('identity.two-factor.login.store'), ['recovery_code' => $recoveryCode])
         ->assertRedirect('/dashboard');
 
     $sink->assertRecorded(AuditEventType::RecoveryCodeUsed, fn (AuditEvent $event): bool => $event->userId === (string) $user->getAuthIdentifier());
@@ -110,7 +109,7 @@ it('audits the factor enrollment lifecycle', function () {
     $session = ['auth.password_confirmed_at' => time()];
 
     $enrollment = $this->actingAs($user, 'identity')->withSession($session)
-        ->postJson(route(Handler::TwoFactorEnroll->value, ['provider' => 'totp']))
+        ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->json();
 
     $sink->assertRecorded(AuditEventType::FactorEnrollmentStarted, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp'
@@ -119,7 +118,7 @@ it('audits the factor enrollment lifecycle', function () {
     $code = app(Google2FA::class)->getCurrentOtp($enrollment['metadata']['secret']);
 
     $this->actingAs($user, 'identity')->withSession($session)
-        ->postJson(route(Handler::TwoFactorEnrollConfirm->value, ['provider' => 'totp']), [
+        ->postJson(route('identity.two-factor.enroll.confirm', ['provider' => 'totp']), [
             'enrollment_id' => $enrollment['id'],
             'code' => $code,
         ])->assertOk();
@@ -127,7 +126,7 @@ it('audits the factor enrollment lifecycle', function () {
     $sink->assertRecorded(AuditEventType::FactorConfirmed, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp');
 
     $this->actingAs($user, 'identity')->withSession($session)
-        ->deleteJson(route(Handler::TwoFactorRevoke->value, ['provider' => 'totp', 'enrollment' => $enrollment['id']]))
+        ->deleteJson(route('identity.two-factor.revoke', ['provider' => 'totp', 'enrollment' => $enrollment['id']]))
         ->assertNoContent();
 
     $sink->assertRecorded(AuditEventType::FactorRevoked, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp'
@@ -142,7 +141,7 @@ it('audits a registration', function () {
         'password' => Hash::make($input['password']),
     ]));
 
-    $this->post(route(Handler::RegisterStore->value), [
+    $this->post(route('identity.register.store'), [
         'name' => 'M',
         'email' => 'audit@example.com',
         'password' => 'password',
@@ -169,7 +168,7 @@ it('audits a password reset', function () {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });
 
-    $this->post(route(Handler::PasswordUpdate->value), [
+    $this->post(route('identity.password.update'), [
         'token' => $token,
         'email' => 'audit@example.com',
         'password' => 'new-password',
@@ -183,9 +182,9 @@ it('audits a logout with the sid still attached', function () {
     $sink = fakeAudit();
     $user = auditTestUser();
 
-    $this->post(route(Handler::LoginStore->value), ['email' => 'audit@example.com', 'password' => 'password']);
+    $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'password']);
 
-    $this->post(route(Handler::Logout->value));
+    $this->post(route('oidc.logout'));
 
     $event = $sink->assertRecorded(AuditEventType::Logout);
 

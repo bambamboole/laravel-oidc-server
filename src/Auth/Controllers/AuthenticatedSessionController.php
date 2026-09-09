@@ -11,7 +11,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Auth\Views\LoginPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\LoginView;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -77,7 +76,7 @@ class AuthenticatedSessionController
             LoginOutcome::Denied => throw ValidationException::withMessages([$username => __('auth.failed')]),
             LoginOutcome::MfaChallenge => $request->wantsJson()
                 ? new JsonResponse(['two_factor' => true])
-                : redirect()->route(Handler::TwoFactorLogin->value),
+                : redirect()->route('identity.two-factor.login'),
             LoginOutcome::LoggedIn => $request->wantsJson()
                 ? new JsonResponse('', 200)
                 : redirect()->intended($this->homeUrl()),

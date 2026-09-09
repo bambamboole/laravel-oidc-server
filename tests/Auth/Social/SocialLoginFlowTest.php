@@ -9,7 +9,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Social\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Auth\Social\SocialUser;
 use Bambamboole\LaravelOidc\Server\Facades\Oidc;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Bambamboole\LaravelOidc\Server\Token\Jwk;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Http;
@@ -82,7 +81,7 @@ function completeSocialLogin(mixed $test, array $claims = []): TestResponse
 {
     enableCorpIdp();
 
-    $test->get(route(Handler::SocialRedirect->value, ['provider' => 'corp']));
+    $test->get(route('identity.social.redirect', ['provider' => 'corp']));
     $pending = session(PendingAuthorization::SESSION_KEY);
 
     $idToken = corpIdToken($claims + [
@@ -101,7 +100,7 @@ function completeSocialLogin(mixed $test, array $claims = []): TestResponse
         ]),
     ]);
 
-    return $test->get(route(Handler::SocialCallback->value, ['provider' => 'corp'])
+    return $test->get(route('identity.social.callback', ['provider' => 'corp'])
         .'?'.http_build_query(['code' => 'code-1', 'state' => $pending['state']]));
 }
 
@@ -134,7 +133,7 @@ it('rejects the login with a friendly error when the provisioning action refuses
     });
 
     completeSocialLogin($this)
-        ->assertRedirect(route(Handler::Login->value))
+        ->assertRedirect(route('identity.login'))
         ->assertSessionHasErrors('social');
 
     $this->assertGuest('identity');
@@ -144,7 +143,7 @@ it('rejects the login when no account can be resolved', function () {
     config()->set('oidc.social.auto_provision', false);
 
     completeSocialLogin($this)
-        ->assertRedirect(route(Handler::Login->value))
+        ->assertRedirect(route('identity.login'))
         ->assertSessionHasErrors('social');
 
     $this->assertGuest('identity');
@@ -157,7 +156,7 @@ it('denies the login when a postLogin hook rejects it', function () {
     });
 
     completeSocialLogin($this)
-        ->assertRedirect(route(Handler::Login->value))
+        ->assertRedirect(route('identity.login'))
         ->assertSessionHasErrors('social');
 
     $this->assertGuest('identity');
@@ -168,7 +167,7 @@ it('sends an MFA-enrolled user to the two-factor challenge instead of logging in
     $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
 
-    completeSocialLogin($this)->assertRedirect(route(Handler::TwoFactorLogin->value));
+    completeSocialLogin($this)->assertRedirect(route('identity.two-factor.login'));
 
     $this->assertGuest('identity');
     expect(session('login.id'))->toBe($user->getAuthIdentifier())

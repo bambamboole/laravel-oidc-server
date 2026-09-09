@@ -14,7 +14,6 @@ use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\FactorRegistry;
 use Bambamboole\LaravelOidc\Server\Auth\MultiFactor\PendingMfaChallenge;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengePrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\TwoFactorChallengeView;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
@@ -44,7 +43,7 @@ class TwoFactorChallengeController
         $user = $pending === null ? null : $this->challengedUser($pending);
 
         if ($pending === null || $user === null) {
-            return redirect()->route(Handler::Login->value);
+            return redirect()->route('identity.login');
         }
 
         return app(TwoFactorChallengeView::class)->respond(new TwoFactorChallengePrompt(
@@ -68,7 +67,7 @@ class TwoFactorChallengeController
         $user = $pending === null ? null : $this->challengedUser($pending);
 
         if ($pending === null || $user === null) {
-            return redirect()->route(Handler::Login->value);
+            return redirect()->route('identity.login');
         }
 
         foreach ($this->factors->configuredChallengeableEnrollments($user) as $available) {
@@ -84,7 +83,7 @@ class TwoFactorChallengeController
             }
         }
 
-        return redirect()->route(Handler::TwoFactorLogin->value);
+        return redirect()->route('identity.two-factor.login');
     }
 
     /**
@@ -128,7 +127,7 @@ class TwoFactorChallengeController
         $user = $pending === null ? null : $this->challengedUser($pending);
 
         if ($pending === null || $user === null) {
-            return redirect()->route(Handler::Login->value);
+            return redirect()->route('identity.login');
         }
 
         $usesRecoveryCode = $request->filled('recovery_code');

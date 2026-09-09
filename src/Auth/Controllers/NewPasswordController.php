@@ -12,7 +12,6 @@ use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Auth\UserActionManager;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetPrompt;
 use Bambamboole\LaravelOidc\Server\Auth\Views\PasswordResetView;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -100,12 +99,12 @@ class NewPasswordController
             if ($outcome === LoginOutcome::MfaChallenge) {
                 return $request->wantsJson()
                     ? new JsonResponse(['two_factor' => true])
-                    : redirect()->route(Handler::TwoFactorLogin->value);
+                    : redirect()->route('identity.two-factor.login');
             }
 
             return $request->wantsJson()
                 ? new JsonResponse(['status' => __($status)], 200)
-                : redirect()->route(Handler::Login->value)->with('status', __($status));
+                : redirect()->route('identity.login')->with('status', __($status));
         }
 
         if ($request->wantsJson()) {

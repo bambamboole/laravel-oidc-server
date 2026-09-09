@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Models;
 
-use Bambamboole\LaravelOidc\Server\Models\Concerns\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Realm\Concerns\BelongsToRealm;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

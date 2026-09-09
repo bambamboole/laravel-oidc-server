@@ -6,7 +6,6 @@ namespace Bambamboole\LaravelOidc\Server\Auth\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Auth\Pipeline\LoginOutcome;
-use Bambamboole\LaravelOidc\Server\Routing\Handler;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Passkeys\Actions\VerifyPasskey;
@@ -49,7 +48,7 @@ class PasskeyAuthenticatedSessionController
             LoginOutcome::Denied => throw InvalidPasskeyException::make('Unable to sign in with this account.'),
             LoginOutcome::MfaChallenge => $request->wantsJson()
                 ? new JsonResponse(['two_factor' => true])
-                : redirect()->route(Handler::TwoFactorLogin->value),
+                : redirect()->route('identity.two-factor.login'),
             LoginOutcome::LoggedIn => app(PasskeyLoginResponse::class),
         };
     }

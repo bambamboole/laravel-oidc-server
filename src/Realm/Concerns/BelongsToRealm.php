@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Models\Concerns;
+namespace Bambamboole\LaravelOidc\Server\Realm\Concerns;
 
-use Bambamboole\LaravelOidc\Server\Contracts\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Realm\RealmResolver;
 use Illuminate\Database\Eloquent\Builder;
 
 /**

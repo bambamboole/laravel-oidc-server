@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server;
-
-use Bambamboole\LaravelOidc\Server\Contracts\RealmResolver;
+namespace Bambamboole\LaravelOidc\Server\Realm;
 
 /**
  * Single-realm default: every request belongs to the configured realm. An

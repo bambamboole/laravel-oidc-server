@@ -10,9 +10,9 @@ it('registers package authentication under the identity guard and auth prefix', 
             'driver' => 'session',
             'provider' => 'users',
         ])
-        ->and(route('identity.login', absolute: false))->toBe('/auth/login')
-        ->and(route('identity.password.reset', ['token' => 'token'], absolute: false))->toBe('/auth/reset-password/token')
-        ->and(route('identity.two-factor.login', absolute: false))->toBe('/auth/two-factor-challenge')
+        ->and(route('identity.login', absolute: false))->toBe('/realms/default/auth/login')
+        ->and(route('identity.password.reset', ['token' => 'token'], absolute: false))->toBe('/realms/default/auth/reset-password/token')
+        ->and(route('identity.two-factor.login', absolute: false))->toBe('/realms/default/auth/two-factor-challenge')
         ->and(config('oidc.auth.two_factor'))->not->toHaveKeys(['requires_password_confirmation', 'throttle'])
         ->and(app('router')->getRoutes()->getByName('identity.two-factor.enroll')->middleware())
         ->toContain('Illuminate\Auth\Middleware\RequirePassword:identity.password.confirm')
@@ -43,8 +43,8 @@ it('redirects identity-protected routes to the configured identity login destina
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
     $this->actingAs($user, 'web')
-        ->get('/auth/user/confirmed-password-status')
-        ->assertRedirect('/auth/login');
+        ->get('/realms/default/auth/user/confirmed-password-status')
+        ->assertRedirect('/realms/default/auth/login');
 
     $this->assertAuthenticatedAs($user, 'web');
     $this->assertGuest('identity');

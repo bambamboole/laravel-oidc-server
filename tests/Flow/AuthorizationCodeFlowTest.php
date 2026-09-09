@@ -76,7 +76,7 @@ it('issues an id_token through the full code + pkce flow', function () {
 
     $idToken = parseIdToken($response->json('id_token'));
 
-    expect($idToken->claims()->get('iss'))->toBe('https://op.test')
+    expect($idToken->claims()->get('iss'))->toBe('https://op.test/realms/default')
         ->and($idToken->claims()->get('sub'))->toBe((string) $this->user->id)
         ->and($idToken->claims()->get('aud'))->toBe([$this->client->id])
         ->and($idToken->claims()->get('nonce'))->toBe('n0nce')
@@ -92,7 +92,7 @@ it('issues an id_token through the full code + pkce flow', function () {
         new Sha256, InMemory::plainText(signingPublicKey()),
     )))->toBeTrue();
 
-    $jwks = $this->getJson('/.well-known/jwks.json')->json('keys');
+    $jwks = $this->getJson('/realms/default/.well-known/jwks.json')->json('keys');
     expect($idToken->headers()->get('kid'))->toBe($jwks[0]['kid']);
 });
 
@@ -112,7 +112,7 @@ it('merges authorization-code trigger claims into issued and refreshed access to
     expect($accessToken->claims()->get('project_id'))->toBe('p-1')
         ->and($accessToken->claims()->get('via'))->toBe('authorization_code');
 
-    $refreshed = $this->post('/oauth/token', [
+    $refreshed = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -156,7 +156,7 @@ it('reissues amr/acr and claims on refresh, without a fresh nonce', function () 
         'oidc.access_token_claims' => ['tier' => 'gold'],
     ])->json('refresh_token');
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -178,7 +178,7 @@ it('denies refresh once the context is gone', function () {
 
     AuthenticationContext::query()->delete();
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -191,7 +191,7 @@ it('denies refresh once the session absolute lifetime is exceeded', function () 
 
     AuthenticationContext::query()->update(['expires_at' => now()->subMinute()]);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -207,7 +207,7 @@ it('does not leak a denied refresh context into the next refresh on the same gra
 
     AuthenticationContext::query()->delete();
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -223,7 +223,7 @@ it('does not leak a denied refresh context into the next refresh on the same gra
         'oidc.id_token_claims' => ['groups' => ['ops']],
     ])->json('refresh_token');
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -262,7 +262,7 @@ it('omits amr and acr when the session held no methods', function () {
 
 // OAuth 2.1 §4.1.1 / §7.6 (PKCE required for every client)
 it('rejects an authorization request without PKCE even for a confidential client', function () {
-    $response = $this->actingAs($this->user, 'identity')->get('/oauth/authorize?'.http_build_query([
+    $response = $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/authorize?'.http_build_query([
         'client_id' => $this->client->id,
         'redirect_uri' => 'https://rp.test/callback',
         'response_type' => 'code',
@@ -328,7 +328,7 @@ it('does not leak a stale pendingContext into a later token request on the same 
     $pkce1 = $this->pkce();
 
     $view1 = $this->actingAsIdentity($this->user, accessTokenClaims: ['leaked' => true], authTime: time() - 60)
-        ->get('/oauth/authorize?'.http_build_query([
+        ->get('/realms/default/oauth/authorize?'.http_build_query([
             'client_id' => $this->client->id,
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',
@@ -340,11 +340,11 @@ it('does not leak a stale pendingContext into a later token request on the same 
         ]))
         ->assertOk();
 
-    $approve1 = $this->post('/oauth/authorize', ['auth_token' => $view1->json('authToken')])
+    $approve1 = $this->post('/realms/default/oauth/authorize', ['auth_token' => $view1->json('authToken')])
         ->assertRedirect();
     parse_str(parse_url($approve1->headers->get('Location'), PHP_URL_QUERY), $params1);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'authorization_code',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -357,7 +357,7 @@ it('does not leak a stale pendingContext into a later token request on the same 
     $pkce2 = $this->pkce();
 
     $view2 = $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->get('/oauth/authorize?'.http_build_query([
+        ->get('/realms/default/oauth/authorize?'.http_build_query([
             'client_id' => $this->client->id,
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',
@@ -369,7 +369,7 @@ it('does not leak a stale pendingContext into a later token request on the same 
         ]))
         ->assertOk();
 
-    $approve2 = $this->post('/oauth/authorize', ['auth_token' => $view2->json('authToken')])
+    $approve2 = $this->post('/realms/default/oauth/authorize', ['auth_token' => $view2->json('authToken')])
         ->assertRedirect();
     parse_str(parse_url($approve2->headers->get('Location'), PHP_URL_QUERY), $params2);
 
@@ -378,7 +378,7 @@ it('does not leak a stale pendingContext into a later token request on the same 
     // pendingContext — exactly the condition under which a stale value survives.
     AuthenticationContext::query()->delete();
 
-    $response = $this->post('/oauth/token', [
+    $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'authorization_code',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -398,7 +398,7 @@ it('answers an Inertia approve request with a 409 + X-Inertia-Location instead o
     $pkce = $this->pkce();
 
     $view = $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->get('/oauth/authorize?'.http_build_query([
+        ->get('/realms/default/oauth/authorize?'.http_build_query([
             'client_id' => $this->client->id,
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',
@@ -426,7 +426,7 @@ it('answers a trusted client\'s Inertia authorize request with a 409 + X-Inertia
     $pkce = $this->pkce();
 
     $response = $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->get('/oauth/authorize?'.http_build_query([
+        ->get('/realms/default/oauth/authorize?'.http_build_query([
             'client_id' => $this->client->id,
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',
@@ -450,7 +450,7 @@ it('redirects a guest authorize request to the configured login route', function
     config(['oidc.login_route' => 'identity.login']);
     $pkce = $this->pkce();
 
-    $this->get('/oauth/authorize?'.http_build_query([
+    $this->get('/realms/default/oauth/authorize?'.http_build_query([
         'client_id' => $this->client->id,
         'redirect_uri' => 'https://rp.test/callback',
         'response_type' => 'code',
@@ -467,7 +467,7 @@ it('redirects a guest to a plain path when login_route is not a registered route
     config(['oidc.login_route' => 'accounts/sign-in']);
     $pkce = $this->pkce();
 
-    $this->get('/oauth/authorize?'.http_build_query([
+    $this->get('/realms/default/oauth/authorize?'.http_build_query([
         'client_id' => $this->client->id,
         'redirect_uri' => 'https://rp.test/callback',
         'response_type' => 'code',
@@ -489,7 +489,7 @@ it('owns the oauth routes with package controllers', function () {
         ->toBe(DenyAuthorizationController::class);
 
     expect(collect($routes->getRoutes())->filter(
-        fn ($route) => $route->uri() === 'oauth/token' && in_array('POST', $route->methods(), true)
+        fn ($route) => $route->uri() === 'realms/{realm}/oauth/token' && in_array('POST', $route->methods(), true)
     )->count())->toBe(1);
 });
 
@@ -521,7 +521,7 @@ it('emits the sid claim on fresh issuance and on refresh', function () {
     $response = completeAuthorizationCodeFlow($this, [], ['oidc.amr' => ['pwd'], 'oidc.sid' => $sid])->assertOk();
     expect(parseIdToken($response->json('id_token'))->claims()->get('sid'))->toBe($sid);
 
-    $refreshed = $this->post('/oauth/token', [
+    $refreshed = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -546,7 +546,7 @@ it('denies refresh after the session is revoked', function () {
 
     app(OidcSessionRepository::class)->revoke($sid);
 
-    $this->post('/oauth/token', [
+    $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
