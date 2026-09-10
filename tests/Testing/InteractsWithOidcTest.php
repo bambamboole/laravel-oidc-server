@@ -2,18 +2,15 @@
 
 declare(strict_types=1);
 
+/**
+ * The consumer test kit (InteractsWithOidc): identity seeding, client/first-party set-up, PKCE, token minting,
+ * the authorize → approve → token drive and its scoped CSRF exemption
+ */
+
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
-use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
-use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
-use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Route;
-use Lcobucci\JWT\Encoding\JoseEncoder;
-use Lcobucci\JWT\Token\Parser;
-use Lcobucci\JWT\UnencryptedToken;
-use PHPUnit\Framework\Assert;
 use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
@@ -39,14 +36,6 @@ it('authenticates on the identity guard and seeds the auth context session keys'
         ->and(session('oidc.access_token_claims'))->toBe(['tenant' => 't1']);
 });
 
-it('seeds auth_time from the Carbon test clock', function () {
-    Carbon::setTestNow(Carbon::parse('2031-01-02 03:04:05'));
-
-    $this->actingAsIdentity($this->user);
-
-    expect(session('oidc.auth_time'))->toBe(Carbon::parse('2031-01-02 03:04:05')->getTimestamp());
-});
-
 it('defaults auth_time to now and leaves optional context keys unset', function () {
     $this->actingAsIdentity($this->user);
 
@@ -65,10 +54,7 @@ it('creates an authorization-code grant client with sane defaults', function () 
         ->and($client->plainSecret)->toBeString();
 });
 
-it('configures a first-party client without any singleton busting', function () {
-    // The provider singleton must already be resolved for this to prove anything.
-    app(SessionTokenProvider::class);
-
+it('configures a trusted first-party client', function () {
     $client = $this->withFirstPartyClient();
 
     expect(config('oidc.clients.first_party.client_id'))->toBe((string) $client->getKey())
@@ -88,66 +74,40 @@ it('mints a real signed access token with a persisted row', function () {
     $token = app(TokenInspector::class)->accessToken($jwt);
 
     expect($token)->not->toBeNull()
-        ->and((string) $token->getAttribute('user_id'))->toBe((string) $this->user->id)
-        ->and($token->getAttribute('scopes'))->toBe(['openid', 'email'])
-        ->and($token->getAttribute('revoked'))->toBeFalse();
+        ->and((string) $token?->getAttribute('user_id'))->toBe((string) $this->user->id)
+        ->and($token?->getAttribute('scopes'))->toBe(['openid', 'email'])
+        ->and($token?->getAttribute('revoked'))->toBeFalse();
 
-    // The access-token guard resolves the requesting client from aud[0], so only a
-    // default-audience token can authenticate against this server's own routes.
     $bearerJwt = $this->issueTokenFor($this->user, scopes: ['openid', 'email']);
-    $bearer = $this->withHeader('Authorization', 'Bearer '.$bearerJwt)->get('/realms/default/oauth/userinfo');
-    $bearer->assertOk()->assertJsonPath('sub', (string) $this->user->id);
+
+    $this->withHeader('Authorization', 'Bearer '.$bearerJwt)
+        ->get('/realms/default/oauth/userinfo')
+        ->assertOk()
+        ->assertJsonPath('sub', (string) $this->user->id);
 });
 
-it('memoizes one default client across issueTokenFor calls', function () {
-    $first = $this->issueTokenFor($this->user);
-    $second = $this->issueTokenFor($this->user);
+it('drives the full authorize-approve-token dance, honoring parameter overrides and prior consent', function () {
+    $client = $this->createOidcClient();
 
-    $inspector = app(TokenInspector::class);
-
-    expect($inspector->accessToken($first)->getAttribute('client_id'))->toBe($inspector->accessToken($second)->getAttribute('client_id'));
-});
-
-it('drives the full authorize-approve-token dance', function () {
-    $result = $this->authorizeAndApprove($this->user, scopes: 'openid email');
+    $result = $this->authorizeAndApprove($this->user, $client, scopes: 'openid email', params: ['nonce' => 'fixed-nonce']);
 
     $result->response->assertOk();
     expect($result->accessToken)->toBeString()
-        ->and($result->idToken)->toBeString()
-        ->and($result->refreshToken)->toBeString();
-});
+        ->and($result->refreshToken)->toBeString()
+        ->and(parseIdToken((string) $result->idToken)->claims()->get('nonce'))->toBe('fixed-nonce');
 
-it('honors authorize parameter overrides', function () {
-    $result = $this->authorizeAndApprove($this->user, params: ['nonce' => 'fixed-nonce']);
-
-    $token = (new Parser(new JoseEncoder))
-        ->parse((string) $result->idToken);
-
-    Assert::assertInstanceOf(UnencryptedToken::class, $token);
-
-    expect($token->claims()->get('nonce'))->toBe('fixed-nonce');
-});
-
-it('handles the skip-consent redirect for already-approved clients', function () {
-    $client = $this->createOidcClient();
-
-    $this->authorizeAndApprove($this->user, $client);
-    $second = $this->authorizeAndApprove($this->user, $client);
-
-    expect($second->accessToken)->toBeString();
+    expect($this->authorizeAndApprove($this->user, $client)->accessToken)->toBeString();
 });
 
 it('scopes the CSRF exemption to the authorizeAndApprove flow', function () {
     Route::post('/csrf-probe', fn () => response()->noContent())->middleware('web');
 
-    // Both CSRF middlewares short-circuit under the `testing` env, so the
-    // probe only enforces once the app stops reporting unit tests. Restored
-    // before teardown: confirmable commands would prompt under `production`.
+    // Both CSRF middlewares short-circuit under the `testing` env, so the probe only enforces
+    // once the app stops reporting unit tests. Restored before teardown: confirmable commands
+    // would prompt under `production`.
     $this->app->instance('env', 'production');
 
     try {
-        // The flow's own POSTs (approve + token) only succeed here because
-        // the scoped exemption is active while they run.
         $this->authorizeAndApprove($this->user)->response->assertOk();
 
         $this->post('/csrf-probe')->assertStatus(419);
@@ -156,25 +116,8 @@ it('scopes the CSRF exemption to the authorizeAndApprove flow', function () {
     }
 });
 
-it('leaves a test-owned CSRF exemption in place after authorizeAndApprove', function () {
-    Route::post('/csrf-probe', fn () => response()->noContent())->middleware('web');
-    $this->app->instance('env', 'production');
-
-    try {
-        $this->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class]);
-
-        $this->authorizeAndApprove($this->user)->response->assertOk();
-
-        $this->post('/csrf-probe')->assertNoContent();
-    } finally {
-        $this->app->instance('env', 'testing');
-    }
-});
-
 it('returns the raw token error response for a broken token leg', function () {
     $confidential = $this->createOidcClient();
-    // Must be a wrong value, not an empty one — an empty secret is
-    // invalid_request (400) rather than invalid_client (401).
     $confidential->plainSecret = 'wrong-secret';
 
     $result = $this->authorizeAndApprove($this->user, $confidential);

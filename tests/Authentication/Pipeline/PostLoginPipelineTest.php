@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * postLogin hook pipeline contract: ordering, fail-closed, protected id_token and access-token claim names
+ */
+
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\NullDeviceRecognizer;
@@ -45,4 +49,22 @@ it('fails closed when a hook throws', function () {
     expect($api->isDenied())->toBeTrue()
         ->and($api->denyReason())->toBe('post_login_error')
         ->and($api->idTokenClaims())->toBe([]); // later hook skipped
+});
+
+it('refuses protected id_token and access-token claim names from hooks', function () {
+    $api = new LoginApi;
+
+    $api->setIdTokenClaim('groups', ['admin']);
+    $api->setIdTokenClaim('sub', 'attacker');
+    $api->setIdTokenClaim('amr', ['forged']);
+    $api->setIdTokenClaim('sid', 'forged');
+
+    $api->setAccessTokenClaim('tier', 'gold');
+
+    foreach (['amr', 'client_id', 'scope', 'scopes', 'cnf', 'act', 'sid'] as $claim) {
+        $api->setAccessTokenClaim($claim, 'forged');
+    }
+
+    expect($api->idTokenClaims())->toBe(['groups' => ['admin']])
+        ->and($api->accessTokenClaims())->toBe(['tier' => 'gold']);
 });

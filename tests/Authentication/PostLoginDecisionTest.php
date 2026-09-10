@@ -2,9 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * postLogin policy at the credential login: deny, claim buffering, MFA requirement; OIDC Core §3.1.2.1 (acr_values)
+ */
+
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Workbench\App\Models\User;
 
@@ -57,4 +62,29 @@ it('forces the two-factor challenge when requireMfa is requested and a factor is
         ->assertSessionHas('login.id', $this->user->getAuthIdentifier());
 
     $this->assertGuest('identity');
+});
+
+it('exposes the pending authorize request acr_values to postLogin hooks', function () {
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
+    $captured = null;
+    app(PostLoginPipeline::class)->register(function (LoginEvent $event) use (&$captured): void {
+        $captured = $event;
+    });
+
+    $this->get('/realms/default/oauth/authorize?'.http_build_query([
+        'client_id' => $client->id,
+        'redirect_uri' => 'https://rp.test/callback',
+        'response_type' => 'code',
+        'scope' => 'openid',
+        'code_challenge' => str_repeat('c', 43),
+        'code_challenge_method' => 'S256',
+        'acr_values' => 'mfa phishing-resistant',
+    ]))->assertRedirect();
+
+    $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password']);
+
+    expect($captured)->toBeInstanceOf(LoginEvent::class)
+        ->and($captured->requestsAcr('mfa'))->toBeTrue()
+        ->and($captured->requestsAcr('phr'))->toBeFalse()
+        ->and($captured->requestedAcrValues)->toBe(['mfa', 'phishing-resistant']);
 });

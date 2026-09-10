@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 /**
- * OAuth 2.1 §4.1.1 / §4.1.2.1 (authorization request validation and error responses); RFC 8252 §7.3 (loopback redirects);
- * OpenID Connect Core §3.1.2.1 (GET and POST, prompt, max_age, id_token_hint), §3.1.2.6 (error codes); RFC 9207 §2 (iss);
- * OAuth 2.0 Multiple Response Type Encoding Practices §2.1 (response_mode)
+ * OAuth 2.1 §4.1.1 / §4.1.2.1 (authorization request validation and error responses), §7.6 (PKCE required);
+ * RFC 7636 §4.4.1; RFC 8252 §7.3 (loopback redirects); OpenID Connect Core §3.1.2.1 (GET and POST, prompt, max_age,
+ * id_token_hint), §3.1.2.6 (error codes); RFC 9207 §2 (iss); OAuth 2.0 Multiple Response Type Encoding Practices §2.1
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
@@ -49,10 +49,19 @@ function authorizeParameters(mixed $test, array $overrides): array
  * @param  array<string, mixed>  $overrides
  * @return TestResponse<Response>
  */
-function authorizeWith(mixed $test, array $overrides): TestResponse
+function authorizeWith(mixed $test, array $overrides, ?int $authTime = null): TestResponse
 {
-    return $test->actingAsIdentity($test->user, authTime: time() - 60)
+    return $test->actingAsIdentity($test->user, authTime: $authTime ?? time() - 60)
         ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($test, $overrides)));
+}
+
+/**
+ * @param  array<string, mixed>  $overrides
+ * @return TestResponse<Response>
+ */
+function authorizeAsGuest(mixed $test, array $overrides = []): TestResponse
+{
+    return $test->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($test, $overrides)));
 }
 
 /**
@@ -69,29 +78,26 @@ function redirectParams(TestResponse $response): array
 }
 
 // RFC 6749 §4.1.2.1: the resource owner is informed, never redirected, and no client authentication is challenged.
-it('rejects an unknown client without redirecting', function () {
-    authorizeWith($this, ['client_id' => 'nope'])
+it('rejects an unknown or missing client without redirecting', function (?string $clientId) {
+    authorizeWith($this, ['client_id' => $clientId])
         ->assertStatus(400)
         ->assertJsonPath('error', 'invalid_request')
         ->assertHeaderMissing('WWW-Authenticate');
-});
+})->with(['unknown' => 'nope', 'missing' => null]);
 
-it('rejects a request without client_id', function () {
-    authorizeWith($this, ['client_id' => null])
+// OAuth 2.1 §4.1.3 / §7.5 — exact redirect-URI matching
+it('rejects a redirect_uri that is not an exact registered match without redirecting', function () {
+    authorizeWith($this, ['redirect_uri' => 'https://rp.test/callback/extra'])
         ->assertStatus(400)
-        ->assertJsonPath('error', 'invalid_request')
-        ->assertHeaderMissing('WWW-Authenticate');
+        ->assertJsonPath('error', 'invalid_request');
 });
 
-it('falls back to the single registered redirect_uri when none is sent', function () {
+it('falls back to the single registered redirect_uri and requires one when several are registered', function () {
     $view = authorizeWith($this, ['redirect_uri' => null])->assertOk();
-
     $approve = $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]);
 
     expect(redirectParams($approve))->toHaveKey('code');
-});
 
-it('requires redirect_uri when several are registered', function () {
     $this->client->forceFill(['redirect_uris' => ['https://rp.test/callback', 'https://rp.test/other']])->save();
 
     authorizeWith($this, ['redirect_uri' => null])
@@ -107,25 +113,36 @@ it('accepts a loopback redirect_uri on any port', function () {
     authorizeWith($this, ['redirect_uri' => 'http://127.0.0.1:53211/other'])->assertStatus(400);
 });
 
-it('reports an unsupported response_type to the client', function () {
-    $params = redirectParams(authorizeWith($this, ['response_type' => 'token']));
+// OAuth 2.1 §4.1.1 / §7.6 — PKCE with S256 for every client
+it('rejects a missing code_challenge or the plain method on the redirect URI', function (array $overrides) {
+    $params = redirectParams(authorizeWith($this, $overrides));
 
-    expect($params['error'])->toBe('unsupported_response_type')
+    expect($params['error'])->toBe('invalid_request')
         ->and($params['state'])->toBe('st4te');
-});
+})->with([
+    'no PKCE' => [['code_challenge' => null, 'code_challenge_method' => null]],
+    'plain method' => [['code_challenge_method' => 'plain']],
+]);
 
-it('reports an unknown scope to the client', function () {
-    $params = redirectParams(authorizeWith($this, ['scope' => 'openid nope']));
+it('reports request errors to the client on the redirect URI with the state', function (array $overrides, string $error) {
+    $params = redirectParams(authorizeWith($this, $overrides));
 
-    expect($params['error'])->toBe('invalid_scope')
+    expect($params['error'])->toBe($error)
         ->and($params['state'])->toBe('st4te');
-});
+})->with([
+    'unsupported response_type' => [['response_type' => 'token'], 'unsupported_response_type'],
+    'unknown scope' => [['scope' => 'openid nope'], 'invalid_scope'],
+    'response_mode other than query' => [['response_mode' => 'fragment'], 'invalid_request'],
+    'request object' => [['request' => 'eyJhbGciOiJub25lIn0.e30.'], 'request_not_supported'],
+    'request_uri' => [['request_uri' => 'https://rp.test/request.jwt'], 'request_uri_not_supported'],
+    'unknown prompt' => [['prompt' => 'wizard'], 'invalid_request'],
+    'prompt=none with another value' => [['prompt' => 'none login'], 'invalid_request'],
+    'malformed max_age' => [['max_age' => '-1'], 'invalid_request'],
+    'unverifiable id_token_hint' => [['id_token_hint' => 'not.a.jwt'], 'invalid_request'],
+]);
 
-// OAuth 2.1 §4.1.1 — plain is gone
-it('rejects the plain code_challenge_method', function () {
-    $params = redirectParams(authorizeWith($this, ['code_challenge_method' => 'plain']));
-
-    expect($params['error'])->toBe('invalid_request');
+it('accepts response_mode=query', function () {
+    authorizeWith($this, ['response_mode' => 'query'])->assertOk();
 });
 
 it('reports a client without the authorization_code grant to the client', function () {
@@ -152,157 +169,140 @@ it('refuses to complete a consent with a foreign auth token', function () {
 });
 
 // OIDC Core §3.1.2.1 — GET and POST
-it('accepts the authorization request as a POST with form-encoded parameters', function () {
+it('accepts the authorization request as a POST read from the body only', function () {
     $view = $this->actingAsIdentity($this->user, authTime: time() - 60)
         ->post('/realms/default/oauth/authorize', authorizeParameters($this, []))
         ->assertOk();
 
     expect(redirectParams($this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')])))->toHaveKey('code');
-});
 
-it('reads a POST authorization request from the body only, never from the query', function () {
     $this->actingAsIdentity($this->user, authTime: time() - 60)
         ->post('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])), ['scope' => 'openid'])
         ->assertStatus(400)
         ->assertJsonPath('error', 'invalid_request');
 });
 
-// OIDC Core §3.1.2.1 / §3.1.2.6 — max_age with prompt=none
-it('answers login_required for prompt=none with an expired max_age and keeps the session', function () {
-    $params = redirectParams(authorizeWith($this, ['prompt' => 'none', 'max_age' => '10']));
-
-    expect($params['error'])->toBe('login_required')
-        ->and($params['state'])->toBe('st4te')
-        ->and(auth('identity')->check())->toBeTrue();
-});
-
-it('rejects a malformed max_age on the redirect URI', function () {
-    expect(redirectParams(authorizeWith($this, ['max_age' => '-1']))['error'])->toBe('invalid_request');
-});
-
-// OIDC Core §3.1.2.1 — prompt
-it('rejects prompt=none combined with another value', function () {
-    $params = redirectParams(authorizeWith($this, ['prompt' => 'none login']));
-
-    expect($params['error'])->toBe('invalid_request')
-        ->and($params['state'])->toBe('st4te')
-        ->and(auth('identity')->check())->toBeTrue();
-});
-
-it('rejects an unknown prompt value', function () {
-    expect(redirectParams(authorizeWith($this, ['prompt' => 'wizard']))['error'])->toBe('invalid_request');
-});
-
-it('forces re-authentication for prompt=login', function () {
-    config(['oidc.auth.login_route' => 'identity.login']);
-
-    authorizeWith($this, ['prompt' => 'login'])->assertRedirect(route('identity.login'));
-
-    expect(auth('identity')->guest())->toBeTrue()
-        ->and(session('oidc.prompted_for_login'))->toBeTrue();
-});
-
-it('treats prompt=select_account like prompt=login', function () {
-    config(['oidc.auth.login_route' => 'identity.login']);
-
-    authorizeWith($this, ['prompt' => 'select_account'])->assertRedirect(route('identity.login'));
-
-    expect(auth('identity')->guest())->toBeTrue()
-        ->and(session('oidc.prompted_for_login'))->toBeTrue();
-});
-
-// OAuth 2.0 Multiple Response Type Encoding Practices §2.1
-it('rejects a response_mode other than query', function () {
-    $params = redirectParams(authorizeWith($this, ['response_mode' => 'fragment']));
-
-    expect($params['error'])->toBe('invalid_request')
-        ->and($params['state'])->toBe('st4te');
-});
-
-it('accepts response_mode=query', function () {
-    authorizeWith($this, ['response_mode' => 'query'])->assertOk();
-});
-
-// OIDC Core §3.1.2.6 / §6 — request objects are not supported
-it('answers request_not_supported for a request parameter', function () {
-    $params = redirectParams(authorizeWith($this, ['request' => 'eyJhbGciOiJub25lIn0.e30.']));
-
-    expect($params['error'])->toBe('request_not_supported')
-        ->and($params['state'])->toBe('st4te');
-});
-
-it('answers request_uri_not_supported for a request_uri parameter', function () {
-    $params = redirectParams(authorizeWith($this, ['request_uri' => 'https://rp.test/request.jwt']));
-
-    expect($params['error'])->toBe('request_uri_not_supported')
-        ->and($params['state'])->toBe('st4te');
-});
-
-// OIDC Core §3.1.2.1 — id_token_hint
-it('answers login_required when the id_token_hint names another user', function () {
-    $other = User::create(['name' => 'O', 'email' => 'o@example.com', 'email_verified_at' => now(), 'password' => 'x']);
-    $hint = $this->authorizeAndApprove($other, $this->client)->idToken;
-
-    $params = redirectParams(authorizeWith($this, ['id_token_hint' => $hint]));
-
-    expect($params['error'])->toBe('login_required')
-        ->and($params['state'])->toBe('st4te')
-        ->and(auth('identity')->check())->toBeTrue();
-});
-
-it('proceeds when the id_token_hint names the current user', function () {
-    $hint = $this->authorizeAndApprove($this->user, $this->client)->idToken;
-
-    // The approval above granted openid, so consent is skipped and a code is issued.
-    expect(redirectParams(authorizeWith($this, ['id_token_hint' => $hint])))->toHaveKey('code');
-});
-
-it('rejects an unverifiable id_token_hint on the redirect URI', function () {
-    $params = redirectParams(authorizeWith($this, ['id_token_hint' => 'not.a.jwt']));
-
-    expect($params['error'])->toBe('invalid_request')
-        ->and($params['state'])->toBe('st4te');
-});
-
 // OAuth 2.1 §4.1.1 / RFC 6749 §3.1 — duplicate parameters
-it('rejects a duplicated scope parameter on the redirect URI', function () {
+it('rejects duplicated parameters', function () {
     $params = redirectParams($this->actingAsIdentity($this->user, authTime: time() - 60)
         ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])).'&scope=openid'));
 
     expect($params['error'])->toBe('invalid_request')
         ->and($params['state'])->toBe('st4te');
-});
 
-it('rejects a duplicated client_id parameter without redirecting', function () {
     $this->actingAsIdentity($this->user, authTime: time() - 60)
         ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])).'&client_id='.$this->client->id)
         ->assertStatus(400)
         ->assertJsonPath('error', 'invalid_request');
-});
 
-it('rejects a duplicated parameter in a POST body', function () {
     $parameters = authorizeParameters($this, []);
     $body = http_build_query($parameters).'&state=other';
 
-    $params = redirectParams($this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->call('POST', '/realms/default/oauth/authorize', $parameters, [], [], ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'], $body));
+    expect(redirectParams($this->actingAsIdentity($this->user, authTime: time() - 60)
+        ->call('POST', '/realms/default/oauth/authorize', $parameters, [], [], ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'], $body))['error'])
+        ->toBe('invalid_request');
+});
 
-    expect($params['error'])->toBe('invalid_request');
+// OIDC Core §3.1.2.1 — max_age
+it('forces re-authentication when the session is older than max_age', function (?int $authTime, string $maxAge) {
+    if ($authTime === null) {
+        $this->actingAs($this->user, 'identity')
+            ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, ['max_age' => $maxAge])))
+            ->assertRedirect();
+    } else {
+        authorizeWith($this, ['max_age' => $maxAge], authTime: $authTime)->assertRedirect();
+    }
+
+    expect(auth('identity')->guest())->toBeTrue();
+})->with([
+    'stale session' => [time() - 3600, '300'],
+    'max_age=0' => [time() - 1, '0'],
+    'no auth_time recorded' => [null, '300'],
+]);
+
+it('proceeds when the session is fresh enough for max_age', function () {
+    authorizeWith($this, ['max_age' => '300'])->assertOk();
+});
+
+// OIDC Core §3.1.2.1 / §3.1.2.6 — prompt
+it('answers prompt=none without interaction', function (bool $authenticated, array $overrides, string $error) {
+    $response = $authenticated
+        ? authorizeWith($this, ['prompt' => 'none', ...$overrides])
+        : authorizeAsGuest($this, ['prompt' => 'none', ...$overrides]);
+
+    $params = redirectParams($response);
+
+    expect($params['error'])->toBe($error)
+        ->and($params['state'])->toBe('st4te')
+        ->and(auth('identity')->check())->toBe($authenticated);
+})->with([
+    'guest' => [false, [], 'login_required'],
+    'expired max_age' => [true, ['max_age' => '10'], 'login_required'],
+    'no prior consent' => [true, [], 'consent_required'],
+]);
+
+it('forces re-authentication for prompt=login and prompt=select_account', function (string $prompt) {
+    config(['oidc.auth.login_route' => 'identity.login']);
+
+    authorizeWith($this, ['prompt' => $prompt])->assertRedirect(route('identity.login'));
+
+    expect(auth('identity')->guest())->toBeTrue()
+        ->and(session('oidc.prompted_for_login'))->toBeTrue();
+})->with(['login', 'select_account']);
+
+it('redirects a guest to the configured login route name or path', function (string $loginRoute, string $destination) {
+    config(['oidc.auth.login_route' => $loginRoute]);
+
+    authorizeAsGuest($this)->assertRedirect($destination);
+
+    expect(session('oidc.prompted_for_login'))->toBeTrue();
+})->with([
+    'route name' => ['identity.login', '/realms/default/auth/login'],
+    'literal path' => ['/custom/identity-login', '/custom/identity-login'],
+]);
+
+// OIDC Core §3.1.2.1 — id_token_hint
+it('answers login_required when the id_token_hint names another user and proceeds for the current one', function () {
+    $other = User::create(['name' => 'O', 'email' => 'o@example.com', 'email_verified_at' => now(), 'password' => 'x']);
+    $foreignHint = $this->authorizeAndApprove($other, $this->client)->idToken;
+
+    $params = redirectParams(authorizeWith($this, ['id_token_hint' => $foreignHint]));
+
+    expect($params['error'])->toBe('login_required')
+        ->and($params['state'])->toBe('st4te')
+        ->and(auth('identity')->check())->toBeTrue();
+
+    $ownHint = $this->authorizeAndApprove($this->user, $this->client)->idToken;
+
+    expect(redirectParams(authorizeWith($this, ['id_token_hint' => $ownHint])))->toHaveKey('code');
 });
 
 // RFC 9207 §2
-it('adds iss to the code redirect', function () {
+it('adds iss to code and error redirects', function () {
     $view = authorizeWith($this, [])->assertOk();
 
-    $params = redirectParams($this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]));
+    $success = redirectParams($this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]));
+    $error = redirectParams(authorizeWith($this, ['response_type' => 'token']));
 
-    expect($params)->toHaveKey('code')
-        ->and($params['iss'])->toBe(app(IssuerResolver::class)->url());
+    expect($success)->toHaveKey('code')
+        ->and($success['iss'])->toBe(app(IssuerResolver::class)->url())
+        ->and($error['error'])->toBe('unsupported_response_type')
+        ->and($error['iss'])->toBe(app(IssuerResolver::class)->url());
 });
 
-it('adds iss to error redirects', function () {
-    $params = redirectParams(authorizeWith($this, ['response_type' => 'token']));
+it('answers an Inertia request with 409 + X-Inertia-Location instead of an external redirect', function () {
+    $view = authorizeWith($this, [])->assertOk();
 
-    expect($params['error'])->toBe('unsupported_response_type')
-        ->and($params['iss'])->toBe(app(IssuerResolver::class)->url());
+    $approve = $this->post(route('oidc.approve'), ['auth_token' => $view->json('authToken')], ['X-Inertia' => 'true']);
+
+    $approve->assertStatus(409);
+    expect($approve->headers->get('X-Inertia-Location'))->toStartWith('https://rp.test/callback?');
+
+    config()->set('oidc.clients.trusted', [(string) $this->client->getKey()]);
+
+    $trusted = $this->actingAsIdentity($this->user, authTime: time() - 60)
+        ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])), ['X-Inertia' => 'true']);
+
+    $trusted->assertStatus(409);
+    expect($trusted->headers->get('X-Inertia-Location'))->toStartWith('https://rp.test/callback?');
 });

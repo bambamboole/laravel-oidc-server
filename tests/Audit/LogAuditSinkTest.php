@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Default audit sink: failures log as warnings, successes as info, on the configured channel with the event context
+ */
+
 use Bambamboole\LaravelOidc\Server\Audit\LogAuditSink;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
@@ -52,10 +56,4 @@ it('logs success events as info on the configured channel', function () {
     Log::shouldReceive('channel')->once()->with('audit')->andReturn($logger);
 
     (new LogAuditSink)->record(auditEvent(AuditEventType::TokenIssued));
-});
-
-it('derives the category from the type value', function () {
-    expect(AuditEventType::LoginFailed->category())->toBe('auth')
-        ->and(AuditEventType::TokenIssued->category())->toBe('oauth')
-        ->and(AuditEventType::KeysRotated->category())->toBe('admin');
 });

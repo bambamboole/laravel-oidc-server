@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Upstream OAuth 2.0 client leg: RFC 7636 S256 PKCE, state binding (RFC 6749 §10.12), code exchange
+ */
+
 use Bambamboole\LaravelOidc\Server\Brokering\AbstractOAuth2Provider;
 use Bambamboole\LaravelOidc\Server\Brokering\InvalidStateException;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
@@ -76,14 +80,6 @@ it('redirects to the authorization endpoint with state and S256 PKCE', function 
             rtrim(strtr(base64_encode(hash('sha256', $pending->codeVerifier, true)), '+/', '-_'), '=')
         )
         ->and($params['redirect_uri'])->toBe(route('identity.social.callback', ['provider' => 'fake']));
-});
-
-it('stores the link intent in the pending authorization', function () {
-    $request = requestWithSession('/realms/default/auth/social/fake');
-
-    fakeOAuth2Provider()->redirect($request, PendingSocialRedirect::INTENT_LINK);
-
-    expect(PendingSocialRedirect::pull($request)->intent)->toBe(PendingSocialRedirect::INTENT_LINK);
 });
 
 it('exchanges the callback code including the PKCE verifier', function () {

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * RFC 6750 §3 (bearer challenges from the auth:oidc guard); RFC 9068 §4 (iss); RFC 9728 §5.1 (resource_metadata)
+ * RFC 6750 §3 (bearer challenges from the auth:oidc guard); RFC 9068 §4 (typ, iss, aud); RFC 9728 §5.1 (resource_metadata)
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
@@ -70,7 +70,7 @@ function bearerIssuedElsewhere(mixed $test): string
     return $jwt;
 }
 
-it('authenticates a token the realm issued', function () {
+it('authenticates a token the realm issued and resolves the user from sub', function () {
     $jwt = resourceServerBearer($this);
 
     $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
@@ -79,20 +79,13 @@ it('authenticates a token the realm issued', function () {
 });
 
 // RFC 9068 §4 — aud must name this resource; the issuing client is not an audience
-it('rejects a token addressed only to a client id', function () {
-    $jwt = resourceServerBearer($this, [(string) $this->client->client_id]);
-
-    $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
-        ->assertUnauthorized()
-        ->assertJsonPath('error', 'invalid_token');
-});
-
-it('accepts a token addressed to a configured realm audience and rejects one for another resource', function () {
+it('accepts only tokens addressed to a realm audience', function () {
     config(['oidc.tokens.audiences' => ['https://api.example/orders']]);
 
     $accepted = resourceServerBearer($this, ['https://api.example/orders']);
     $foreign = resourceServerBearer($this, ['https://other.example/api']);
     $issuerOnly = resourceServerBearer($this, [app(IssuerResolver::class)->url()]);
+    $clientOnly = resourceServerBearer($this, [(string) $this->client->client_id]);
 
     $this->getJson('/guarded', ['Authorization' => "Bearer $accepted"])->assertOk();
 
@@ -103,6 +96,11 @@ it('accepts a token addressed to a configured realm audience and rejects one for
     // A configured list replaces the issuer URL rather than extending it.
     Auth::forgetGuards();
     $this->getJson('/guarded', ['Authorization' => "Bearer $issuerOnly"])->assertUnauthorized();
+
+    Auth::forgetGuards();
+    $this->getJson('/guarded', ['Authorization' => "Bearer $clientOnly"])
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
 });
 
 // RFC 6750 §3.1 — no credentials presented: a challenge without an error code
@@ -112,18 +110,7 @@ it('challenges a request without a bearer token and names no error', function ()
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", '.GUARD_RESOURCE_METADATA)
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertNoContent(401);
-});
 
-it('answers a rejected bearer token with invalid_token', function () {
-    $jwt = resourceServerBearer($this, revoked: true);
-
-    $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
-        ->assertUnauthorized()
-        ->assertJsonPath('error', 'invalid_token')
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", '.GUARD_RESOURCE_METADATA);
-});
-
-it('challenges a browser request instead of redirecting it to login', function () {
     Route::get('/login', fn () => 'login')->name('login');
     Route::getRoutes()->refreshNameLookups();
 
@@ -132,14 +119,22 @@ it('challenges a browser request instead of redirecting it to login', function (
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", '.GUARD_RESOURCE_METADATA);
 });
 
-// RFC 9068 §4
-it('rejects a token whose iss is not the realm issuer', function () {
-    $jwt = bearerIssuedElsewhere($this);
+it('answers a rejected bearer token with invalid_token', function (string $case) {
+    $jwt = match ($case) {
+        'garbage' => 'garbage',
+        'revoked' => resourceServerBearer($this, revoked: true),
+        'expired' => resourceServerBearer($this, expired: true),
+        'foreign issuer' => bearerIssuedElsewhere($this),
+        'unknown subject' => resourceServerBearer($this, subjectId: '999999'),
+        'id_token as bearer' => persistedIdTokenAsBearer($this),
+        default => throw new LogicException('Unknown case.'),
+    };
 
     $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
         ->assertUnauthorized()
-        ->assertJsonPath('error', 'invalid_token');
-});
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", '.GUARD_RESOURCE_METADATA);
+})->with(['garbage', 'revoked', 'expired', 'foreign issuer', 'unknown subject', 'id_token as bearer']);
 
 it('leaves other guards to Laravel', function () {
     Route::middleware('auth:web')->get('/session-guarded', fn () => 'ok');

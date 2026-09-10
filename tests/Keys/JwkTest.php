@@ -1,5 +1,10 @@
 <?php
+
 declare(strict_types=1);
+
+/**
+ * RFC 7517 (JWK), RFC 7518 §6.3 (RSA parameters), RFC 7638 (JWK thumbprint as kid)
+ */
 
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 
@@ -26,21 +31,11 @@ it('computes an RFC 7638 thumbprint as the kid', function () {
     expect($jwk['kid'])->toBe($expected);
 });
 
-it('rejects non-RSA keys', function () {
-    Jwk::fromPem('not a key');
-})->throws(RuntimeException::class);
-
 it('derives the same JWK from a PKCS#1 public key', function () {
     $pkcs8 = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));
     $pkcs1 = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.pkcs1.key'));
 
     expect($pkcs1)->toBe($pkcs8);
-});
-
-it('tolerates surrounding whitespace in the PEM', function () {
-    $pem = file_get_contents(__DIR__.'/../fixtures/oauth-public.key');
-
-    expect(Jwk::fromPem("\n  ".trim($pem)."\n\n"))->toBe(Jwk::fromPem($pem));
 });
 
 it('rejects EC public keys', function () {

@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Password reset through the Laravel broker and the ResetUserPassword action seam, finalizing as a login
+ */
+
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Passwords\PasswordBroker;
@@ -66,13 +70,8 @@ it('resets a password through the package action seam and logs the user in', fun
     Event::assertDispatched(PasswordReset::class);
 });
 
-/**
- * `confirmed` is enforced by the request itself, ahead of the broker — the reset
- * page ships a confirmation field, so a typo must not commit the first value.
- * The action is registered but has to stay untouched: rejection happens before
- * any user is looked up or written.
- */
-it('rejects a mismatched password confirmation before reaching the reset action', function () {
+// `confirmed` is enforced by the request itself, ahead of the broker and the app's reset action.
+it('rejects a mismatched or missing password confirmation before reaching the reset action', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);
     $actionRan = false;
@@ -93,34 +92,18 @@ it('rejects a mismatched password confirmation before reaching the reset action'
         ->assertRedirect('/realms/default/auth/reset-password/'.$token)
         ->assertSessionHasErrors('password');
 
-    $this->assertGuest('identity');
-    expect($actionRan)->toBeFalse()
-        ->and(Hash::check('old-password', (string) User::query()->findOrFail($user->getKey())->getAttribute('password')))->toBeTrue();
-});
-
-it('rejects a reset request with no password confirmation at all', function () {
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
-    $token = resolvePasswordBroker()->createToken($user);
-
-    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
-        $user->forceFill(['password' => Hash::make($input['password'])])->save();
-    });
-
     $this->postJson(route('identity.password.update'), [
         'token' => $token,
         'email' => 'm@example.com',
         'password' => 'new-password',
     ])->assertStatus(422)->assertJsonValidationErrors('password');
 
-    expect(Hash::check('old-password', (string) User::query()->findOrFail($user->getKey())->getAttribute('password')))->toBeTrue();
+    $this->assertGuest('identity');
+    expect($actionRan)->toBeFalse()
+        ->and(Hash::check('old-password', (string) User::query()->findOrFail($user->getKey())->getAttribute('password')))->toBeTrue();
 });
 
-/**
- * Every rule beyond `confirmed` belongs to the app's reset action. What the
- * package owns is the seam: a ValidationException thrown inside the broker's
- * reset callback has to surface as a validation error rather than a 500, and
- * must not leave a half-applied reset behind.
- */
+// Rules beyond `confirmed` belong to the app's reset action; its ValidationException must surface, not 500.
 it('surfaces a validation error the reset action raises for its own password rules', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);

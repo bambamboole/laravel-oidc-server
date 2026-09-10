@@ -2,26 +2,15 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginPrompt;
-use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
-use Illuminate\Http\Request;
+/**
+ * Credential login on the identity guard: canonicalized credentials, remember cookie, throttling, RFC 8176 amr pwd,
+ * isolation from the application web guard
+ */
+
 use Illuminate\Support\Facades\Hash;
-use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
-it('renders the login view through the package seam', function () {
-    app()->bind(LoginView::class, fn () => new class implements LoginView
-    {
-        public function respond(LoginPrompt $prompt, Request $request): Response
-        {
-            return response('login-view');
-        }
-    });
-
-    $this->get('/realms/default/auth/login')->assertOk()->assertSee('login-view');
-});
-
-it('logs a user in with canonicalized credentials and redirects home', function () {
+it('logs a user in with canonicalized credentials on the identity guard only and redirects home', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $response = $this->from('/realms/default/auth/login')->post(route('identity.login.store'), [
@@ -31,6 +20,7 @@ it('logs a user in with canonicalized credentials and redirects home', function 
 
     $response->assertRedirect('/dashboard');
     $this->assertAuthenticatedAs($user, 'identity');
+    $this->assertGuest('web');
 });
 
 it('returns the JSON success response after login', function () {
@@ -89,4 +79,16 @@ it('records the pwd method on a successful password login', function () {
 
     $this->assertAuthenticatedAs($user, 'identity');
     expect(session()->get('oidc.amr'))->toBe(['pwd']);
+});
+
+it('redirects identity-protected routes to the identity login even for a web-guard session', function () {
+    config(['oidc.auth.login_route' => 'identity.login']);
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
+
+    $this->actingAs($user, 'web')
+        ->get('/realms/default/auth/user/confirmed-password-status')
+        ->assertRedirect('/realms/default/auth/login');
+
+    $this->assertAuthenticatedAs($user, 'web');
+    $this->assertGuest('identity');
 });

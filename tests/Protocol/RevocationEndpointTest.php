@@ -3,104 +3,85 @@
 declare(strict_types=1);
 
 /**
- * RFC 7009 (OAuth 2.0 Token Revocation)
+ * RFC 7009 (OAuth 2.0 Token Revocation) §2.1 (request, token_type_hint), §2.2 (response, foreign tokens)
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
+use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
-    $this->secret = $this->client->plainSecret;
 
-    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
-    $result = $this->user->createToken('t', ['openid']);
-
-    $token = $result->token;
-
-    $token->forceFill(['client_id' => $this->client->id])->save();
-    $this->jwt = $result->accessToken;
-    $this->token = $token;
+    $minted = app(AccessTokenMinter::class)->mint((string) $this->user->id, $this->client->client_id, ['openid'], new DateInterval('PT1H'));
+    $this->jwt = $minted->jwt;
+    $this->token = AccessToken::query()->findOrFail($minted->jti);
 });
+
+/**
+ * @param  array<string, mixed>  $parameters
+ * @return TestResponse<Response>
+ */
+function revoke(mixed $test, array $parameters, mixed $client = null): TestResponse
+{
+    $client ??= $test->client;
+
+    return $test->postJson('/realms/default/oauth/revoke', [
+        'client_id' => $client->id,
+        'client_secret' => $client->plainSecret,
+        ...$parameters,
+    ]);
+}
 
 it('revokes an access token for its own client', function () {
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $this->client->id,
-        'client_secret' => $this->secret,
-        'token' => $this->jwt,
-    ])->assertOk();
+    revoke($this, ['token' => $this->jwt])->assertOk();
 
     expect($this->token->fresh()->revoked)->toBeTrue();
 });
 
-it('silently ignores tokens of other clients per rfc 7009', function () {
-    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
-
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $other->id,
-        'client_secret' => $other->plainSecret,
-        'token' => $this->jwt,
-    ])->assertOk();
-
-    expect($this->token->fresh()->revoked)->toBeFalse();
-});
-
-// RFC 7009 §2.2.1
-it('rejects a revocation request without a token parameter', function () {
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $this->client->id,
-        'client_secret' => $this->secret,
-    ])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
-
-    expect($this->token->fresh()->revoked)->toBeFalse();
-});
-
-// RFC 7009 §2.1 — token_type_hint only orders the lookup
-it('revokes an access token presented with a refresh_token hint', function () {
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $this->client->id,
-        'client_secret' => $this->secret,
-        'token' => $this->jwt,
-        'token_type_hint' => 'refresh_token',
-    ])->assertOk();
-
-    expect($this->token->fresh()->revoked)->toBeTrue();
-});
-
-it('revokes a refresh token presented with an access_token hint', function () {
+it('revokes a refresh token together with its linked access token', function () {
     [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
 
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $this->client->id,
-        'client_secret' => $this->secret,
-        'token' => $refreshTokenValue,
-        'token_type_hint' => 'access_token',
-    ])->assertOk();
+    revoke($this, ['token' => $refreshTokenValue, 'token_type_hint' => 'refresh_token'])->assertOk();
 
     expect($refreshToken->refresh()->getAttribute('revoked'))->toBeTrue()
         ->and($accessToken->refresh()->getAttribute('revoked'))->toBeTrue();
 });
 
-it('ignores a token_type_hint it does not know', function () {
+// RFC 7009 §2.1 — token_type_hint only orders the lookup
+it('revokes the token whatever token_type_hint says', function () {
     [$refreshTokenValue, $refreshToken] = issueRefreshToken($this);
 
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $this->client->id,
-        'client_secret' => $this->secret,
-        'token' => $refreshTokenValue,
-        'token_type_hint' => 'urn:example:unknown',
-    ])->assertOk();
+    revoke($this, ['token' => $this->jwt, 'token_type_hint' => 'refresh_token'])->assertOk();
+    revoke($this, ['token' => $refreshTokenValue, 'token_type_hint' => 'urn:example:unknown'])->assertOk();
 
-    expect($refreshToken->refresh()->getAttribute('revoked'))->toBeTrue();
+    expect($this->token->fresh()->revoked)->toBeTrue()
+        ->and($refreshToken->refresh()->getAttribute('revoked'))->toBeTrue();
 });
 
-it('answers 200 for a token it does not know', function () {
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $this->client->id,
-        'client_secret' => $this->secret,
-        'token' => 'not-a-token',
-    ])->assertOk();
+// RFC 7009 §2.2 — tokens of other clients and unknown tokens are silently ignored
+it('answers 200 without revoking for tokens of other clients or unknown tokens', function () {
+    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
+    [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
+
+    revoke($this, ['token' => $this->jwt], $other)->assertOk();
+    revoke($this, ['token' => $refreshTokenValue, 'token_type_hint' => 'refresh_token'], $other)->assertOk();
+    revoke($this, ['token' => 'not-a-token'])->assertOk();
+
+    expect($this->token->fresh()->revoked)->toBeFalse()
+        ->and($refreshToken->refresh()->getAttribute('revoked'))->toBeFalse()
+        ->and($accessToken->refresh()->getAttribute('revoked'))->toBeFalse();
+});
+
+// RFC 7009 §2.2.1
+it('rejects a revocation request without a token parameter', function () {
+    revoke($this, [])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
+
+    expect($this->token->fresh()->revoked)->toBeFalse();
 });
 
 it('rejects unauthenticated revocation', function () {
@@ -108,35 +89,6 @@ it('rejects unauthenticated revocation', function () {
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
         ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
-});
-
-it('revokes a refresh token and its linked access token for its own client', function () {
-    [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
-
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $this->client->id,
-        'client_secret' => $this->secret,
-        'token' => $refreshTokenValue,
-        'token_type_hint' => 'refresh_token',
-    ])->assertOk();
-
-    expect($refreshToken->refresh()->getAttribute('revoked'))->toBeTrue()
-        ->and($accessToken->refresh()->getAttribute('revoked'))->toBeTrue();
-});
-
-it('silently ignores refresh tokens of other clients per rfc 7009', function () {
-    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
-    [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
-
-    $this->postJson('/realms/default/oauth/revoke', [
-        'client_id' => $other->id,
-        'client_secret' => $other->plainSecret,
-        'token' => $refreshTokenValue,
-        'token_type_hint' => 'refresh_token',
-    ])->assertOk();
-
-    expect($refreshToken->refresh()->getAttribute('revoked'))->toBeFalse()
-        ->and($accessToken->refresh()->getAttribute('revoked'))->toBeFalse();
 });
 
 it('lets a public client revoke its own refresh token', function () {

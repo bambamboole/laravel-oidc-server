@@ -1,5 +1,5 @@
 <?php
-// tests/Session/OidcSessionRepositoryTest.php
+
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;

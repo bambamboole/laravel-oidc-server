@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * RFC 7662 (OAuth 2.0 Token Introspection)
+ * RFC 7662 (OAuth 2.0 Token Introspection) §2.1 (token_type_hint), §2.2 (response), §2.3 (errors); RFC 9068 §2.2 claims
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
@@ -20,20 +20,20 @@ beforeEach(function () {
 });
 
 /**
+ * Mints an access token for the given (or the test) client and returns the JWT with its persisted row.
+ *
  * @return array{0: string, 1: AccessToken}
  */
-function issueAccessTokenViaPersonalClient(mixed $test): array
+function issueIntrospectableToken(mixed $test, ?string $clientId = null): array
 {
-    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
-    $result = $test->user->createToken('t', ['openid', 'email']);
+    $minted = app(AccessTokenMinter::class)->mint(
+        (string) $test->user->id,
+        $clientId ?? $test->client->client_id,
+        ['openid', 'email'],
+        new DateInterval('PT1H'),
+    );
 
-    $token = $result->token;
-
-    if (! $token instanceof AccessToken) {
-        throw new RuntimeException('Expected the personal access token to be persisted.');
-    }
-
-    return [$result->accessToken, $token];
+    return [$minted->jwt, AccessToken::query()->findOrFail($minted->jti)];
 }
 
 /**
@@ -62,25 +62,13 @@ it('rejects a request without a token parameter', function () {
     introspect($this, ['token' => ''])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
 });
 
-it('omits sub and exp when the token has no user or expiry', function () {
-    [$jwt, $token] = issueAccessTokenViaPersonalClient($this);
-    $token->forceFill(['client_id' => $this->client->id, 'user_id' => null, 'expires_at' => null])->save();
-
-    $response = introspect($this, ['token' => $jwt])->assertOk();
-
-    expect($response->json())->toHaveKey('active', true)
-        ->and($response->json())->not->toHaveKey('sub')
-        ->and($response->json())->not->toHaveKey('exp');
-});
-
 // RFC 7662 §2.2 — members of an active access token, with the RFC 9068 §2.2 claims of the JWT
 it('reports active for a valid access token of the same client', function () {
     config(['app.url' => 'https://op.test']);
-    [$jwt, $token] = issueAccessTokenViaPersonalClient($this);
-    $token->forceFill(['client_id' => $this->client->id])->save();
+    [$jwt, $token] = issueIntrospectableToken($this);
     $claims = parseAccessToken($jwt)->claims();
 
-    $response = introspect($this, ['token' => $jwt])->assertOk()->assertExactJson([
+    introspect($this, ['token' => $jwt])->assertOk()->assertExactJson([
         'active' => true,
         'token_type' => 'Bearer',
         'client_id' => $this->client->id,
@@ -91,28 +79,8 @@ it('reports active for a valid access token of the same client', function () {
         'nbf' => $claims->get('nbf')->getTimestamp(),
         'jti' => $token->id,
         'iss' => 'https://op.test/realms/default',
-        'aud' => $claims->get('aud'),
+        'aud' => ['https://op.test/realms/default'],
     ]);
-
-    expect($response->json('aud'))->toBeArray()->not->toBeEmpty();
-});
-
-it('reports inactive for revoked tokens', function () {
-    [$jwt, $token] = issueAccessTokenViaPersonalClient($this);
-    $token->forceFill(['client_id' => $this->client->id])->save();
-    $token->forceFill(['revoked' => true])->save();
-
-    introspect($this, ['token' => $jwt])->assertOk()->assertExactJson(['active' => false]);
-});
-
-it('reports inactive for garbage tokens without leaking errors', function () {
-    introspect($this, ['token' => 'not-a-token'])->assertOk()->assertExactJson(['active' => false]);
-});
-
-it('reports inactive for tokens belonging to another client', function () {
-    [$jwt] = issueAccessTokenViaPersonalClient($this);
-
-    introspect($this, ['token' => $jwt])->assertOk()->assertExactJson(['active' => false]);
 });
 
 it('reports active for a token that names the caller in its audience', function () {
@@ -130,6 +98,35 @@ it('reports active for a token that names the caller in its audience', function 
     ]);
 });
 
+it('reports inactive without leaking why', function (string $case) {
+    $token = match ($case) {
+        'revoked' => (function () {
+            [$jwt, $token] = issueIntrospectableToken($this);
+            $token->forceFill(['revoked' => true])->save();
+
+            return $jwt;
+        })(),
+        'garbage' => 'not-a-token',
+        'another client' => issueIntrospectableToken(
+            $this,
+            app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb'])->client_id,
+        )[0],
+        'revoked refresh token' => (function () {
+            [$value, $refreshToken] = issueRefreshToken($this);
+            $refreshToken->forceFill(['revoked' => true])->save();
+
+            return $value;
+        })(),
+        'refresh token of another client' => issueRefreshToken(
+            $this,
+            (string) app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb'])->id,
+        )[0],
+        default => throw new LogicException('Unknown case.'),
+    };
+
+    introspect($this, ['token' => $token])->assertOk()->assertExactJson(['active' => false]);
+})->with(['revoked', 'garbage', 'another client', 'revoked refresh token', 'refresh token of another client']);
+
 // RFC 7662 §2.2 — a refresh token has no token_type; iss is the realm's
 it('reports active for a valid refresh token of the same client', function () {
     config(['app.url' => 'https://op.test']);
@@ -146,53 +143,21 @@ it('reports active for a valid refresh token of the same client', function () {
 });
 
 // RFC 7662 §2.1 — token_type_hint only orders the lookup
-it('finds a refresh token presented with an access_token hint', function () {
+it('finds the token whatever token_type_hint says', function () {
     [$refreshTokenValue] = issueRefreshToken($this);
+    [$jwt] = issueIntrospectableToken($this);
 
     introspect($this, ['token' => $refreshTokenValue, 'token_type_hint' => 'access_token'])
         ->assertOk()
         ->assertJsonPath('active', true)
         ->assertJsonMissingPath('token_type');
-});
-
-it('finds an access token presented with a refresh_token hint', function () {
-    [$jwt, $token] = issueAccessTokenViaPersonalClient($this);
-    $token->forceFill(['client_id' => $this->client->id])->save();
 
     introspect($this, ['token' => $jwt, 'token_type_hint' => 'refresh_token'])
         ->assertOk()
         ->assertJsonPath('active', true)
         ->assertJsonPath('token_type', 'Bearer');
-});
-
-it('ignores a token_type_hint it does not know', function () {
-    [$refreshTokenValue] = issueRefreshToken($this);
 
     introspect($this, ['token' => $refreshTokenValue, 'token_type_hint' => 'urn:example:unknown'])
         ->assertOk()
         ->assertJsonPath('active', true);
-});
-
-it('reports inactive for a revoked refresh token', function () {
-    [$refreshTokenValue, $refreshToken] = issueRefreshToken($this);
-    $refreshToken->forceFill(['revoked' => true])->save();
-
-    introspect($this, ['token' => $refreshTokenValue, 'token_type_hint' => 'refresh_token'])
-        ->assertOk()
-        ->assertExactJson(['active' => false]);
-});
-
-it('reports inactive for a garbage refresh token without leaking errors', function () {
-    introspect($this, ['token' => 'not-a-token', 'token_type_hint' => 'refresh_token'])
-        ->assertOk()
-        ->assertExactJson(['active' => false]);
-});
-
-it('reports inactive for a refresh token belonging to another client', function () {
-    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
-    [$refreshTokenValue] = issueRefreshToken($this, (string) $other->id);
-
-    introspect($this, ['token' => $refreshTokenValue, 'token_type_hint' => 'refresh_token'])
-        ->assertOk()
-        ->assertExactJson(['active' => false]);
 });

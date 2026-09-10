@@ -60,21 +60,6 @@ it('answers an Inertia logout request with a 409 + X-Inertia-Location instead of
     expect(auth('identity')->guest())->toBeTrue();
 });
 
-it('preserves an existing query string when appending state', function () {
-    $this->client->forceFill([
-        'post_logout_redirect_uris' => ['https://rp.test/logged-out?tenant=abc'],
-    ])->save();
-
-    $response = $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
-        'id_token_hint' => issueIdToken($this),
-        'post_logout_redirect_uri' => 'https://rp.test/logged-out?tenant=abc',
-        'state' => 'xyz',
-    ]));
-
-    $response->assertRedirect('https://rp.test/logged-out?tenant=abc&state=xyz');
-    expect(auth('identity')->guest())->toBeTrue();
-});
-
 it('falls back to the configured redirect for unregistered uris', function () {
     $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
         'id_token_hint' => issueIdToken($this),

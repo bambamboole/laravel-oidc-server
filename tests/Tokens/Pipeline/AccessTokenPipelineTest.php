@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * Access-token trigger pipeline contract: per-grant registration, ordering, deny short-circuit, fail-closed,
+ * fresh api per run, protected claim names
+ */
+
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
@@ -11,87 +16,64 @@ use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\TokenExchangeEvent;
 use Workbench\App\Models\User;
 
-function clientCredentialsPipelineEvent(): ClientCredentialsEvent
+function pipelineEvent(string $grant): ClientCredentialsEvent|TokenExchangeEvent|PersonalAccessTokenEvent|AuthorizationCodeEvent
 {
-    return new ClientCredentialsEvent(
-        client: (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'Machine client']),
-        scopes: ['orders:read'],
-    );
-}
-
-function tokenExchangePipelineEvent(): TokenExchangeEvent
-{
+    $client = (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'Client']);
     $user = new User(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $user->setAttribute($user->getKeyName(), 42);
 
-    return new TokenExchangeEvent(
-        user: $user,
-        client: (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'Exchange client']),
-        scopes: ['orders:read'],
-        audience: 'https://api.internal/orders',
-        subjectClaims: ['sub' => 'subject-id'],
-    );
+    return match ($grant) {
+        'client_credentials' => new ClientCredentialsEvent(client: $client, scopes: ['orders:read']),
+        'token_exchange' => new TokenExchangeEvent(user: $user, client: $client, scopes: ['orders:read'], audience: 'https://api.internal/orders', subjectClaims: ['sub' => 'subject-id']),
+        'personal_access_token' => new PersonalAccessTokenEvent(user: $user, client: $client, scopes: ['openid']),
+        'authorization_code' => new AuthorizationCodeEvent(user: $user, client: $client, scopes: ['openid', 'email'], grantType: 'refresh_token'),
+        default => throw new LogicException('Unknown grant.'),
+    };
 }
 
-it('runs client-credentials triggers in registration order', function () {
+it('runs the triggers of a grant in registration order and stops after an explicit denial', function (string $grant) {
     $pipeline = new AccessTokenPipeline;
     $order = [];
 
-    $pipeline->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$order): void {
+    $pipeline->register($grant, function (ClientCredentialsEvent|TokenExchangeEvent|PersonalAccessTokenEvent|AuthorizationCodeEvent $event, AccessTokenApi $api) use (&$order): void {
         $order[] = 'first';
-        $api->setAccessTokenClaim('scope_count', count($event->scopes));
+        $api->setAccessTokenClaim('granted', $event->scopes);
     });
-    $pipeline->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$order): void {
+    $pipeline->register($grant, function (mixed $event, AccessTokenApi $api) use (&$order): void {
         $order[] = 'second';
-        $api->setAccessTokenClaim('client', $event->client->client_id);
+        $api->deny('blocked');
+    });
+    $pipeline->register($grant, function () use (&$order): void {
+        $order[] = 'third';
     });
 
-    $api = $pipeline->run('client_credentials', clientCredentialsPipelineEvent());
+    $api = $pipeline->run($grant, pipelineEvent($grant));
 
     expect($order)->toBe(['first', 'second'])
-        ->and($api->accessTokenClaims())->toBe([
-            'scope_count' => 1,
-            'client' => 'client-id',
-        ]);
-});
+        ->and($api->accessTokenClaims())->toBe(['granted' => pipelineEvent($grant)->scopes])
+        ->and($api->isDenied())->toBeTrue()
+        ->and($api->denyReason())->toBe('blocked');
+})->with(['client_credentials', 'token_exchange', 'personal_access_token', 'authorization_code']);
 
-it('stops client-credentials triggers after an explicit denial', function () {
+it('fails closed with a grant-specific reason and skips later triggers when one throws', function (string $grant) {
     $pipeline = new AccessTokenPipeline;
     $laterTriggerRan = false;
 
-    $pipeline->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api): void {
-        $api->deny('client_blocked');
-    });
-    $pipeline->register('client_credentials', function () use (&$laterTriggerRan): void {
-        $laterTriggerRan = true;
-    });
-
-    $api = $pipeline->run('client_credentials', clientCredentialsPipelineEvent());
-
-    expect($api->isDenied())->toBeTrue()
-        ->and($api->denyReason())->toBe('client_blocked')
-        ->and($laterTriggerRan)->toBeFalse();
-});
-
-it('fails closed and skips later client-credentials triggers when one throws', function () {
-    $pipeline = new AccessTokenPipeline;
-    $laterTriggerRan = false;
-
-    $pipeline->register('client_credentials', function (): void {
+    $pipeline->register($grant, function (): void {
         throw new RuntimeException('boom');
     });
-    $pipeline->register('client_credentials', function () use (&$laterTriggerRan): void {
+    $pipeline->register($grant, function () use (&$laterTriggerRan): void {
         $laterTriggerRan = true;
     });
 
-    $api = $pipeline->run('client_credentials', clientCredentialsPipelineEvent());
+    $api = $pipeline->run($grant, pipelineEvent($grant));
 
     expect($api->isDenied())->toBeTrue()
-        ->and($api->denyReason())->toBe('client_credentials_trigger_error')
+        ->and($api->denyReason())->toBe($grant.'_trigger_error')
         ->and($laterTriggerRan)->toBeFalse();
-});
+})->with(['client_credentials', 'token_exchange', 'personal_access_token', 'authorization_code']);
 
-it('runs token-exchange triggers independently with their event context', function () {
+it('runs each grant independently with its own event and seeded context', function () {
     $pipeline = new AccessTokenPipeline;
     $clientCredentialsTriggerRan = false;
 
@@ -103,190 +85,45 @@ it('runs token-exchange triggers independently with their event context', functi
             'user' => $event->user->getAuthIdentifier(),
             'audience' => $event->audience,
             'subject' => $event->subjectClaims['sub'],
-            'scopes' => $event->scopes,
+            'tenant_id' => $api->context('tenant_id'),
         ]);
     });
+    $pipeline->register('authorization_code', fn (AuthorizationCodeEvent $event, AccessTokenApi $api) => $api->setAccessTokenClaim('via', $event->grantType));
 
-    $api = $pipeline->run('token_exchange', tokenExchangePipelineEvent());
+    $exchange = $pipeline->run('token_exchange', pipelineEvent('token_exchange'), ['tenant_id' => 'acme']);
+    $code = $pipeline->run('authorization_code', pipelineEvent('authorization_code'));
 
     expect($clientCredentialsTriggerRan)->toBeFalse()
-        ->and($api->accessTokenClaims())->toBe([
-            'exchange' => [
-                'user' => 42,
-                'audience' => 'https://api.internal/orders',
-                'subject' => 'subject-id',
-                'scopes' => ['orders:read'],
-            ],
-        ]);
-});
-
-it('seeds token-exchange context before the first trigger runs', function () {
-    $pipeline = new AccessTokenPipeline;
-
-    $pipeline->register('token_exchange', function (TokenExchangeEvent $event, AccessTokenApi $api): void {
-        $api->setAccessTokenClaim('tenant_id', $api->context('tenant_id'));
-    });
-
-    $api = $pipeline->run('token_exchange', tokenExchangePipelineEvent(), ['tenant_id' => 'acme']);
-
-    expect($api->accessTokenClaims())->toBe(['tenant_id' => 'acme']);
-});
-
-it('fails closed with a token-exchange-specific reason when a trigger throws', function () {
-    $pipeline = new AccessTokenPipeline;
-
-    $pipeline->register('token_exchange', function (): void {
-        throw new RuntimeException('boom');
-    });
-
-    $api = $pipeline->run('token_exchange', tokenExchangePipelineEvent());
-
-    expect($api->isDenied())->toBeTrue()
-        ->and($api->denyReason())->toBe('token_exchange_trigger_error');
+        ->and($exchange->accessTokenClaims())->toBe(['exchange' => [
+            'user' => 42,
+            'audience' => 'https://api.internal/orders',
+            'subject' => 'subject-id',
+            'tenant_id' => 'acme',
+        ]])
+        ->and($code->accessTokenClaims())->toBe(['via' => 'refresh_token']);
 });
 
 it('returns a fresh access-token api for every invocation', function () {
     $pipeline = new AccessTokenPipeline;
 
-    $first = $pipeline->run('client_credentials', clientCredentialsPipelineEvent());
+    $first = $pipeline->run('client_credentials', pipelineEvent('client_credentials'));
     $first->deny('first_run_only');
     $first->setAccessTokenClaim('first', true);
 
-    $second = $pipeline->run('client_credentials', clientCredentialsPipelineEvent());
+    $second = $pipeline->run('client_credentials', pipelineEvent('client_credentials'));
 
     expect($second)->not->toBe($first)
         ->and($second->isDenied())->toBeFalse()
         ->and($second->accessTokenClaims())->toBe([]);
 });
 
-function personalAccessPipelineEvent(): PersonalAccessTokenEvent
-{
-    $user = new User(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-    $user->setAttribute($user->getKeyName(), 42);
+it('refuses protected access-token claim :dataset', function (string $claim) {
+    $api = new AccessTokenApi;
 
-    return new PersonalAccessTokenEvent(
-        user: $user,
-        client: (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'PAT client']),
-        scopes: ['openid'],
-    );
-}
+    $api->setAccessTokenClaim($claim, 'forged');
 
-function authorizationCodePipelineEvent(string $grantType = 'authorization_code'): AuthorizationCodeEvent
-{
-    $user = new User(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-    $user->setAttribute($user->getKeyName(), 42);
-
-    return new AuthorizationCodeEvent(
-        user: $user,
-        client: (new Client)->forceFill(['client_id' => 'client-id', 'name' => 'Interactive client']),
-        scopes: ['openid', 'email'],
-        grantType: $grantType,
-    );
-}
-
-it('runs personal-access triggers in registration order with their event context', function () {
-    $pipeline = new AccessTokenPipeline;
-    $order = [];
-
-    $pipeline->register('personal_access_token', function (PersonalAccessTokenEvent $event, AccessTokenApi $api) use (&$order): void {
-        $order[] = 'first';
-        $api->setAccessTokenClaim('user', $event->user->getAuthIdentifier());
-    });
-    $pipeline->register('personal_access_token', function (PersonalAccessTokenEvent $event, AccessTokenApi $api) use (&$order): void {
-        $order[] = 'second';
-        $api->setAccessTokenClaim('granted', $event->scopes);
-    });
-
-    $api = $pipeline->run('personal_access_token', personalAccessPipelineEvent());
-
-    expect($order)->toBe(['first', 'second'])
-        ->and($api->accessTokenClaims())->toBe([
-            'user' => 42,
-            'granted' => ['openid'],
-        ]);
-});
-
-it('fails closed with a personal-access-specific reason when a trigger throws', function () {
-    $pipeline = new AccessTokenPipeline;
-    $laterTriggerRan = false;
-
-    $pipeline->register('personal_access_token', function (): void {
-        throw new RuntimeException('boom');
-    });
-    $pipeline->register('personal_access_token', function () use (&$laterTriggerRan): void {
-        $laterTriggerRan = true;
-    });
-
-    $api = $pipeline->run('personal_access_token', personalAccessPipelineEvent());
-
-    expect($api->isDenied())->toBeTrue()
-        ->and($api->denyReason())->toBe('personal_access_token_trigger_error')
-        ->and($laterTriggerRan)->toBeFalse();
-});
-
-it('reports whether personal-access triggers are registered', function () {
-    $pipeline = new AccessTokenPipeline;
-
-    expect($pipeline->has('personal_access_token'))->toBeFalse();
-
-    $pipeline->register('personal_access_token', function (): void {});
-
-    expect($pipeline->has('personal_access_token'))->toBeTrue();
-});
-
-it('runs authorization-code triggers with the grant type on the event', function () {
-    $pipeline = new AccessTokenPipeline;
-
-    $pipeline->register('authorization_code', function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
-        $api->setAccessTokenClaim('via', $event->grantType);
-        $api->setAccessTokenClaim('granted', $event->scopes);
-    });
-
-    $api = $pipeline->run('authorization_code', authorizationCodePipelineEvent('refresh_token'));
-
-    expect($api->accessTokenClaims())->toBe([
-        'via' => 'refresh_token',
-        'granted' => ['openid', 'email'],
-    ]);
-});
-
-it('stops authorization-code triggers after an explicit denial', function () {
-    $pipeline = new AccessTokenPipeline;
-    $laterTriggerRan = false;
-
-    $pipeline->register('authorization_code', function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
-        $api->deny('user_blocked');
-    });
-    $pipeline->register('authorization_code', function () use (&$laterTriggerRan): void {
-        $laterTriggerRan = true;
-    });
-
-    $api = $pipeline->run('authorization_code', authorizationCodePipelineEvent());
-
-    expect($api->isDenied())->toBeTrue()
-        ->and($api->denyReason())->toBe('user_blocked')
-        ->and($laterTriggerRan)->toBeFalse();
-});
-
-it('fails closed with an authorization-code-specific reason when a trigger throws', function () {
-    $pipeline = new AccessTokenPipeline;
-
-    $pipeline->register('authorization_code', function (): void {
-        throw new RuntimeException('boom');
-    });
-
-    $api = $pipeline->run('authorization_code', authorizationCodePipelineEvent());
-
-    expect($api->isDenied())->toBeTrue()
-        ->and($api->denyReason())->toBe('authorization_code_trigger_error');
-});
-
-it('reports whether authorization-code triggers are registered', function () {
-    $pipeline = new AccessTokenPipeline;
-
-    expect($pipeline->has('authorization_code'))->toBeFalse();
-
-    $pipeline->register('authorization_code', function (): void {});
-
-    expect($pipeline->has('authorization_code'))->toBeTrue();
-});
+    expect($api->accessTokenClaims())->toBe([]);
+})->with([
+    'iss', 'sub', 'aud', 'exp', 'iat', 'nbf', 'jti', 'nonce', 'at_hash', 'c_hash', 'auth_time', 'azp', 'acr', 'amr', 'sid',
+    'client_id', 'scope', 'scopes', 'cnf', 'act',
+]);

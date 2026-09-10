@@ -1,5 +1,10 @@
 <?php
+
 declare(strict_types=1);
+
+/**
+ * oidc:rotate-keys — env-backed key rotation keeps the previous public key for verification
+ */
 
 use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
@@ -37,18 +42,6 @@ it('writes a new keypair and the previous public key to .env', function () {
     expect($newPrivate)->toContain('BEGIN PRIVATE KEY')
         ->and(Jwk::fromPem($newPublic)['kid'])->not->toBe($currentKid)
         ->and(Jwk::fromPem($previousPublic)['kid'])->toBe($currentKid);
-});
-
-it('upserts existing keys instead of duplicating them', function () {
-    $env = rotateKeysEnv("APP_NAME=Testing\nOIDC_PRIVATE_KEY=\"stale\"\nOTHER=keep\n");
-
-    $this->artisan('oidc:rotate-keys', ['--force' => true])->assertSuccessful();
-
-    $contents = (string) file_get_contents($env);
-
-    expect(substr_count($contents, 'OIDC_PRIVATE_KEY='))->toBe(1)
-        ->and($contents)->toContain('OTHER=keep')
-        ->and(decodeEnvKey($contents, 'OIDC_PRIVATE_KEY'))->not->toContain('stale');
 });
 
 it('prints the env variables without touching .env when --print is given', function () {

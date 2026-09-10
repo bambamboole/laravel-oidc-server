@@ -2,26 +2,12 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Authentication\PasswordConfirmation;
-use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordConfirmationView;
-use Illuminate\Http\Request;
+/**
+ * Password confirmation gate for sensitive account actions: confirm, status endpoint, timeout
+ */
+
 use Illuminate\Support\Facades\Hash;
-use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
-
-it('renders the confirm password view through the package seam', function () {
-    app()->bind(PasswordConfirmationView::class, fn () => new class implements PasswordConfirmationView
-    {
-        public function respond(Request $request): Response
-        {
-            return response('confirm-password-view');
-        }
-    });
-
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
-
-    $this->actingAs($user, 'identity')->get('/realms/default/auth/user/confirm-password')->assertOk()->assertSee('confirm-password-view');
-});
 
 it('confirms the password and records the confirmation timestamp', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
@@ -72,19 +58,4 @@ it('treats an elapsed confirmation as unconfirmed', function () {
         ->getJson(route('identity.password.confirmation'))
         ->assertOk()
         ->assertJson(['confirmed' => false]);
-});
-
-it('confirms and reports recency through the PasswordConfirmation helper', function () {
-    config()->set('auth.password_timeout', 900);
-    $session = session()->driver();
-
-    expect(PasswordConfirmation::confirmedRecently($session))->toBeFalse();
-
-    PasswordConfirmation::confirm($session);
-
-    expect(PasswordConfirmation::confirmedRecently($session))->toBeTrue();
-
-    $session->put('auth.password_confirmed_at', time() - 1000);
-
-    expect(PasswordConfirmation::confirmedRecently($session))->toBeFalse();
 });

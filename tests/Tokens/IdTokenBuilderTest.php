@@ -2,30 +2,25 @@
 
 declare(strict_types=1);
 
+/**
+ * OpenID Connect Core 1.0 §2 (id_token claims, acr/amr are the provider's), §3.1.3.6 (at_hash), RFC 8176 (amr)
+ */
+
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
-use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
-use Lcobucci\JWT\Token\Parser;
-use Lcobucci\JWT\UnencryptedToken;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
 
-function parseUnencrypted(string $jwt): UnencryptedToken
-{
-    $token = (new Parser(new JoseEncoder))->parse($jwt);
-
-    if (! $token instanceof UnencryptedToken) {
-        throw new RuntimeException('Expected an unencrypted token.');
-    }
-
-    return $token;
-}
+beforeEach(function () {
+    config(['app.url' => 'https://op.test']);
+    $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
+});
 
 /**
  * @param  list<string>  $amr
@@ -44,39 +39,34 @@ function makeIdTokenRequest(User $user, ?string $nonce = null, ?int $authTime = 
 }
 
 it('builds a signed id_token with the required claims', function () {
-    config(['app.url' => 'https://op.test']);
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
-    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, nonce: 'n0nce', authTime: 1700000000));
-
-    $parsed = parseUnencrypted($jwt);
+    $parsed = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user, nonce: 'n0nce', authTime: 1700000000)));
+    $expectedAtHash = rtrim(strtr(base64_encode(substr(hash('sha256', 'access-token-jwt', true), 0, 16)), '+/', '-_'), '=');
 
     expect($parsed->headers()->get('alg'))->toBe('RS256')
         ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(signingPublicKey())['kid'])
         ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
-        ->and($parsed->claims()->get('sub'))->toBe((string) $user->id)
+        ->and($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
         ->and($parsed->claims()->get('aud'))->toBe(['client-uuid'])
         ->and($parsed->claims()->get('azp'))->toBe('client-uuid')
         ->and($parsed->claims()->get('nonce'))->toBe('n0nce')
         ->and($parsed->claims()->get('auth_time'))->toBe(1700000000)
         ->and($parsed->claims()->get('email'))->toBe('m@example.com')
         ->and($parsed->claims()->get('email_verified'))->toBeTrue()
-        ->and($parsed->claims()->has('name'))->toBeFalse();
-
-    $accessTokenJwt = 'access-token-jwt';
-    $expectedAtHash = rtrim(strtr(base64_encode(substr(hash('sha256', $accessTokenJwt, true), 0, 16)), '+/', '-_'), '=');
-    expect($parsed->claims()->get('at_hash'))->toBe($expectedAtHash);
-
-    $valid = (new Validator)->validate($parsed, new SignedWith(
-        new Sha256, InMemory::plainText(signingPublicKey()),
-    ));
-    expect($valid)->toBeTrue();
+        ->and($parsed->claims()->has('name'))->toBeFalse()
+        ->and($parsed->claims()->get('at_hash'))->toBe($expectedAtHash)
+        ->and((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
 });
 
-// OIDC Core §2 — the protocol claims are the provider's
-it('drops protocol claims a claims resolver tries to emit', function () {
-    config(['app.url' => 'https://op.test']);
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+it('omits nonce, auth_time, amr and acr when they are not supplied', function () {
+    $parsed = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user)));
 
+    expect($parsed->claims()->has('nonce'))->toBeFalse()
+        ->and($parsed->claims()->has('auth_time'))->toBeFalse()
+        ->and($parsed->claims()->has('amr'))->toBeFalse()
+        ->and($parsed->claims()->has('acr'))->toBeFalse();
+});
+
+it('drops protocol claims a claims resolver tries to emit', function () {
     app()->instance(ClaimsResolver::class, new class implements ClaimsResolver
     {
         public function resolve(ClaimsRequest $request): array
@@ -85,60 +75,21 @@ it('drops protocol claims a claims resolver tries to emit', function () {
         }
     });
 
-    $parsed = parseUnencrypted(app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, nonce: 'n0nce')));
+    $parsed = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user, nonce: 'n0nce')));
 
-    expect($parsed->claims()->get('sub'))->toBe((string) $user->id)
+    expect($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
         ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
         ->and($parsed->claims()->get('aud'))->toBe(['client-uuid'])
         ->and($parsed->claims()->get('nonce'))->toBe('n0nce')
         ->and($parsed->claims()->get('tenant'))->toBe('acme');
 });
 
-it('omits nonce and auth_time when not provided', function () {
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+it('emits amr and the acr the realm resolver derives from it', function () {
+    $single = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user, amr: ['pwd'])));
+    $multi = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user, amr: ['pwd', 'otp'])));
 
-    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user));
-
-    $parsed = parseUnencrypted($jwt);
-    expect($parsed->claims()->has('nonce'))->toBeFalse()
-        ->and($parsed->claims()->has('auth_time'))->toBeFalse();
-});
-
-it('emits amr and derived acr when methods are supplied', function () {
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-
-    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, amr: ['pwd', 'otp']));
-
-    $parsed = parseUnencrypted($jwt);
-    expect($parsed->claims()->get('amr'))->toBe(['pwd', 'otp'])
-        ->and($parsed->claims()->get('acr'))->toBe('2');
-});
-
-it('emits acr "1" for a single method', function () {
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-
-    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, amr: ['pwd']));
-
-    expect(parseUnencrypted($jwt)->claims()->get('acr'))->toBe('1');
-});
-
-it('emits the acr value the realm maps the methods to', function () {
-    config(['oidc.auth.acr_values' => ['single_factor' => 'urn:example:loa:1', 'multi_factor' => 'urn:example:loa:2']]);
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-
-    $single = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, amr: ['pwd']));
-    $multi = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, amr: ['pwd', 'otp']));
-
-    expect(parseUnencrypted($single)->claims()->get('acr'))->toBe('urn:example:loa:1')
-        ->and(parseUnencrypted($multi)->claims()->get('acr'))->toBe('urn:example:loa:2');
-});
-
-it('omits amr and acr when no methods are supplied', function () {
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-
-    $jwt = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user));
-
-    $parsed = parseUnencrypted($jwt);
-    expect($parsed->claims()->has('amr'))->toBeFalse()
-        ->and($parsed->claims()->has('acr'))->toBeFalse();
+    expect($single->claims()->get('amr'))->toBe(['pwd'])
+        ->and($single->claims()->get('acr'))->toBe('1')
+        ->and($multi->claims()->get('amr'))->toBe(['pwd', 'otp'])
+        ->and($multi->claims()->get('acr'))->toBe('2');
 });

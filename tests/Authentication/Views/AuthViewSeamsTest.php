@@ -2,18 +2,35 @@
 
 declare(strict_types=1);
 
+/**
+ * Every auth page renders through a bindable view contract, so a consumer supplies its own UI without touching routes
+ */
+
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginPrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordConfirmationView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
+use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengePrompt;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
-it('renders account flow views through package seams', function () {
+it('renders every auth page through its package view seam', function () {
+    app()->bind(LoginView::class, fn () => new class implements LoginView
+    {
+        public function respond(LoginPrompt $prompt, Request $request): Response
+        {
+            return response('login-view');
+        }
+    });
     app()->bind(RegisterView::class, fn () => new class implements RegisterView
     {
         public function respond(Request $request): Response
@@ -42,7 +59,22 @@ it('renders account flow views through package seams', function () {
             return response('verify-email-view');
         }
     });
+    app()->bind(PasswordConfirmationView::class, fn () => new class implements PasswordConfirmationView
+    {
+        public function respond(Request $request): Response
+        {
+            return response('confirm-password-view');
+        }
+    });
+    app()->bind(TwoFactorChallengeView::class, fn () => new class implements TwoFactorChallengeView
+    {
+        public function respond(TwoFactorChallengePrompt $prompt, Request $request): Response
+        {
+            return response('two-factor-view');
+        }
+    });
 
+    $this->get('/realms/default/auth/login')->assertOk()->assertSee('login-view');
     $this->get('/realms/default/auth/register')->assertOk()->assertSee('register-view');
     $this->get('/realms/default/auth/forgot-password')->assertOk()->assertSee('forgot-password-view');
     $this->get('/realms/default/auth/reset-password/reset-token?email=m@example.com')->assertOk()->assertSee('reset-password-view:reset-token');
@@ -50,4 +82,14 @@ it('renders account flow views through package seams', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
     $this->actingAs($user, 'identity')->get('/realms/default/auth/email/verify')->assertOk()->assertSee('verify-email-view');
+    $this->actingAs($user, 'identity')->get('/realms/default/auth/user/confirm-password')->assertOk()->assertSee('confirm-password-view');
+
+    auth('identity')->logout();
+    $factor = app(TotpFactorProvider::class)->enroll($user);
+    $factor->forceFill(['confirmed_at' => now()])->save();
+
+    $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])
+        ->get(route('identity.two-factor.login'))
+        ->assertOk()
+        ->assertSee('two-factor-view');
 });

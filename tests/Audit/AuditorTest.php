@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Auditor contract: sink + event dispatch, request enrichment, sid resolution, disabled switch, fail-open on sink errors
+ */
+
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
@@ -10,28 +14,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 
-it('records events through the configured sink', function () {
+it('records events through the configured sink and dispatches them to listeners', function () {
     $sink = fakeAudit();
+    Event::fake([AuditEvent::class]);
 
-    app(Auditor::class)->log(AuditEventType::LoginSucceeded, userId: '42', context: ['method' => 'pwd']);
+    app(Auditor::class)->log(AuditEventType::LoginSucceeded, userId: '42', clientId: 'client-1', context: ['method' => 'pwd']);
 
     $event = $sink->assertRecorded(AuditEventType::LoginSucceeded);
 
     expect($event->userId)->toBe('42')
         ->and($event->context)->toBe(['method' => 'pwd']);
-});
 
-it('dispatches the audit event to listeners', function () {
-    fakeAudit();
-    Event::fake([AuditEvent::class]);
-
-    app(Auditor::class)->log(AuditEventType::TokenIssued, clientId: 'client-1');
-
-    Event::assertDispatched(
-        AuditEvent::class,
-        fn (AuditEvent $event): bool => $event->type === AuditEventType::TokenIssued
-            && $event->clientId === 'client-1',
-    );
+    Event::assertDispatched(AuditEvent::class, fn (AuditEvent $event): bool => $event->type === AuditEventType::LoginSucceeded && $event->clientId === 'client-1');
 });
 
 it('short-circuits when audit logging is disabled', function () {
@@ -60,22 +54,15 @@ it('enriches events with request ip and truncated user agent', function () {
         ->and($event->userAgent)->toBe(str_repeat('a', 255));
 });
 
-it('falls back to the session sid when none is given', function () {
+it('falls back to the session sid unless one is passed explicitly', function () {
     $sink = fakeAudit();
     $this->session(['oidc.sid' => 'sid-123']);
 
     app(Auditor::class)->log(AuditEventType::Logout);
-
-    expect($sink->assertRecorded(AuditEventType::Logout)->sid)->toBe('sid-123');
-});
-
-it('prefers an explicitly passed sid over the session sid', function () {
-    $sink = fakeAudit();
-    $this->session(['oidc.sid' => 'sid-123']);
-
     app(Auditor::class)->log(AuditEventType::TokenIssued, sid: 'sid-456');
 
-    expect($sink->assertRecorded(AuditEventType::TokenIssued)->sid)->toBe('sid-456');
+    expect($sink->assertRecorded(AuditEventType::Logout)->sid)->toBe('sid-123')
+        ->and($sink->assertRecorded(AuditEventType::TokenIssued)->sid)->toBe('sid-456');
 });
 
 it('reports and swallows sink failures', function () {

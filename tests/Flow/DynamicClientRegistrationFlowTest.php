@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 /**
- * RFC 7591 registration feeding the OAuth 2.1 §4.1 authorization code grant
- * with RFC 7636 PKCE (S256) — the discovery → register → authorize → token
- * chain MCP clients drive.
+ * RFC 7591 registration feeding the OAuth 2.1 §4.1 authorization code grant with RFC 7636 PKCE:
+ * discovery → register → authorize → token → userinfo
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
@@ -18,21 +17,21 @@ it('lets a dynamically registered client complete the PKCE authorization code fl
     config(['oidc.clients.registration.enabled' => true, 'oidc.clients.registration.default_scopes' => []]);
     reloadOidcRoutes();
 
-    $registration = $this->postJson('/realms/default/oauth/register', [
-        'client_name' => 'MCP Client',
-        'redirect_uris' => ['https://claude.ai/api/mcp/auth_callback'],
+    $registrationEndpoint = $this->getJson('/realms/default/.well-known/openid-configuration')
+        ->assertOk()
+        ->json('registration_endpoint');
+
+    $registration = $this->postJson($registrationEndpoint, [
+        'client_name' => 'Agent',
+        'redirect_uris' => ['https://agent.test/callback'],
     ])->assertCreated();
 
     $client = Client::query()->whereKey($registration->json('client_id'))->firstOrFail();
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 
-    $result = $this->authorizeAndApprove($user, $client, 'openid', [
-        'redirect_uri' => 'https://claude.ai/api/mcp/auth_callback',
-    ]);
+    $result = $this->authorizeAndApprove($user, $client, 'openid', ['redirect_uri' => 'https://agent.test/callback']);
 
     $result->response->assertOk();
 
-    expect($result->accessToken)->not->toBeNull();
-
-    $this->withToken($result->accessToken)->getJson('/realms/default/oauth/userinfo')->assertOk();
+    $this->withToken((string) $result->accessToken)->getJson('/realms/default/oauth/userinfo')->assertOk();
 });

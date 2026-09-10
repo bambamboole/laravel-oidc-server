@@ -12,7 +12,7 @@ parameters:
         # InteractsWithOidc ships for consumers to `use` in their own test suites; it is never
         # composed via a literal `use TraitName;` statement inside this repo (only via Pest's dynamic
         # uses() in tests/Testing/InteractsWithOidcTest.php and the tests/Flow, tests/Protocol,
-        # tests/Audit, tests/Clients and tests/Consents files), so PHPStan's static trait-usage scanner cannot see it
+        # tests/Audit, tests/Clients, tests/Consents and tests/Credentials files), so PHPStan's static trait-usage scanner cannot see it
         # being applied. It is exercised by the tests in tests/Testing/InteractsWithOidcTest.php.
         -
             identifier: trait.unused
@@ -41,6 +41,7 @@ parameters:
             identifier: method.notFound
             message: '#Call to an undefined method Bambamboole\\LaravelOidc\\Server\\Tests\\TestCase::(actingAsIdentity|authorizeAndApprove)\(\)#'
             paths:
-                - tests/Consents/ConsentPersistenceTest.php
+                - tests/Consents/ConsentRepositoryTest.php
                 - tests/Flow/AuthorizationCodeFlowTest.php
+                - tests/Flow/RefreshTokenFlowTest.php
                 - tests/Protocol/TokenEndpointTest.php

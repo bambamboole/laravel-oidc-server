@@ -17,8 +17,6 @@ use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
-    // Pin the owning guard to the guard actingAs() authenticates against
-    // (see SessionTokenGuardTest for the default resolution).
     config(['oidc.session.token.guard' => 'web']);
     $this->appClient = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
     $this->appClient->forceFill(['allowed_exchange_audiences' => ['https://api.orders.test']])->save();

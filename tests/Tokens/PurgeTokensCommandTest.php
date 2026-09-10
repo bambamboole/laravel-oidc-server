@@ -13,13 +13,13 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 });
 
-function purgeTokenFixture(string $id, bool $revoked, ?string $expiresAt, string $userId, string $clientId): AccessToken
+function purgeTokenFixture(mixed $test, string $id, bool $revoked, string $expiresAt): AccessToken
 {
     $token = new AccessToken;
     $token->forceFill([
         'id' => $id,
-        'user_id' => $userId,
-        'client_id' => $clientId,
+        'user_id' => (string) $test->user->id,
+        'client_id' => (string) $test->client->id,
         'scopes' => ['openid'],
         'revoked' => $revoked,
         'expires_at' => $expiresAt,
@@ -28,27 +28,20 @@ function purgeTokenFixture(string $id, bool $revoked, ?string $expiresAt, string
     return $token;
 }
 
-it('keeps live tokens and removes revoked and long-expired ones', function () {
-    purgeTokenFixture('live', false, now()->addHour()->toDateTimeString(), (string) $this->user->id, (string) $this->client->id);
-    purgeTokenFixture('revoked', true, now()->addHour()->toDateTimeString(), (string) $this->user->id, (string) $this->client->id);
-    purgeTokenFixture('expired', false, now()->subWeeks(2)->toDateTimeString(), (string) $this->user->id, (string) $this->client->id);
+it('keeps live and recently expired tokens and removes revoked and long-expired ones', function () {
+    purgeTokenFixture($this, 'live', false, now()->addHour()->toDateTimeString());
+    purgeTokenFixture($this, 'recently-expired', false, now()->subHour()->toDateTimeString());
+    purgeTokenFixture($this, 'revoked', true, now()->addHour()->toDateTimeString());
+    purgeTokenFixture($this, 'expired', false, now()->subWeeks(2)->toDateTimeString());
 
     $this->artisan('oidc:purge')->assertSuccessful();
 
-    expect(AccessToken::query()->pluck('id')->all())->toBe(['live']);
-});
-
-it('keeps records that expired inside the retention window', function () {
-    purgeTokenFixture('recently-expired', false, now()->subHour()->toDateTimeString(), (string) $this->user->id, (string) $this->client->id);
-
-    $this->artisan('oidc:purge')->assertSuccessful();
-
-    expect(AccessToken::query()->whereKey('recently-expired')->exists())->toBeTrue();
+    expect(AccessToken::query()->pluck('id')->all())->toEqualCanonicalizing(['live', 'recently-expired']);
 });
 
 it('purges only revoked records when asked', function () {
-    purgeTokenFixture('revoked', true, now()->addHour()->toDateTimeString(), (string) $this->user->id, (string) $this->client->id);
-    purgeTokenFixture('expired', false, now()->subWeeks(2)->toDateTimeString(), (string) $this->user->id, (string) $this->client->id);
+    purgeTokenFixture($this, 'revoked', true, now()->addHour()->toDateTimeString());
+    purgeTokenFixture($this, 'expired', false, now()->subWeeks(2)->toDateTimeString());
 
     $this->artisan('oidc:purge', ['--revoked' => true])->assertSuccessful();
 
@@ -56,7 +49,7 @@ it('purges only revoked records when asked', function () {
 });
 
 it('purges refresh tokens and authorization codes too', function () {
-    purgeTokenFixture('access', false, now()->subWeeks(2)->toDateTimeString(), (string) $this->user->id, (string) $this->client->id);
+    purgeTokenFixture($this, 'access', false, now()->subWeeks(2)->toDateTimeString());
 
     (new RefreshToken)->forceFill([
         'id' => 'refresh',

@@ -2,13 +2,17 @@
 
 declare(strict_types=1);
 
+/**
+ * Social account resolution: existing link, verified-email linking, just-in-time provisioning, token storage
+ */
+
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
-use Illuminate\Auth\GenericUser;
 use Illuminate\Auth\SessionGuard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Workbench\App\Models\User;
 
@@ -42,69 +46,61 @@ function userProvider(): UserProvider
     return $guard->getProvider();
 }
 
-it('resolves an already linked account and refreshes its tokens', function () {
+it('resolves an already linked account, refreshes its tokens and keeps them encrypted at rest', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $manager = app(SocialAccountManager::class);
     $manager->link($user, 'google', socialUser(['accessToken' => 'old-at']));
 
     $resolved = $manager->resolveUser('google', socialUser(['accessToken' => 'new-at']), userProvider());
+    $stored = DB::table('oidc_social_accounts')->sole();
 
-    expect($resolved->is($user))->toBeTrue()
+    expect($resolved?->is($user))->toBeTrue()
         ->and(SocialAccount::query()->count())->toBe(1)
-        ->and(SocialAccount::query()->first()->access_token)->toBe('new-at');
+        ->and(SocialAccount::query()->sole()->access_token)->toBe('new-at')
+        ->and($stored->access_token)->not->toContain('new-at')
+        ->and($stored->refresh_token)->not->toContain('rt-1');
 });
 
-it('links by verified email when enabled', function () {
+it('links by verified email only while enabled', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
+    $manager = app(SocialAccountManager::class);
 
-    $resolved = app(SocialAccountManager::class)->resolveUser('google', socialUser(), userProvider());
+    expect($manager->resolveUser('google', socialUser(['emailVerified' => false]), userProvider()))->toBeNull();
 
-    expect($resolved->is($user))->toBeTrue()
+    config()->set('oidc.social.link_by_verified_email', false);
+
+    expect($manager->resolveUser('google', socialUser(), userProvider()))->toBeNull();
+
+    config()->set('oidc.social.link_by_verified_email', true);
+
+    expect($manager->resolveUser('google', socialUser(), userProvider())?->is($user))->toBeTrue()
         ->and(SocialAccount::query()->where('provider', 'google')->where('provider_user_id', 'g-123')->exists())->toBeTrue();
 });
 
-it('does not link by unverified email', function () {
-    User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
+it('provisions a new user through the registered action only while auto-provisioning is enabled', function () {
+    $manager = app(SocialAccountManager::class);
 
-    $resolved = app(SocialAccountManager::class)->resolveUser('google', socialUser(['emailVerified' => false]), userProvider());
+    expect($manager->resolveUser('google', socialUser(), userProvider()))->toBeNull();
 
-    expect($resolved)->toBeNull();
-});
-
-it('does not link by email when disabled', function () {
-    config()->set('oidc.social.link_by_verified_email', false);
-    User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
-
-    expect(app(SocialAccountManager::class)->resolveUser('google', socialUser(), userProvider()))->toBeNull();
-});
-
-it('provisions a new user via the registered action', function () {
     createUsersFromSocialUsing(fn (SocialUser $socialUser, string $provider): User => User::create([
         'name' => $socialUser->name ?? 'Unknown',
         'email' => $socialUser->email,
         'password' => Str::random(40),
     ]));
 
-    $resolved = app(SocialAccountManager::class)->resolveUser('google', socialUser(), userProvider());
+    config()->set('oidc.social.auto_provision', false);
 
-    expect($resolved)->toBeInstanceOf(User::class)
+    expect($manager->resolveUser('google', socialUser(), userProvider()))->toBeNull();
+
+    config()->set('oidc.social.auto_provision', true);
+
+    expect($manager->resolveUser('google', socialUser(), userProvider()))->toBeInstanceOf(User::class)
         ->and(SocialAccount::query()->count())->toBe(1);
 
     $this->assertDatabaseHas('users', ['email' => 'm@example.com']);
 });
 
-it('returns null when provisioning is disabled', function () {
-    config()->set('oidc.social.auto_provision', false);
-    createUsersFromSocialUsing(fn (): User => throw new LogicException('must not be called'));
-
-    expect(app(SocialAccountManager::class)->resolveUser('google', socialUser(), userProvider()))->toBeNull();
-});
-
-it('returns null when no provisioning action is registered', function () {
-    expect(app(SocialAccountManager::class)->resolveUser('google', socialUser(), userProvider()))->toBeNull();
-});
-
-it('preserves profile fields and refresh token when a re-login omits them', function () {
+it('preserves profile fields and the refresh token when a re-login omits them', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $manager = app(SocialAccountManager::class);
     $manager->link($user, 'apple', socialUser([
@@ -114,7 +110,6 @@ it('preserves profile fields and refresh token when a re-login omits them', func
         'refreshToken' => 'rt-1',
     ]));
 
-    // Apple only delivers the name on first consent; a later login sends nulls.
     $manager->resolveUser('apple', socialUser([
         'name' => null,
         'nickname' => null,
@@ -131,10 +126,6 @@ it('preserves profile fields and refresh token when a re-login omits them', func
         ->and($account->refresh_token)->toBe('rt-1')
         ->and($account->access_token)->toBe('at-2');
 });
-
-it('rejects linking a non-eloquent authenticatable', function () {
-    app(SocialAccountManager::class)->link(new GenericUser(['id' => 1]), 'google', socialUser());
-})->throws(RuntimeException::class, 'Social accounts require an Eloquent user model.');
 
 it('re-associates an existing link instead of duplicating it', function () {
     $userA = User::create(['name' => 'A', 'email' => 'a@example.com', 'password' => 'secret']);

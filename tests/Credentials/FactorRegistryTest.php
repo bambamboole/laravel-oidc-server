@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Factor provider registry: provider-keyed registration, enrollment aggregation, configured challenge providers, options
+ */
+
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorChallenge;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
@@ -78,22 +82,14 @@ it('reports whether a user has challengeable factors', function () {
     expect($registry->hasChallengeableFactors($user))->toBeTrue();
 });
 
-it('collects enrollment options across providers in display order', function () {
-    $options = app(FactorRegistry::class)->enrollmentOptions();
+it('collects enrollment options across providers in display order, leaving backup providers out', function () {
+    $registry = app(FactorRegistry::class);
+    $options = $registry->enrollmentOptions();
 
     expect(array_column($options, 'id'))->toBe(['passkey', 'security_key', 'totp'])
-        ->and(array_column($options, 'sortOrder'))->toBe([10, 20, 30]);
-});
-
-it('leaves backup providers out of the enrollment options', function () {
-    expect(array_column(app(FactorRegistry::class)->enrollmentOptions(), 'providerKey'))
-        ->not->toContain('recovery_code');
-});
-
-it('resolves an enrollment option by id', function () {
-    $registry = app(FactorRegistry::class);
-
-    expect($registry->enrollmentOption('security_key')?->providerKey)->toBe('webauthn')
+        ->and(array_column($options, 'sortOrder'))->toBe([10, 20, 30])
+        ->and(array_column($options, 'providerKey'))->not->toContain('recovery_code')
+        ->and($registry->enrollmentOption('security_key')?->providerKey)->toBe('webauthn')
         ->and($registry->enrollmentOption('nope'))->toBeNull();
 });
 

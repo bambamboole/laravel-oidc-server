@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
@@ -15,7 +16,6 @@ use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
 use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
-use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckAudience;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -134,6 +134,7 @@ function fakeAudit(): FakeAuditSink
     return $sink;
 }
 
+/** Parses any JWS the package issues (access, id or logout token) without validating it. */
 function parseAccessToken(string $jwt): UnencryptedToken
 {
     $token = (new Parser(new JoseEncoder))->parse($jwt);
@@ -266,11 +267,6 @@ function ttlUntil(DateTimeImmutable $expiresAt): DateInterval
 }
 
 /**
- * Mints a plain JWT (default header typ=JWT, as an id_token would carry) and persists a
- * matching access-token row. CheckAudience validates the signature and persisted row but
- * still rejects it on its typ guard, since the header typ is not at+jwt.
- */
-/**
  * Binds the consent view to a closure receiving the same parameter bag the
  * authorize controller hands the view seam.
  */
@@ -302,6 +298,10 @@ function signingPrivateKey(): string
     return app(SigningKeys::class)->signingKey()->privateKey();
 }
 
+/**
+ * Mints a plain JWT (default header typ=JWT, as an id_token would carry) signed with the realm key
+ * and persists a matching access-token row, so only the typ guard can reject it as a bearer.
+ */
 function persistedIdTokenAsBearer(mixed $test): string
 {
     $tokenId = Str::random(80);

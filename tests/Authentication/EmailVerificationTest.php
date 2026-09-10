@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Email verification: signed verification URL, notice redirect for verified users, resend notification under the realm prefix
+ */
+
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationView;
 use Illuminate\Auth\Events\Verified;
@@ -12,20 +16,6 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
-
-it('renders the verification notice for an unverified user', function () {
-    app()->bind(EmailVerificationView::class, fn () => new class implements EmailVerificationView
-    {
-        public function respond(EmailVerificationPrompt $prompt, Request $request): Response
-        {
-            return response('verify-email-view');
-        }
-    });
-
-    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
-
-    $this->actingAs($user, 'identity')->get('/realms/default/auth/email/verify')->assertOk()->assertSee('verify-email-view');
-});
 
 it('redirects verified users away from the verification notice', function () {
     app()->bind(EmailVerificationView::class, fn () => new class implements EmailVerificationView

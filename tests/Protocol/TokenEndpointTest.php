@@ -3,7 +3,8 @@
 declare(strict_types=1);
 
 /**
- * RFC 6749 §3.2 / §5.2 (token endpoint, error responses); OAuth 2.1 §4.1.3 (code redemption), §4.3.1 (refresh rotation); RFC 7636 §4.6
+ * RFC 6749 §2.3.1 (client authentication), §3.2 / §5.1 / §5.2 (token endpoint, responses, errors);
+ * OAuth 2.1 §1.5 (no password grant), §4.1.3 (code redemption, replay); RFC 7636 §4.6
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
@@ -30,13 +31,11 @@ beforeEach(function () {
 
 /**
  * Drives authorize + approve and returns the code from the redirect.
- *
- * @param  array<string, mixed>  $overrides
  */
-function obtainAuthorizationCode(TestCase $test, PkcePair $pkce, array $overrides = []): string
+function obtainAuthorizationCode(TestCase $test, PkcePair $pkce): string
 {
     $view = $test->actingAsIdentity($test->user, authTime: time() - 60)
-        ->get('/realms/default/oauth/authorize?'.http_build_query(array_merge([
+        ->get('/realms/default/oauth/authorize?'.http_build_query([
             'client_id' => $test->client->id,
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',
@@ -44,7 +43,7 @@ function obtainAuthorizationCode(TestCase $test, PkcePair $pkce, array $override
             'state' => 'st4te',
             'code_challenge' => $pkce->challenge,
             'code_challenge_method' => 'S256',
-        ], $overrides)))
+        ]))
         ->assertOk();
 
     $approve = $test->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')])->assertRedirect();
@@ -69,22 +68,19 @@ function codeRedemption(TestCase $test, string $code, PkcePair $pkce, array $ove
     ], $overrides);
 }
 
-// RFC 6749 §5.2
-it('rejects a token request without grant_type', function () {
-    $this->post('/realms/default/oauth/token', [
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-    ])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
-});
-
-it('rejects an unknown grant_type before authenticating the client', function () {
-    $this->post('/realms/default/oauth/token', ['grant_type' => 'urn:example:nope'])
+// RFC 6749 §5.2 / OAuth 2.1 §1.5
+it('rejects a missing, unknown or removed grant_type before authenticating the client', function (?string $grantType, string $error) {
+    $this->post('/realms/default/oauth/token', array_filter(['grant_type' => $grantType]))
         ->assertStatus(400)
-        ->assertJsonPath('error', 'unsupported_grant_type');
-});
+        ->assertJsonPath('error', $error);
+})->with([
+    'missing' => [null, 'invalid_request'],
+    'unknown' => ['urn:example:nope', 'unsupported_grant_type'],
+    'password grant' => ['password', 'unsupported_grant_type'],
+]);
 
 // RFC 6749 §2.3.1 (client_secret_basic)
-it('authenticates a client through HTTP Basic credentials', function () {
+it('authenticates a client through HTTP Basic credentials and forbids caching the response', function () {
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
     $client->forceFill(['token_endpoint_auth_method' => TokenEndpointAuthMethod::ClientSecretBasic])->save();
 
@@ -117,14 +113,12 @@ it('rejects a client that authenticates with a method it is not registered for',
         ->assertJsonPath('error', 'invalid_client');
 });
 
-it('rejects a token request without client authentication', function () {
+it('rejects missing or wrong client credentials with a Basic challenge', function () {
+    $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+
     $this->post('/realms/default/oauth/token', ['grant_type' => 'client_credentials'])
         ->assertStatus(401)
         ->assertJsonPath('error', 'invalid_client');
-});
-
-it('rejects a wrong client secret with a Basic challenge', function () {
-    $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
     $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
@@ -155,8 +149,18 @@ it('rejects a client that is not registered for the grant', function () {
     ])->assertStatus(400)->assertJsonPath('error', 'unauthorized_client');
 });
 
+// RFC 6749 §5.1
+it('names the granted scope in the token response', function () {
+    $pkce = $this->pkce();
+    $code = obtainAuthorizationCode($this, $pkce);
+
+    $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce))
+        ->assertOk()
+        ->assertJsonPath('scope', 'openid email');
+});
+
 // OAuth 2.1 §4.1.3 — a replayed code revokes everything it produced
-it('revokes the tokens a replayed authorization code produced', function () {
+it('rejects a replayed code and revokes the tokens it produced', function () {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
 
@@ -179,11 +183,15 @@ it('revokes the tokens a replayed authorization code produced', function () {
     ])->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 });
 
-// A used code presented by another client is that client's invalid_grant, not a replay
-it('leaves the legitimate chain alive when a foreign client presents a used code', function () {
+it('rejects a code presented by another client and leaves it usable for its rightful client', function () {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
-    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://o.test/cb']);
+    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://rp.test/callback']);
+
+    $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce, [
+        'client_id' => $other->id,
+        'client_secret' => $other->plainSecret,
+    ]))->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 
     $first = $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce))->assertOk();
 
@@ -198,16 +206,6 @@ it('leaves the legitimate chain alive when a foreign client presents a used code
         ->and(RefreshToken::query()->find($first->json('refresh_token'))->revoked)->toBeFalse();
 });
 
-// RFC 6749 §5.1
-it('names the granted scope in the token response', function () {
-    $pkce = $this->pkce();
-    $code = obtainAuthorizationCode($this, $pkce);
-
-    $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce))
-        ->assertOk()
-        ->assertJsonPath('scope', 'openid email');
-});
-
 it('rejects an expired authorization code', function () {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
@@ -216,20 +214,6 @@ it('rejects an expired authorization code', function () {
     $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce))
         ->assertStatus(400)
         ->assertJsonPath('error', 'invalid_grant');
-});
-
-it('rejects a code issued to another client', function () {
-    $pkce = $this->pkce();
-    $code = obtainAuthorizationCode($this, $pkce);
-    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://rp.test/callback']);
-
-    $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce, [
-        'client_id' => $other->id,
-        'client_secret' => $other->plainSecret,
-    ]))->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
-
-    // The code survives a foreign redemption attempt for its rightful client.
-    $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce))->assertOk();
 });
 
 // RFC 6749 §4.1.3 — redirect_uri must be repeated and must match
@@ -247,7 +231,7 @@ it('requires the redirect_uri the authorization request carried', function () {
 });
 
 // RFC 7636 §4.6
-it('requires a well-formed code_verifier', function () {
+it('requires a well-formed code_verifier that matches the challenge', function () {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
 
@@ -267,80 +251,6 @@ it('requires a well-formed code_verifier', function () {
 it('issues no refresh token to a client without the refresh_token grant', function () {
     $this->client->forceFill(['grant_types' => ['authorization_code']])->save();
 
-    $result = $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid');
-
-    $result->response->assertOk()->assertJsonMissingPath('refresh_token');
-});
-
-// OAuth 2.1 §4.3.1 — refreshed scopes may only narrow
-it('narrows scopes on refresh and refuses escalation', function () {
-    $result = $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid email');
-
-    $narrowed = $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'refresh_token',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'refresh_token' => $result->refreshToken,
-        'scope' => 'openid',
-    ])->assertOk();
-
-    // RFC 6749 §5.1 — the granted scope differs from the request, so the response names it
-    expect(parseAccessToken((string) $narrowed->json('access_token'))->claims()->get('scope'))->toBe('openid')
-        ->and($narrowed->json('scope'))->toBe('openid');
-
-    $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'refresh_token',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'refresh_token' => $narrowed->json('refresh_token'),
-        'scope' => 'openid email',
-    ])->assertStatus(400)->assertJsonPath('error', 'invalid_scope');
-});
-
-it('rejects a refresh token presented by another client', function () {
-    $result = $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid');
-    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://o.test/cb']);
-
-    $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'refresh_token',
-        'client_id' => $other->id,
-        'client_secret' => $other->plainSecret,
-        'refresh_token' => $result->refreshToken,
-    ])->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
-});
-
-it('rejects an expired refresh token', function () {
-    $result = $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid');
-    RefreshToken::query()->whereKey($result->refreshToken)->update(['expires_at' => now()->subMinute()]);
-
-    $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'refresh_token',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'refresh_token' => $result->refreshToken,
-    ])->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
-});
-
-// OAuth 2.1 §4.3.1 — reuse of a rotated-out refresh token revokes the chain
-it('revokes the whole chain when a rotated-out refresh token is reused', function () {
-    $result = $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid');
-
-    $rotated = $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'refresh_token',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'refresh_token' => $result->refreshToken,
-    ])->assertOk();
-
-    $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'refresh_token',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'refresh_token' => $result->refreshToken,
-    ])->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
-
-    $current = parseAccessToken((string) $rotated->json('access_token'));
-
-    expect(RefreshToken::query()->find($rotated->json('refresh_token'))->revoked)->toBeTrue()
-        ->and(AccessToken::query()->find($current->claims()->get('jti'))->revoked)->toBeTrue();
+    $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid')
+        ->response->assertOk()->assertJsonMissingPath('refresh_token');
 });

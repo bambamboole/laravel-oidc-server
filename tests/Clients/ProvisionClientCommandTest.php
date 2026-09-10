@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * oidc:client --first-party: prints credentials once, reconciles idempotently, writes env only on request
+ */
+
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Illuminate\Support\Facades\Artisan;
@@ -146,23 +150,12 @@ it('requires explicit rotation before printing a replacement secret', function (
         ->assertSuccessful();
 });
 
-it('rejects calls without first-party mode', function () {
-    $this->artisan('oidc:client', [
-        '--name' => 'First-party app',
-        '--redirect-uri' => ['https://app.test/login/callback'],
-        '--no-interaction' => true,
-    ])->assertExitCode(2);
-});
-
-it('rejects missing required values when running non-interactively', function (array $arguments) {
-    $this->artisan('oidc:client', [
-        '--first-party' => true,
-        '--no-interaction' => true,
-        ...$arguments,
-    ])->assertExitCode(2);
+it('rejects invalid invocations with a usage exit code', function (array $arguments) {
+    $this->artisan('oidc:client', ['--no-interaction' => true, ...$arguments])->assertExitCode(2);
 })->with([
-    'name' => [['--redirect-uri' => ['https://app.test/login/callback']]],
-    'redirect URI' => [['--name' => 'First-party app']],
+    'without first-party mode' => [['--name' => 'First-party app', '--redirect-uri' => ['https://app.test/login/callback']]],
+    'missing name' => [['--first-party' => true, '--redirect-uri' => ['https://app.test/login/callback']]],
+    'missing redirect URI' => [['--first-party' => true, '--name' => 'First-party app']],
 ]);
 
 it('does not write env when interactive confirmation is declined', function () {

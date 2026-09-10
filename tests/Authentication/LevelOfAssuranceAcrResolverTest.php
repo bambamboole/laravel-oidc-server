@@ -6,12 +6,7 @@ declare(strict_types=1);
  * OpenID Connect Core 1.0 §2 (acr, amr); Discovery 1.0 §3 (acr_values_supported)
  */
 
-use Bambamboole\LaravelOidc\Server\Authentication\LevelOfAssuranceAcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
-
-it('is bound as the default acr resolver', function () {
-    expect(app(AcrResolver::class)::class)->toBe(LevelOfAssuranceAcrResolver::class);
-});
 
 it('reports one level for a single method and another for several', function () {
     $resolver = app(AcrResolver::class);

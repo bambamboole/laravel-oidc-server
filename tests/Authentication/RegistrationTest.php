@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+/**
+ * Registration through the CreateUser action seam: disabled until bound, canonicalized email, finalizes as a login
+ */
+
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Event;

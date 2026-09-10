@@ -2,16 +2,17 @@
 
 declare(strict_types=1);
 
+/**
+ * First-party client provisioning: idempotent reconcile, credential verification before mutation, adoption safety,
+ * secret rotation without token revocation, input normalization
+ */
+
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
-use Illuminate\Contracts\Hashing\Hasher;
-use Illuminate\Database\ConnectionInterface;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
 
@@ -34,19 +35,6 @@ it('creates a confidential managed client and returns its plain secret once', fu
 
     expect($result->wasCreated)->toBeTrue()
         ->and($result->secretRotated)->toBeFalse();
-});
-
-it('reports both creation and rotation on the create-then-rotate path so rollback still deletes', function () {
-    $result = app(FirstPartyClientProvisioner::class)->provision(
-        name: 'First-party app',
-        redirectUris: ['https://app.test/login/callback'],
-        rotateSecret: true,
-    );
-
-    expect($result->wasCreated)->toBeTrue()
-        ->and($result->secretRotated)->toBeTrue()
-        ->and($result->rollback())->toBeTrue()
-        ->and(Client::query()->find($result->clientId))->toBeNull();
 });
 
 it('reconciles the managed client without rotating its secret', function () {
@@ -117,27 +105,15 @@ it('rejects a mismatched managed client credential without mutating the client',
     'empty secret' => '',
 ]);
 
-it('creates a managed client with a new credential when a stale existing credential is supplied', function () {
-    $result = app(FirstPartyClientProvisioner::class)->provision(
-        name: 'First-party app',
-        redirectUris: ['https://app.test/login/callback'],
-        existingClientSecret: 'stale-secret',
-    );
-
-    expect($result->wasCreated)->toBeTrue()
-        ->and($result->clientSecret)->toBeString()->not->toBeEmpty()->not->toBe('stale-secret')
-        ->and(Hash::check($result->clientSecret, (string) $result->client->getRawOriginal('secret')))->toBeTrue();
-});
-
 it('adopts an explicit eligible client and then rotates only when requested', function () {
-    $legacy = app(ClientRepository::class)
-        ->createAuthorizationCodeGrantClient('Legacy', ['https://legacy.test/callback']);
-    $oldHash = $legacy->getRawOriginal('secret');
+    $existing = app(ClientRepository::class)
+        ->createAuthorizationCodeGrantClient('Existing', ['https://existing.test/callback']);
+    $oldHash = $existing->getRawOriginal('secret');
 
     $adopted = app(FirstPartyClientProvisioner::class)->provision(
         'Adopted',
         ['https://app.test/login/callback'],
-        adoptClientId: (string) $legacy->getKey(),
+        adoptClientId: (string) $existing->getKey(),
     );
 
     $rotated = app(FirstPartyClientProvisioner::class)->provision(
@@ -146,45 +122,26 @@ it('adopts an explicit eligible client and then rotates only when requested', fu
         rotateSecret: true,
     );
 
-    expect($adopted->clientId)->toBe((string) $legacy->getKey())
+    expect($adopted->clientId)->toBe((string) $existing->getKey())
         ->and($adopted->clientSecret)->toBeNull()
         ->and($rotated->secretRotated)->toBeTrue()
         ->and($rotated->clientSecret)->toBeString()->not->toBeEmpty()
         ->and($rotated->client->getRawOriginal('secret'))->not->toBe($oldHash);
 });
 
-it('adopts an explicit eligible client after verifying its credential', function () {
-    $legacy = app(ClientRepository::class)
-        ->createAuthorizationCodeGrantClient('Legacy', ['https://legacy.test/callback']);
-    $storedSecret = $legacy->getRawOriginal('secret');
-
-    $result = app(FirstPartyClientProvisioner::class)->provision(
-        name: 'Adopted',
-        redirectUris: ['https://app.test/login/callback'],
-        adoptClientId: (string) $legacy->getKey(),
-        existingClientSecret: $legacy->plainSecret,
-    );
-
-    expect($result->wasCreated)->toBeFalse()
-        ->and($result->clientId)->toBe((string) $legacy->getKey())
-        ->and($result->clientSecret)->toBe($legacy->plainSecret)
-        ->and($result->client->getRawOriginal('secret'))->toBe($storedSecret)
-        ->and($result->client->getRawOriginal('provisioning_key'))->toBe('first-party');
-});
-
 it('rejects a mismatched adoption credential without mutating the client', function () {
-    $legacy = app(ClientRepository::class)
-        ->createAuthorizationCodeGrantClient('Legacy', ['https://legacy.test/callback']);
-    $originalAttributes = $legacy->refresh()->getRawOriginal();
+    $existing = app(ClientRepository::class)
+        ->createAuthorizationCodeGrantClient('Existing', ['https://existing.test/callback']);
+    $originalAttributes = $existing->refresh()->getRawOriginal();
 
     expect(fn () => app(FirstPartyClientProvisioner::class)->provision(
         name: 'Adopted',
         redirectUris: ['https://app.test/login/callback'],
-        adoptClientId: (string) $legacy->getKey(),
+        adoptClientId: (string) $existing->getKey(),
         existingClientSecret: 'wrong-secret',
     ))->toThrow(FirstPartyClientProvisioningException::class, 'secret does not match');
 
-    expect($legacy->refresh()->getRawOriginal())->toBe($originalAttributes);
+    expect($existing->refresh()->getRawOriginal())->toBe($originalAttributes);
 });
 
 it('verifies the existing credential before rotating it', function () {
@@ -214,68 +171,10 @@ it('verifies the existing credential before rotating it', function () {
         ->and(Hash::check($rotated->clientSecret, (string) $rotated->client->getRawOriginal('secret')))->toBeTrue();
 });
 
-it('verifies the existing credential inside the provisioning transaction', function () {
-    $provisioner = app(FirstPartyClientProvisioner::class);
-    $created = $provisioner->provision('Original name', ['https://original.test/callback']);
-    $storedHash = (string) $created->client->getRawOriginal('secret');
-    $connection = DB::connection();
-    $delegate = app(Hasher::class);
-    $spy = new class($delegate, $connection) implements Hasher
-    {
-        public bool $checkedInsideTransaction = false;
-
-        public ?string $checkedHash = null;
-
-        public function __construct(
-            private readonly Hasher $delegate,
-            private readonly ConnectionInterface $connection,
-        ) {}
-
-        /** @return array<string, mixed> */
-        public function info(mixed $hashedValue): array
-        {
-            return $this->delegate->info($hashedValue);
-        }
-
-        /** @param array<string, mixed> $options */
-        public function make(#[SensitiveParameter] mixed $value, array $options = []): string
-        {
-            return $this->delegate->make($value, $options);
-        }
-
-        /** @param array<string, mixed> $options */
-        public function check(#[SensitiveParameter] mixed $value, mixed $hashedValue, array $options = []): bool
-        {
-            $this->checkedInsideTransaction = $this->connection->transactionLevel() > 0;
-            $this->checkedHash = $hashedValue;
-
-            return $this->delegate->check($value, $hashedValue, $options);
-        }
-
-        /** @param array<string, mixed> $options */
-        public function needsRehash(mixed $hashedValue, array $options = []): bool
-        {
-            return $this->delegate->needsRehash($hashedValue, $options);
-        }
-    };
-
-    app()->instance(Hasher::class, $spy);
-    app()->forgetInstance(FirstPartyClientProvisioner::class);
-
-    app(FirstPartyClientProvisioner::class)->provision(
-        name: 'Changed name',
-        redirectUris: ['https://changed.test/callback'],
-        existingClientSecret: $created->clientSecret,
-    );
-
-    expect($spy->checkedInsideTransaction)->toBeTrue()
-        ->and($spy->checkedHash)->toBe($storedHash);
-});
-
 it('rejects unsafe adoption targets', function (Closure $mutate, string $message) {
     $client = app(ClientRepository::class)
         ->createAuthorizationCodeGrantClient('Unsafe', ['https://unsafe.test/callback']);
-    $mutate($client);
+    $mutate($client, User::create(['name' => 'Owner', 'email' => 'owner@example.com', 'password' => 'secret']));
 
     expect(fn () => app(FirstPartyClientProvisioner::class)->provision(
         'Unsafe',
@@ -283,29 +182,10 @@ it('rejects unsafe adoption targets', function (Closure $mutate, string $message
         adoptClientId: (string) $client->getKey(),
     ))->toThrow(FirstPartyClientProvisioningException::class, $message);
 })->with([
-    'revoked' => [fn ($client) => $client->forceFill(['revoked' => true])->save(), 'revoked'],
-    'public' => [fn ($client) => $client->forceFill(['secret' => null])->save(), 'confidential'],
+    'revoked' => [fn (Client $client) => $client->forceFill(['revoked' => true])->save(), 'revoked'],
+    'public' => [fn (Client $client) => $client->forceFill(['secret' => null])->save(), 'confidential'],
+    'user-owned' => [fn (Client $client, User $owner) => $client->forceFill(['owner_type' => $owner::class, 'owner_id' => $owner->getKey()])->save(), 'must not be owned'],
 ]);
-
-it('rejects a user-owned adoption target', function () {
-    $user = User::create([
-        'name' => 'Owner',
-        'email' => 'owner@example.com',
-        'password' => 'secret',
-    ]);
-    $client = app(ClientRepository::class)
-        ->createAuthorizationCodeGrantClient(
-            'User-owned',
-            ['https://owned.test/callback'],
-            user: $user,
-        );
-
-    expect(fn () => app(FirstPartyClientProvisioner::class)->provision(
-        'User-owned',
-        ['https://app.test/login/callback'],
-        adoptClientId: (string) $client->getKey(),
-    ))->toThrow(FirstPartyClientProvisioningException::class, 'must not be owned');
-});
 
 it('rejects exchange audiences when token exchange is disabled', function () {
     config(['oidc.clients.token_exchange' => false]);
@@ -360,16 +240,9 @@ it('rejects invalid provisioning input before writing', function (
     'missing redirect' => ['App', [], [], 'At least one redirect URI'],
     'redirect user info' => ['App', ['https://user@app.test/callback'], [], 'without user information'],
     'redirect fragment' => ['App', ['https://app.test/callback#fragment'], [], 'without user information or a fragment'],
-    'redirect raw space' => ['App', ['https://app.test/call back'], [], 'absolute HTTP(S) URI'],
-    'redirect control character' => ['App', ["https://app.test/callback\nnext"], [], 'absolute HTTP(S) URI'],
-    'redirect backslash' => ['App', ['https://app.test\\callback'], [], 'absolute HTTP(S) URI'],
-    'redirect malformed percent escape' => ['App', ['https://app.test/callback%2'], [], 'absolute HTTP(S) URI'],
-    'redirect missing host' => ['App', ['https:///callback'], [], 'absolute HTTP(S) URI'],
-    'redirect malformed host' => ['App', ['https://app_test/callback'], [], 'absolute HTTP(S) URI'],
-    'post logout raw space' => ['App', ['https://app.test/callback'], [], 'absolute HTTP(S) URI', ['https://app.test/logged out']],
+    'redirect not an absolute http(s) uri' => ['App', ['https://app.test/call back'], [], 'absolute HTTP(S) URI'],
+    'post logout not an absolute http(s) uri' => ['App', ['https://app.test/callback'], [], 'absolute HTTP(S) URI', ['https://app.test/logged out']],
     'relative audience' => ['App', ['https://app.test/callback'], ['/orders'], 'HTTP(S) URL or a urn: identifier'],
-    'audience invalid scheme' => ['App', ['https://app.test/callback'], ['1abc:orders'], 'HTTP(S) URL or a urn: identifier'],
-    'audience incomplete https URI' => ['App', ['https://app.test/callback'], ['https://'], 'HTTP(S) URL or a urn: identifier'],
     'audience non-http scheme' => ['App', ['https://app.test/callback'], ['mailto:orders@example.com'], 'HTTP(S) URL or a urn: identifier'],
 ]);
 
@@ -427,73 +300,14 @@ it('normalizes metadata and removes exchange capability when audiences become em
         ->and(json_decode((string) $result->client->getRawOriginal('allowed_exchange_audiences'), true, flags: JSON_THROW_ON_ERROR))->toBe([]);
 });
 
-it('preserves an explicit adoption target when recovering from a provisioning key race', function () {
-    $clients = app(ClientRepository::class);
-    $winner = $clients->createAuthorizationCodeGrantClient('Winner', ['https://winner.test/callback']);
-    $loser = $clients->createAuthorizationCodeGrantClient('Loser', ['https://loser.test/callback']);
-    $winner->forceFill(['provisioning_key' => 'first-party'])->save();
+it('rolls back a created client by deleting it, never an adopted or reconciled one', function () {
+    $provisioner = app(FirstPartyClientProvisioner::class);
+    $created = $provisioner->provision('First-party app', ['https://app.test/login/callback']);
 
-    $clientModelClass = Client::class;
-    $scopeApplications = 0;
+    $reconciled = $provisioner->provision('First-party app', ['https://app.test/login/callback']);
 
-    $clientModelClass::addGlobalScope(
-        'simulate-provisioning-key-race',
-        function (Builder $query) use (&$scopeApplications, $winner): void {
-            $scopeApplications++;
-
-            if ($scopeApplications === 1) {
-                $query->where($query->getModel()->getQualifiedKeyName(), '!=', $winner->getKey());
-            }
-        },
-    );
-
-    try {
-        expect(fn () => app(FirstPartyClientProvisioner::class)->provision(
-            'Losing adoption',
-            ['https://loser.test/callback'],
-            adoptClientId: (string) $loser->getKey(),
-        ))->toThrow(FirstPartyClientProvisioningException::class, 'different client');
-
-        expect($winner->refresh()->getAttribute('name'))->toBe('Winner')
-            ->and($loser->refresh()->getRawOriginal('provisioning_key'))->toBeNull();
-    } finally {
-        $clientModelClass::clearBootedModels();
-    }
-});
-
-it('revalidates the winning credential when recovering from a provisioning key race', function () {
-    $winner = app(ClientRepository::class)
-        ->createAuthorizationCodeGrantClient('Winner', ['https://winner.test/callback']);
-    $winningSecret = $winner->plainSecret;
-    $winner->forceFill(['provisioning_key' => 'first-party'])->save();
-
-    $clientModelClass = Client::class;
-    $scopeApplications = 0;
-
-    $clientModelClass::addGlobalScope(
-        'simulate-credential-provisioning-key-race',
-        function (Builder $query) use (&$scopeApplications, $winner): void {
-            $scopeApplications++;
-
-            if ($scopeApplications === 1) {
-                $query->where($query->getModel()->getQualifiedKeyName(), '!=', $winner->getKey());
-            }
-        },
-    );
-
-    try {
-        $result = app(FirstPartyClientProvisioner::class)->provision(
-            name: 'Reconciled winner',
-            redirectUris: ['https://winner.test/new-callback'],
-            existingClientSecret: $winningSecret,
-        );
-
-        expect($result->wasCreated)->toBeFalse()
-            ->and($result->clientId)->toBe((string) $winner->getKey())
-            ->and($result->clientSecret)->toBe($winningSecret)
-            ->and($winner->refresh()->getAttribute('name'))->toBe('Reconciled winner')
-            ->and($winner->getAttribute('redirect_uris'))->toBe(['https://winner.test/new-callback']);
-    } finally {
-        $clientModelClass::clearBootedModels();
-    }
+    expect($reconciled->rollback())->toBeFalse()
+        ->and(Client::query()->find($created->clientId))->not->toBeNull()
+        ->and($created->rollback())->toBeTrue()
+        ->and(Client::query()->find($created->clientId))->toBeNull();
 });

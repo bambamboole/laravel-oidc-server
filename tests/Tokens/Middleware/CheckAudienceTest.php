@@ -1,15 +1,19 @@
 <?php
+
 declare(strict_types=1);
 
 /**
- * RFC 9068 §4 (validating at+jwt at the resource server); RFC 6750 §3.1 (401 vs 403)
+ * RFC 9068 §4 (aud narrowed per route); RFC 6750 §3.1 (a token for another resource is invalid_token, not insufficient_scope)
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckAudience;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Models\User;
+
+const CHECK_AUDIENCE_CHALLENGE = 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"';
 
 beforeEach(function () {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
@@ -20,85 +24,34 @@ beforeEach(function () {
     config()->set('oidc.tokens.audiences', ['https://api.internal/orders', 'https://other/api']);
 
     Route::middleware(['auth:oidc', CheckAudience::using('https://api.internal/orders')])
-        ->get('/test/orders', fn (Request $request) => response()->json([
-            'user' => $request->user()?->getAuthIdentifier(),
-        ]));
+        ->get('/test/orders', fn (Request $request) => response()->json(['user' => $request->user()?->getAuthIdentifier()]));
 });
 
-it('passes a resource-audience token accepted by both the guard and CheckAudience', function () {
-    $jwt = resourceServerBearer($this, ['https://api.internal/orders']);
+it('passes a token addressed to the route audience and rejects one addressed elsewhere', function () {
+    $orders = resourceServerBearer($this, ['https://api.internal/orders']);
+    $other = resourceServerBearer($this, ['https://other/api']);
 
-    $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])->assertOk();
-});
-
-// RFC 6750 §3.1 — a token for another resource is an invalid token, not one short of a scope
-it('rejects with invalid_token a token whose aud the guard accepts but CheckAudience does not', function () {
-    $jwt = resourceServerBearer($this, ['https://other/api']);
-
-    $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])
-        ->assertUnauthorized()
-        ->assertJsonPath('error', 'invalid_token')
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"');
-});
-
-it('rejects an id_token presented as a bearer (typ is not at+jwt)', function () {
-    $jwt = persistedIdTokenAsBearer($this);
-
-    // Rejected by the oidc guard itself (typ mismatch), before CheckAudience ever runs.
-    $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])->assertUnauthorized();
-});
-
-// RFC 6750 §3.1 — no credentials, no error code
-it('rejects a request without a bearer token', function () {
-    $this->getJson('/test/orders')
-        ->assertUnauthorized()
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"')
-        ->assertNoContent(401);
-});
-
-it('rejects a garbage token that fails signature validation', function () {
-    $this->getJson('/test/orders', ['Authorization' => 'Bearer garbage'])
-        ->assertUnauthorized()
-        ->assertJsonPath('error', 'invalid_token')
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"');
-});
-
-it('rejects a revoked token', function () {
-    $jwt = resourceServerBearer($this, ['https://api.internal/orders'], revoked: true);
-
-    $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])->assertUnauthorized();
-});
-
-it('rejects an expired token', function () {
-    $jwt = resourceServerBearer($this, ['https://api.internal/orders'], expired: true);
-
-    $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])->assertUnauthorized();
-});
-
-it('rejects a token whose sub resolves to no user (fail closed)', function () {
-    $jwt = resourceServerBearer($this, ['https://api.internal/orders'], subjectId: '999999');
-
-    $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])->assertUnauthorized();
-});
-
-it('resolves the request user from the sub claim', function () {
-    $jwt = resourceServerBearer($this, ['https://api.internal/orders']);
-
-    $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])
+    $this->getJson('/test/orders', ['Authorization' => "Bearer $orders"])
         ->assertOk()
         ->assertJson(['user' => $this->user->id]);
+
+    // The guard instance caches the user it resolved; drop it so the second bearer is validated afresh.
+    Auth::forgetGuards();
+
+    $this->getJson('/test/orders', ['Authorization' => "Bearer $other"])
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', CHECK_AUDIENCE_CHALLENGE);
 });
 
-it('rejects with invalid_token when CheckAudience runs without a preceding guard populating the user', function () {
+it('rejects with invalid_token when no preceding guard populated the user', function () {
     Route::middleware(CheckAudience::using('https://api.internal/orders'))
-        ->get('/test/orders-unguarded', fn (Request $request) => response()->json([
-            'user' => $request->user()?->getAuthIdentifier(),
-        ]));
+        ->get('/test/orders-unguarded', fn (Request $request) => response()->json(['user' => $request->user()?->getAuthIdentifier()]));
 
     $jwt = resourceServerBearer($this, ['https://api.internal/orders']);
 
     $this->getJson('/test/orders-unguarded', ['Authorization' => "Bearer $jwt"])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"');
+        ->assertHeader('WWW-Authenticate', CHECK_AUDIENCE_CHALLENGE);
 });

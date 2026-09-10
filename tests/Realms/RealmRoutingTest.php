@@ -2,6 +2,11 @@
 
 declare(strict_types=1);
 
+/**
+ * Realm-scoped routing: one issuer and endpoint set per realm segment (OIDC Discovery 1.0 §3), realm-scoped session cookie,
+ * configured fallback realm outside a matched route
+ */
+
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 
@@ -9,36 +14,15 @@ beforeEach(function () {
     config(['oidc.issuer' => 'https://id.example.com']);
 });
 
-it('gives each realm its own issuer', function () {
-    $acme = $this->getJson('/realms/acme/.well-known/openid-configuration')->assertOk();
-    $globex = $this->getJson('/realms/globex/.well-known/openid-configuration')->assertOk();
+it('gives each realm its own issuer and realm-scoped endpoints', function () {
+    $acme = $this->getJson('/realms/acme/.well-known/openid-configuration')->assertOk()->json();
+    $globex = $this->getJson('/realms/globex/.well-known/openid-configuration')->assertOk()->json();
 
-    expect($acme->json('issuer'))->toBe('https://id.example.com/realms/acme')
-        ->and($globex->json('issuer'))->toBe('https://id.example.com/realms/globex');
-});
-
-it('advertises realm-scoped endpoints without repeating the realm segment', function () {
-    $document = $this->getJson('/realms/acme/.well-known/openid-configuration')->assertOk()->json();
-
-    expect($document['authorization_endpoint'])->toBe('https://id.example.com/realms/acme/oauth/authorize')
-        ->and($document['token_endpoint'])->toBe('https://id.example.com/realms/acme/oauth/token')
-        ->and($document['jwks_uri'])->toBe('https://id.example.com/realms/acme/.well-known/jwks.json');
-});
-
-it('serves the RFC 8414 insertion form with the realm behind the well-known segment', function () {
-    $inserted = $this->getJson('/.well-known/oauth-authorization-server/realms/acme')->assertOk()->json();
-    $appended = $this->getJson('/realms/acme/.well-known/openid-configuration')->assertOk()->json();
-
-    expect($inserted)->toBe($appended)
-        ->and($inserted['issuer'])->toBe('https://id.example.com/realms/acme');
-});
-
-it('resolves the realm from the route for the request', function () {
-    $this->get('/realms/globex/.well-known/jwks.json')->assertOk();
-
-    $route = app('router')->getRoutes()->getByName('oidc.jwks');
-
-    expect($route->uri())->toBe('realms/{realm}/.well-known/jwks.json');
+    expect($acme['issuer'])->toBe('https://id.example.com/realms/acme')
+        ->and($globex['issuer'])->toBe('https://id.example.com/realms/globex')
+        ->and($acme['authorization_endpoint'])->toBe('https://id.example.com/realms/acme/oauth/authorize')
+        ->and($acme['token_endpoint'])->toBe('https://id.example.com/realms/acme/oauth/token')
+        ->and($acme['jwks_uri'])->toBe('https://id.example.com/realms/acme/.well-known/jwks.json');
 });
 
 it('falls back to the configured realm outside a matched route', function () {

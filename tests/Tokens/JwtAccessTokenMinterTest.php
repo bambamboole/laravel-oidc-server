@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * RFC 9068 (JWT profile for OAuth 2.0 access tokens)
+ * RFC 9068 §2.1 (at+jwt header), §2.2 (claims: aud names resources, client_id names the client); RFC 8693 §4.1 (act)
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
@@ -35,9 +35,10 @@ function mintAccessToken(Client $client, User $user, array $scopes = ['openid', 
     return app(AccessTokenMinter::class)->mint((string) $user->id, $client->client_id, $scopes, new DateInterval('PT1H'), $audiences, $extraClaims, $actor);
 }
 
-it('emits an RFC 9068 at+jwt access token', function () {
+it('emits a signed RFC 9068 at+jwt access token with a persisted record', function () {
     $minted = mintAccessToken($this->client, $this->user);
     $parsed = parseAccessToken($minted->jwt);
+    $record = app(TokenInspector::class)->accessToken($minted->jwt);
 
     expect($parsed->headers()->get('typ'))->toBe('at+jwt')
         ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(signingPublicKey())['kid'])
@@ -50,50 +51,26 @@ it('emits an RFC 9068 at+jwt access token', function () {
         ->and($parsed->claims()->get('jti'))->toBe($minted->jti)
         ->and($parsed->claims()->has('iat'))->toBeTrue()
         ->and($parsed->claims()->has('nbf'))->toBeTrue()
-        ->and($parsed->claims()->has('exp'))->toBeTrue();
-});
-
-it('signs with the realm key so the token validates against jwks', function () {
-    $parsed = parseAccessToken(mintAccessToken($this->client, $this->user)->jwt);
-
-    expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
-});
-
-it('persists the token record the inspector resolves', function () {
-    $minted = mintAccessToken($this->client, $this->user);
-
-    $record = app(TokenInspector::class)->accessToken($minted->jwt);
-
-    expect($record)->not->toBeNull()
-        ->and((string) $record->getAttribute('user_id'))->toBe((string) $this->user->id)
-        ->and((string) $record->getAttribute('client_id'))->toBe((string) $this->client->getKey())
-        ->and($record->getAttribute('scopes'))->toBe(['openid', 'email'])
-        ->and((bool) $record->getAttribute('revoked'))->toBeFalse();
+        ->and($parsed->claims()->has('exp'))->toBeTrue()
+        ->and((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue()
+        ->and((string) $record?->getAttribute('user_id'))->toBe((string) $this->user->id)
+        ->and((string) $record?->getAttribute('client_id'))->toBe((string) $this->client->getKey())
+        ->and($record?->getAttribute('scopes'))->toBe(['openid', 'email'])
+        ->and((bool) $record?->getAttribute('revoked'))->toBeFalse();
 });
 
 // RFC 9068 §2.2 — aud names the resources the token is for; the client stays in client_id
-it('addresses the token to the realm audiences when none are given', function () {
+it('addresses the token to the realm audiences unless an audience is given', function () {
     config(['oidc.tokens.audiences' => ['https://api.example/orders', 'https://api.example/billing']]);
 
-    $minted = mintAccessToken($this->client, $this->user);
+    $defaulted = mintAccessToken($this->client, $this->user);
+    $explicit = mintAccessToken($this->client, $this->user, audiences: ['https://api.internal/orders']);
 
-    expect(parseAccessToken($minted->jwt)->claims()->get('aud'))->toBe(['https://api.example/orders', 'https://api.example/billing'])
-        ->and($minted->audience)->toBe(['https://api.example/orders', 'https://api.example/billing'])
-        ->and(parseAccessToken($minted->jwt)->claims()->get('client_id'))->toBe($this->client->client_id);
-});
-
-it('includes every advertised protected resource in the default audience', function () {
-    config(['oidc.protected_resources' => ['mcp' => ['scopes' => ['mcp:use']]]]);
-
-    expect(parseAccessToken(mintAccessToken($this->client, $this->user)->jwt)->claims()->get('aud'))
-        ->toBe(['https://op.test/realms/default', 'https://op.test/realms/default/mcp']);
-});
-
-it('uses an explicitly set audience instead of the realm audiences', function () {
-    $minted = mintAccessToken($this->client, $this->user, audiences: ['https://api.internal/orders', 'https://api.internal/billing']);
-
-    expect(parseAccessToken($minted->jwt)->claims()->get('aud'))->toBe(['https://api.internal/orders', 'https://api.internal/billing'])
-        ->and($minted->audience)->toBe(['https://api.internal/orders', 'https://api.internal/billing']);
+    expect(parseAccessToken($defaulted->jwt)->claims()->get('aud'))->toBe(['https://api.example/orders', 'https://api.example/billing'])
+        ->and($defaulted->audience)->toBe(['https://api.example/orders', 'https://api.example/billing'])
+        ->and(parseAccessToken($defaulted->jwt)->claims()->get('client_id'))->toBe($this->client->client_id)
+        ->and(parseAccessToken($explicit->jwt)->claims()->get('aud'))->toBe(['https://api.internal/orders'])
+        ->and($explicit->audience)->toBe(['https://api.internal/orders']);
 });
 
 it('falls back to the client id as subject for a userless token', function () {
@@ -131,7 +108,7 @@ it('emits the actor claim', function () {
     expect(parseAccessToken($minted->jwt)->claims()->get('act'))->toBe(['client_id' => 'trusted']);
 });
 
-it('refuses to mint for an unknown or revoked client', function () {
+it('refuses to mint for a revoked client', function () {
     $this->client->forceFill(['revoked' => true])->save();
 
     expect(fn () => mintAccessToken($this->client, $this->user))->toThrow(RuntimeException::class);

@@ -1,8 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
 /**
- * OpenID Connect Core 1.0 §5.3 (UserInfo endpoint); RFC 6750 §3.1 (bearer challenges)
+ * OpenID Connect Core 1.0 §5.3 (UserInfo endpoint), §5.3.2 (sub); RFC 6750 §3.1 (bearer challenges)
  */
 
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimSet;
@@ -19,7 +20,7 @@ beforeEach(function () {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 });
 
-it('challenges a userinfo request without a bearer token and names no error', function () {
+it('challenges a request without a bearer token and names no error', function () {
     $this->getJson('/realms/default/oauth/userinfo')
         ->assertUnauthorized()
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", '.USERINFO_RESOURCE_METADATA)
@@ -35,32 +36,37 @@ it('returns invalid_token for a bearer token the guard rejects', function () {
 
 it('returns insufficient_scope when the token lacks openid', function () {
     $this->actingAsOidcUser($this->user, ['email'], 'oidc');
+
     $this->getJson('/realms/default/oauth/userinfo')
         ->assertForbidden()
         ->assertJsonPath('error', 'insufficient_scope')
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="insufficient_scope", '.USERINFO_RESOURCE_METADATA);
 });
 
-it('returns sub plus scope-filtered claims', function () {
-    $this->actingAsOidcUser($this->user, ['openid', 'email'], 'oidc');
+it('returns sub plus the claims the granted scopes cover on GET and POST', function () {
+    $this->actingAsOidcUser($this->user, ['openid', 'profile', 'email'], 'oidc');
 
-    $this->getJson('/realms/default/oauth/userinfo')
-        ->assertOk()
-        ->assertExactJson([
-            'sub' => (string) $this->user->id,
-            'email' => 'm@example.com',
-            'email_verified' => true,
-        ]);
+    $response = $this->getJson('/realms/default/oauth/userinfo')->assertOk();
+
+    expect($response->json('sub'))->toBe((string) $this->user->id)
+        ->and($response->json('name'))->toBe('M')
+        ->and($response->json('email'))->toBe('m@example.com')
+        ->and($response->json('email_verified'))->toBeTrue();
+
+    $this->postJson('/realms/default/oauth/userinfo')->assertOk()->assertJson(['sub' => (string) $this->user->id]);
 });
 
-it('includes scoped claims from a custom claims resolver', function () {
+it('includes scoped claims from a custom claims resolver and drops the protocol claims it emits', function () {
     app()->instance(ClaimsResolver::class, new class implements ClaimsResolver
     {
         public function resolve(ClaimsRequest $request): array
         {
-            return (new ClaimSet([
-                'tenant' => ['tenant' => 'acme'],
-            ]))->forScopes($request->scopes);
+            return [
+                'sub' => 'someone-else',
+                'iss' => 'https://evil.test',
+                'aud' => ['other'],
+                ...(new ClaimSet(['tenant' => ['tenant' => 'acme']]))->forScopes($request->scopes),
+            ];
         }
     });
 
@@ -72,39 +78,4 @@ it('includes scoped claims from a custom claims resolver', function () {
             'sub' => (string) $this->user->id,
             'tenant' => 'acme',
         ]);
-});
-
-// OIDC Core §5.3.2 — sub is the provider's; §2 — so are the other protocol claims
-it('drops protocol claims a claims resolver tries to emit', function () {
-    app()->instance(ClaimsResolver::class, new class implements ClaimsResolver
-    {
-        public function resolve(ClaimsRequest $request): array
-        {
-            return ['sub' => 'someone-else', 'iss' => 'https://evil.test', 'aud' => ['other'], 'tenant' => 'acme'];
-        }
-    });
-
-    $this->actingAsOidcUser($this->user, ['openid'], 'oidc');
-
-    $this->getJson('/realms/default/oauth/userinfo')
-        ->assertOk()
-        ->assertExactJson([
-            'sub' => (string) $this->user->id,
-            'tenant' => 'acme',
-        ]);
-});
-
-it('includes profile claims when granted', function () {
-    $this->actingAsOidcUser($this->user, ['openid', 'profile', 'email'], 'oidc');
-
-    $response = $this->getJson('/realms/default/oauth/userinfo')->assertOk();
-
-    expect($response->json('name'))->toBe('M')
-        ->and($response->json('sub'))->toBe((string) $this->user->id);
-});
-
-it('accepts POST as required by the spec', function () {
-    $this->actingAsOidcUser($this->user, ['openid'], 'oidc');
-
-    $this->postJson('/realms/default/oauth/userinfo')->assertOk()->assertJson(['sub' => (string) $this->user->id]);
 });

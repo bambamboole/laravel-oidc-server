@@ -2,52 +2,43 @@
 
 declare(strict_types=1);
 
+/**
+ * OpenID Connect Back-Channel Logout 1.0 §2.5 (logout_token POSTed to the backchannel_logout_uri)
+ */
+
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\SendBackChannelLogout;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
+beforeEach(fn () => Http::fake());
+
 it('posts a logout_token to the client backchannel_logout_uri', function () {
-    Http::fake();
     $sid = app(OidcSessionRepository::class)->start('9');
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
     $client->forceFill(['backchannel_logout_uri' => 'https://rp.test/bclo'])->save();
 
     SendBackChannelLogout::dispatchSync($sid, (string) $client->id);
 
-    Http::assertSent(function (Request $request) {
-        return $request->url() === 'https://rp.test/bclo'
-            && is_string($request['logout_token'])
-            && $request['logout_token'] !== '';
-    });
+    Http::assertSent(fn (Request $request): bool => $request->url() === 'https://rp.test/bclo'
+        && is_string($request['logout_token'])
+        && $request['logout_token'] !== '');
 });
 
-it('does not post when the session is missing', function () {
-    Http::fake();
+it('sends nothing when the session, the client or its backchannel_logout_uri is missing', function (string $case) {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
-    $client->forceFill(['backchannel_logout_uri' => 'https://rp.test/bclo'])->save();
-
-    SendBackChannelLogout::dispatchSync('nonexistent-sid', (string) $client->id);
-
-    Http::assertNothingSent();
-});
-
-it('does not post when the client is missing', function () {
-    Http::fake();
     $sid = app(OidcSessionRepository::class)->start('9');
 
-    SendBackChannelLogout::dispatchSync($sid, 'nonexistent-client-id');
+    match ($case) {
+        'missing session' => (function () use ($client): void {
+            $client->forceFill(['backchannel_logout_uri' => 'https://rp.test/bclo'])->save();
+            SendBackChannelLogout::dispatchSync('nonexistent-sid', (string) $client->id);
+        })(),
+        'missing client' => SendBackChannelLogout::dispatchSync($sid, 'nonexistent-client-id'),
+        'no backchannel_logout_uri' => SendBackChannelLogout::dispatchSync($sid, (string) $client->id),
+        default => throw new LogicException('Unknown case.'),
+    };
 
     Http::assertNothingSent();
-});
-
-it('does not post when the client has no backchannel_logout_uri', function () {
-    Http::fake();
-    $sid = app(OidcSessionRepository::class)->start('9');
-    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
-
-    SendBackChannelLogout::dispatchSync($sid, (string) $client->id);
-
-    Http::assertNothingSent();
-});
+})->with(['missing session', 'missing client', 'no backchannel_logout_uri']);

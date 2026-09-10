@@ -3,33 +3,71 @@
 declare(strict_types=1);
 
 /**
- * OAuth 2.1 §4.2 (client credentials grant)
+ * OAuth 2.1 §4.2 (client credentials grant); RFC 8707 §2 (resource indicators); RFC 9068 §2.2 (aud, client_id)
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\ClientCredentialsEvent;
+use Illuminate\Testing\TestResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 beforeEach(function () {
     $this->client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 });
 
-it('issues a client_credentials token with its own configured lifetime', function () {
-    config(['oidc.tokens.lifetimes.client_credentials' => 3600]);
-
-    $response = $this->post('/realms/default/oauth/token', [
+/**
+ * @param  array<string, mixed>  $extra
+ * @return TestResponse<Response>
+ */
+function requestClientCredentials(TestCase $test, array $extra = []): TestResponse
+{
+    return $test->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
+        'client_id' => $test->client->id,
+        'client_secret' => $test->client->plainSecret,
         'scope' => '',
-    ])->assertOk();
+        ...$extra,
+    ]);
+}
 
-    expect($response->json('expires_in'))->toBeLessThanOrEqual(3600)
-        ->and($response->json('expires_in'))->toBeGreaterThan(3300);
+it('issues a userless token addressed to the realm audiences', function () {
+    $accessToken = parseAccessToken((string) requestClientCredentials($this)->assertOk()->json('access_token'));
+
+    expect($accessToken->claims()->get('aud'))->toBe([app(IssuerResolver::class)->url()])
+        ->and($accessToken->claims()->get('client_id'))->toBe((string) $this->client->id)
+        ->and($accessToken->claims()->get('sub'))->toBe((string) $this->client->id);
 });
+
+it('binds the token to an allowlisted resource and exposes it to the trigger', function () {
+    $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
+    $seen = null;
+
+    app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event) use (&$seen): void {
+        $seen = $event->audiences;
+    });
+
+    $accessToken = parseAccessToken((string) requestClientCredentials($this, ['resource' => 'https://mail.test'])->assertOk()->json('access_token'));
+
+    expect($accessToken->claims()->get('aud'))->toBe(['https://mail.test'])
+        ->and($seen)->toBe(['https://mail.test']);
+});
+
+it('rejects a resource that is not allowlisted or not an absolute URI', function (string $resource) {
+    $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
+
+    requestClientCredentials($this, ['resource' => $resource])
+        ->assertStatus(400)
+        ->assertJsonPath('error', 'invalid_target')
+        ->assertJsonMissingPath('access_token');
+})->with([
+    'foreign resource' => 'https://somewhere-else.test',
+    'relative resource' => 'not-a-uri',
+]);
 
 it('runs the client-credentials trigger once and applies its access-token claims', function () {
     $triggerCount = 0;
@@ -43,108 +81,19 @@ it('runs the client-credentials trigger once and applies its access-token claims
         $api->setAccessTokenClaim('tenant', 'acme');
     });
 
-    $response = $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'client_credentials',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'scope' => '',
-    ])->assertOk();
-
-    $accessToken = parseAccessToken((string) $response->json('access_token'));
+    $accessToken = parseAccessToken((string) requestClientCredentials($this)->assertOk()->json('access_token'));
 
     expect($accessToken->claims()->get('tenant'))->toBe('acme')
         ->and($triggerCount)->toBe(1);
 });
 
-it('binds the token to an allowlisted requested resource', function () {
-    $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
+it('denies issuance before persisting when a trigger denies', function () {
+    app(AccessTokenPipeline::class)->register('client_credentials', fn (ClientCredentialsEvent $event, AccessTokenApi $api) => $api->deny('client_blocked'));
 
-    $response = $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'client_credentials',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'scope' => '',
-        'resource' => 'https://mail.test',
-    ])->assertOk();
-
-    $accessToken = parseAccessToken((string) $response->json('access_token'));
-
-    expect($accessToken->claims()->get('aud'))->toBe(['https://mail.test']);
-});
-
-it('defaults the audience to the realm audiences without a resource parameter', function () {
-    $response = $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'client_credentials',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'scope' => '',
-    ])->assertOk();
-
-    $accessToken = parseAccessToken((string) $response->json('access_token'));
-
-    expect($accessToken->claims()->get('aud'))->toBe([app(IssuerResolver::class)->url()])
-        ->and($accessToken->claims()->get('client_id'))->toBe((string) $this->client->id);
-});
-
-it('rejects a resource the client is not allowed to target', function () {
-    $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
-
-    $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'client_credentials',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'scope' => '',
-        'resource' => 'https://somewhere-else.test',
-    ])->assertStatus(400)
-        ->assertJsonPath('error', 'invalid_target')
-        ->assertJsonMissingPath('access_token');
-});
-
-it('rejects a resource that is not an absolute URI', function () {
-    $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'client_credentials',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'scope' => '',
-        'resource' => 'not-a-uri',
-    ])->assertStatus(400)
-        ->assertJsonPath('error', 'invalid_target');
-});
-
-it('exposes the requested audiences to the client-credentials trigger', function () {
-    $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
-    $seen = null;
-
-    app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$seen): void {
-        $seen = $event->audiences;
-    });
-
-    $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'client_credentials',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'scope' => '',
-        'resource' => 'https://mail.test',
-    ])->assertOk();
-
-    expect($seen)->toBe(['https://mail.test']);
-});
-
-it('denies client credentials before persisting an access token', function () {
-    $persistedTokenCount = AccessToken::query()->count();
-
-    app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api): void {
-        $api->deny('client_blocked');
-    });
-
-    $this->post('/realms/default/oauth/token', [
-        'grant_type' => 'client_credentials',
-        'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
-        'scope' => '',
-    ])->assertStatus(400)
+    requestClientCredentials($this)
+        ->assertStatus(400)
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 
-    expect(AccessToken::query()->count())->toBe($persistedTokenCount);
+    expect(AccessToken::query()->count())->toBe(0);
 });

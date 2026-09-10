@@ -13,12 +13,12 @@ it('audits a dynamic client registration', function () {
     $sink = fakeAudit();
 
     $response = $this->postJson('/realms/default/oauth/register', [
-        'client_name' => 'MCP Client',
+        'client_name' => 'Agent',
         'redirect_uris' => ['https://mcp.test/callback'],
     ])->assertCreated();
 
     $sink->assertRecorded(AuditEventType::ClientRegistered, fn (AuditEvent $event): bool => $event->clientId === $response->json('client_id')
-        && $event->context['client_name'] === 'MCP Client'
+        && $event->context['client_name'] === 'Agent'
         && $event->context['redirect_uris'] === ['https://mcp.test/callback']);
 });
 

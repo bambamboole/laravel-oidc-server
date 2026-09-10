@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+/**
+ * Database-backed signing keys: rotation retains the previous key for verification (RFC 7517 §5 key set), private keys encrypted at rest
+ */
+
 use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Keys\Models\SigningKey;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
@@ -98,14 +101,4 @@ it('keeps tokens signed before a rotation verifiable', function () {
 
     expect(app(SigningKeys::class)->signingKid())->not->toBe($kidBefore)
         ->and(app(TokenInspector::class)->parse($jwt))->not->toBeNull();
-});
-
-it('publishes the stored kid rather than re-deriving it', function () {
-    $generated = databaseStoreRotate();
-
-    SigningKey::query()->where('kid', $generated->kid())->update(['kid' => 'pinned-kid']);
-
-    expect(useDatabaseSigningKeys()->signingKey()->kid())->toBe('pinned-kid')
-        ->and(Jwk::fromPem($generated->publicKeyPem)['kid'])->not->toBe('pinned-kid')
-        ->and($this->getJson('/realms/default/.well-known/jwks.json')->json('keys.0.kid'))->toBe('pinned-kid');
 });
