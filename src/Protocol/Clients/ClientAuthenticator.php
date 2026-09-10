@@ -7,8 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Clients;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Enums\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Protocol\Events\ClientAuthenticationFailed;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Http\Request;
@@ -25,7 +24,6 @@ final readonly class ClientAuthenticator
     public function __construct(
         private ClientRepository $clients,
         private Hasher $hasher,
-        private Auditor $auditor,
     ) {}
 
     /**
@@ -98,10 +96,7 @@ final readonly class ClientAuthenticator
 
     private function fail(Request $request, string $clientId, string $reason): never
     {
-        $this->auditor->log(AuditEventType::ClientAuthenticationFailed, clientId: $clientId, context: [
-            'endpoint' => $request->path(),
-            'reason' => $reason,
-        ]);
+        event(new ClientAuthenticationFailed($request->path(), $reason, $clientId));
 
         throw OAuthServerException::invalidClient();
     }

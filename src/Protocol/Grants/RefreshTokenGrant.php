@@ -8,14 +8,14 @@ use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextS
 use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Contracts\Grant;
+use Bambamboole\LaravelOidc\Server\Protocol\Events\ClientAuthenticationFailed;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
@@ -37,7 +37,6 @@ final readonly class RefreshTokenGrant implements Grant
         private AuthenticationContextStore $contexts,
         private OidcSessionRepository $sessions,
         private TokenRevoker $revoker,
-        private Auditor $auditor,
     ) {}
 
     public function type(): string
@@ -64,10 +63,7 @@ final readonly class RefreshTokenGrant implements Grant
         }
 
         if (! $accessToken->issuedTo($client)) {
-            $this->auditor->log(AuditEventType::ClientAuthenticationFailed, clientId: $client->client_id, context: [
-                'endpoint' => $request->path(),
-                'reason' => 'refresh_token_client_mismatch',
-            ]);
+            event(new ClientAuthenticationFailed($request->path(), 'refresh_token_client_mismatch', $client->client_id));
 
             throw OAuthServerException::invalidGrant('The refresh token was not issued to this client.');
         }
@@ -96,11 +92,12 @@ final readonly class RefreshTokenGrant implements Grant
         // OAuth 2.1 §4.3.1: the refreshed token may carry the original scopes or fewer.
         foreach ($requested as $scope) {
             if (! in_array($scope, $original, true)) {
-                $this->auditor->log(AuditEventType::TokenIssuanceFailed, clientId: $client->client_id, context: [
-                    'grant_type' => self::TYPE,
-                    'reason' => 'scope_escalation',
-                    'scope' => $scope,
-                ]);
+                event(new TokenIssuanceFailed(
+                    grantType: self::TYPE,
+                    reason: 'scope_escalation',
+                    clientId: $client->client_id,
+                    scope: $scope,
+                ));
 
                 throw OAuthServerException::invalidScope($scope);
             }
@@ -154,10 +151,7 @@ final readonly class RefreshTokenGrant implements Grant
 
     private function deny(string $reason, string $message, ?string $sid = null): never
     {
-        $this->auditor->log(AuditEventType::TokenIssuanceFailed, sid: $sid, context: [
-            'grant_type' => self::TYPE,
-            'reason' => $reason,
-        ]);
+        event(new TokenIssuanceFailed(grantType: self::TYPE, reason: $reason, sid: $sid));
 
         throw OAuthServerException::invalidGrant($message);
     }

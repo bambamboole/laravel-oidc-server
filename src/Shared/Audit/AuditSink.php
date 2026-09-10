@@ -6,5 +6,5 @@ namespace Bambamboole\LaravelOidc\Server\Shared\Audit;
 
 interface AuditSink
 {
-    public function record(AuditEvent $event): void;
+    public function record(AuditRecord $record): void;
 }

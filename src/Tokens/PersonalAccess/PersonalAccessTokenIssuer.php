@@ -7,10 +7,10 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\PersonalAccess;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
 use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\TokenIssuanceDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
@@ -31,7 +31,6 @@ final readonly class PersonalAccessTokenIssuer
         private ScopeGrant $scopes,
         private AccessTokenMinter $minter,
         private AccessTokenPipeline $pipeline,
-        private Auditor $auditor,
         private RealmResolver $realms,
     ) {}
 
@@ -56,11 +55,13 @@ final readonly class PersonalAccessTokenIssuer
             extraClaims: $claims,
         );
 
-        $this->auditor->log(AuditEventType::TokenIssued, userId: $userId, clientId: $client->client_id, context: [
-            'grant_type' => self::GRANT_TYPE,
-            'jti' => $token->jti,
-            'scopes' => $granted,
-        ]);
+        event(new TokenIssued(
+            grantType: self::GRANT_TYPE,
+            jti: $token->jti,
+            scopes: $granted,
+            clientId: $client->client_id,
+            userId: $userId,
+        ));
 
         AccessToken::query()->whereKey($token->jti)->update([
             'name' => $name,
@@ -92,11 +93,13 @@ final readonly class PersonalAccessTokenIssuer
         ));
 
         if ($api->isDenied()) {
-            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: (string) $user->getAuthIdentifier(), clientId: $client->client_id, context: array_filter([
-                'grant_type' => self::GRANT_TYPE,
-                'reason' => 'pipeline_denied',
-                'deny_reason' => $api->denyReason(),
-            ]));
+            event(new TokenIssuanceFailed(
+                grantType: self::GRANT_TYPE,
+                reason: 'pipeline_denied',
+                clientId: $client->client_id,
+                userId: (string) $user->getAuthIdentifier(),
+                denyReason: $api->denyReason(),
+            ));
 
             throw new TokenIssuanceDeniedException((string) $api->denyReason());
         }

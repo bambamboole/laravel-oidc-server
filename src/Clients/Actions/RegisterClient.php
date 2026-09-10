@@ -6,10 +6,9 @@ namespace Bambamboole\LaravelOidc\Server\Clients\Actions;
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Enums\TokenEndpointAuthMethod;
+use Bambamboole\LaravelOidc\Server\Clients\Events\ClientRegistered;
 use Bambamboole\LaravelOidc\Server\Clients\Exceptions\ClientRegistrationException;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 
 /**
@@ -32,7 +31,6 @@ final readonly class RegisterClient
 
     public function __construct(
         private ClientRepository $clients,
-        private Auditor $auditor,
         private RealmResolver $realms,
     ) {}
 
@@ -64,11 +62,12 @@ final readonly class RegisterClient
             'backchannel_logout_session_required' => filter_var($metadata['backchannel_logout_session_required'] ?? false, FILTER_VALIDATE_BOOLEAN),
         ])->save();
 
-        $this->auditor->log(AuditEventType::ClientRegistered, clientId: $client->client_id, context: [
-            'client_name' => (string) $client->getAttribute('name'),
-            'redirect_uris' => $redirectUris,
-            'token_endpoint_auth_method' => $authMethod->value,
-        ]);
+        event(new ClientRegistered(
+            clientId: $client->client_id,
+            name: (string) $client->getAttribute('name'),
+            redirectUris: $redirectUris,
+            tokenEndpointAuthMethod: $authMethod->value,
+        ));
 
         return $client;
     }

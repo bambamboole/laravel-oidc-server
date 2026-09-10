@@ -4,30 +4,30 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Audit\Sinks;
 
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
 use DateTimeInterface;
 use Illuminate\Support\Facades\Log;
 
 final class LogAuditSink implements AuditSink
 {
-    public function record(AuditEvent $event): void
+    public function record(AuditRecord $record): void
     {
         $channel = config('oidc.audit.log_channel');
 
         Log::channel(is_string($channel) && $channel !== '' ? $channel : null)->log(
-            $event->type->isFailure() ? 'warning' : 'info',
-            'oidc: audit '.$event->type->value,
+            $record->failure ? 'warning' : 'info',
+            'oidc: audit '.$record->type,
             [
                 ...array_filter([
-                    'user_id' => $event->userId,
-                    'client_id' => $event->clientId,
-                    'sid' => $event->sid,
-                    'ip' => $event->ip,
-                    'user_agent' => $event->userAgent,
+                    'user_id' => $record->userId,
+                    'client_id' => $record->clientId,
+                    'sid' => $record->sid,
+                    'ip' => $record->ip,
+                    'user_agent' => $record->userAgent,
                 ], static fn (?string $value): bool => $value !== null),
-                'occurred_at' => $event->occurredAt->format(DateTimeInterface::ATOM),
-                ...$event->context,
+                'occurred_at' => $record->occurredAt->format(DateTimeInterface::ATOM),
+                ...$record->context,
             ],
         );
     }

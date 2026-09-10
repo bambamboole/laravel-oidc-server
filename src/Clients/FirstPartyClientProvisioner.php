@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
+use Bambamboole\LaravelOidc\Server\Clients\Events\ClientProvisioned;
 use Bambamboole\LaravelOidc\Server\Clients\Exceptions\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\QueryException;
@@ -23,7 +22,6 @@ final readonly class FirstPartyClientProvisioner
     public function __construct(
         private ClientRepository $clients,
         private Hasher $hasher,
-        private Auditor $auditor,
         private RealmResolver $realms,
     ) {}
 
@@ -98,10 +96,7 @@ final readonly class FirstPartyClientProvisioner
 
     private function recordProvisioned(FirstPartyClientProvisioningResult $result): FirstPartyClientProvisioningResult
     {
-        $this->auditor->log(AuditEventType::ClientProvisioned, clientId: $result->clientId, context: [
-            'created' => $result->wasCreated,
-            'secret_rotated' => $result->secretRotated,
-        ]);
+        event(new ClientProvisioned($result->clientId, created: $result->wasCreated, secretRotated: $result->secretRotated));
 
         return $result;
     }

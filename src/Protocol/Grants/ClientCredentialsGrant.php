@@ -12,11 +12,11 @@ use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\ClientCredentialsEvent;
 use Illuminate\Http\Request;
@@ -33,7 +33,6 @@ final readonly class ClientCredentialsGrant implements Grant
         private AccessTokenPipeline $pipeline,
         private ScopeRepository $scopes,
         private ScopeGrant $scopeGrant,
-        private Auditor $auditor,
         private RealmResolver $realms,
     ) {}
 
@@ -64,11 +63,12 @@ final readonly class ClientCredentialsGrant implements Grant
         ));
 
         if ($api->isDenied()) {
-            $this->auditor->log(AuditEventType::TokenIssuanceFailed, clientId: $client->client_id, context: array_filter([
-                'grant_type' => self::TYPE,
-                'reason' => 'pipeline_denied',
-                'deny_reason' => $api->denyReason(),
-            ]));
+            event(new TokenIssuanceFailed(
+                grantType: self::TYPE,
+                reason: 'pipeline_denied',
+                clientId: $client->client_id,
+                denyReason: $api->denyReason(),
+            ));
 
             throw OAuthServerException::accessDenied($api->denyReason());
         }
@@ -82,12 +82,13 @@ final readonly class ClientCredentialsGrant implements Grant
             $api->accessTokenClaims(),
         );
 
-        $this->auditor->log(AuditEventType::TokenIssued, clientId: $client->client_id, context: array_filter([
-            'grant_type' => self::TYPE,
-            'jti' => $token->jti,
-            'scopes' => $scopes,
-            'audiences' => $audiences,
-        ]));
+        event(new TokenIssued(
+            grantType: self::TYPE,
+            jti: $token->jti,
+            scopes: $scopes,
+            clientId: $client->client_id,
+            audiences: $audiences,
+        ));
 
         return new TokenResponse($token);
     }

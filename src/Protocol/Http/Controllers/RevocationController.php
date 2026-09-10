@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Protocol\Clients\ClientAuthenticator;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenRevoked;
 use Bambamboole\LaravelOidc\Server\Tokens\PresentedToken;
 use Bambamboole\LaravelOidc\Server\Tokens\PresentedTokenResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
@@ -21,7 +20,6 @@ use Illuminate\Http\Response;
 class RevocationController
 {
     public function __construct(
-        private readonly Auditor $auditor,
         private readonly TokenRevoker $revoker,
         private readonly PresentedTokenResolver $tokens,
     ) {}
@@ -37,11 +35,12 @@ class RevocationController
 
         $this->revoker->revoke($presented->accessToken->id);
 
-        $this->auditor->log(AuditEventType::TokenRevoked, clientId: $client->client_id, context: array_filter([
-            'token_type' => $presented->isRefreshToken() ? 'refresh_token' : 'access_token',
-            'refresh_token_jti' => $presented->refreshToken?->id,
-            'jti' => $presented->accessToken->id,
-        ]));
+        event(new TokenRevoked(
+            clientId: $client->client_id,
+            tokenType: $presented->isRefreshToken() ? 'refresh_token' : 'access_token',
+            jti: $presented->accessToken->id,
+            refreshTokenJti: $presented->refreshToken?->id,
+        ));
 
         return response()->noContent(200);
     }

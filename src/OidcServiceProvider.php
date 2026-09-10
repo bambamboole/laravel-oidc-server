@@ -32,9 +32,7 @@ class OidcServiceProvider extends ServiceProvider
 {
     /**
      * Each domain wires its own bindings, listeners and commands; this
-     * provider owns what spans them: config, routes and publishing. The order
-     * is also the boot order: Sessions must precede Audit so the login audit
-     * finds the sid StartOidcSession wrote.
+     * provider owns what spans them: config, routes and publishing.
      *
      * @var list<class-string<ServiceProvider>>
      */

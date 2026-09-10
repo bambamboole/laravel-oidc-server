@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Authentication;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Commands\PruneAuthenticationContextsCommand;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
+use Bambamboole\LaravelOidc\Server\Authentication\Listeners\DispatchLoggedOut;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\NullDeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
@@ -19,9 +20,11 @@ use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -60,6 +63,8 @@ class AuthenticationServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Event::listen(Logout::class, DispatchLoggedOut::class);
+
         if ($this->app->runningInConsole()) {
             $this->commands([PruneAuthenticationContextsCommand::class]);
         }

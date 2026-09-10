@@ -7,8 +7,8 @@ namespace Bambamboole\LaravelOidc\Server\Consents\Actions;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Consents\ConsentRepository;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Consents\Events\ConsentApproved;
+use Bambamboole\LaravelOidc\Server\Consents\Events\ConsentDenied;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\AuthorizationCompleter;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,7 +23,6 @@ final readonly class CompleteAuthorization
         private AuthorizationCompleter $completer,
         private ConsentRepository $consents,
         private ClientRepository $clients,
-        private Auditor $auditor,
     ) {}
 
     public function __invoke(Request $request, bool $approved): Response
@@ -38,12 +37,9 @@ final readonly class CompleteAuthorization
             }
         }
 
-        $this->auditor->log(
-            $approved ? AuditEventType::ConsentApproved : AuditEventType::ConsentDenied,
-            userId: $completed->userId,
-            clientId: $completed->clientId,
-            context: ['scopes' => $completed->scopes],
-        );
+        event($approved
+            ? new ConsentApproved($completed->scopes, $completed->userId, $completed->clientId)
+            : new ConsentDenied($completed->scopes, $completed->userId, $completed->clientId));
 
         return $completed->response;
     }

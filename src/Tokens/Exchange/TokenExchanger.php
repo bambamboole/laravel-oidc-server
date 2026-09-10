@@ -6,13 +6,13 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Exchange;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Concerns\ResolvesTokenUser;
 use Bambamboole\LaravelOidc\Server\Tokens\Contracts\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
 use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
@@ -37,7 +37,6 @@ class TokenExchanger
         private readonly RealmResolver $realms,
         private readonly ScopeGrant $scopes,
         private readonly AccessTokenPipeline $pipeline,
-        private readonly Auditor $auditor,
     ) {}
 
     /**
@@ -101,11 +100,13 @@ class TokenExchanger
         ), $result->context);
 
         if ($api->isDenied()) {
-            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: $result->userId, clientId: $requestingClient->client_id, context: array_filter([
-                'grant_type' => self::GRANT_URN,
-                'reason' => 'pipeline_denied',
-                'deny_reason' => $api->denyReason(),
-            ]));
+            event(new TokenIssuanceFailed(
+                grantType: self::GRANT_URN,
+                reason: 'pipeline_denied',
+                clientId: $requestingClient->client_id,
+                userId: $result->userId,
+                denyReason: $api->denyReason(),
+            ));
 
             throw ExchangeDeniedException::accessDenied((string) $api->denyReason());
         }
@@ -120,22 +121,21 @@ class TokenExchanger
 
         $token = $this->minter->mint($result->userId, $requestingClient->client_id, $scopeIds, $ttl, $result->audience, $api->accessTokenClaims(), $act);
 
-        $this->auditor->log(AuditEventType::TokenIssued, userId: $result->userId, clientId: $requestingClient->client_id, context: [
-            'grant_type' => self::GRANT_URN,
-            'jti' => $token->jti,
-            'audience' => $result->audience,
-            'scopes' => $scopeIds,
-        ]);
+        event(new TokenIssued(
+            grantType: self::GRANT_URN,
+            jti: $token->jti,
+            scopes: $scopeIds,
+            clientId: $requestingClient->client_id,
+            userId: $result->userId,
+            audiences: $result->audience,
+        ));
 
         return $token;
     }
 
     private function deny(Client $requestingClient, string $reason, string $message): never
     {
-        $this->auditor->log(AuditEventType::TokenIssuanceFailed, clientId: $requestingClient->client_id, context: [
-            'grant_type' => self::GRANT_URN,
-            'reason' => $reason,
-        ]);
+        event(new TokenIssuanceFailed(grantType: self::GRANT_URN, reason: $reason, clientId: $requestingClient->client_id));
 
         throw ExchangeDeniedException::invalidGrant($message);
     }

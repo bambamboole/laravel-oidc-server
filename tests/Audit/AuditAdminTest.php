@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\Events\ClientProvisioned;
+use Bambamboole\LaravelOidc\Server\Clients\Events\ClientRegistered;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Keys\Events\KeysRotated;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 use Illuminate\Support\Facades\File;
 
 it('audits a dynamic client registration', function (): void {
@@ -17,9 +19,9 @@ it('audits a dynamic client registration', function (): void {
         'redirect_uris' => ['https://mcp.test/callback'],
     ])->assertCreated();
 
-    $sink->assertRecorded(AuditEventType::ClientRegistered, fn (AuditEvent $event): bool => $event->clientId === $response->json('client_id')
-        && $event->context['client_name'] === 'Agent'
-        && $event->context['redirect_uris'] === ['https://mcp.test/callback']);
+    $sink->assertRecorded(ClientRegistered::TYPE, fn (AuditRecord $record): bool => $record->clientId === $response->json('client_id')
+        && $record->context['client_name'] === 'Agent'
+        && $record->context['redirect_uris'] === ['https://mcp.test/callback']);
 });
 
 it('audits first party client provisioning and secret rotation', function (): void {
@@ -30,9 +32,9 @@ it('audits first party client provisioning and secret rotation', function (): vo
         ['https://app.test/callback'],
     );
 
-    $sink->assertRecorded(AuditEventType::ClientProvisioned, fn (AuditEvent $event): bool => $event->clientId === $result->clientId
-        && $event->context['created'] === true
-        && $event->context['secret_rotated'] === false);
+    $sink->assertRecorded(ClientProvisioned::TYPE, fn (AuditRecord $record): bool => $record->clientId === $result->clientId
+        && $record->context['created'] === true
+        && $record->context['secret_rotated'] === false);
 
     app(FirstPartyClientProvisioner::class)->provision(
         'First-Party App',
@@ -40,8 +42,8 @@ it('audits first party client provisioning and secret rotation', function (): vo
         rotateSecret: true,
     );
 
-    $sink->assertRecorded(AuditEventType::ClientProvisioned, fn (AuditEvent $event): bool => $event->context['secret_rotated'] === true
-        && $event->context['created'] === false);
+    $sink->assertRecorded(ClientProvisioned::TYPE, fn (AuditRecord $record): bool => $record->context['secret_rotated'] === true
+        && $record->context['created'] === false);
 });
 
 it('audits a key rotation but not a print run', function (): void {
@@ -53,12 +55,12 @@ it('audits a key rotation but not a print run', function (): void {
 
     $this->artisan('oidc:rotate-keys', ['--print' => true])->assertSuccessful();
 
-    $sink->assertNotRecorded(AuditEventType::KeysRotated);
+    $sink->assertNotRecorded(KeysRotated::TYPE);
 
     $this->artisan('oidc:rotate-keys', ['--force' => true])->assertSuccessful();
 
-    $event = $sink->assertRecorded(AuditEventType::KeysRotated);
+    $record = $sink->assertRecorded(KeysRotated::TYPE);
 
-    expect($event->context['kid'])->toBeString()
-        ->and($event->context)->not->toHaveKeys(['private_key', 'public_key']);
+    expect($record->context['kid'])->toBeString()
+        ->and($record->context)->not->toHaveKeys(['private_key', 'public_key']);
 });

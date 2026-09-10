@@ -2,21 +2,22 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
 /**
  * A client has two identities: the primary key that foreign keys point at, and the
  * `client_id` relying parties send. Everything that leaves the process carries the
  * latter, so renaming a client never touches its tokens.
  */
 
-use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\SendBackChannelLogout;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenRevoked;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -55,7 +56,7 @@ it('issues, introspects and revokes under the wire client_id while storing the k
         ->and($record->client_id)->toBe((string) $this->client->getKey())
         ->and(app(OidcSessionRepository::class)->participantClientIds($sid))->toBe([(string) $this->client->getKey()]);
 
-    $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditEvent $event): bool => $event->clientId === 'my-app');
+    $sink->assertRecorded(TokenIssued::TYPE, fn (AuditRecord $record): bool => $record->clientId === 'my-app');
 
     $this->postJson('/oauth/introspect', [
         'client_id' => 'my-app',
@@ -77,7 +78,7 @@ it('issues, introspects and revokes under the wire client_id while storing the k
     ])->assertOk();
 
     expect($record->refresh()->revoked)->toBeTrue();
-    $sink->assertRecorded(AuditEventType::TokenRevoked, fn (AuditEvent $event): bool => $event->clientId === 'my-app');
+    $sink->assertRecorded(TokenRevoked::TYPE, fn (AuditRecord $record): bool => $record->clientId === 'my-app');
 });
 
 it('exchanges a token issued under the wire client_id and names it in the act claim', function (): void {

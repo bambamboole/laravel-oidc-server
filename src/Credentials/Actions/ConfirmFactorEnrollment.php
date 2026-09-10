@@ -6,16 +6,14 @@ namespace Bambamboole\LaravelOidc\Server\Credentials\Actions;
 
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\EnrollableFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\EnrollmentPolicy;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\FactorConfirmed;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 final readonly class ConfirmFactorEnrollment
 {
     public function __construct(
         private EnrollmentPolicy $policy,
-        private Auditor $auditor,
     ) {}
 
     /**
@@ -33,10 +31,7 @@ final readonly class ConfirmFactorEnrollment
 
         $this->policy->factorConfirmed($user);
 
-        $this->auditor->log(AuditEventType::FactorConfirmed, userId: (string) $user->getAuthIdentifier(), context: [
-            'factor' => $provider->key(),
-            'enrollment_id' => $enrollment->id,
-        ]);
+        event(new FactorConfirmed((string) $user->getAuthIdentifier(), $provider->key(), $enrollment->id));
 
         return true;
     }

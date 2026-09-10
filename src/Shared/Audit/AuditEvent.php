@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Shared\Audit;
 
-use DateTimeImmutable;
-
-final readonly class AuditEvent
+/**
+ * A domain event that is also security-relevant. Dispatching it through the
+ * event dispatcher is all a domain does; the Audit domain listens for this
+ * contract, enriches the record with request context and hands it to the
+ * configured sink.
+ */
+interface AuditEvent
 {
-    /**
-     * @param  array<string, mixed>  $context
-     */
-    public function __construct(
-        public AuditEventType $type,
-        public ?string $userId,
-        public ?string $clientId,
-        public ?string $sid,
-        public ?string $ip,
-        public ?string $userAgent,
-        public DateTimeImmutable $occurredAt,
-        public array $context = [],
-    ) {}
+    public function auditRecord(): AuditRecord;
 }

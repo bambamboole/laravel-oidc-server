@@ -2,13 +2,23 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Authentication\Events\LoggedOut;
+use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginFailed;
+use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginSucceeded;
+use Bambamboole\LaravelOidc\Server\Authentication\Events\PasswordReset;
+use Bambamboole\LaravelOidc\Server\Authentication\Events\UserRegistered;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\FactorConfirmed;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\FactorEnrollmentStarted;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\FactorRevoked;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\MfaChallengeFailed;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\MfaChallengeSucceeded;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\RecoveryCodeUsed;
 use Bambamboole\LaravelOidc\Server\Credentials\RecoveryCodeProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
@@ -27,12 +37,12 @@ it('audits a successful password login with sid and amr', function (): void {
 
     $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'password']);
 
-    $event = $sink->assertRecorded(AuditEventType::LoginSucceeded);
+    $record = $sink->assertRecorded(LoginSucceeded::TYPE);
 
-    expect($event->userId)->toBe((string) $user->getAuthIdentifier())
-        ->and($event->sid)->not->toBeNull()
-        ->and($event->context['amr'])->toBe(['pwd'])
-        ->and($event->ip)->not->toBeNull();
+    expect($record->userId)->toBe((string) $user->getAuthIdentifier())
+        ->and($record->sid)->not->toBeNull()
+        ->and($record->context['amr'])->toBe(['pwd'])
+        ->and($record->ip)->not->toBeNull();
 });
 
 it('audits a login attempt with invalid credentials', function (): void {
@@ -41,10 +51,10 @@ it('audits a login attempt with invalid credentials', function (): void {
 
     $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'wrong']);
 
-    $sink->assertRecorded(AuditEventType::LoginFailed, fn (AuditEvent $event): bool => $event->context['reason'] === 'invalid_credentials'
-        && $event->context['username'] === 'audit@example.com'
-        && $event->context['method'] === 'pwd');
-    $sink->assertNotRecorded(AuditEventType::LoginSucceeded);
+    $sink->assertRecorded(LoginFailed::TYPE, fn (AuditRecord $record): bool => $record->context['reason'] === 'invalid_credentials'
+        && $record->context['username'] === 'audit@example.com'
+        && $record->context['method'] === 'pwd');
+    $sink->assertNotRecorded(LoginSucceeded::TYPE);
 });
 
 it('audits a login denied by the postLogin policy', function (): void {
@@ -54,9 +64,9 @@ it('audits a login denied by the postLogin policy', function (): void {
 
     $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'password']);
 
-    $sink->assertRecorded(AuditEventType::LoginFailed, fn (AuditEvent $event): bool => $event->context['reason'] === 'policy_denied'
-        && $event->context['deny_reason'] === 'blocked');
-    $sink->assertNotRecorded(AuditEventType::LoginSucceeded);
+    $sink->assertRecorded(LoginFailed::TYPE, fn (AuditRecord $record): bool => $record->context['reason'] === 'policy_denied'
+        && $record->context['deny_reason'] === 'blocked');
+    $sink->assertNotRecorded(LoginSucceeded::TYPE);
 });
 
 it('audits a full mfa challenge round trip', function (): void {
@@ -68,23 +78,23 @@ it('audits a full mfa challenge round trip', function (): void {
     $this->post(route('identity.login.store'), ['email' => 'audit@example.com', 'password' => 'password'])
         ->assertRedirect(route('identity.two-factor.login'));
 
-    $sink->assertNotRecorded(AuditEventType::LoginSucceeded);
+    $sink->assertNotRecorded(LoginSucceeded::TYPE);
 
     $this->post(route('identity.two-factor.login.store'), ['code' => '000000'])
         ->assertSessionHasErrors('code');
 
-    $sink->assertRecorded(AuditEventType::MfaChallengeFailed, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp'
-        && $event->context['reason'] === 'invalid_code'
-        && $event->userId === (string) $user->getAuthIdentifier());
+    $sink->assertRecorded(MfaChallengeFailed::TYPE, fn (AuditRecord $record): bool => $record->context['factor'] === 'totp'
+        && $record->context['reason'] === 'invalid_code'
+        && $record->userId === (string) $user->getAuthIdentifier());
 
     $code = app(Google2FA::class)->getCurrentOtp($factor->secret);
 
     $this->post(route('identity.two-factor.login.store'), ['code' => $code])
         ->assertRedirect('/dashboard');
 
-    $sink->assertRecorded(AuditEventType::MfaChallengeSucceeded, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp');
-    $sink->assertRecorded(AuditEventType::LoginSucceeded, fn (AuditEvent $event): bool => $event->context['amr'] === ['pwd', 'otp']);
-    $sink->assertNotRecorded(AuditEventType::RecoveryCodeUsed);
+    $sink->assertRecorded(MfaChallengeSucceeded::TYPE, fn (AuditRecord $record): bool => $record->context['factor'] === 'totp');
+    $sink->assertRecorded(LoginSucceeded::TYPE, fn (AuditRecord $record): bool => $record->context['amr'] === ['pwd', 'otp']);
+    $sink->assertNotRecorded(RecoveryCodeUsed::TYPE);
 });
 
 it('audits a recovery code login', function (): void {
@@ -99,8 +109,8 @@ it('audits a recovery code login', function (): void {
         ->post(route('identity.two-factor.login.store'), ['recovery_code' => $recoveryCode])
         ->assertRedirect('/dashboard');
 
-    $sink->assertRecorded(AuditEventType::RecoveryCodeUsed, fn (AuditEvent $event): bool => $event->userId === (string) $user->getAuthIdentifier());
-    $sink->assertRecorded(AuditEventType::MfaChallengeSucceeded, fn (AuditEvent $event): bool => $event->context['factor'] === 'recovery_code');
+    $sink->assertRecorded(RecoveryCodeUsed::TYPE, fn (AuditRecord $record): bool => $record->userId === (string) $user->getAuthIdentifier());
+    $sink->assertRecorded(MfaChallengeSucceeded::TYPE, fn (AuditRecord $record): bool => $record->context['factor'] === 'recovery_code');
 });
 
 it('audits the factor enrollment lifecycle', function (): void {
@@ -112,8 +122,8 @@ it('audits the factor enrollment lifecycle', function (): void {
         ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->json();
 
-    $sink->assertRecorded(AuditEventType::FactorEnrollmentStarted, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp'
-        && $event->context['enrollment_id'] === $enrollment['id']);
+    $sink->assertRecorded(FactorEnrollmentStarted::TYPE, fn (AuditRecord $record): bool => $record->context['factor'] === 'totp'
+        && $record->context['enrollment_id'] === $enrollment['id']);
 
     $code = app(Google2FA::class)->getCurrentOtp($enrollment['metadata']['secret']);
 
@@ -123,14 +133,14 @@ it('audits the factor enrollment lifecycle', function (): void {
             'code' => $code,
         ])->assertOk();
 
-    $sink->assertRecorded(AuditEventType::FactorConfirmed, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp');
+    $sink->assertRecorded(FactorConfirmed::TYPE, fn (AuditRecord $record): bool => $record->context['factor'] === 'totp');
 
     $this->actingAs($user, 'identity')->withSession($session)
         ->deleteJson(route('identity.two-factor.revoke', ['provider' => 'totp', 'enrollment' => $enrollment['id']]))
         ->assertNoContent();
 
-    $sink->assertRecorded(AuditEventType::FactorRevoked, fn (AuditEvent $event): bool => $event->context['factor'] === 'totp'
-        && $event->context['enrollment_id'] === $enrollment['id']);
+    $sink->assertRecorded(FactorRevoked::TYPE, fn (AuditRecord $record): bool => $record->context['factor'] === 'totp'
+        && $record->context['enrollment_id'] === $enrollment['id']);
 });
 
 it('audits a registration', function (): void {
@@ -150,8 +160,8 @@ it('audits a registration', function (): void {
 
     $user = User::where('email', 'audit@example.com')->firstOrFail();
 
-    $sink->assertRecorded(AuditEventType::UserRegistered, fn (AuditEvent $event): bool => $event->userId === (string) $user->getAuthIdentifier());
-    $sink->assertRecorded(AuditEventType::LoginSucceeded);
+    $sink->assertRecorded(UserRegistered::TYPE, fn (AuditRecord $record): bool => $record->userId === (string) $user->getAuthIdentifier());
+    $sink->assertRecorded(LoginSucceeded::TYPE);
 });
 
 it('audits a password reset', function (): void {
@@ -175,7 +185,7 @@ it('audits a password reset', function (): void {
         'password_confirmation' => 'new-password',
     ]);
 
-    $sink->assertRecorded(AuditEventType::PasswordReset, fn (AuditEvent $event): bool => $event->userId === (string) $user->getAuthIdentifier());
+    $sink->assertRecorded(PasswordReset::TYPE, fn (AuditRecord $record): bool => $record->userId === (string) $user->getAuthIdentifier());
 });
 
 it('audits a logout with the sid still attached', function (): void {
@@ -186,8 +196,8 @@ it('audits a logout with the sid still attached', function (): void {
 
     $this->post(route('oidc.logout'));
 
-    $event = $sink->assertRecorded(AuditEventType::Logout);
+    $record = $sink->assertRecorded(LoggedOut::TYPE);
 
-    expect($event->userId)->toBe((string) $user->getAuthIdentifier())
-        ->and($event->sid)->not->toBeNull();
+    expect($record->userId)->toBe((string) $user->getAuthIdentifier())
+        ->and($record->sid)->not->toBeNull();
 });

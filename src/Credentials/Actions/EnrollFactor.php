@@ -6,15 +6,12 @@ namespace Bambamboole\LaravelOidc\Server\Credentials\Actions;
 
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\EnrollableFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\FactorEnrollmentStarted;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 final readonly class EnrollFactor
 {
-    public function __construct(private Auditor $auditor) {}
-
     public function __invoke(
         Authenticatable $user,
         EnrollableFactorProvider $provider,
@@ -23,10 +20,7 @@ final readonly class EnrollFactor
     ): FactorEnrollment {
         $enrollment = $provider->beginEnrollment($user, $option, $name);
 
-        $this->auditor->log(AuditEventType::FactorEnrollmentStarted, userId: (string) $user->getAuthIdentifier(), context: [
-            'factor' => $provider->key(),
-            'enrollment_id' => $enrollment->id,
-        ]);
+        event(new FactorEnrollmentStarted((string) $user->getAuthIdentifier(), $provider->key(), $enrollment->id));
 
         return $enrollment;
     }

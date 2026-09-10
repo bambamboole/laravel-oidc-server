@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Authentication\Events\UserRegistered;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Bambamboole\LaravelOidc\Server\Shared\Users\CreateUser;
 use Illuminate\Auth\Events\Registered;
@@ -22,7 +21,6 @@ final readonly class RegisterUser
 {
     public function __construct(
         private Container $container,
-        private Auditor $auditor,
         private PasswordCredential $passwords,
     ) {}
 
@@ -50,7 +48,7 @@ final readonly class RegisterUser
 
         event(new Registered($user));
 
-        $this->auditor->log(AuditEventType::UserRegistered, userId: (string) $user->getAuthIdentifier());
+        event(new UserRegistered((string) $user->getAuthIdentifier()));
 
         return $user;
     }

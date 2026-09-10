@@ -10,9 +10,8 @@ use Bambamboole\LaravelOidc\Server\Protocol\Contracts\Grant;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Pkce;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 use Illuminate\Http\Request;
@@ -31,7 +30,6 @@ final readonly class AuthorizationCodeGrant implements Grant
         private ScopeGrant $scopes,
         private AuthenticationContextStore $contexts,
         private TokenRevoker $revoker,
-        private Auditor $auditor,
     ) {}
 
     public function type(): string
@@ -134,10 +132,12 @@ final readonly class AuthorizationCodeGrant implements Grant
     {
         $this->revoker->revokeChain($authCode->id);
 
-        $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: (string) $authCode->user_id, clientId: $client->client_id, context: [
-            'grant_type' => self::TYPE,
-            'reason' => 'code_replayed',
-        ]);
+        event(new TokenIssuanceFailed(
+            grantType: self::TYPE,
+            reason: 'code_replayed',
+            clientId: $client->client_id,
+            userId: (string) $authCode->user_id,
+        ));
 
         throw OAuthServerException::invalidGrant('The authorization code has already been used.');
     }

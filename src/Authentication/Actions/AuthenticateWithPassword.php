@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginFailed;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
@@ -20,7 +19,6 @@ use SensitiveParameter;
 final readonly class AuthenticateWithPassword
 {
     public function __construct(
-        private Auditor $auditor,
         private PasswordCredential $passwords,
     ) {}
 
@@ -34,11 +32,12 @@ final readonly class AuthenticateWithPassword
         $user = $users->retrieveByCredentials($credentials);
 
         if ($user === null || ! $this->passwords->verify($user, $password)) {
-            $this->auditor->log(AuditEventType::LoginFailed, userId: $user === null ? null : (string) $user->getAuthIdentifier(), context: [
-                'method' => 'pwd',
-                'username' => $credentials[$usernameField],
-                'reason' => 'invalid_credentials',
-            ]);
+            event(new LoginFailed(
+                method: 'pwd',
+                reason: 'invalid_credentials',
+                userId: $user === null ? null : (string) $user->getAuthIdentifier(),
+                username: $credentials[$usernameField],
+            ));
 
             return null;
         }

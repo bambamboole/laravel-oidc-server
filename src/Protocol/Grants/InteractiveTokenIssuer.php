@@ -7,13 +7,13 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
 use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Concerns\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
@@ -41,7 +41,6 @@ final readonly class InteractiveTokenIssuer
         private AccessTokenMinter $minter,
         private AccessTokenPipeline $pipeline,
         private IdTokenBuilder $idTokens,
-        private Auditor $auditor,
         private RealmResolver $realms,
     ) {}
 
@@ -63,11 +62,13 @@ final readonly class InteractiveTokenIssuer
         $api = $this->runTriggers($client, $userId, $scopes, $grantType);
 
         if ($api?->isDenied() === true) {
-            $this->auditor->log(AuditEventType::TokenIssuanceFailed, userId: $userId, clientId: $client->client_id, context: array_filter([
-                'grant_type' => $grantType,
-                'reason' => 'pipeline_denied',
-                'deny_reason' => $api->denyReason(),
-            ]));
+            event(new TokenIssuanceFailed(
+                grantType: $grantType,
+                reason: 'pipeline_denied',
+                clientId: $client->client_id,
+                userId: $userId,
+                denyReason: $api->denyReason(),
+            ));
 
             throw OAuthServerException::accessDenied($api->denyReason());
         }
@@ -105,11 +106,14 @@ final readonly class InteractiveTokenIssuer
             ))
             : null;
 
-        $this->auditor->log(AuditEventType::TokenIssued, userId: $userId, clientId: $client->client_id, sid: $context?->sid, context: [
-            'grant_type' => $grantType,
-            'jti' => $accessToken->jti,
-            'scopes' => $scopes,
-        ]);
+        event(new TokenIssued(
+            grantType: $grantType,
+            jti: $accessToken->jti,
+            scopes: $scopes,
+            clientId: $client->client_id,
+            userId: $userId,
+            sid: $context?->sid,
+        ));
 
         return new TokenResponse($accessToken, $refreshToken, $idToken);
     }

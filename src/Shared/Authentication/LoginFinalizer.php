@@ -28,4 +28,11 @@ interface LoginFinalizer
         bool $remember = false,
         bool $challengeEnrolledFactors = true,
     ): LoginOutcome;
+
+    /**
+     * The tail of finalize() for a flow that finished its own verification
+     * afterwards, such as a second-factor challenge: guard login, session
+     * regeneration and the LoginSucceeded event.
+     */
+    public function complete(Request $request, Authenticatable $user, bool $remember = false): void;
 }

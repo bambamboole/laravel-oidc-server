@@ -4,60 +4,59 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
 use Closure;
 use PHPUnit\Framework\Assert;
 
 final class FakeAuditSink implements AuditSink
 {
-    /** @var list<AuditEvent> */
-    private array $events = [];
+    /** @var list<AuditRecord> */
+    private array $records = [];
 
-    public function record(AuditEvent $event): void
+    public function record(AuditRecord $record): void
     {
-        $this->events[] = $event;
+        $this->records[] = $record;
     }
 
     /**
-     * @return list<AuditEvent>
+     * @return list<AuditRecord>
      */
-    public function events(?AuditEventType $type = null): array
+    public function records(?string $type = null): array
     {
         return array_values(array_filter(
-            $this->events,
-            static fn (AuditEvent $event): bool => ! $type instanceof AuditEventType || $event->type === $type,
+            $this->records,
+            static fn (AuditRecord $record): bool => $type === null || $record->type === $type,
         ));
     }
 
     /**
-     * @param  (Closure(AuditEvent): bool)|null  $filter
+     * @param  (Closure(AuditRecord): bool)|null  $filter
      */
-    public function assertRecorded(AuditEventType $type, ?Closure $filter = null): AuditEvent
+    public function assertRecorded(string $type, ?Closure $filter = null): AuditRecord
     {
-        $events = $this->events($type);
+        $records = $this->records($type);
 
-        Assert::assertNotEmpty($events, "Expected audit event [{$type->value}] was not recorded.");
+        Assert::assertNotEmpty($records, "Expected audit record [{$type}] was not recorded.");
 
         if (! $filter instanceof Closure) {
-            return $events[0];
+            return $records[0];
         }
 
-        $matching = array_values(array_filter($events, $filter));
+        $matching = array_values(array_filter($records, $filter));
 
-        Assert::assertNotEmpty($matching, "Audit event [{$type->value}] was recorded, but none matched the given filter.");
+        Assert::assertNotEmpty($matching, "Audit record [{$type}] was recorded, but none matched the given filter.");
 
         return $matching[0];
     }
 
-    public function assertNotRecorded(AuditEventType $type): void
+    public function assertNotRecorded(string $type): void
     {
-        Assert::assertSame([], $this->events($type), "Unexpected audit event [{$type->value}] was recorded.");
+        Assert::assertSame([], $this->records($type), "Unexpected audit record [{$type}] was recorded.");
     }
 
     public function assertNothingRecorded(): void
     {
-        Assert::assertSame([], $this->events, 'Expected no audit events, but some were recorded.');
+        Assert::assertSame([], $this->records, 'Expected no audit records, but some were recorded.');
     }
 }

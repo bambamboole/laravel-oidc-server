@@ -12,6 +12,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\PendingMfaChallenge;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengePrompt;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Responsable;
@@ -29,6 +30,7 @@ class TwoFactorChallengeController
         private readonly FactorRegistry $factors,
         private readonly AuthSessionState $sessionState,
         private readonly VerifyFactorChallenge $verifyChallenge,
+        private readonly LoginFinalizer $finalizer,
     ) {}
 
     /**
@@ -136,11 +138,7 @@ class TwoFactorChallengeController
         $this->sessionState->add(...$verification->amr);
 
         PendingMfaChallenge::forget();
-        $this->sessionGuard()->login($user, $pending->remember);
-
-        if ($request->hasSession()) {
-            $request->session()->regenerate();
-        }
+        $this->finalizer->complete($request, $user, $pending->remember);
 
         if ($request->wantsJson()) {
             // A WebAuthn submit comes from the passkey ceremony script, which

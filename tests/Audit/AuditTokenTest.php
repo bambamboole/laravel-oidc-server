@@ -3,11 +3,16 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Consents\Events\ConsentApproved;
+use Bambamboole\LaravelOidc\Server\Consents\Events\ConsentDenied;
+use Bambamboole\LaravelOidc\Server\Protocol\Events\ClientAuthenticationFailed;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenRevoked;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Workbench\App\Models\User;
@@ -31,11 +36,11 @@ it('audits consent approval and token issuance through the code flow', function 
     $this->actingAsIdentity($this->user, authTime: time() - 60)->withSession(['oidc.sid' => $sid]);
     $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid')->response->assertOk();
 
-    $sink->assertRecorded(AuditEventType::ConsentApproved, fn (AuditEvent $event): bool => $event->clientId === (string) $this->client->id
-        && $event->userId === (string) $this->user->id
-        && $event->context['scopes'] === ['openid']);
+    $sink->assertRecorded(ConsentApproved::TYPE, fn (AuditRecord $record): bool => $record->clientId === (string) $this->client->id
+        && $record->userId === (string) $this->user->id
+        && $record->context['scopes'] === ['openid']);
 
-    $issued = $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditEvent $event): bool => $event->context['grant_type'] === 'authorization_code');
+    $issued = $sink->assertRecorded(TokenIssued::TYPE, fn (AuditRecord $record): bool => $record->context['grant_type'] === 'authorization_code');
 
     expect($issued->userId)->toBe((string) $this->user->id)
         ->and($issued->clientId)->toBe((string) $this->client->id)
@@ -63,10 +68,10 @@ it('audits a denied consent', function (): void {
     $this->delete(route('oidc.deny'), ['auth_token' => $view->json('authToken')])
         ->assertRedirect();
 
-    $sink->assertRecorded(AuditEventType::ConsentDenied, fn (AuditEvent $event): bool => $event->clientId === (string) $this->client->id
-        && $event->userId === (string) $this->user->id);
-    $sink->assertNotRecorded(AuditEventType::ConsentApproved);
-    $sink->assertNotRecorded(AuditEventType::TokenIssued);
+    $sink->assertRecorded(ConsentDenied::TYPE, fn (AuditRecord $record): bool => $record->clientId === (string) $this->client->id
+        && $record->userId === (string) $this->user->id);
+    $sink->assertNotRecorded(ConsentApproved::TYPE);
+    $sink->assertNotRecorded(TokenIssued::TYPE);
 });
 
 it('audits a refresh token grant as token issuance', function (): void {
@@ -84,9 +89,9 @@ it('audits a refresh token grant as token issuance', function (): void {
         'client_secret' => $this->client->plainSecret,
     ])->assertOk();
 
-    $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditEvent $event): bool => $event->context['grant_type'] === 'refresh_token'
-        && $event->userId === (string) $this->user->id
-        && $event->sid !== null);
+    $sink->assertRecorded(TokenIssued::TYPE, fn (AuditRecord $record): bool => $record->context['grant_type'] === 'refresh_token'
+        && $record->userId === (string) $this->user->id
+        && $record->sid !== null);
 });
 
 it('audits a refresh denied after the session ended', function (): void {
@@ -105,9 +110,9 @@ it('audits a refresh denied after the session ended', function (): void {
         'client_secret' => $this->client->plainSecret,
     ])->assertStatus(400);
 
-    $sink->assertRecorded(AuditEventType::TokenIssuanceFailed, fn (AuditEvent $event): bool => $event->context['grant_type'] === 'refresh_token'
-        && $event->context['reason'] === 'session_ended');
-    $sink->assertNotRecorded(AuditEventType::TokenIssued);
+    $sink->assertRecorded(TokenIssuanceFailed::TYPE, fn (AuditRecord $record): bool => $record->context['grant_type'] === 'refresh_token'
+        && $record->context['reason'] === 'session_ended');
+    $sink->assertNotRecorded(TokenIssued::TYPE);
 });
 
 it('audits a client credentials token issuance', function (): void {
@@ -121,9 +126,9 @@ it('audits a client credentials token issuance', function (): void {
         'scope' => '',
     ])->assertOk();
 
-    $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditEvent $event): bool => $event->context['grant_type'] === 'client_credentials'
-        && $event->clientId === (string) $client->id
-        && $event->userId === null);
+    $sink->assertRecorded(TokenIssued::TYPE, fn (AuditRecord $record): bool => $record->context['grant_type'] === 'client_credentials'
+        && $record->clientId === (string) $client->id
+        && $record->userId === null);
 });
 
 it('audits a token exchange and its failure paths', function (): void {
@@ -146,9 +151,9 @@ it('audits a token exchange and its failure paths', function (): void {
         'scope' => 'orders:read',
     ])->assertOk();
 
-    $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditEvent $event): bool => $event->context['grant_type'] === 'urn:ietf:params:oauth:grant-type:token-exchange'
-        && $event->userId === (string) $this->user->id
-        && $event->context['audience'] === ['https://api.internal/orders']);
+    $sink->assertRecorded(TokenIssued::TYPE, fn (AuditRecord $record): bool => $record->context['grant_type'] === 'urn:ietf:params:oauth:grant-type:token-exchange'
+        && $record->userId === (string) $this->user->id
+        && $record->context['audiences'] === ['https://api.internal/orders']);
 
     $revoked = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid'], revoked: true);
 
@@ -161,8 +166,8 @@ it('audits a token exchange and its failure paths', function (): void {
         'audience' => 'https://api.internal/orders',
     ])->assertStatus(400);
 
-    $sink->assertRecorded(AuditEventType::TokenIssuanceFailed, fn (AuditEvent $event): bool => $event->context['reason'] === 'subject_token_invalid'
-        && $event->clientId === (string) $this->client->id);
+    $sink->assertRecorded(TokenIssuanceFailed::TYPE, fn (AuditRecord $record): bool => $record->context['reason'] === 'subject_token_invalid'
+        && $record->clientId === (string) $this->client->id);
 });
 
 it('audits a personal access token issuance', function (): void {
@@ -173,9 +178,9 @@ it('audits a personal access token issuance', function (): void {
 
     $token = $result->token;
 
-    $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditEvent $event): bool => $event->context['grant_type'] === 'personal_access'
-        && $event->userId === (string) $this->user->id
-        && $event->context['jti'] === (string) $token->getKey());
+    $sink->assertRecorded(TokenIssued::TYPE, fn (AuditRecord $record): bool => $record->context['grant_type'] === 'personal_access'
+        && $record->userId === (string) $this->user->id
+        && $record->context['jti'] === (string) $token->getKey());
 });
 
 it('audits an access token revocation', function (): void {
@@ -193,9 +198,9 @@ it('audits an access token revocation', function (): void {
         'token' => $result->accessToken,
     ])->assertOk();
 
-    $sink->assertRecorded(AuditEventType::TokenRevoked, fn (AuditEvent $event): bool => $event->clientId === (string) $this->client->id
-        && $event->context['token_type'] === 'access_token'
-        && $event->context['jti'] === (string) $token->getKey());
+    $sink->assertRecorded(TokenRevoked::TYPE, fn (AuditRecord $record): bool => $record->clientId === (string) $this->client->id
+        && $record->context['token_type'] === 'access_token'
+        && $record->context['jti'] === (string) $token->getKey());
 });
 
 it('audits a failed client authentication at the introspection endpoint', function (): void {
@@ -207,8 +212,8 @@ it('audits a failed client authentication at the introspection endpoint', functi
         'token' => 'irrelevant',
     ])->assertStatus(401);
 
-    $sink->assertRecorded(AuditEventType::ClientAuthenticationFailed, fn (AuditEvent $event): bool => $event->clientId === (string) $this->client->id
-        && $event->context['endpoint'] === 'oauth/introspect');
+    $sink->assertRecorded(ClientAuthenticationFailed::TYPE, fn (AuditRecord $record): bool => $record->clientId === (string) $this->client->id
+        && $record->context['endpoint'] === 'oauth/introspect');
 });
 
 it('audits a failed client authentication at the token endpoint', function (): void {
@@ -222,6 +227,6 @@ it('audits a failed client authentication at the token endpoint', function (): v
         'scope' => '',
     ])->assertStatus(401);
 
-    $sink->assertRecorded(AuditEventType::ClientAuthenticationFailed, fn (AuditEvent $event): bool => $event->clientId === (string) $client->id
-        && $event->context['endpoint'] === 'oauth/token');
+    $sink->assertRecorded(ClientAuthenticationFailed::TYPE, fn (AuditRecord $record): bool => $record->clientId === (string) $client->id
+        && $record->context['endpoint'] === 'oauth/token');
 });

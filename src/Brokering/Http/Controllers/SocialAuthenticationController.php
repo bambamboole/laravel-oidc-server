@@ -6,14 +6,13 @@ namespace Bambamboole\LaravelOidc\Server\Brokering\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Actions\LinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Brokering\Events\SocialLoginFailed;
 use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\InvalidStateException;
 use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\SocialAccountAlreadyLinkedException;
 use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
@@ -35,7 +34,6 @@ class SocialAuthenticationController
         private readonly SocialAccountManager $accounts,
         private readonly LinkSocialAccount $linkAccount,
         private readonly LoginFinalizer $finalizer,
-        private readonly Auditor $auditor,
     ) {}
 
     public function redirect(Request $request, string $provider): Response
@@ -81,10 +79,7 @@ class SocialAuthenticationController
             return $this->failed(__('Your sign-in attempt expired. Please try again.'));
         } catch (SocialAuthenticationException $exception) {
             Log::warning("oidc: social authentication with [{$provider}] failed: {$exception->getMessage()}");
-            $this->auditor->log(AuditEventType::LoginFailed, context: [
-                'method' => 'social:'.$provider,
-                'reason' => $exception->getMessage(),
-            ]);
+            event(new SocialLoginFailed($provider, $exception->getMessage()));
 
             return $this->failed(__('We could not sign you in with this account.'));
         }

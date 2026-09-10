@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
+use Bambamboole\LaravelOidc\Server\Authentication\Events\PasswordReset;
 use Bambamboole\LaravelOidc\Server\Authentication\PasswordResetResult;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
-use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Auth\Events\PasswordReset as PasswordWasReset;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Contracts\Container\Container;
@@ -27,7 +26,6 @@ final readonly class ResetPassword
 {
     public function __construct(
         private Container $container,
-        private Auditor $auditor,
         private PasswordCredential $passwords,
     ) {}
 
@@ -59,14 +57,14 @@ final readonly class ResetPassword
 
                 $this->passwords->record($user);
 
-                event(new PasswordReset($user));
+                event(new PasswordWasReset($user));
 
                 $resetUser = $user;
             },
         );
 
         if ($status === Password::PASSWORD_RESET && $resetUser instanceof Authenticatable) {
-            $this->auditor->log(AuditEventType::PasswordReset, userId: (string) $resetUser->getAuthIdentifier());
+            event(new PasswordReset((string) $resetUser->getAuthIdentifier()));
 
             return new PasswordResetResult($status, $resetUser);
         }

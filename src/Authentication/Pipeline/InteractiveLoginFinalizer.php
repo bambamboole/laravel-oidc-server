@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
+use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginFailed;
+use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginSucceeded;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
@@ -35,7 +35,6 @@ final readonly class InteractiveLoginFinalizer implements LoginFinalizer
         private AuthSessionState $sessionState,
         private PostLoginPipeline $pipeline,
         private DeviceRecognizer $deviceRecognizer,
-        private Auditor $auditor,
         private PendingAuthorization $pending,
         private ClientRepository $clients,
     ) {}
@@ -77,11 +76,12 @@ final readonly class InteractiveLoginFinalizer implements LoginFinalizer
 
         if ($api->isDenied()) {
             Log::warning('oidc: login denied by postLogin', ['method' => $method, 'reason' => $api->denyReason()]);
-            $this->auditor->log(AuditEventType::LoginFailed, userId: (string) $user->getAuthIdentifier(), context: array_filter([
-                'method' => $method,
-                'reason' => 'policy_denied',
-                'deny_reason' => $api->denyReason(),
-            ]));
+            event(new LoginFailed(
+                method: $method,
+                reason: 'policy_denied',
+                userId: (string) $user->getAuthIdentifier(),
+                denyReason: $api->denyReason(),
+            ));
             $this->sessionState->forget();
 
             return LoginOutcome::Denied;
@@ -93,10 +93,11 @@ final readonly class InteractiveLoginFinalizer implements LoginFinalizer
 
         if ($api->mfaRequired() && ! $challengeable) {
             Log::warning('oidc: login denied, MFA required but no challengeable factor', ['method' => $method]);
-            $this->auditor->log(AuditEventType::LoginFailed, userId: (string) $user->getAuthIdentifier(), context: [
-                'method' => $method,
-                'reason' => 'mfa_required_without_factor',
-            ]);
+            event(new LoginFailed(
+                method: $method,
+                reason: 'mfa_required_without_factor',
+                userId: (string) $user->getAuthIdentifier(),
+            ));
             $this->sessionState->forget();
 
             return LoginOutcome::Denied;
@@ -108,12 +109,19 @@ final readonly class InteractiveLoginFinalizer implements LoginFinalizer
             return LoginOutcome::MfaChallenge;
         }
 
+        $this->complete($request, $user, $remember);
+
+        return LoginOutcome::LoggedIn;
+    }
+
+    public function complete(Request $request, Authenticatable $user, bool $remember = false): void
+    {
         $this->sessionGuard()->login($user, $remember);
 
         if ($request->hasSession()) {
             $request->session()->regenerate();
         }
 
-        return LoginOutcome::LoggedIn;
+        event(new LoginSucceeded((string) $user->getAuthIdentifier(), $this->sessionState->amr(), $remember));
     }
 }

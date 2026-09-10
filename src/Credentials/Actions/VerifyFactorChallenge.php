@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Credentials\Actions;
 
+use Bambamboole\LaravelOidc\Server\Credentials\Events\MfaChallengeFailed;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\MfaChallengeSucceeded;
+use Bambamboole\LaravelOidc\Server\Credentials\Events\RecoveryCodeUsed;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorChallenge;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorVerification;
 use Bambamboole\LaravelOidc\Server\Credentials\PendingMfaChallenge;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
@@ -22,7 +23,6 @@ final readonly class VerifyFactorChallenge
 {
     public function __construct(
         private FactorRegistry $factors,
-        private Auditor $auditor,
     ) {}
 
     /**
@@ -38,10 +38,7 @@ final readonly class VerifyFactorChallenge
             : $this->pendingEnrollment($user, $providerKey, $pending->factorId);
 
         if (! $enrollment instanceof FactorEnrollment) {
-            $this->auditor->log(AuditEventType::MfaChallengeFailed, userId: (string) $pending->userId, context: [
-                'factor' => $providerKey,
-                'reason' => 'unknown_enrollment',
-            ]);
+            event(new MfaChallengeFailed((string) $pending->userId, $providerKey, 'unknown_enrollment'));
 
             return null;
         }
@@ -50,20 +47,15 @@ final readonly class VerifyFactorChallenge
         $verification = $provider->verify($user, $challenge, $proof);
 
         if (! $verification->verified) {
-            $this->auditor->log(AuditEventType::MfaChallengeFailed, userId: (string) $pending->userId, context: [
-                'factor' => $providerKey,
-                'reason' => 'invalid_code',
-            ]);
+            event(new MfaChallengeFailed((string) $pending->userId, $providerKey, 'invalid_code'));
 
             return null;
         }
 
-        $this->auditor->log(AuditEventType::MfaChallengeSucceeded, userId: (string) $pending->userId, context: [
-            'factor' => $providerKey,
-        ]);
+        event(new MfaChallengeSucceeded((string) $pending->userId, $providerKey));
 
         if ($usesRecoveryCode) {
-            $this->auditor->log(AuditEventType::RecoveryCodeUsed, userId: (string) $pending->userId);
+            event(new RecoveryCodeUsed((string) $pending->userId));
         }
 
         return $verification;

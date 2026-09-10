@@ -3,29 +3,28 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Audit\Sinks\LogAuditSink;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
-use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginFailed;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
+use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
 
 /**
  * @param  array<string, mixed>  $context
  */
-function auditEvent(AuditEventType $type, array $context = []): AuditEvent
+function auditRecord(string $type, array $context = [], bool $failure = false): AuditRecord
 {
-    return new AuditEvent(
+    return new AuditRecord(
         type: $type,
         userId: '42',
-        clientId: null,
-        sid: null,
-        ip: '10.0.0.1',
-        userAgent: null,
-        occurredAt: new DateTimeImmutable('2026-08-13T12:00:00+00:00'),
         context: $context,
+        failure: $failure,
+        ip: '10.0.0.1',
+        occurredAt: new DateTimeImmutable('2026-08-13T12:00:00+00:00'),
     );
 }
 
-it('logs failure events as warnings on the default channel', function (): void {
+it('logs failure records as warnings on the default channel', function (): void {
     $logger = Mockery::mock(LoggerInterface::class);
     $logger->expects('log')->withArgs(
         fn (string $level, string $message, array $context): bool => $level === 'warning'
@@ -38,10 +37,10 @@ it('logs failure events as warnings on the default channel', function (): void {
     );
     Log::shouldReceive('channel')->once()->with(null)->andReturn($logger);
 
-    (new LogAuditSink)->record(auditEvent(AuditEventType::LoginFailed, ['reason' => 'invalid_credentials']));
+    (new LogAuditSink)->record(auditRecord(LoginFailed::TYPE, ['reason' => 'invalid_credentials'], failure: true));
 });
 
-it('logs success events as info on the configured channel', function (): void {
+it('logs success records as info on the configured channel', function (): void {
     config()->set('oidc.audit.log_channel', 'audit');
 
     $logger = Mockery::mock(LoggerInterface::class);
@@ -51,5 +50,5 @@ it('logs success events as info on the configured channel', function (): void {
     );
     Log::shouldReceive('channel')->once()->with('audit')->andReturn($logger);
 
-    (new LogAuditSink)->record(auditEvent(AuditEventType::TokenIssued));
+    (new LogAuditSink)->record(auditRecord(TokenIssued::TYPE));
 });
