@@ -104,6 +104,11 @@ function bindRealms(Realm ...$realms): void
 
             return null;
         }
+
+        public function findByDomain(string $host): ?Realm
+        {
+            return $this->find(explode('.', $host)[0]);
+        }
     });
     app()->forgetInstance(RealmResolver::class);
 }

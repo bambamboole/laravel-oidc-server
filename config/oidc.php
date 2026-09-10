@@ -291,8 +291,15 @@ return [
         // `single` serves the configured realm from the application root, so the
         // issuer is the bare origin and provider and application share one
         // session. `path` serves every realm below /realms/{realm} with its own
-        // issuer and its own session cookie — required for more than one realm
-        // per deployment.
+        // issuer and its own session cookie. `domain` serves every realm from
+        // its own host, so each is its own origin and every endpoint keeps the
+        // path it has in `single`.
         'realms' => env('OIDC_ROUTE_REALMS', 'single'),
+
+        // `domain` routing only: the host each realm is served from, mapped to
+        // its identifier. An application with a realm model binds its own
+        // RealmRepository and resolves the host from its own column instead.
+        // The host comes from the request, so configure Laravel's trusted hosts.
+        'domains' => [],
     ],
 ];

@@ -37,7 +37,9 @@ final readonly class ResolveRealm
 
         $routing = RealmRouting::configured();
 
-        if ($routing === RealmRouting::Single) {
+        // Only `path` shares a host between realms; `single` and `domain` each
+        // own their origin, where the browser isolates cookies already.
+        if ($routing !== RealmRouting::Path) {
             return $next($request);
         }
 

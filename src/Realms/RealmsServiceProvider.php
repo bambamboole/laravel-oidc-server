@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
+use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
@@ -16,10 +17,14 @@ class RealmsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(RealmRepository::class, ConfiguredRealmRepository::class);
-        $this->app->singleton(RealmResolver::class, fn (Application $app): RealmResolver => new RouteRealmResolver(
-            $app->make(RealmRepository::class),
-            new ConfiguredRealmResolver($app->make(RealmRepository::class)),
-        ));
+        $this->app->singleton(RealmResolver::class, function (Application $app): RealmResolver {
+            $repository = $app->make(RealmRepository::class);
+            $configured = new ConfiguredRealmResolver($repository);
+
+            return RealmRouting::configured() === RealmRouting::Domain
+                ? new DomainRealmResolver($repository, $configured)
+                : new RouteRealmResolver($repository, $configured);
+        });
         $this->app->singleton(IssuerResolver::class, RealmIssuerResolver::class);
     }
 

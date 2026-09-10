@@ -7,6 +7,7 @@ use Bambamboole\LaravelOidc\Server\OidcServiceProvider;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByDomain;
 use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByPath;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -60,8 +61,16 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('auth.guards.api', ['driver' => 'oidc', 'provider' => 'users']);
         $app['config']->set('session.driver', 'array');
 
-        if (in_array(RoutesRealmsByPath::class, class_uses_recursive($this), true)) {
+        $uses = class_uses_recursive($this);
+
+        if (in_array(RoutesRealmsByPath::class, $uses, true)) {
             $app['config']->set('oidc.routes.realms', 'path');
+        }
+
+        if (in_array(RoutesRealmsByDomain::class, $uses, true)) {
+            // Every host must name a realm in `domain` routing, the harness's own included.
+            $app['config']->set('oidc.routes.realms', 'domain');
+            $app['config']->set('oidc.routes.domains', ['localhost' => 'default']);
         }
     }
 

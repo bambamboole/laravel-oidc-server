@@ -9,12 +9,15 @@ use ValueError;
 /**
  * Where realms appear in URLs. `single` serves the configured realm from the
  * application root, so the issuer is the bare origin; `path` serves every
- * realm below `/realms/{realm}` and gives each its own issuer.
+ * realm below `/realms/{realm}` and gives each its own issuer; `domain`
+ * serves every realm from its own host, so each is its own origin and every
+ * endpoint keeps the path it has in `single`.
  */
 enum RealmRouting: string
 {
     case Single = 'single';
     case Path = 'path';
+    case Domain = 'domain';
 
     public const string SEGMENT = 'realms';
 
@@ -23,7 +26,7 @@ enum RealmRouting: string
         $mode = config('oidc.routes.realms', self::Single->value);
 
         return self::tryFrom(is_string($mode) ? $mode : '')
-            ?? throw new ValueError('oidc.routes.realms must be "single" or "path".');
+            ?? throw new ValueError('oidc.routes.realms must be "single", "path" or "domain".');
     }
 
     /** The route prefix every package route is registered below. */

@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Shared\Realms;
 
 /**
- * Looks a realm up by the identifier in the request path. An application
- * with a realm model binds its own implementation; an unknown identifier
- * returns null and the request answers 404.
+ * Looks a realm up by the identifier in the request path, or by the host it
+ * is served from in `domain` routing. An application with a realm model binds
+ * its own implementation; an unknown identifier or host returns null and the
+ * request answers 404.
  */
 interface RealmRepository
 {
     public function find(string $id): ?Realm;
+
+    /** @param string $host the request host, without scheme or port */
+    public function findByDomain(string $host): ?Realm;
 }
