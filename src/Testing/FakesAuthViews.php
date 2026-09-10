@@ -18,6 +18,8 @@ use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengePrompt;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\Sessions\Views\LogoutConfirmationView;
+use Bambamboole\LaravelOidc\Server\Sessions\Views\LogoutPrompt;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -93,6 +95,14 @@ trait FakesAuthViews
             public function respond(ConsentPrompt $prompt, Request $request): JsonResponse
             {
                 return response()->json(['view' => 'consent', 'prompt' => get_object_vars($prompt)]);
+            }
+        });
+
+        app()->bind(LogoutConfirmationView::class, fn () => new class implements LogoutConfirmationView
+        {
+            public function respond(LogoutPrompt $prompt, Request $request): JsonResponse
+            {
+                return response()->json(['view' => 'logout-confirmation', 'prompt' => get_object_vars($prompt)]);
             }
         });
 

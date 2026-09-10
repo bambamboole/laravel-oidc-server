@@ -35,11 +35,7 @@ final class IssueScopedToken
             throw new RuntimeException('No session token is available for the current user.');
         }
 
-        $client = $this->clients->findActive((string) $this->firstParty->clientId());
-
-        if ($client === null) {
-            throw new RuntimeException('The oidc.clients.first_party.client_id is not configured or does not exist.');
-        }
+        $client = $this->clients->firstParty($this->firstParty);
 
         return IssuedToken::fromMinted($this->exchanger->exchange($subject, $client, $audience, $scopes), $audience);
     }

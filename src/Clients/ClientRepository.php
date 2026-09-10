@@ -33,6 +33,18 @@ class ClientRepository
         return $client !== null && ! $client->revoked ? $client : null;
     }
 
+    /**
+     * The confidential client this application uses for itself.
+     *
+     * @throws RuntimeException when none is configured, or the configured one is unknown or revoked
+     */
+    public function firstParty(FirstPartyClientConfig $config): Client
+    {
+        $client = $config->isConfigured() ? $this->findActive((string) $config->clientId()) : null;
+
+        return $client ?? throw new RuntimeException('The oidc.clients.first_party.client_id is not configured or does not exist.');
+    }
+
     public function personalAccessClient(): Client
     {
         $client = Client::query()

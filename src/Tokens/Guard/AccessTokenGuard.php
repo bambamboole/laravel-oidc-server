@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Guard;
 
-use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckAudience;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
@@ -18,12 +18,11 @@ use Illuminate\Support\Traits\Macroable;
 
 /**
  * Purpose-built `auth:oidc` guard: a self-contained RFC 9068 resource-server validator (signature,
- * `at+jwt` typ, expiry, revocation via {@see TokenInspector}) that accepts a bearer token when its
- * `aud` intersects {issuer URL, configured `oidc.resource.audiences`} OR carries the token's own
- * `client_id` claim — the latter is what makes classic (non-exchanged) tokens pass uniformly, since
- * {@see AccessTokenEntity::convertToJWT()} defaults `aud` to `[$clientId]` and always sets `client_id`.
- * The verified audience is stashed on the request for {@see CheckAudience}
- * to read back without re-parsing the token.
+ * `at+jwt` typ, expiry, revocation via {@see TokenInspector}) that accepts a bearer token only when
+ * its `aud` names one of the realm's audiences ({@see RealmAudiences}; RFC 9068 §4). A token
+ * addressed elsewhere — another resource, or a client id — is rejected regardless of which client
+ * it was issued to. The verified audience is stashed on the request for {@see CheckAudience} to
+ * narrow further without re-parsing the token.
  *
  * The user provider comes from this guard's own `auth.guards.{name}.provider` config entry (handed
  * in by `Auth::extend()`), not from {@see ResolvesTokenUser} — that trait resolves via
@@ -120,12 +119,10 @@ class AccessTokenGuard implements Guard
         }
 
         $audience = $this->normalizeAudience($parsed->claims()->get('aud'));
-        $clientId = $parsed->claims()->get('client_id');
-        // Resolved per call, not held: the guard instance outlives a request (see setRequest),
-        // while the issuer resolver is a scoped binding.
-        $accepted = [app(IssuerResolver::class)->url(), ...$this->configuredAudiences()];
 
-        if (array_intersect($audience, $accepted) === [] && ! (is_string($clientId) && in_array($clientId, $audience, true))) {
+        // Resolved per call, not held: the guard instance outlives a request (see setRequest),
+        // while the realm it serves is resolved from the current one.
+        if (! app(RealmAudiences::class)->accepts($audience)) {
             return null;
         }
 
@@ -134,15 +131,9 @@ class AccessTokenGuard implements Guard
         return $token;
     }
 
-    /** @return string[] */
+    /** @return list<string> */
     private function normalizeAudience(mixed $aud): array
     {
         return array_values(array_filter(is_array($aud) ? $aud : [$aud], 'is_string'));
-    }
-
-    /** @return string[] */
-    private function configuredAudiences(): array
-    {
-        return array_values(array_filter((array) config('oidc.resource.audiences', []), 'is_string'));
     }
 }

@@ -6,6 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Sessions;
 
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\DispatchExpiredSessionLogoutsCommand;
+use Bambamboole\LaravelOidc\Server\Sessions\Views\LogoutConfirmationView;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
 use Illuminate\Support\ServiceProvider;
 
@@ -16,6 +18,7 @@ class SessionsServiceProvider extends ServiceProvider
         $this->app->singleton(SessionTokenProvider::class, SessionTokenIssuer::class);
         $this->app->singleton(OidcSessionRepository::class);
         $this->app->singleton(BackChannelLogoutNotifier::class);
+        $this->app->bind(LogoutConfirmationView::class, fn (): never => throw MissingAuthViewException::forContract(LogoutConfirmationView::class));
     }
 
     public function boot(): void

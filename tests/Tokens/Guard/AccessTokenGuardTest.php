@@ -8,7 +8,9 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Lcobucci\JWT\Configuration;
@@ -69,11 +71,38 @@ function bearerIssuedElsewhere(mixed $test): string
 }
 
 it('authenticates a token the realm issued', function () {
-    $jwt = resourceServerBearer($this, [(string) $this->client->id]);
+    $jwt = resourceServerBearer($this);
 
     $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
         ->assertOk()
         ->assertJson(['id' => $this->user->id]);
+});
+
+// RFC 9068 §4 — aud must name this resource; the issuing client is not an audience
+it('rejects a token addressed only to a client id', function () {
+    $jwt = resourceServerBearer($this, [(string) $this->client->client_id]);
+
+    $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+});
+
+it('accepts a token addressed to a configured realm audience and rejects one for another resource', function () {
+    config(['oidc.tokens.audiences' => ['https://api.example/orders']]);
+
+    $accepted = resourceServerBearer($this, ['https://api.example/orders']);
+    $foreign = resourceServerBearer($this, ['https://other.example/api']);
+    $issuerOnly = resourceServerBearer($this, [app(IssuerResolver::class)->url()]);
+
+    $this->getJson('/guarded', ['Authorization' => "Bearer $accepted"])->assertOk();
+
+    // The guard instance caches the user it resolved; drop it so each bearer is validated afresh.
+    Auth::forgetGuards();
+    $this->getJson('/guarded', ['Authorization' => "Bearer $foreign"])->assertUnauthorized();
+
+    // A configured list replaces the issuer URL rather than extending it.
+    Auth::forgetGuards();
+    $this->getJson('/guarded', ['Authorization' => "Bearer $issuerOnly"])->assertUnauthorized();
 });
 
 // RFC 6750 §3.1 — no credentials presented: a challenge without an error code
@@ -86,7 +115,7 @@ it('challenges a request without a bearer token and names no error', function ()
 });
 
 it('answers a rejected bearer token with invalid_token', function () {
-    $jwt = resourceServerBearer($this, [(string) $this->client->id], revoked: true);
+    $jwt = resourceServerBearer($this, revoked: true);
 
     $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
         ->assertUnauthorized()

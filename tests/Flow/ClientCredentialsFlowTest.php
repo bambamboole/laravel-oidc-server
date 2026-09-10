@@ -7,6 +7,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
@@ -71,7 +72,7 @@ it('binds the token to an allowlisted requested resource', function () {
     expect($accessToken->claims()->get('aud'))->toBe(['https://mail.test']);
 });
 
-it('defaults the audience to the client itself without a resource parameter', function () {
+it('defaults the audience to the realm audiences without a resource parameter', function () {
     $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
@@ -81,7 +82,8 @@ it('defaults the audience to the client itself without a resource parameter', fu
 
     $accessToken = parseAccessToken((string) $response->json('access_token'));
 
-    expect($accessToken->claims()->get('aud'))->toBe([(string) $this->client->id]);
+    expect($accessToken->claims()->get('aud'))->toBe([app(IssuerResolver::class)->url()])
+        ->and($accessToken->claims()->get('client_id'))->toBe((string) $this->client->id);
 });
 
 it('rejects a resource the client is not allowed to target', function () {

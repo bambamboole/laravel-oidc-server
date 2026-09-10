@@ -7,18 +7,29 @@ namespace Bambamboole\LaravelOidc\Server\Clients\Actions;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRegistrationException;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Clients\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 
 /**
- * RFC 7591 dynamic client registration. Registers public (secret-less)
- * authorization-code clients — PKCE is enforced by the grant for every
- * client. Unknown metadata fields are ignored per RFC 7591 §2, since MCP
- * clients routinely send `application_type`, `software_id`, and similar.
+ * RFC 7591 dynamic client registration of an authorization-code client.
+ * Honoured metadata: `client_name`, `redirect_uris`, `token_endpoint_auth_method`,
+ * `grant_types` and `response_types` (RFC 7591 §2), `post_logout_redirect_uris`
+ * (OIDC RP-Initiated Logout 1.0 §3), `backchannel_logout_uri` and
+ * `backchannel_logout_session_required` (OIDC Back-Channel Logout 1.0 §2.2).
+ * A client registering `client_secret_basic` or `client_secret_post` is
+ * confidential and receives a secret; `none` (the default) registers a public
+ * client. Unknown fields are ignored (§2), since MCP clients routinely send
+ * `application_type`, `software_id`, and similar. PKCE is enforced by the
+ * grant for every client.
  */
 final class RegisterClient
 {
+    private const array GRANT_TYPES = ['authorization_code', 'refresh_token'];
+
+    private const array RESPONSE_TYPES = ['code'];
+
     public function __construct(
         private readonly ClientRepository $clients,
         private readonly Auditor $auditor,
@@ -32,49 +43,66 @@ final class RegisterClient
      */
     public function __invoke(array $metadata): Client
     {
-        $redirectUris = $this->normalizedRedirectUris($metadata['redirect_uris'] ?? null);
+        $redirectUris = $this->normalizedUris($metadata['redirect_uris'] ?? null, 'redirect_uris', 'invalid_redirect_uri', required: true);
+        $postLogoutRedirectUris = $this->normalizedUris($metadata['post_logout_redirect_uris'] ?? null, 'post_logout_redirect_uris', 'invalid_client_metadata', required: false);
+        $authMethod = $this->tokenEndpointAuthMethod($metadata['token_endpoint_auth_method'] ?? null);
+        $grantTypes = $this->grantTypes($metadata['grant_types'] ?? null);
+        $this->assertResponseTypes($metadata['response_types'] ?? null);
+        $backChannelLogoutUri = $this->backChannelLogoutUri($metadata['backchannel_logout_uri'] ?? null);
 
         $client = $this->clients->createAuthorizationCodeGrantClient(
             $this->clientName($metadata, $redirectUris),
             $redirectUris,
-            confidential: false,
+            confidential: $authMethod->requiresSecret(),
         );
 
         $scopes = $this->realms->current()->clients()->defaultScopes;
 
-        if ($scopes !== []) {
-            $client->forceFill(['scopes' => $scopes])->save();
-        }
+        $client->forceFill([
+            'token_endpoint_auth_method' => $authMethod,
+            'grant_types' => $grantTypes,
+            'post_logout_redirect_uris' => $postLogoutRedirectUris,
+            'backchannel_logout_uri' => $backChannelLogoutUri,
+            'backchannel_logout_session_required' => filter_var($metadata['backchannel_logout_session_required'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ...($scopes !== [] ? ['scopes' => $scopes] : []),
+        ])->save();
 
         $this->auditor->log(AuditEventType::ClientRegistered, clientId: $client->client_id, context: [
             'client_name' => (string) $client->getAttribute('name'),
             'redirect_uris' => $redirectUris,
+            'token_endpoint_auth_method' => $authMethod->value,
         ]);
 
         return $client;
     }
 
     /**
-     * @return array<int, string>
+     * @return list<string>
      */
-    private function normalizedRedirectUris(mixed $redirectUris): array
+    private function normalizedUris(mixed $uris, string $field, string $error, bool $required): array
     {
-        if (! is_array($redirectUris) || $redirectUris === []) {
-            throw new ClientRegistrationException('invalid_client_metadata', 'At least one redirect URI is required.');
+        if ($uris === null && ! $required) {
+            return [];
+        }
+
+        if (! is_array($uris) || ($uris === [] && $required)) {
+            throw new ClientRegistrationException('invalid_client_metadata', $required
+                ? 'At least one redirect URI is required.'
+                : "The {$field} must be a list of URIs.");
         }
 
         $normalized = [];
 
-        foreach ($redirectUris as $uri) {
+        foreach ($uris as $uri) {
             if (! is_string($uri) || trim($uri) === '') {
-                throw new ClientRegistrationException('invalid_redirect_uri', 'Redirect URIs must be non-empty strings.');
+                throw new ClientRegistrationException($error, "The {$field} must be non-empty strings.");
             }
 
             $uri = trim($uri);
             $rejection = $this->rejectRedirectUri($uri);
 
             if ($rejection !== null) {
-                throw new ClientRegistrationException('invalid_redirect_uri', $rejection);
+                throw new ClientRegistrationException($error, $rejection);
             }
 
             $normalized[$uri] = $uri;
@@ -83,9 +111,89 @@ final class RegisterClient
         return array_values($normalized);
     }
 
+    private function tokenEndpointAuthMethod(mixed $method): TokenEndpointAuthMethod
+    {
+        if ($method === null) {
+            return TokenEndpointAuthMethod::None;
+        }
+
+        $resolved = is_string($method) ? TokenEndpointAuthMethod::tryFrom($method) : null;
+
+        return $resolved ?? throw new ClientRegistrationException(
+            'invalid_client_metadata',
+            'The token_endpoint_auth_method must be one of client_secret_basic, client_secret_post or none.',
+        );
+    }
+
+    /**
+     * RFC 7591 §2: the registered grant types must be ones this endpoint
+     * provisions, and an authorization-code client without that grant could
+     * never obtain a token.
+     *
+     * @return list<string>
+     */
+    private function grantTypes(mixed $grantTypes): array
+    {
+        if ($grantTypes === null) {
+            return self::GRANT_TYPES;
+        }
+
+        $strings = is_array($grantTypes) ? array_filter($grantTypes, is_string(...)) : [];
+        $normalized = array_values(array_unique($strings));
+
+        if ($normalized === []
+            || ! is_array($grantTypes)
+            || count($strings) !== count($grantTypes)
+            || array_diff($normalized, self::GRANT_TYPES) !== []
+            || ! in_array('authorization_code', $normalized, true)) {
+            throw new ClientRegistrationException(
+                'invalid_client_metadata',
+                'The grant_types must include authorization_code and may only add refresh_token.',
+            );
+        }
+
+        return $normalized;
+    }
+
+    private function assertResponseTypes(mixed $responseTypes): void
+    {
+        if ($responseTypes === null) {
+            return;
+        }
+
+        $normalized = is_array($responseTypes) ? array_values(array_unique(array_filter($responseTypes, is_string(...)))) : null;
+
+        if ($normalized !== self::RESPONSE_TYPES) {
+            throw new ClientRegistrationException('invalid_client_metadata', 'The response_types must be ["code"].');
+        }
+    }
+
+    /** OIDC Back-Channel Logout 1.0 §2.2: an absolute https URL, which may carry port, path and query but no fragment. */
+    private function backChannelLogoutUri(mixed $uri): ?string
+    {
+        if ($uri === null) {
+            return null;
+        }
+
+        $uri = is_string($uri) ? trim($uri) : null;
+        $parts = $uri !== null ? parse_url($uri) : false;
+
+        if ($uri === null
+            || $uri === ''
+            || ! is_array($parts)
+            || strtolower((string) ($parts['scheme'] ?? '')) !== 'https'
+            || (string) ($parts['host'] ?? '') === ''
+            || array_key_exists('fragment', $parts)
+            || filter_var($uri, FILTER_VALIDATE_URL) === false) {
+            throw new ClientRegistrationException('invalid_client_metadata', 'The backchannel_logout_uri must be an absolute https URL without a fragment.');
+        }
+
+        return $uri;
+    }
+
     /**
      * @param  array<string, mixed>  $metadata
-     * @param  array<int, string>  $redirectUris
+     * @param  list<string>  $redirectUris
      */
     private function clientName(array $metadata, array $redirectUris): string
     {

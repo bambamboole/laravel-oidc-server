@@ -56,18 +56,19 @@ it('rejects an exchanged token addressed to a foreign audience', function () {
     $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])->assertUnauthorized();
 });
 
-it('authenticates a foreign audience listed in resource audiences', function () {
-    config()->set('oidc.resource.audiences', ['https://other.example']);
+it('authenticates a foreign audience listed in the realm audiences', function () {
+    config()->set('oidc.tokens.audiences', [app(IssuerResolver::class)->url(), 'https://other.example']);
 
     $token = exchangedTokenFor($this, 'https://other.example');
 
     $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])->assertOk();
 });
 
-it('still authenticates a classic token whose aud is the client id', function () {
+// RFC 9068 §4 — a token addressed to a client id is not addressed to this resource
+it('rejects a token whose aud is only the client id', function () {
     $token = mintExchangeSubjectToken((string) $this->client->getKey(), $this->user->getKey(), ['openid']);
 
-    $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])->assertOk();
+    $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])->assertUnauthorized();
 });
 
 it('rejects a revoked exchanged token', function () {

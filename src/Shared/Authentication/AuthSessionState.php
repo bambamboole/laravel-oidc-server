@@ -141,18 +141,6 @@ final class AuthSessionState
     }
 
     /**
-     * @param  list<string>  $amr
-     */
-    public static function deriveAcr(array $amr): ?string
-    {
-        if ($amr === []) {
-            return null;
-        }
-
-        return count($amr) > 1 ? '2' : '1';
-    }
-
-    /**
      * @param  array<int, mixed>  $methods
      * @return list<string>
      */

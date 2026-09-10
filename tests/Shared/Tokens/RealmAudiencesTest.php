@@ -1,0 +1,44 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * RFC 9068 §2.2, §4 (aud); RFC 9728 §3.3 (protected resource identifiers)
+ */
+
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
+
+beforeEach(function () {
+    config(['app.url' => 'https://op.test', 'oidc.issuer' => null]);
+});
+
+it('defaults to the realm issuer url', function () {
+    expect(app(RealmAudiences::class)->all())->toBe(['https://op.test/realms/default']);
+});
+
+it('replaces the issuer with the configured audiences', function () {
+    config(['oidc.tokens.audiences' => ['https://api.example/orders', 'https://api.example/billing']]);
+
+    expect(app(RealmAudiences::class)->all())->toBe(['https://api.example/orders', 'https://api.example/billing']);
+});
+
+it('adds every advertised protected resource, without duplicates', function () {
+    config(['oidc.protected_resources' => ['mcp' => ['scopes' => []], '' => ['scopes' => []]]]);
+
+    $audiences = app(RealmAudiences::class);
+
+    expect($audiences->all())->toBe(['https://op.test/realms/default', 'https://op.test/realms/default/mcp'])
+        ->and($audiences->protectedResource('mcp'))->toBe('https://op.test/realms/default/mcp')
+        ->and($audiences->protectedResource(''))->toBe('https://op.test/realms/default');
+});
+
+it('accepts an audience naming one of them and rejects any other', function () {
+    config(['oidc.tokens.audiences' => ['https://api.example/orders']]);
+
+    $audiences = app(RealmAudiences::class);
+
+    expect($audiences->accepts(['https://api.example/orders', 'https://elsewhere.example']))->toBeTrue()
+        ->and($audiences->accepts(['https://op.test/realms/default']))->toBeFalse()
+        ->and($audiences->accepts(['some-client-id']))->toBeFalse()
+        ->and($audiences->accepts([]))->toBeFalse();
+});

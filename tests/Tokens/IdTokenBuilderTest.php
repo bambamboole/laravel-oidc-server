@@ -122,6 +122,17 @@ it('emits acr "1" for a single method', function () {
     expect(parseUnencrypted($jwt)->claims()->get('acr'))->toBe('1');
 });
 
+it('emits the acr value the realm maps the methods to', function () {
+    config(['oidc.auth.acr_values' => ['single_factor' => 'urn:example:loa:1', 'multi_factor' => 'urn:example:loa:2']]);
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+
+    $single = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, amr: ['pwd']));
+    $multi = app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, amr: ['pwd', 'otp']));
+
+    expect(parseUnencrypted($single)->claims()->get('acr'))->toBe('urn:example:loa:1')
+        ->and(parseUnencrypted($multi)->claims()->get('acr'))->toBe('urn:example:loa:2');
+});
+
 it('omits amr and acr when no methods are supplied', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 

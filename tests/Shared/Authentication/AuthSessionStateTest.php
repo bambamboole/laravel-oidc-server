@@ -26,10 +26,3 @@ it('appends factor methods and de-dupes while preserving order', function () {
 
     expect(session()->get(AuthSessionState::AMR_KEY))->toBe(['pwd', 'otp']);
 });
-
-it('derives acr from the number of methods', function () {
-    expect(AuthSessionState::deriveAcr([]))->toBeNull()
-        ->and(AuthSessionState::deriveAcr(['pwd']))->toBe('1')
-        ->and(AuthSessionState::deriveAcr(['pwd', 'otp']))->toBe('2')
-        ->and(AuthSessionState::deriveAcr(['pwd', 'webauthn']))->toBe('2');
-});

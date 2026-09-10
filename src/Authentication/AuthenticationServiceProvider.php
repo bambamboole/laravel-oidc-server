@@ -15,6 +15,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordConfirmationView
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
@@ -40,6 +41,7 @@ class AuthenticationServiceProvider extends ServiceProvider
         $this->app->singleton(PostLoginPipeline::class);
         $this->app->singleton(LoginFinalizer::class, InteractiveLoginFinalizer::class);
         $this->app->singleton(DeviceRecognizer::class, NullDeviceRecognizer::class);
+        $this->app->bind(AcrResolver::class, LevelOfAssuranceAcrResolver::class);
         $this->app->singleton(AuthenticationContextStore::class);
 
         // Without a ui package or app binding, a view contract throws so the

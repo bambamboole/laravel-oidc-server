@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol;
 
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\EndpointUrl;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
@@ -23,6 +24,7 @@ final readonly class ProviderMetadata
         private IssuerResolver $issuer,
         private RealmResolver $realms,
         private EndpointUrl $endpoints,
+        private AcrResolver $acr,
     ) {}
 
     /**
@@ -53,6 +55,7 @@ final readonly class ProviderMetadata
                 ->values()
                 ->all(),
             'claims_supported' => $realm->scopes()->claimsSupported,
+            'acr_values_supported' => $this->acr->supported(),
             'claims_parameter_supported' => false,
             'request_parameter_supported' => false,
             'request_uri_parameter_supported' => false,

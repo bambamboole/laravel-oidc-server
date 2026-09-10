@@ -7,7 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Tokens;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
-use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
@@ -25,6 +25,7 @@ class IdTokenBuilder
         private readonly IssuerResolver $issuer,
         private readonly SigningKeys $signingKeys,
         private readonly RealmResolver $realms,
+        private readonly AcrResolver $acr,
     ) {}
 
     public function build(IdTokenRequest $request): string
@@ -63,7 +64,7 @@ class IdTokenBuilder
         if ($amr !== []) {
             $builder = $builder->withClaim('amr', $amr);
 
-            $acr = AuthSessionState::deriveAcr($amr);
+            $acr = $this->acr->fromAmr($amr);
             if ($acr !== null) {
                 $builder = $builder->withClaim('acr', $acr);
             }

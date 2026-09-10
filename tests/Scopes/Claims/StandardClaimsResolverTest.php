@@ -66,6 +66,49 @@ it('maps locale and timezone attributes when present', function () {
         ->and($claims)->toHaveKey('zoneinfo', 'Europe/Berlin');
 });
 
+// OIDC Core §5.4 — phone scope
+it('maps phone_number and phone_number_verified under the phone scope', function () {
+    $user = (new User)->forceFill(['phone_number' => '+49 30 123456', 'phone_number_verified' => 1]);
+
+    expect(defaultResolverClaims($user, ['phone']))->toBe(['phone_number' => '+49 30 123456', 'phone_number_verified' => true]);
+});
+
+it('omits phone_number_verified when the user carries no verification attribute', function () {
+    $user = (new User)->forceFill(['phone_number' => '+49 30 123456']);
+
+    expect(defaultResolverClaims($user, ['phone']))->toBe(['phone_number' => '+49 30 123456']);
+});
+
+// OIDC Core §5.1.1 — the structured address claim
+it('maps a structured address under the address scope, keeping the standard members only', function () {
+    $user = (new User)->forceFill(['address' => [
+        'street_address' => 'Unter den Linden 1',
+        'locality' => 'Berlin',
+        'postal_code' => '10117',
+        'country' => 'DE',
+        'internal_id' => 'ignored',
+    ]]);
+
+    expect(defaultResolverClaims($user, ['address']))->toBe(['address' => [
+        'street_address' => 'Unter den Linden 1',
+        'locality' => 'Berlin',
+        'postal_code' => '10117',
+        'country' => 'DE',
+    ]]);
+});
+
+it('maps a plain string address as the formatted member', function () {
+    $user = (new User)->forceFill(['address' => "Unter den Linden 1\n10117 Berlin"]);
+
+    expect(defaultResolverClaims($user, ['address']))->toBe(['address' => ['formatted' => "Unter den Linden 1\n10117 Berlin"]]);
+});
+
+it('emits nothing for the phone and address scopes when the user has no such attributes', function () {
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+
+    expect(defaultResolverClaims($user, ['phone', 'address']))->toBe([]);
+});
+
 it('omits locale and zoneinfo for users without those attributes', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 

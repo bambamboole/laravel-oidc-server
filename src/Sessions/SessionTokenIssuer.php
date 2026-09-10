@@ -16,7 +16,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Facades\Auth;
-use RuntimeException;
 
 /**
  * This is a singleton, so the session/auth stores and the first-party client
@@ -59,11 +58,7 @@ class SessionTokenIssuer implements SessionTokenProvider
 
     public function establish(Authenticatable $user): void
     {
-        $client = $this->clients->findActive((string) app(FirstPartyClientConfig::class)->clientId());
-
-        if ($client === null) {
-            throw new RuntimeException('The oidc.clients.first_party.client_id is not configured or does not exist.');
-        }
+        $client = $this->clients->firstParty(app(FirstPartyClientConfig::class));
 
         $prior = $this->session()->get($this->key());
 

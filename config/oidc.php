@@ -10,9 +10,10 @@ use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 
 // Two kinds of values live here. Per-realm defaults are what ConfiguredRealm
 // reads; an application with a realm model overrides them per realm through
-// the Realm contract: tokens.lifetimes, session, scopes, claims_supported,
-// keys.size, clients.{first_party,trusted,registration,token_exchange},
-// auth.{username,home,login_route,logout_redirect,two_factor} and social.
+// the Realm contract: tokens.{audiences,lifetimes}, session, scopes,
+// claims_supported, keys.size, clients.{first_party,trusted,registration,
+// token_exchange}, auth.{username,home,login_route,logout_redirect,
+// acr_values,two_factor} and social.
 // Everything else is deployment-wide: issuer, guards, key store, audit sink,
 // routes.
 return [
@@ -57,6 +58,15 @@ return [
     ],
 
     'tokens' => [
+        // Resource identifiers this realm serves (RFC 9068 §2.2 `aud`). An
+        // access token minted without an explicit audience — authorization
+        // code, refresh, session and personal access tokens — is addressed to
+        // these, and the oidc guard accepts a bearer token only when its `aud`
+        // names one of them or an advertised protected resource. Empty means
+        // the realm issuer URL. Explicit audiences (RFC 8707 `resource` at
+        // client credentials, token exchange `audience`) take precedence.
+        'audiences' => [],
+
         'lifetimes' => [
             // Interactive access token (authorization_code) + refreshed access tokens. Short, per industry.
             'access_token' => (int) env('OIDC_ACCESS_TOKEN_TTL', 900),
@@ -100,7 +110,7 @@ return [
     ],
 
     'claims_supported' => [
-        'iss', 'sub', 'aud', 'exp', 'iat', 'auth_time', 'nonce', 'at_hash', 'azp',
+        'iss', 'sub', 'aud', 'exp', 'iat', 'auth_time', 'nonce', 'at_hash', 'azp', 'acr', 'amr', 'sid',
         'name', 'email', 'email_verified', 'locale', 'zoneinfo', 'updated_at',
     ],
 
@@ -173,12 +183,6 @@ return [
         'log_channel' => env('OIDC_AUDIT_LOG_CHANNEL'),
     ],
 
-    // Additional resource audiences the oidc guard accepts on an exchanged access token,
-    // beyond the issuer URL. Only widens what's accepted — a foreign audience still 401s.
-    'resource' => [
-        'audiences' => [],
-    ],
-
     /*
     |--------------------------------------------------------------------------
     | Protected resource metadata (RFC 9728)
@@ -188,6 +192,8 @@ return [
     | `/.well-known/oauth-protected-resource/{path}`. Keys are the resource's
     | path relative to the issuer origin (no slashes); MCP clients resolve
     | their authorization server through this document. Unlisted paths 404.
+    | Each advertised resource identifier is also an audience the oidc guard
+    | accepts, next to tokens.audiences.
     |
     | 'mcp' => ['scopes' => ['mcp:use']],
     |
@@ -206,6 +212,14 @@ return [
         'login_route' => env('OIDC_LOGIN_ROUTE', 'login'),
         // Where end-session lands without a post_logout_redirect_uri.
         'logout_redirect' => '/',
+        // The `acr` claim (OIDC Core §2) an authentication earns: one method
+        // in `amr` reports single_factor, two or more report multi_factor.
+        // Substitute URIs or RFC 6711 names your relying parties expect; both
+        // are advertised as acr_values_supported.
+        'acr_values' => [
+            'single_factor' => '1',
+            'multi_factor' => '2',
+        ],
         'two_factor' => [
             'challenge_providers' => ['totp', 'webauthn'],
             'secret_length' => 16,

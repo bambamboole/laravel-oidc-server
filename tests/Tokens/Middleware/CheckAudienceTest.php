@@ -16,8 +16,8 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
     // CheckAudience only narrows what the oidc guard already accepted, so both audiences used
-    // below must be resource audiences the guard itself recognizes.
-    config()->set('oidc.resource.audiences', ['https://api.internal/orders', 'https://other/api']);
+    // below must be realm audiences the guard itself recognizes.
+    config()->set('oidc.tokens.audiences', ['https://api.internal/orders', 'https://other/api']);
 
     Route::middleware(['auth:oidc', CheckAudience::using('https://api.internal/orders')])
         ->get('/test/orders', fn (Request $request) => response()->json([

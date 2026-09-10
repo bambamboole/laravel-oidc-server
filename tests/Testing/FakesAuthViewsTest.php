@@ -32,6 +32,11 @@ it('binds every controller-facing auth view contract to its JSON stub', function
         ->assertOk()
         ->assertJson(['view' => 'confirm-password']);
 
+    $this->actingAs($user, 'identity')
+        ->get(route('oidc.logout'))
+        ->assertOk()
+        ->assertJson(['view' => 'logout-confirmation']);
+
     auth('identity')->logout();
 
     $this->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => 'totp'])

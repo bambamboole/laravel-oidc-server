@@ -12,7 +12,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 
 /**
- * RFC 7591 dynamic client registration endpoint.
+ * RFC 7591 dynamic client registration endpoint. The response echoes every
+ * registered metadata value (§3.2.1); `client_secret` appears once, on the
+ * registration response of a confidential client, with
+ * `client_secret_expires_at` 0 (never).
  */
 class ClientRegistrationController
 {
@@ -32,13 +35,26 @@ class ClientRegistrationController
         $response = [
             'client_id' => $client->client_id,
             'client_id_issued_at' => Carbon::now()->getTimestamp(),
-            'client_secret_expires_at' => 0,
+        ];
+
+        if ($client->plainSecret !== null) {
+            $response['client_secret'] = $client->plainSecret;
+            $response['client_secret_expires_at'] = 0;
+        }
+
+        $response += [
             'client_name' => (string) $client->getAttribute('name'),
             'redirect_uris' => $client->redirect_uris,
-            'grant_types' => $client->getAttribute('grant_types'),
+            'post_logout_redirect_uris' => $client->post_logout_redirect_uris ?? [],
+            'grant_types' => $client->grant_types,
             'response_types' => ['code'],
             'token_endpoint_auth_method' => $client->token_endpoint_auth_method->value,
         ];
+
+        if ($client->backchannel_logout_uri !== null) {
+            $response['backchannel_logout_uri'] = $client->backchannel_logout_uri;
+            $response['backchannel_logout_session_required'] = $client->backchannel_logout_session_required;
+        }
 
         $scopes = $client->getAttribute('scopes');
 

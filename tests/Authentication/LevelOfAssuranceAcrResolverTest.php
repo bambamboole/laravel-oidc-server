@@ -1,0 +1,43 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * OpenID Connect Core 1.0 §2 (acr, amr); Discovery 1.0 §3 (acr_values_supported)
+ */
+
+use Bambamboole\LaravelOidc\Server\Authentication\LevelOfAssuranceAcrResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
+
+it('is bound as the default acr resolver', function () {
+    expect(app(AcrResolver::class)::class)->toBe(LevelOfAssuranceAcrResolver::class);
+});
+
+it('reports one level for a single method and another for several', function () {
+    $resolver = app(AcrResolver::class);
+
+    expect($resolver->fromAmr([]))->toBeNull()
+        ->and($resolver->fromAmr(['pwd']))->toBe('1')
+        ->and($resolver->fromAmr(['pwd', 'otp']))->toBe('2')
+        ->and($resolver->fromAmr(['pwd', 'webauthn']))->toBe('2')
+        ->and($resolver->supported())->toBe(['1', '2']);
+});
+
+it('uses the realm acr_values mapping', function () {
+    config(['oidc.auth.acr_values' => [
+        'single_factor' => 'urn:example:loa:1',
+        'multi_factor' => 'urn:example:loa:2',
+    ]]);
+
+    $resolver = app(AcrResolver::class);
+
+    expect($resolver->fromAmr(['pwd']))->toBe('urn:example:loa:1')
+        ->and($resolver->fromAmr(['pwd', 'otp']))->toBe('urn:example:loa:2')
+        ->and($resolver->supported())->toBe(['urn:example:loa:1', 'urn:example:loa:2']);
+});
+
+it('advertises a shared value once', function () {
+    config(['oidc.auth.acr_values' => ['single_factor' => 'urn:mace:incommon:iap:silver', 'multi_factor' => 'urn:mace:incommon:iap:silver']]);
+
+    expect(app(AcrResolver::class)->supported())->toBe(['urn:mace:incommon:iap:silver']);
+});

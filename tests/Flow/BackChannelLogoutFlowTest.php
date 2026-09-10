@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\SendBackChannelLogout;
 use Bambamboole\LaravelOidc\Server\Sessions\EndOidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
@@ -94,5 +95,20 @@ describe('via /oauth/logout', function () {
 
         expect(app(OidcSessionRepository::class)->find($sid)->revoked_at)->not->toBeNull();
         Bus::assertDispatchedTimes(SendBackChannelLogout::class, 1);
+    });
+
+    it('notifies the back channel exactly once, from the Logout listener', function () {
+        $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
+        app(OidcSessionRepository::class)->recordParticipant($sid, (string) $this->client->id);
+
+        $idToken = completeBackChannelLogoutAuthorization($this, $sid)->assertOk()->json('id_token');
+
+        $this->mock(BackChannelLogoutNotifier::class)->shouldReceive('notify')->once()->with($sid);
+
+        $this->actingAs($this->user, 'identity')
+            ->post('/realms/default/oauth/logout', ['id_token_hint' => $idToken])
+            ->assertRedirect();
+
+        expect(app(OidcSessionRepository::class)->find($sid)->revoked_at)->not->toBeNull();
     });
 });

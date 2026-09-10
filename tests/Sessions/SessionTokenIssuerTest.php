@@ -6,6 +6,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
@@ -50,7 +51,7 @@ it('establishes a persisted root token for the user, stored in the session', fun
     $parsed = parseSessionToken($jwt);
     expect($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
         ->and($parsed->claims()->get('client_id'))->toBe($this->appClient->id)
-        ->and($parsed->claims()->get('aud'))->toBe([$this->appClient->id]);
+        ->and($parsed->claims()->get('aud'))->toBe([app(IssuerResolver::class)->url()]);
 
     expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
     expect(app(TokenInspector::class)->accessToken($jwt))->not->toBeNull();

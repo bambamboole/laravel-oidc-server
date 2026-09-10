@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
@@ -75,7 +76,7 @@ trait InteractsWithOidc
      * `oidc.id_token_claims`, `oidc.access_token_claims`.
      *
      * `acr` is intentionally not a parameter: the grant derives it from
-     * `$amr` via {@see AuthSessionState::deriveAcr()}.
+     * `$amr` through the bound {@see AcrResolver}.
      *
      * @param  array<string, mixed>  $idTokenClaims
      * @param  array<string, mixed>  $accessTokenClaims

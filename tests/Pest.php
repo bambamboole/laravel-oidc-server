@@ -231,16 +231,15 @@ function mintExchangeSubjectToken(
 }
 
 /**
- * Mints an RFC 9068 at+jwt access token addressed to the given resource audiences only (no client
- * id prepended) and persists a matching token row. CheckAudience is a self-contained resource-server
- * validator: the aud claim need not carry a client id, and revocation/expiry are read from the
- * persisted row.
+ * Mints an RFC 9068 at+jwt access token addressed to the given resource audiences (the realm's
+ * own when none are given) and persists a matching token row. The guard is a self-contained
+ * resource-server validator: revocation and expiry are read from the persisted row.
  *
  * @param  string[]  $audience
  */
 function resourceServerBearer(
     mixed $test,
-    array $audience,
+    array $audience = [],
     bool $revoked = false,
     bool $expired = false,
     ?string $subjectId = null,

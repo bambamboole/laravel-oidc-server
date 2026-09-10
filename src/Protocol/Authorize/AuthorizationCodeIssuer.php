@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Authorize;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
@@ -32,6 +33,7 @@ final readonly class AuthorizationCodeIssuer
         private AuthenticationContextStore $contexts,
         private OidcSessionRepository $sessions,
         private AuthSessionState $sessionState,
+        private AcrResolver $acr,
         private RealmResolver $realms,
         private IssuerResolver $issuer,
     ) {}
@@ -98,7 +100,7 @@ final readonly class AuthorizationCodeIssuer
             'user_id' => $userId,
             'sid' => $sid,
             'amr' => $amr,
-            'acr' => AuthSessionState::deriveAcr($amr),
+            'acr' => $this->acr->fromAmr($amr),
             'auth_time' => $authTime,
             'id_token_claims' => $this->sessionState->idTokenClaims(),
             'access_token_claims' => $this->sessionState->accessTokenClaims(),

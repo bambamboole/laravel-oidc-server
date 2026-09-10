@@ -26,6 +26,7 @@ use Bambamboole\LaravelOidc\Server\Sessions\ForgetSessionToken;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenGuard;
 use Bambamboole\LaravelOidc\Server\Sessions\StartOidcSession;
+use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Tokens\TokensServiceProvider;
 use Illuminate\Auth\Events\Login;
@@ -64,6 +65,10 @@ class OidcServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/oidc.php', 'oidc');
+
+        // Written by the Keys, Clients and Installation commands alike, so it
+        // is bound where all of them are wired.
+        $this->app->singleton(EnvironmentFile::class);
 
         foreach (self::DOMAIN_PROVIDERS as $provider) {
             $this->app->register($provider);

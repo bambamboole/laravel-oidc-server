@@ -14,6 +14,7 @@ use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\SendBackChannelLogout;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
@@ -49,7 +50,7 @@ it('issues, introspects and revokes under the wire client_id while storing the k
     $record = AccessToken::query()->find($accessToken->claims()->get('jti'));
 
     expect($accessToken->claims()->get('client_id'))->toBe('my-app')
-        ->and($accessToken->claims()->get('aud'))->toBe(['my-app'])
+        ->and($accessToken->claims()->get('aud'))->toBe([app(IssuerResolver::class)->url()])
         ->and(parseIdToken((string) $result->idToken)->claims()->get('aud'))->toBe(['my-app'])
         ->and($record->client_id)->toBe((string) $this->client->getKey())
         ->and(app(OidcSessionRepository::class)->participantClientIds($sid))->toBe([(string) $this->client->getKey()]);

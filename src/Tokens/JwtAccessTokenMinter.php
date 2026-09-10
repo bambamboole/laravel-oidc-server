@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use DateInterval;
 use DateTimeImmutable;
@@ -17,8 +18,11 @@ use RuntimeException;
 
 /**
  * Mints RFC 9068 (application/at+jwt) access tokens and persists the record
- * the guard, introspection and revocation read them back from. The `scopes`
- * array is kept next to the `scope` string for consumers that read it.
+ * the guard, introspection and revocation read them back from. `aud` is the
+ * explicit audience list when one is given (RFC 8707 `resource`, token
+ * exchange `audience`) and the realm's audiences otherwise (§2.2); the
+ * client is identified by `client_id` either way. The `scopes` array is kept
+ * next to the `scope` string for consumers that read it.
  */
 final readonly class JwtAccessTokenMinter implements AccessTokenMinter
 {
@@ -26,6 +30,7 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
         private ClientRepository $clients,
         private SigningKeys $signingKeys,
         private IssuerResolver $issuer,
+        private RealmAudiences $audiences,
     ) {}
 
     public function mint(
@@ -43,7 +48,7 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
         $jti = bin2hex(random_bytes(40));
         $now = new DateTimeImmutable;
         $expiresAt = $now->add($ttl);
-        $audience = $audiences !== [] ? $audiences : [$client->client_id];
+        $audience = $audiences !== [] ? $audiences : $this->audiences->all();
 
         $config = $this->signingKeys->signingConfiguration();
 

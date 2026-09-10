@@ -44,7 +44,7 @@ it('emits an RFC 9068 at+jwt access token', function () {
         ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
         ->and($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
         ->and($parsed->claims()->get('client_id'))->toBe($this->client->client_id)
-        ->and($parsed->claims()->get('aud'))->toBe([$this->client->client_id])
+        ->and($parsed->claims()->get('aud'))->toBe(['https://op.test/realms/default'])
         ->and($parsed->claims()->get('scope'))->toBe('openid email')
         ->and($parsed->claims()->get('scopes'))->toBe(['openid', 'email'])
         ->and($parsed->claims()->get('jti'))->toBe($minted->jti)
@@ -71,7 +71,25 @@ it('persists the token record the inspector resolves', function () {
         ->and((bool) $record->getAttribute('revoked'))->toBeFalse();
 });
 
-it('uses an explicitly set audience instead of the client id', function () {
+// RFC 9068 §2.2 — aud names the resources the token is for; the client stays in client_id
+it('addresses the token to the realm audiences when none are given', function () {
+    config(['oidc.tokens.audiences' => ['https://api.example/orders', 'https://api.example/billing']]);
+
+    $minted = mintAccessToken($this->client, $this->user);
+
+    expect(parseAccessToken($minted->jwt)->claims()->get('aud'))->toBe(['https://api.example/orders', 'https://api.example/billing'])
+        ->and($minted->audience)->toBe(['https://api.example/orders', 'https://api.example/billing'])
+        ->and(parseAccessToken($minted->jwt)->claims()->get('client_id'))->toBe($this->client->client_id);
+});
+
+it('includes every advertised protected resource in the default audience', function () {
+    config(['oidc.protected_resources' => ['mcp' => ['scopes' => ['mcp:use']]]]);
+
+    expect(parseAccessToken(mintAccessToken($this->client, $this->user)->jwt)->claims()->get('aud'))
+        ->toBe(['https://op.test/realms/default', 'https://op.test/realms/default/mcp']);
+});
+
+it('uses an explicitly set audience instead of the realm audiences', function () {
     $minted = mintAccessToken($this->client, $this->user, audiences: ['https://api.internal/orders', 'https://api.internal/billing']);
 
     expect(parseAccessToken($minted->jwt)->claims()->get('aud'))->toBe(['https://api.internal/orders', 'https://api.internal/billing'])

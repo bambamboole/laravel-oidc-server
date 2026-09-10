@@ -12,6 +12,11 @@ it('exposes per-flow lifetime defaults', function () {
         ->and(config('oidc.session.absolute_lifetime'))->toBe(2592000);
 });
 
+it('defaults the realm audiences to the issuer and the acr values to the two levels', function () {
+    expect(config('oidc.tokens.audiences'))->toBe([])
+        ->and(config('oidc.auth.acr_values'))->toBe(['single_factor' => '1', 'multi_factor' => '2']);
+});
+
 it('ships an empty scope catalog by default', function () {
     expect(config()->has('oidc.scopes'))->toBeTrue()
         ->and(config('oidc.scopes.catalog'))->toBe([]);
