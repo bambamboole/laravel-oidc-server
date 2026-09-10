@@ -167,3 +167,20 @@ it('uses each realms configured session cookie while keeping the app cookie unch
     $this->get('/realms/partners/session-cookie')->assertOk()->assertCookie('partners-identity');
     expect(config('session.cookie'))->toBe('app-session');
 });
+
+it('creates clients with the scope assignment of their realm', function (): void {
+    bindRealms(
+        realmWithSettings('default'),
+        realmWithSettings('strict', clients: new ClientSettings(defaultScopes: ['openid'], optionalScopes: ['email'])),
+    );
+
+    config(['oidc.realm' => 'strict']);
+    $strict = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+    config(['oidc.realm' => 'default']);
+    $open = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+
+    expect($strict->default_scopes)->toBe(['openid'])
+        ->and($strict->optional_scopes)->toBe(['email'])
+        ->and($open->default_scopes)->toBe([])
+        ->and($open->optional_scopes)->toBe(['*']);
+});

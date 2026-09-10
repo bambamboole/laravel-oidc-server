@@ -306,3 +306,12 @@ it('answers an Inertia request with 409 + X-Inertia-Location instead of an exter
     $trusted->assertStatus(409);
     expect($trusted->headers->get('X-Inertia-Location'))->toStartWith('https://rp.test/callback?');
 });
+
+it('reports a known scope the client is not assigned as invalid_scope on the redirect URI', function (): void {
+    $this->client->forceFill(['optional_scopes' => ['openid']])->save();
+
+    $params = redirectParams(authorizeWith($this, ['scope' => 'openid email']));
+
+    expect($params['error'])->toBe('invalid_scope')
+        ->and($params['state'])->toBe('st4te');
+});

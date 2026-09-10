@@ -189,3 +189,30 @@ it('does not write env when interactive confirmation is declined', function (): 
 
     expect(File::get($env))->toBe($before);
 });
+
+it('overrides the realm scope assignment with --default-scope and --optional-scope', function (): void {
+    clientCommandEnv();
+
+    Artisan::call('oidc:client', [
+        '--first-party' => true,
+        '--name' => 'App',
+        '--redirect-uri' => ['https://app.test/login/callback'],
+        '--default-scope' => ['openid'],
+        '--optional-scope' => ['email', 'profile'],
+        '--no-interaction' => true,
+    ]);
+
+    $client = Client::query()->where('provisioning_key', 'first-party')->firstOrFail();
+
+    expect($client->default_scopes)->toBe(['openid'])
+        ->and($client->optional_scopes)->toBe(['email', 'profile']);
+});
+
+it('provisions the personal access client with explicit scope lists', function (): void {
+    $this->artisan('oidc:client', ['--personal' => true, '--default-scope' => ['openid'], '--optional-scope' => ['*']])->assertSuccessful();
+
+    $client = app(ClientRepository::class)->personalAccessClient();
+
+    expect($client->default_scopes)->toBe(['openid'])
+        ->and($client->optional_scopes)->toBe(['*']);
+});

@@ -31,6 +31,8 @@ final readonly class FirstPartyClientProvisioner
      * @param  string[]  $redirectUris
      * @param  string[]  $postLogoutRedirectUris
      * @param  string[]  $allowedExchangeAudiences
+     * @param  string[]|null  $defaultScopes  overrides the realm's default scopes; null keeps what the client has
+     * @param  string[]|null  $optionalScopes  overrides the realm's optional scopes; null keeps what the client has
      */
     public function provision(
         string $name,
@@ -40,11 +42,17 @@ final readonly class FirstPartyClientProvisioner
         ?string $adoptClientId = null,
         bool $rotateSecret = false,
         #[SensitiveParameter] ?string $existingClientSecret = null,
+        ?array $defaultScopes = null,
+        ?array $optionalScopes = null,
     ): FirstPartyClientProvisioningResult {
         $name = trim($name);
         $redirectUris = $this->normalizeUris($redirectUris, 'redirect URI');
         $postLogoutRedirectUris = $this->normalizeUris($postLogoutRedirectUris, 'post-logout redirect URI');
         $allowedExchangeAudiences = $this->normalizeAudiences($allowedExchangeAudiences);
+        $scopes = [
+            ...($defaultScopes === null ? [] : ['default_scopes' => $this->normalizeScopes($defaultScopes)]),
+            ...($optionalScopes === null ? [] : ['optional_scopes' => $this->normalizeScopes($optionalScopes)]),
+        ];
 
         if ($name === '') {
             throw new FirstPartyClientProvisioningException('The first-party client name must not be empty.');
@@ -64,6 +72,7 @@ final readonly class FirstPartyClientProvisioner
                 $redirectUris,
                 $postLogoutRedirectUris,
                 $allowedExchangeAudiences,
+                $scopes,
                 $adoptClientId,
                 $rotateSecret,
                 $existingClientSecret,
@@ -76,6 +85,7 @@ final readonly class FirstPartyClientProvisioner
                     $redirectUris,
                     $postLogoutRedirectUris,
                     $allowedExchangeAudiences,
+                    $scopes,
                     $adoptClientId,
                     $rotateSecret,
                     $existingClientSecret,
@@ -100,12 +110,14 @@ final readonly class FirstPartyClientProvisioner
      * @param  string[]  $redirectUris
      * @param  string[]  $postLogoutRedirectUris
      * @param  string[]  $allowedExchangeAudiences
+     * @param  array{default_scopes?: string[], optional_scopes?: string[]}  $scopes
      */
     private function transactionalProvision(
         string $name,
         array $redirectUris,
         array $postLogoutRedirectUris,
         array $allowedExchangeAudiences,
+        array $scopes,
         ?string $adoptClientId,
         bool $rotateSecret,
         #[SensitiveParameter] ?string $existingClientSecret,
@@ -115,6 +127,7 @@ final readonly class FirstPartyClientProvisioner
             $redirectUris,
             $postLogoutRedirectUris,
             $allowedExchangeAudiences,
+            $scopes,
             $adoptClientId,
             $rotateSecret,
             $existingClientSecret,
@@ -169,6 +182,7 @@ final readonly class FirstPartyClientProvisioner
                 'allowed_exchange_audiences' => $allowedExchangeAudiences,
                 'grant_types' => $grantTypes,
                 'provisioning_key' => self::ProvisioningKey,
+                ...$scopes,
             ])->save();
 
             $secret = $created ? $client->plainSecret : $existingClientSecret;
@@ -244,6 +258,15 @@ final readonly class FirstPartyClientProvisioner
                 throw new FirstPartyClientProvisioningException("The audience [{$value}] must be an HTTP(S) URL or a urn: identifier.");
             }
         });
+    }
+
+    /**
+     * @param  mixed[]  $values
+     * @return string[]
+     */
+    private function normalizeScopes(array $values): array
+    {
+        return $this->normalize($values, static function (): void {});
     }
 
     private function isHttpUrl(string $value): bool

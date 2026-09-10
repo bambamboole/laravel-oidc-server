@@ -302,3 +302,26 @@ it('rolls back a created client by deleting it, never an adopted or reconciled o
         ->and($created->rollback())->toBeTrue()
         ->and(Client::query()->find($created->clientId))->toBeNull();
 });
+
+it('provisions the first-party client with the realm scope assignment', function (): void {
+    config(['oidc.clients.default_scopes' => ['openid'], 'oidc.clients.optional_scopes' => ['profile']]);
+
+    $result = app(FirstPartyClientProvisioner::class)->provision('App', ['https://app.test/callback']);
+
+    expect($result->client->default_scopes)->toBe(['openid'])
+        ->and($result->client->optional_scopes)->toBe(['profile']);
+});
+
+it('applies explicit scope lists on provisioning and keeps them on reconciliation', function (): void {
+    $provisioner = app(FirstPartyClientProvisioner::class);
+
+    $created = $provisioner->provision('App', ['https://app.test/callback'], defaultScopes: ['openid'], optionalScopes: ['email']);
+    $kept = $provisioner->provision('App', ['https://app.test/callback']);
+    $changed = $provisioner->provision('App', ['https://app.test/callback'], optionalScopes: ['*']);
+
+    expect($created->client->default_scopes)->toBe(['openid'])
+        ->and($created->client->optional_scopes)->toBe(['email'])
+        ->and($kept->client->optional_scopes)->toBe(['email'])
+        ->and($changed->client->default_scopes)->toBe(['openid'])
+        ->and($changed->client->optional_scopes)->toBe(['*']);
+});

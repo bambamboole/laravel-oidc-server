@@ -32,7 +32,8 @@ return new class extends Migration
             $table->json('redirect_uris');
             $table->json('post_logout_redirect_uris')->nullable();
             $table->json('grant_types');
-            $table->json('scopes')->nullable();
+            $table->json('default_scopes');
+            $table->json('optional_scopes');
             $table->json('allowed_exchange_audiences')->nullable();
             $table->text('backchannel_logout_uri')->nullable();
             $table->boolean('backchannel_logout_session_required')->default(false);

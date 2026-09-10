@@ -50,7 +50,7 @@ final readonly class ClientCredentialsGrant implements Grant
         $requested = ScopeParameter::parse($request->input('scope')) ?? [];
 
         foreach ($requested as $scope) {
-            if ($scope !== '*' && ! $this->scopes->find($scope) instanceof Scope) {
+            if ($scope !== '*' && (! $this->scopes->find($scope) instanceof Scope || ! $client->allowsScope($scope))) {
                 throw OAuthServerException::invalidScope($scope);
             }
         }

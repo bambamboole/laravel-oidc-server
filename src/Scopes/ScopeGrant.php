@@ -8,14 +8,16 @@ use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 
 /**
- * Turns the scopes a request asked for into the scopes a token gets: the
- * wildcard survives only for grants that mint tokens without a consent
- * screen, unknown scopes are dropped, the client's allow-list applies, and
- * the ScopeRepository has the final say.
+ * Turns the scopes a request asked for into the scopes a token gets. Grants
+ * that mint without a consent screen and without an earlier artifact bounding
+ * them keep the wildcard and receive the client's default scopes; every other
+ * grant already carries its defaults from the authorize request, the original
+ * token or the subject token. Unknown scopes and scopes outside the client's
+ * assignment are dropped, and the ScopeRepository has the final say.
  */
 final readonly class ScopeGrant
 {
-    private const array WILDCARD_GRANTS = ['personal_access', 'client_credentials'];
+    private const array UNBOUNDED_GRANTS = ['personal_access', 'client_credentials'];
 
     public function __construct(private ScopeRepository $scopes) {}
 
@@ -27,12 +29,14 @@ final readonly class ScopeGrant
     {
         $ids = array_values(array_unique($requested));
 
-        if (! in_array($grantType, self::WILDCARD_GRANTS, true)) {
+        if (! in_array($grantType, self::UNBOUNDED_GRANTS, true)) {
             $ids = array_values(array_filter($ids, fn (string $id): bool => $id !== '*'));
+        } elseif ($client instanceof Client) {
+            $ids = array_values(array_unique([...$ids, ...$client->default_scopes]));
         }
 
         if ($client instanceof Client) {
-            $ids = array_values(array_filter($ids, $client->hasScope(...)));
+            $ids = array_values(array_filter($ids, $client->allowsScope(...)));
         }
 
         $wildcard = in_array('*', $ids, true);

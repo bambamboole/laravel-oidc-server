@@ -14,7 +14,7 @@ final class AuthorizeRequest
      * @param  string  $clientId  the wire client_id
      * @param  string  $redirectUri  the URI the response goes to, resolved against the registration
      * @param  bool  $redirectUriRequested  whether the client sent one; if so the token request must repeat it
-     * @param  list<string>  $scopes
+     * @param  list<string>  $scopes  the requested scopes plus the client's default scopes
      * @param  list<string>  $prompt  the validated prompt values, in request order
      * @param  int|null  $maxAge  seconds since authentication the client tolerates
      * @param  list<string>  $acrValues

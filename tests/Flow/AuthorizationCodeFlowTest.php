@@ -163,3 +163,9 @@ it('denies issuance before persisting when a trigger denies', function (): void 
 
     expect(AccessToken::query()->count())->toBe(0);
 });
+
+it('issues the client default scopes without them being requested', function (): void {
+    $this->client->forceFill(['default_scopes' => ['email']])->save();
+
+    expect(completeAuthorizationCodeFlow($this, scopes: 'openid')->assertOk()->json('scope'))->toBe('openid email');
+});

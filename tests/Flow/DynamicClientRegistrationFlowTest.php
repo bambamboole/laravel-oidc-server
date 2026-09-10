@@ -14,7 +14,7 @@ use Workbench\App\Models\User;
 uses(InteractsWithOidc::class);
 
 it('lets a dynamically registered client complete the PKCE authorization code flow', function (): void {
-    config(['oidc.clients.registration.enabled' => true, 'oidc.clients.registration.default_scopes' => []]);
+    config(['oidc.clients.registration.enabled' => true]);
     reloadOidcRoutes();
 
     $registrationEndpoint = $this->getJson('/.well-known/openid-configuration')

@@ -91,10 +91,12 @@ final readonly class AuthorizeRequestValidator
         $scopes = ScopeParameter::parse($this->parameter($request, 'scope')) ?? [];
 
         foreach ($scopes as $scope) {
-            if ($scope !== '*' && ! $this->scopes->find($scope) instanceof Scope) {
+            if ($scope !== '*' && (! $this->scopes->find($scope) instanceof Scope || ! $client->allowsScope($scope))) {
                 throw OAuthServerException::invalidScope($scope, $redirectUri, $state);
             }
         }
+
+        $scopes = array_values(array_unique([...$scopes, ...$client->default_scopes]));
 
         $codeChallenge = $this->parameter($request, 'code_challenge')
             ?? throw OAuthServerException::invalidRequest('The code_challenge parameter is required.', $redirectUri, $state);

@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Clients;
 
 use Bambamboole\LaravelOidc\Server\Clients\Enums\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -17,6 +18,8 @@ use RuntimeException;
  */
 class ClientRepository
 {
+    public function __construct(private readonly RealmResolver $realms) {}
+
     public function find(string $clientId): ?Client
     {
         return Client::query()->inRealm()->where('client_id', $clientId)->first();
@@ -76,9 +79,13 @@ class ClientRepository
         );
     }
 
-    public function createPersonalAccessGrantClient(string $name): Client
+    /**
+     * @param  list<string>|null  $defaultScopes  overrides the realm's default scopes
+     * @param  list<string>|null  $optionalScopes  overrides the realm's optional scopes
+     */
+    public function createPersonalAccessGrantClient(string $name, ?array $defaultScopes = null, ?array $optionalScopes = null): Client
     {
-        return $this->create($name, ['personal_access']);
+        return $this->create($name, ['personal_access'], defaultScopes: $defaultScopes, optionalScopes: $optionalScopes);
     }
 
     public function createClientCredentialsGrantClient(string $name): Client
@@ -96,6 +103,8 @@ class ClientRepository
     /**
      * @param  array<int, string>  $grantTypes
      * @param  array<int, string>  $redirectUris
+     * @param  list<string>|null  $defaultScopes  overrides the realm's default scopes
+     * @param  list<string>|null  $optionalScopes  overrides the realm's optional scopes
      */
     protected function create(
         string $name,
@@ -104,7 +113,10 @@ class ClientRepository
         bool $confidential = true,
         ?Authenticatable $user = null,
         ?string $clientId = null,
+        ?array $defaultScopes = null,
+        ?array $optionalScopes = null,
     ): Client {
+        $settings = $this->realms->current()->clients();
         $client = new Client;
         $client->setAttribute($client->getKeyName(), $client->newUniqueId());
 
@@ -117,6 +129,8 @@ class ClientRepository
             'redirect_uris' => $redirectUris,
             'post_logout_redirect_uris' => [],
             'grant_types' => $grantTypes,
+            'default_scopes' => $defaultScopes ?? $settings->defaultScopes,
+            'optional_scopes' => $optionalScopes ?? $settings->optionalScopes,
             'token_endpoint_auth_method' => $confidential ? TokenEndpointAuthMethod::ClientSecretPost : TokenEndpointAuthMethod::None,
             'allowed_exchange_audiences' => [],
             'revoked' => false,

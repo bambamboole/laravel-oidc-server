@@ -21,6 +21,8 @@ class ProvisionClientCommand extends Command
         {--redirect-uri=* : Registered authorization callback URI}
         {--post-logout-redirect-uri=* : Registered post-logout redirect URI}
         {--audience=* : Allowed token-exchange audience}
+        {--default-scope=* : Scope granted without being requested; overrides the realm default}
+        {--optional-scope=* : Scope granted on request, * for every catalog scope; overrides the realm default}
         {--trusted : Skip consent for this first-party client}
         {--adopt= : Adopt the existing client with this client_id}
         {--rotate : Rotate the client secret explicitly}
@@ -86,6 +88,8 @@ class ProvisionClientCommand extends Command
                 allowedExchangeAudiences: $this->arrayOption('audience'),
                 adoptClientId: $this->stringOption('adopt'),
                 rotateSecret: (bool) $this->option('rotate'),
+                defaultScopes: $this->arrayOption('default-scope') ?: null,
+                optionalScopes: $this->arrayOption('optional-scope') ?: null,
             );
         } catch (FirstPartyClientProvisioningException $exception) {
             $this->error($exception->getMessage());
@@ -139,7 +143,11 @@ class ProvisionClientCommand extends Command
             return self::SUCCESS;
         }
 
-        $client = $this->clients->createPersonalAccessGrantClient($this->stringOption('name') ?? 'Personal Access Client');
+        $client = $this->clients->createPersonalAccessGrantClient(
+            $this->stringOption('name') ?? 'Personal Access Client',
+            $this->arrayOption('default-scope') ?: null,
+            $this->arrayOption('optional-scope') ?: null,
+        );
 
         $this->info("Personal access client provisioned: {$client->client_id}");
 

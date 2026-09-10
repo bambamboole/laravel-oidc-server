@@ -121,12 +121,17 @@ class AuthorizeController
             : $prompt;
     }
 
-    /** @return list<Scope> */
+    /**
+     * A hidden scope is granted but never shown, so it neither appears on the
+     * consent screen nor keeps a stored consent from covering the request.
+     *
+     * @return list<Scope>
+     */
     protected function parseScopes(AuthorizeRequest $authRequest): array
     {
         return collect($authRequest->scopes)
             ->map(fn (string $id): ?Scope => $this->scopeRepository->find($id))
-            ->filter()
+            ->filter(fn (?Scope $scope): bool => $scope instanceof Scope && ! $scope->hidden)
             ->values()
             ->all();
     }

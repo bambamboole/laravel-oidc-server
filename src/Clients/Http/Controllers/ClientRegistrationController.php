@@ -56,9 +56,11 @@ class ClientRegistrationController
             $response['backchannel_logout_session_required'] = $client->backchannel_logout_session_required;
         }
 
-        $scopes = $client->getAttribute('scopes');
+        $scopes = $client->assignedScopes();
 
-        if (is_array($scopes) && $scopes !== []) {
+        // MCP clients send this value back as the authorize `scope`, where `*`
+        // is not a scope: a client that may request everything gets no hint.
+        if ($scopes !== [] && ! in_array('*', $scopes, true)) {
             $response['scope'] = implode(' ', $scopes);
         }
 

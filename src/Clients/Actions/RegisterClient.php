@@ -56,15 +56,12 @@ final readonly class RegisterClient
             confidential: $authMethod->requiresSecret(),
         );
 
-        $scopes = $this->realms->current()->clients()->defaultScopes;
-
         $client->forceFill([
             'token_endpoint_auth_method' => $authMethod,
             'grant_types' => $grantTypes,
             'post_logout_redirect_uris' => $postLogoutRedirectUris,
             'backchannel_logout_uri' => $backChannelLogoutUri,
             'backchannel_logout_session_required' => filter_var($metadata['backchannel_logout_session_required'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            ...($scopes !== [] ? ['scopes' => $scopes] : []),
         ])->save();
 
         $this->auditor->log(AuditEventType::ClientRegistered, clientId: $client->client_id, context: [

@@ -131,9 +131,14 @@ return [
     | always public (no secret) with PKCE enforced. Redirect URIs must use
     | http(s) — hosts checked against `allowed_redirect_domains` ('*' allows
     | any) — or one of the `allowed_redirect_schemes` (e.g. 'claude', 'cursor',
-    | 'vscode'; a non-http scheme requires a host). `default_scopes` restricts
-    | registered clients to those scopes; empty leaves the client
-    | unrestricted.
+    | 'vscode'; a non-http scheme requires a host). Registered clients get
+    | the realm's scope assignment like every other client.
+    |
+    | `default_scopes` and `optional_scopes` are assigned to every client the
+    | realm creates (ClientRepository, `oidc:client`, dynamic registration).
+    | Default scopes are granted without being requested, optional scopes on
+    | request; a scope outside the assignment is `invalid_scope`. `*` among
+    | the optional scopes stands for every catalog scope.
     |
     | `token_exchange` enables the RFC 8693 grant.
     |
@@ -155,11 +160,13 @@ return [
 
         'trusted' => [],
 
+        'default_scopes' => [],
+        'optional_scopes' => ['*'],
+
         'registration' => [
             'enabled' => env('OIDC_DCR_ENABLED', false),
             'allowed_redirect_schemes' => [],
             'allowed_redirect_domains' => ['*'],
-            'default_scopes' => [],
         ],
 
         'token_exchange' => env('OIDC_TOKEN_EXCHANGE_ENABLED', true),

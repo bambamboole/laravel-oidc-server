@@ -3,8 +3,11 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Consents\ConsentRepository;
 use Bambamboole\LaravelOidc\Server\Consents\Models\Consent;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
@@ -12,6 +15,7 @@ use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Support\Collection;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
@@ -152,4 +156,64 @@ it('grants through the store idempotently', function (): void {
         ->and($store->covers($userId, $clientKey, ['email']))->toBeFalse()
         ->and($store->covers($userId, $clientKey, []))->toBeTrue()
         ->and($store->covers($userId, 'unknown-client', []))->toBeFalse();
+});
+
+function fakeConsentViewListingScopes(): void
+{
+    fakeConsentViewUsing(fn (array $parameters) => response()->json([
+        'authToken' => $parameters['authToken'],
+        'scopes' => array_map(fn (Scope $scope): string => $scope->id, $parameters['scopes']),
+    ]));
+}
+
+it('shows the client default scopes on the consent screen even when not requested', function (): void {
+    $this->client->forceFill(['default_scopes' => ['email']])->save();
+    fakeConsentViewListingScopes();
+
+    authorizeExpectingDecision($this)->assertOk()->assertJson(['scopes' => ['openid', 'email']]);
+});
+
+it('stores the client default scopes in the consent and skips the screen once they are covered', function (): void {
+    $this->client->forceFill(['default_scopes' => ['email']])->save();
+
+    $this->authorizeAndApprove($this->user, $this->client);
+
+    expect(storedConsent($this)?->scopes)->toBe(['openid', 'email']);
+
+    authorizeExpectingDecision($this)->assertRedirect();
+    authorizeExpectingDecision($this, 'openid email')->assertRedirect();
+});
+
+it('never shows a hidden scope on the consent screen while still granting it', function (): void {
+    $hidden = new Scope('internal', 'Internal', hidden: true);
+
+    app()->extend(ScopeRepository::class, fn (ScopeRepository $inner): ScopeRepository => new readonly class($inner, $hidden) implements ScopeRepository
+    {
+        public function __construct(private ScopeRepository $inner, private Scope $hidden) {}
+
+        public function all(): Collection
+        {
+            return $this->inner->all()->push($this->hidden);
+        }
+
+        public function find(string $identifier): ?Scope
+        {
+            return $identifier === $this->hidden->id ? $this->hidden : $this->inner->find($identifier);
+        }
+
+        public function finalize(array $requested, string $grantType, ?Client $client, ?string $userIdentifier = null): array
+        {
+            return array_values(array_filter($requested, fn (Scope $scope): bool => $this->find($scope->id) instanceof Scope));
+        }
+    });
+
+    $this->client->forceFill(['default_scopes' => ['internal']])->save();
+    fakeConsentViewListingScopes();
+
+    authorizeExpectingDecision($this)->assertOk()->assertJson(['scopes' => ['openid']]);
+
+    $result = $this->authorizeAndApprove($this->user, $this->client);
+
+    expect($result->response->json('scope'))->toBe('openid internal')
+        ->and(storedConsent($this)?->scopes)->toBe(['openid', 'internal']);
 });

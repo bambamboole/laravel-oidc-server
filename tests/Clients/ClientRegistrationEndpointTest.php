@@ -19,7 +19,6 @@ function enableDynamicClientRegistration(array $overrides = []): void
         'enabled' => true,
         'allowed_redirect_schemes' => [],
         'allowed_redirect_domains' => ['*'],
-        'default_scopes' => [],
         ...$overrides,
     ]]);
 
@@ -58,14 +57,26 @@ it('registers a public client and returns the RFC 7591 response', function (): v
         ->assertJsonPath('client_name', 'agent.test');
 });
 
-it('restricts the registered client to the configured default scopes', function (): void {
-    enableDynamicClientRegistration(['default_scopes' => ['mcp:use', 'openid']]);
+it('assigns the realm default and optional scopes to a registered client and echoes them', function (): void {
+    enableDynamicClientRegistration();
+    config(['oidc.clients.default_scopes' => ['openid'], 'oidc.clients.optional_scopes' => ['mcp:use']]);
 
     $response = $this->postJson('/oauth/register', [
         'redirect_uris' => ['https://agent.test/callback'],
-    ])->assertCreated()->assertJsonPath('scope', 'mcp:use openid');
+    ])->assertCreated()->assertJsonPath('scope', 'openid mcp:use');
 
-    expect(Client::query()->whereKey($response->json('client_id'))->firstOrFail()->getAttribute('scopes'))->toBe(['mcp:use', 'openid']);
+    $client = Client::query()->whereKey($response->json('client_id'))->firstOrFail();
+
+    expect($client->default_scopes)->toBe(['openid'])
+        ->and($client->optional_scopes)->toBe(['mcp:use']);
+});
+
+it('omits scope from the response while the client may request every scope', function (): void {
+    enableDynamicClientRegistration();
+
+    $this->postJson('/oauth/register', ['redirect_uris' => ['https://agent.test/callback']])
+        ->assertCreated()
+        ->assertJsonMissingPath('scope');
 });
 
 // RFC 7591 §2, §3.2.1 — a secret-based auth method registers a confidential client; the secret is returned once

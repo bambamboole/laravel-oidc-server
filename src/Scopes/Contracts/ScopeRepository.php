@@ -17,8 +17,8 @@ interface ScopeRepository
 
     /**
      * The last word on what a token gets: `$requested` is already limited to
-     * known scopes the client may hold. Null client means a grant without a
-     * registered client (hand-built tokens).
+     * known scopes the client is assigned, its default scopes included. Null
+     * client means a grant without a registered client (hand-built tokens).
      *
      * @param  Scope[]  $requested
      * @return Scope[]

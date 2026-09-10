@@ -24,7 +24,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array<int, string> $redirect_uris
  * @property array<int, string> $post_logout_redirect_uris
  * @property array<int, string> $grant_types
- * @property ?array<int, string> $scopes
+ * @property array<int, string> $default_scopes
+ * @property array<int, string> $optional_scopes
  * @property array<int, string> $allowed_exchange_audiences
  * @property ?string $backchannel_logout_uri
  * @property bool $backchannel_logout_session_required
@@ -55,7 +56,8 @@ class Client extends Model
             'post_logout_redirect_uris' => 'array',
             'grant_types' => 'array',
             'token_endpoint_auth_method' => TokenEndpointAuthMethod::class,
-            'scopes' => 'array',
+            'default_scopes' => 'array',
+            'optional_scopes' => 'array',
             'allowed_exchange_audiences' => 'array',
             'backchannel_logout_session_required' => 'bool',
             'consent_required' => 'bool',
@@ -113,9 +115,17 @@ class Client extends Model
         return in_array($grantType, $this->grant_types, true);
     }
 
-    /** An unset scope list means the client may request anything the provider knows. */
-    public function hasScope(string $scope): bool
+    /** Default scopes are granted unasked, optional ones on request; `*` among the optional scopes stands for every catalog scope. */
+    public function allowsScope(string $scope): bool
     {
-        return $this->scopes === null || in_array($scope, $this->scopes, true);
+        return in_array($scope, $this->default_scopes, true)
+            || in_array($scope, $this->optional_scopes, true)
+            || in_array('*', $this->optional_scopes, true);
+    }
+
+    /** @return list<string> */
+    public function assignedScopes(): array
+    {
+        return array_values(array_unique([...$this->default_scopes, ...$this->optional_scopes]));
     }
 }
