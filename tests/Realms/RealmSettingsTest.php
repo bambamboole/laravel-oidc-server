@@ -98,7 +98,7 @@ function bindRealms(Realm ...$realms): void
 }
 
 it('issues tokens with the lifetime of the realm they are issued in', function () {
-    config(['oidc.token_lifetimes.client_credentials' => 3600]);
+    config(['oidc.tokens.lifetimes.client_credentials' => 3600]);
     bindRealms(realmWithSettings('default'), realmWithSettings('short', new TokenSettings(clientCredentialsLifetime: 60)));
 
     $clients = [];
@@ -138,7 +138,7 @@ it('advertises token exchange and registration per realm', function () {
         realmWithSettings('default'),
         realmWithSettings('locked', clients: new ClientSettings(dynamicRegistration: false, tokenExchange: false)),
     );
-    config(['oidc.dcr.enabled' => true]);
+    config(['oidc.clients.registration.enabled' => true]);
 
     $open = $this->getJson('/realms/default/.well-known/openid-configuration')->json();
     $locked = $this->getJson('/realms/locked/.well-known/openid-configuration')->json();

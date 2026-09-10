@@ -46,7 +46,7 @@ it('omits the registration endpoint while dynamic client registration is disable
 });
 
 it('advertises the registration endpoint once dynamic client registration is enabled', function () {
-    config(['oidc.dcr.enabled' => true]);
+    config(['oidc.clients.registration.enabled' => true]);
     reloadOidcRoutes();
 
     $this->getJson('/.well-known/oauth-authorization-server/realms/default')

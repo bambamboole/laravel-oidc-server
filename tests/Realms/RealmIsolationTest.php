@@ -11,14 +11,14 @@ use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
 use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\PresentedTokenResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Workbench\App\Models\User;
@@ -70,7 +70,7 @@ it('does not resolve an access token from another realm', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
-    (new Token)->forceFill([
+    (new AccessToken)->forceFill([
         'realm_id' => 'acme',
         'id' => 'token-in-acme',
         'user_id' => $user->id,
@@ -80,11 +80,11 @@ it('does not resolve an access token from another realm', function () {
         'expires_at' => now()->addHour(),
     ])->save();
 
-    expect(Token::query()->inRealm()->whereKey('token-in-acme')->exists())->toBeTrue();
+    expect(AccessToken::query()->inRealm()->whereKey('token-in-acme')->exists())->toBeTrue();
 
     enterRealm('globex');
 
-    expect(Token::query()->inRealm()->whereKey('token-in-acme')->exists())->toBeFalse();
+    expect(AccessToken::query()->inRealm()->whereKey('token-in-acme')->exists())->toBeFalse();
 });
 
 it('keeps signing keys per realm', function () {
@@ -101,7 +101,7 @@ it('keeps signing keys per realm', function () {
     $globexKid = $store->signingKey()->kid();
 
     expect($globexKid)->not->toBe($acmeKid)
-        ->and(array_map(fn (SigningKey $key): string => $key->kid(), $store->verificationKeys()))->toBe([$globexKid]);
+        ->and(array_map(fn (SigningKeyPair $key): string => $key->kid(), $store->verificationKeys()))->toBe([$globexKid]);
 
     enterRealm('acme');
 

@@ -8,14 +8,14 @@ declare(strict_types=1);
  * chain MCP clients drive.
  */
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
 it('lets a dynamically registered client complete the PKCE authorization code flow', function () {
-    config(['oidc.dcr.enabled' => true, 'oidc.dcr.default_scopes' => []]);
+    config(['oidc.clients.registration.enabled' => true, 'oidc.clients.registration.default_scopes' => []]);
     reloadOidcRoutes();
 
     $registration = $this->postJson('/realms/default/oauth/register', [

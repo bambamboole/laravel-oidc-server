@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Illuminate\Support\Facades\File;
 
 it('audits a dynamic client registration', function () {
-    config(['oidc.dcr.enabled' => true]);
+    config(['oidc.clients.registration.enabled' => true]);
     reloadOidcRoutes();
     $sink = fakeAudit();
 

@@ -24,9 +24,9 @@ it('validates tokens signed by a previous key listed in additional_public_keys',
 
     $rotated = app(SigningKeyGenerator::class)->generate();
     config([
-        'oidc.private_key' => $rotated->privateKeyPem,
-        'oidc.public_key' => $rotated->publicKeyPem,
-        'oidc.additional_public_keys' => [$previousPublicKey],
+        'oidc.keys.private_key' => $rotated->privateKeyPem,
+        'oidc.keys.public_key' => $rotated->publicKeyPem,
+        'oidc.keys.additional_public_keys' => [$previousPublicKey],
     ]);
 
     expect(app(TokenInspector::class)->parse($jwt))->not->toBeNull();
@@ -37,9 +37,9 @@ it('rejects tokens signed by a key that is neither current nor retained', functi
 
     $rotated = app(SigningKeyGenerator::class)->generate();
     config([
-        'oidc.private_key' => $rotated->privateKeyPem,
-        'oidc.public_key' => $rotated->publicKeyPem,
-        'oidc.additional_public_keys' => [],
+        'oidc.keys.private_key' => $rotated->privateKeyPem,
+        'oidc.keys.public_key' => $rotated->publicKeyPem,
+        'oidc.keys.additional_public_keys' => [],
     ]);
 
     expect(app(TokenInspector::class)->parse($jwt))->toBeNull();

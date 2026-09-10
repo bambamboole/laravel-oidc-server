@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\ConnectionInterface;
 use Illuminate\Database\Eloquent\Builder;
@@ -214,12 +214,11 @@ it('verifies the existing credential before rotating it', function () {
         ->and(Hash::check($rotated->clientSecret, (string) $rotated->client->getRawOriginal('secret')))->toBeTrue();
 });
 
-it('verifies the existing credential inside the passport transaction', function () {
+it('verifies the existing credential inside the provisioning transaction', function () {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('Original name', ['https://original.test/callback']);
     $storedHash = (string) $created->client->getRawOriginal('secret');
-    $connectionName = config('passport.connection');
-    $connection = DB::connection(is_string($connectionName) ? $connectionName : null);
+    $connection = DB::connection();
     $delegate = app(Hasher::class);
     $spy = new class($delegate, $connection) implements Hasher
     {
@@ -309,7 +308,7 @@ it('rejects a user-owned adoption target', function () {
 });
 
 it('rejects exchange audiences when token exchange is disabled', function () {
-    config(['oidc.token_exchange.enabled' => false]);
+    config(['oidc.clients.token_exchange' => false]);
 
     expect(fn () => app(FirstPartyClientProvisioner::class)->provision(
         'First-party app',
@@ -323,7 +322,7 @@ it('rejects exchange audiences when token exchange is disabled', function () {
 it('does not revoke existing tokens when rotating the client secret', function () {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('First-party app', ['https://app.test/login/callback']);
-    $token = Token::query()->create([
+    $token = AccessToken::query()->create([
         'id' => 'existing-token',
         'client_id' => $created->clientId,
         'scopes' => [],

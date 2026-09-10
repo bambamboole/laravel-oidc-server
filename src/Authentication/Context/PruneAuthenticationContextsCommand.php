@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Context;
 
+use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
 use Illuminate\Console\Command;
 
 class PruneAuthenticationContextsCommand extends Command

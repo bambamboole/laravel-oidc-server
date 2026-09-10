@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Illuminate\Support\Facades\File;
 
 function installSelfEnv(string $contents = "APP_NAME=Testing\n"): string
@@ -41,7 +41,7 @@ it('forwards configured provisioning options to the first-party client', functio
     config([
         'oidc-client' => [],
         'app.url' => 'https://app.test',
-        'oidc.first_party.provision' => [
+        'oidc.clients.first_party.provision' => [
             'redirect_uris' => ['https://app.test/other/callback'],
             'post_logout_redirect_uris' => ['https://app.test/goodbye'],
             'allowed_exchange_audiences' => ['https://api.test'],

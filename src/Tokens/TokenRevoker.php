@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 
 /**
  * The only writer of the `revoked` flag. An access token and the refresh token
@@ -20,14 +20,14 @@ final class TokenRevoker implements AccessTokenRevoker
     {
         RefreshToken::query()->where('access_token_id', $jti)->update(['revoked' => true]);
 
-        return Token::query()->whereKey($jti)->where('revoked', false)->update(['revoked' => true]) === 1;
+        return AccessToken::query()->whereKey($jti)->where('revoked', false)->update(['revoked' => true]) === 1;
     }
 
     public function revokeChain(string $authCodeId): void
     {
-        $tokens = Token::query()->where('auth_code_id', $authCodeId)->select('id');
+        $tokens = AccessToken::query()->where('auth_code_id', $authCodeId)->select('id');
 
         RefreshToken::query()->whereIn('access_token_id', $tokens)->update(['revoked' => true]);
-        Token::query()->where('auth_code_id', $authCodeId)->update(['revoked' => true]);
+        AccessToken::query()->where('auth_code_id', $authCodeId)->update(['revoked' => true]);
     }
 }

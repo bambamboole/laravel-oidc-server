@@ -29,17 +29,17 @@ final readonly class ClientSettings
 
     public static function fromConfig(): self
     {
-        $clientId = config('oidc.first_party.client_id');
+        $clientId = config('oidc.clients.first_party.client_id');
 
         return new self(
-            dynamicRegistration: (bool) config('oidc.dcr.enabled', false),
-            allowedRedirectSchemes: array_values(array_map(strval(...), (array) config('oidc.dcr.allowed_redirect_schemes', []))),
-            allowedRedirectDomains: array_values(array_map(strval(...), (array) config('oidc.dcr.allowed_redirect_domains', ['*']))),
-            defaultScopes: array_values(array_map(strval(...), (array) config('oidc.dcr.default_scopes', []))),
-            tokenExchange: (bool) config('oidc.token_exchange.enabled', true),
+            dynamicRegistration: (bool) config('oidc.clients.registration.enabled', false),
+            allowedRedirectSchemes: array_values(array_map(strval(...), (array) config('oidc.clients.registration.allowed_redirect_schemes', []))),
+            allowedRedirectDomains: array_values(array_map(strval(...), (array) config('oidc.clients.registration.allowed_redirect_domains', ['*']))),
+            defaultScopes: array_values(array_map(strval(...), (array) config('oidc.clients.registration.default_scopes', []))),
+            tokenExchange: (bool) config('oidc.clients.token_exchange', true),
             firstPartyClientId: is_string($clientId) && $clientId !== '' ? $clientId : null,
-            firstPartyTrusted: (bool) config('oidc.first_party.trusted', false),
-            trustedClients: array_values(array_unique(array_map(strval(...), (array) config('oidc.trusted_clients', [])))),
+            firstPartyTrusted: (bool) config('oidc.clients.first_party.trusted', false),
+            trustedClients: array_values(array_unique(array_map(strval(...), (array) config('oidc.clients.trusted', [])))),
         );
     }
 }

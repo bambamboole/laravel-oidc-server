@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
 
-use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
@@ -16,8 +16,8 @@ use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AuthorizationCodeEvent;
@@ -82,7 +82,7 @@ final readonly class InteractiveTokenIssuer
         );
 
         if ($context !== null || $authCodeId !== null) {
-            Token::query()->whereKey($accessToken->jti)->update([
+            AccessToken::query()->whereKey($accessToken->jti)->update([
                 'auth_code_id' => $authCodeId,
                 'context_id' => $context?->id,
             ]);

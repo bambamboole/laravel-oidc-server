@@ -11,9 +11,9 @@ use Lcobucci\JWT\Configuration;
  */
 interface SigningKeys
 {
-    public function signingKey(): SigningKey;
+    public function signingKey(): SigningKeyPair;
 
-    /** @return non-empty-list<SigningKey> */
+    /** @return non-empty-list<SigningKeyPair> */
     public function verificationKeys(): array;
 
     public function signingKid(): string;

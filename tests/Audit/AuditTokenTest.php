@@ -167,7 +167,7 @@ it('audits a token exchange and its failure paths', function () {
 
 it('audits a personal access token issuance', function () {
     $sink = fakeAudit();
-    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
+    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
 
     $result = $this->user->createToken('cli', ['openid']);
 
@@ -179,7 +179,7 @@ it('audits a personal access token issuance', function () {
 });
 
 it('audits an access token revocation', function () {
-    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
+    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
     $result = $this->user->createToken('t', ['openid']);
     $token = $result->token;
 

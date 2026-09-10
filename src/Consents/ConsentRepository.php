@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Consents;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Consents\Models\Consent;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
 use Illuminate\Support\Facades\Date;

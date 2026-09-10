@@ -7,7 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Brokering\Controllers;
 use Bambamboole\LaravelOidc\Server\Brokering\Actions\LinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\InvalidStateException;
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountAlreadyLinkedException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
@@ -60,7 +60,7 @@ class SocialAuthenticationController
             return $this->failed($request, __('The sign-in was cancelled or refused by the provider.'));
         }
 
-        $pending = PendingAuthorization::pull($request);
+        $pending = PendingSocialRedirect::pull($request);
 
         if ($pending === null) {
             return $this->failed($request, __('Your sign-in attempt expired. Please try again.'));
@@ -73,7 +73,7 @@ class SocialAuthenticationController
         try {
             $socialUser = $driver->user($request, $pending);
 
-            return $pending->intent === PendingAuthorization::INTENT_LINK
+            return $pending->intent === PendingSocialRedirect::INTENT_LINK
                 ? $this->completeLink($request, $provider, $socialUser)
                 : $this->completeLogin($request, $provider, $socialUser);
         } catch (InvalidStateException) {

@@ -6,8 +6,8 @@ declare(strict_types=1);
  * RFC 9068 (JWT profile for OAuth 2.0 access tokens)
  */
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;

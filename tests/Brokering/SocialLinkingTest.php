@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
@@ -42,7 +42,7 @@ function enableCorpForLinking(): void
  */
 function linkCallbackFor(mixed $test, string $sub = 'upstream-1'): TestResponse
 {
-    $pending = session(PendingAuthorization::SESSION_KEY);
+    $pending = session(PendingSocialRedirect::SESSION_KEY);
 
     $config = Configuration::forAsymmetricSigner(
         new Sha256,
@@ -80,7 +80,7 @@ it('links a provider to the authenticated user', function () {
         ->get(route('identity.social.link', ['provider' => 'corp']))
         ->assertRedirect();
 
-    expect(session(PendingAuthorization::SESSION_KEY)['intent'])->toBe('link');
+    expect(session(PendingSocialRedirect::SESSION_KEY)['intent'])->toBe('link');
 
     linkCallbackFor($this)->assertRedirect('/dashboard')->assertSessionHas('status', 'social-account-linked');
 
@@ -128,7 +128,7 @@ it('requires authentication to start linking', function () {
     enableCorpForLinking();
 
     $this->get(route('identity.social.link', ['provider' => 'corp']))->assertRedirect();
-    expect(session(PendingAuthorization::SESSION_KEY))->toBeNull();
+    expect(session(PendingSocialRedirect::SESSION_KEY))->toBeNull();
 });
 
 it('unlinks an account owned by the user', function () {

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Testing;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\OAuthenticatable;
 use DateInterval;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -116,7 +116,7 @@ trait InteractsWithOidc
     public function actingAsOidcUser(Authenticatable $user, array $scopes = [], string $guard = 'oidc'): Authenticatable
     {
         if ($user instanceof OAuthenticatable) {
-            $user->withAccessToken(new CurrentAccessToken(new Token(['scopes' => $scopes])));
+            $user->withAccessToken(new CurrentAccessToken(new AccessToken(['scopes' => $scopes])));
         }
 
         $auth = app('auth');
@@ -135,15 +135,15 @@ trait InteractsWithOidc
     }
 
     /**
-     * Create (or adopt) a client and point `oidc.first_party.*` config at it.
+     * Create (or adopt) a client and point `oidc.clients.first_party.*` config at it.
      */
     public function withFirstPartyClient(?Client $client = null): Client
     {
         $client ??= $this->createOidcClient('First-Party App', ['https://app.test/callback']);
 
         config([
-            'oidc.first_party.client_id' => $client->client_id,
-            'oidc.first_party.trusted' => true,
+            'oidc.clients.first_party.client_id' => $client->client_id,
+            'oidc.clients.first_party.trusted' => true,
         ]);
 
         return $client;

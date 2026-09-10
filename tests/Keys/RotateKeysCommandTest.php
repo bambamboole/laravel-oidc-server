@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Illuminate\Support\Facades\File;
 
@@ -75,7 +75,6 @@ it('aborts without writing when the confirmation is declined', function () {
 });
 
 it('omits the previous key on a first-time generation with no current key', function () {
-    config(['passport.private_key' => null, 'passport.public_key' => null]);
     config(['oidc.keys.path' => temporaryTestDirectory('nokeys')]);
     $env = rotateKeysEnv();
 
@@ -99,7 +98,6 @@ it('skips generation with --if-missing when keys already exist', function () {
 });
 
 it('generates without confirmation with --if-missing when no keys exist', function () {
-    config(['passport.private_key' => null, 'passport.public_key' => null]);
     config(['oidc.keys.path' => temporaryTestDirectory('nokeys-if-missing')]);
     $env = rotateKeysEnv();
 
@@ -112,9 +110,9 @@ it('fails with the store error when rotation cannot persist', function () {
     rotateKeysEnv();
     app()->instance(SigningKeyStore::class, new class implements SigningKeyStore
     {
-        public function signingKey(): SigningKey
+        public function signingKey(): SigningKeyPair
         {
-            return new SigningKey('pub', 'p', 'kid');
+            return new SigningKeyPair('pub', 'p', 'kid');
         }
 
         public function verificationKeys(): array

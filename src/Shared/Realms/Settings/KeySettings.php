@@ -13,6 +13,6 @@ final readonly class KeySettings
 
     public static function fromConfig(): self
     {
-        return new self(keySize: (int) config('oidc.key_size', 2048));
+        return new self(keySize: (int) config('oidc.keys.size', 2048));
     }
 }

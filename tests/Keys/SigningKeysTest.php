@@ -4,7 +4,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
@@ -22,21 +22,21 @@ function escapedFixtureKey(string $file): string
 }
 
 it('resolves keys from oidc config with escaped newlines', function () {
-    config(['oidc.public_key' => escapedFixtureKey('oauth-public.key')]);
+    config(['oidc.keys.public_key' => escapedFixtureKey('oauth-public.key')]);
 
     expect(signingPublicKey())
         ->toBe(trim((string) file_get_contents(__DIR__.'/../fixtures/oauth-public.key')));
 });
 
 it('falls back to key files when no config key is set', function () {
-    config(['oidc.public_key' => null, 'passport.public_key' => null]);
+    config(['oidc.keys.public_key' => null]);
 
     expect(signingPublicKey())
         ->toBe(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));
 });
 
 it('fails loud when neither config key nor key file exists', function () {
-    config(['oidc.private_key' => null, 'passport.private_key' => null]);
+    config(['oidc.keys.private_key' => null]);
     config(['oidc.keys.path' => '/nonexistent']);
 
     signingPrivateKey();
@@ -45,7 +45,7 @@ it('fails loud when neither config key nor key file exists', function () {
 it('serves the same jwks from an env-provided key', function () {
     $fromFile = Jwk::fromPem((string) file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));
 
-    config(['oidc.public_key' => escapedFixtureKey('oauth-public.key')]);
+    config(['oidc.keys.public_key' => escapedFixtureKey('oauth-public.key')]);
 
     $this->getJson('/realms/default/.well-known/jwks.json')
         ->assertOk()
@@ -54,8 +54,8 @@ it('serves the same jwks from an env-provided key', function () {
 
 it('signs id_tokens with env-provided keys', function () {
     config([
-        'oidc.private_key' => escapedFixtureKey('oauth-private.key'),
-        'oidc.public_key' => escapedFixtureKey('oauth-public.key'),
+        'oidc.keys.private_key' => escapedFixtureKey('oauth-private.key'),
+        'oidc.keys.public_key' => escapedFixtureKey('oauth-public.key'),
     ]);
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
@@ -80,14 +80,14 @@ it('signs id_tokens with env-provided keys', function () {
 it('reads every key through the store it was given', function () {
     $keys = new StoredSigningKeys(new class implements SigningKeyStore
     {
-        public function signingKey(): SigningKey
+        public function signingKey(): SigningKeyPair
         {
-            return new SigningKey('custom-public', 'custom-private', 'custom-kid');
+            return new SigningKeyPair('custom-public', 'custom-private', 'custom-kid');
         }
 
         public function verificationKeys(): array
         {
-            return [$this->signingKey(), new SigningKey('old-public', null, 'old-kid')];
+            return [$this->signingKey(), new SigningKeyPair('old-public', null, 'old-kid')];
         }
 
         public function rotate(GeneratedSigningKeys $keys): void {}
@@ -97,7 +97,7 @@ it('reads every key through the store it was given', function () {
         ->and($keys->signingKey()->privateKey())->toBe('custom-private')
         ->and($keys->signingKid())->toBe('custom-kid')
         ->and(array_map(
-            fn (SigningKey $key): string => $key->publicKeyPem,
+            fn (SigningKeyPair $key): string => $key->publicKeyPem,
             $keys->verificationKeys(),
         ))->toBe(['custom-public', 'old-public']);
 });

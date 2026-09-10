@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Authorize;
 
-use Bambamboole\LaravelOidc\Server\Protocol\InvalidAuthTokenException;
+use Bambamboole\LaravelOidc\Server\Protocol\InvalidConsentTokenException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -16,9 +16,9 @@ use RuntimeException;
  */
 final class AuthorizeRequestSession
 {
-    private const string TOKEN_KEY = 'authToken';
+    private const string TOKEN_KEY = 'oidc.consent_token';
 
-    private const string REQUEST_KEY = 'authRequest';
+    private const string REQUEST_KEY = 'oidc.authorize_request';
 
     /** @return string the auth token the consent form must echo back */
     public function stash(Request $request, AuthorizeRequest $authorizeRequest): string
@@ -37,7 +37,7 @@ final class AuthorizeRequestSession
             || $request->session()->pull(self::TOKEN_KEY) !== $request->input('auth_token')) {
             $request->session()->forget([self::TOKEN_KEY, self::REQUEST_KEY]);
 
-            throw InvalidAuthTokenException::different();
+            throw InvalidConsentTokenException::different();
         }
 
         $serialized = $request->session()->pull(self::REQUEST_KEY);

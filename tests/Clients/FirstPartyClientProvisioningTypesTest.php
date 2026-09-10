@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningResult;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Schema;
 

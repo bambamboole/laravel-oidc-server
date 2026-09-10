@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Keys;
 
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Lcobucci\JWT\Configuration;
@@ -15,12 +15,12 @@ final class StoredSigningKeys implements SigningKeys
 {
     public function __construct(private readonly SigningKeyStore $store) {}
 
-    public function signingKey(): SigningKey
+    public function signingKey(): SigningKeyPair
     {
         return $this->store->signingKey();
     }
 
-    /** @return non-empty-list<SigningKey> */
+    /** @return non-empty-list<SigningKeyPair> */
     public function verificationKeys(): array
     {
         return $this->store->verificationKeys();

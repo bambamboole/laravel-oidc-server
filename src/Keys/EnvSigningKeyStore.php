@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Keys;
 
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use RuntimeException;
 use Throwable;
@@ -15,20 +15,20 @@ final class EnvSigningKeyStore implements SigningKeyStore
 {
     public function __construct(private readonly EnvironmentFile $environment) {}
 
-    public function signingKey(): SigningKey
+    public function signingKey(): SigningKeyPair
     {
         $privateKey = $this->key('private');
 
-        return new SigningKey($this->key('public'), $privateKey);
+        return new SigningKeyPair($this->key('public'), $privateKey);
     }
 
-    /** @return non-empty-list<SigningKey> */
+    /** @return non-empty-list<SigningKeyPair> */
     public function verificationKeys(): array
     {
         return [
-            new SigningKey($this->key('public')),
+            new SigningKeyPair($this->key('public')),
             ...array_map(
-                static fn (string $pem): SigningKey => new SigningKey($pem),
+                static fn (string $pem): SigningKeyPair => new SigningKeyPair($pem),
                 $this->retainedPublicKeys(),
             ),
         ];
@@ -53,7 +53,7 @@ final class EnvSigningKeyStore implements SigningKeyStore
     /** @return list<string> */
     private function retainedPublicKeys(): array
     {
-        $additional = config('oidc.additional_public_keys', []);
+        $additional = config('oidc.keys.additional_public_keys', []);
 
         return array_values(array_filter(
             is_array($additional) ? $additional : [],
@@ -63,7 +63,7 @@ final class EnvSigningKeyStore implements SigningKeyStore
 
     private function key(string $type): string
     {
-        $key = str_replace('\n', "\n", (string) config("oidc.{$type}_key"));
+        $key = str_replace('\n', "\n", (string) config("oidc.keys.{$type}_key"));
 
         if ($key !== '') {
             return $key;

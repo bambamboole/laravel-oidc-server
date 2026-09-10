@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -70,7 +70,7 @@ it('does not record a consent when the user denies', function () {
 it('skips the consent screen once the tokens it led to have expired', function () {
     $this->authorizeAndApprove($this->user, $this->client);
 
-    Token::query()->update(['expires_at' => now()->subHour()]);
+    AccessToken::query()->update(['expires_at' => now()->subHour()]);
 
     authorizeExpectingDecision($this)->assertRedirect();
 });
@@ -80,7 +80,7 @@ it('keeps the consent when the tokens are revoked', function () {
 
     app(AccessTokenRevoker::class)->revoke((string) parseAccessToken($result->accessToken)->claims()->get('jti'));
 
-    expect(Token::query()->where('revoked', false)->exists())->toBeFalse();
+    expect(AccessToken::query()->where('revoked', false)->exists())->toBeFalse();
 
     authorizeExpectingDecision($this)->assertRedirect();
 });

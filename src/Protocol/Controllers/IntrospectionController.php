@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Clients\ClientAuthenticator;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\PresentedToken;
 use Bambamboole\LaravelOidc\Server\Tokens\PresentedTokenResolver;
 use Carbon\CarbonInterface;

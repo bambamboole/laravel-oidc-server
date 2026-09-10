@@ -28,7 +28,6 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('secret')->nullable();
-            $table->string('provider')->nullable();
             $table->string('token_endpoint_auth_method');
             $table->json('redirect_uris');
             $table->json('post_logout_redirect_uris')->nullable();
@@ -38,9 +37,6 @@ return new class extends Migration
             $table->text('backchannel_logout_uri')->nullable();
             $table->boolean('backchannel_logout_session_required')->default(false);
             $table->boolean('consent_required')->default(true);
-            $table->unsignedInteger('access_token_ttl')->nullable();
-            $table->unsignedInteger('id_token_ttl')->nullable();
-            $table->unsignedInteger('refresh_token_ttl')->nullable();
             $table->string('provisioning_key', 64)->nullable()->unique();
             $table->boolean('revoked')->default(false);
             $table->timestamps();

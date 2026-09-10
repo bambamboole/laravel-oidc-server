@@ -16,7 +16,7 @@ it('generates a usable keypair with a matching kid', function () {
 it('reports whether signing key material is resolvable', function () {
     expect(app(SigningKeyGenerator::class)->hasKeys())->toBeTrue();
 
-    config(['oidc.private_key' => null, 'oidc.public_key' => null, 'passport.private_key' => null, 'passport.public_key' => null]);
+    config(['oidc.keys.private_key' => null, 'oidc.keys.public_key' => null]);
     config(['oidc.keys.path' => temporaryTestDirectory('nokeys')]);
 
     expect(app(SigningKeyGenerator::class)->hasKeys())->toBeFalse();

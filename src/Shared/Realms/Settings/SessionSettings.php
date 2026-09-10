@@ -23,12 +23,12 @@ final readonly class SessionSettings
 
     public static function fromConfig(): self
     {
-        $scopes = config('oidc.session_token.scopes');
+        $scopes = config('oidc.session.token.scopes');
 
         return new self(
             absoluteLifetime: (int) config('oidc.session.absolute_lifetime', 2592000),
-            tokenTtl: (int) config('oidc.session_token.ttl', 3600),
-            tokenRefreshSkew: (int) config('oidc.session_token.refresh_skew', 60),
+            tokenTtl: (int) config('oidc.session.token.ttl', 3600),
+            tokenRefreshSkew: (int) config('oidc.session.token.refresh_skew', 60),
             tokenScopes: is_array($scopes) ? array_values($scopes) : null,
         );
     }

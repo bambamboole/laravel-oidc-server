@@ -16,18 +16,18 @@ use Bambamboole\LaravelOidc\Server\Authentication\Controllers\VerifyEmailControl
 use Bambamboole\LaravelOidc\Server\Brokering\Controllers\LinkedAccountController;
 use Bambamboole\LaravelOidc\Server\Brokering\Controllers\SocialAuthenticationController;
 use Bambamboole\LaravelOidc\Server\Clients\Controllers\ClientRegistrationController;
-use Bambamboole\LaravelOidc\Server\Consents\Controllers\ApproveAuthorizationController;
-use Bambamboole\LaravelOidc\Server\Consents\Controllers\DenyAuthorizationController;
+use Bambamboole\LaravelOidc\Server\Consents\Controllers\ApproveConsentController;
+use Bambamboole\LaravelOidc\Server\Consents\Controllers\DenyConsentController;
 use Bambamboole\LaravelOidc\Server\Credentials\Controllers\FactorEnrollmentController;
 use Bambamboole\LaravelOidc\Server\Credentials\Controllers\TwoFactorChallengeController;
 use Bambamboole\LaravelOidc\Server\Keys\JwksController;
-use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AccessTokenController;
-use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizationController;
 use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizationServerMetadataController;
+use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizeController;
 use Bambamboole\LaravelOidc\Server\Protocol\Controllers\DiscoveryController;
 use Bambamboole\LaravelOidc\Server\Protocol\Controllers\IntrospectionController;
 use Bambamboole\LaravelOidc\Server\Protocol\Controllers\ProtectedResourceController;
 use Bambamboole\LaravelOidc\Server\Protocol\Controllers\RevocationController;
+use Bambamboole\LaravelOidc\Server\Protocol\Controllers\TokenController;
 use Bambamboole\LaravelOidc\Server\Protocol\Controllers\UserinfoController;
 use Bambamboole\LaravelOidc\Server\Realms\RealmPath;
 use Bambamboole\LaravelOidc\Server\Realms\ResolveRealm;
@@ -98,12 +98,12 @@ Route::middleware([ResolveRealm::class, ...$shared])
                 });
             });
 
-            Route::match(['get', 'post'], 'oauth/authorize', [AuthorizationController::class, 'authorize'])->name('oidc.authorize');
+            Route::match(['get', 'post'], 'oauth/authorize', AuthorizeController::class)->name('oidc.authorize');
             Route::match(['get', 'post'], 'oauth/logout', EndSessionController::class)->name('oidc.logout');
 
             Route::middleware($authenticated)->group(function (): void {
-                Route::post('oauth/authorize/consent', [ApproveAuthorizationController::class, 'approve'])->name('oidc.approve');
-                Route::delete('oauth/authorize/consent', [DenyAuthorizationController::class, 'deny'])->name('oidc.deny');
+                Route::post('oauth/authorize/consent', ApproveConsentController::class)->name('oidc.approve');
+                Route::delete('oauth/authorize/consent', DenyConsentController::class)->name('oidc.deny');
             });
         });
 
@@ -118,7 +118,7 @@ Route::middleware([ResolveRealm::class, ...$shared])
         Route::match(['get', 'post'], 'oauth/userinfo', UserinfoController::class)->name('oidc.userinfo');
 
         Route::middleware('throttle')->group(function (): void {
-            Route::post('oauth/token', [AccessTokenController::class, 'issueToken'])->name('oidc.token');
+            Route::post('oauth/token', TokenController::class)->name('oidc.token');
             Route::post('oauth/introspect', IntrospectionController::class)->name('oidc.introspect');
             Route::post('oauth/revoke', RevocationController::class)->name('oidc.revoke');
 

@@ -16,8 +16,8 @@ use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckAudience;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Contracts\Support\Responsable;
@@ -78,7 +78,7 @@ function createUsersFromSocialUsing(Closure $action): void
 
 /**
  * Re-runs the package's route file. Endpoints whose registration depends on
- * config (`oidc.dcr.enabled`) are bound at boot, so a test that flips the flag
+ * config (`oidc.clients.registration.enabled`) are bound at boot, so a test that flips the flag
  * afterwards has to rebuild the table to see the change.
  */
 function reloadOidcRoutes(): void
@@ -171,16 +171,16 @@ function expectExchangeDenied(Closure $callback, string $error): void
  * Persists a refresh token with its linked access token and returns the value
  * a client would present at the token, introspection or revocation endpoint.
  *
- * @return array{0: string, 1: RefreshToken, 2: Token}
+ * @return array{0: string, 1: RefreshToken, 2: AccessToken}
  */
 function issueRefreshToken(mixed $test, ?string $clientId = null, bool $expired = false): array
 {
     $accessTokenId = Str::random(80);
     $refreshTokenId = Str::random(80);
 
-    $accessToken = new Token;
+    $accessToken = new AccessToken;
     $accessToken->forceFill([
-        'realm_id' => Token::currentRealm(),
+        'realm_id' => AccessToken::currentRealm(),
         'id' => $accessTokenId,
         'user_id' => $test->user->id,
         'client_id' => $clientId ?? $test->client->id,
@@ -224,7 +224,7 @@ function mintExchangeSubjectToken(
     );
 
     if ($revoked) {
-        Token::query()->whereKey($minted->jti)->update(['revoked' => true]);
+        AccessToken::query()->whereKey($minted->jti)->update(['revoked' => true]);
     }
 
     return $minted->jwt;
@@ -254,7 +254,7 @@ function resourceServerBearer(
     );
 
     if ($revoked) {
-        Token::query()->whereKey($minted->jti)->update(['revoked' => true]);
+        AccessToken::query()->whereKey($minted->jti)->update(['revoked' => true]);
     }
 
     return $minted->jwt;
@@ -268,7 +268,7 @@ function ttlUntil(DateTimeImmutable $expiresAt): DateInterval
 
 /**
  * Mints a plain JWT (default header typ=JWT, as an id_token would carry) and persists a
- * matching Passport token row. CheckAudience validates the signature and persisted row but
+ * matching access-token row. CheckAudience validates the signature and persisted row but
  * still rejects it on its typ guard, since the header typ is not at+jwt.
  */
 /**
@@ -327,8 +327,8 @@ function persistedIdTokenAsBearer(mixed $test): string
         ->getToken($config->signer(), $config->signingKey())
         ->toString();
 
-    (new Token)->forceFill([
-        'realm_id' => Token::currentRealm(),
+    (new AccessToken)->forceFill([
+        'realm_id' => AccessToken::currentRealm(),
         'id' => $tokenId,
         'user_id' => $test->user->id,
         'client_id' => $test->client->id,

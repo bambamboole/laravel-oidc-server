@@ -38,7 +38,7 @@ final class IssueScopedToken
         $client = $this->clients->findActive((string) $this->firstParty->clientId());
 
         if ($client === null) {
-            throw new RuntimeException('The oidc.first_party.client_id is not configured or does not exist.');
+            throw new RuntimeException('The oidc.clients.first_party.client_id is not configured or does not exist.');
         }
 
         return IssuedToken::fromMinted($this->exchanger->exchange($subject, $client, $audience, $scopes), $audience);

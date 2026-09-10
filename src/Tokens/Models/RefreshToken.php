@@ -41,9 +41,9 @@ class RefreshToken extends Model
         ];
     }
 
-    /** @return BelongsTo<Token, $this> */
+    /** @return BelongsTo<AccessToken, $this> */
     public function accessToken(): BelongsTo
     {
-        return $this->belongsTo(Token::class, 'access_token_id');
+        return $this->belongsTo(AccessToken::class, 'access_token_id');
     }
 }

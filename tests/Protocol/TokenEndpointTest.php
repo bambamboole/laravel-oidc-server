@@ -11,9 +11,9 @@ use Bambamboole\LaravelOidc\Server\Clients\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Workbench\App\Models\User;
@@ -168,7 +168,7 @@ it('revokes the tokens a replayed authorization code produced', function () {
 
     $accessToken = parseAccessToken((string) $first->json('access_token'));
 
-    expect(Token::query()->find($accessToken->claims()->get('jti'))->revoked)->toBeTrue()
+    expect(AccessToken::query()->find($accessToken->claims()->get('jti'))->revoked)->toBeTrue()
         ->and(RefreshToken::query()->find($first->json('refresh_token'))->revoked)->toBeTrue();
 
     $this->post('/realms/default/oauth/token', [
@@ -194,7 +194,7 @@ it('leaves the legitimate chain alive when a foreign client presents a used code
 
     $accessToken = parseAccessToken((string) $first->json('access_token'));
 
-    expect(Token::query()->find($accessToken->claims()->get('jti'))->revoked)->toBeFalse()
+    expect(AccessToken::query()->find($accessToken->claims()->get('jti'))->revoked)->toBeFalse()
         ->and(RefreshToken::query()->find($first->json('refresh_token'))->revoked)->toBeFalse();
 });
 
@@ -211,7 +211,7 @@ it('names the granted scope in the token response', function () {
 it('rejects an expired authorization code', function () {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
-    AuthCode::query()->whereKey($code)->update(['expires_at' => now()->subMinute()]);
+    AuthorizationCode::query()->whereKey($code)->update(['expires_at' => now()->subMinute()]);
 
     $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce))
         ->assertStatus(400)
@@ -342,5 +342,5 @@ it('revokes the whole chain when a rotated-out refresh token is reused', functio
     $current = parseAccessToken((string) $rotated->json('access_token'));
 
     expect(RefreshToken::query()->find($rotated->json('refresh_token'))->revoked)->toBeTrue()
-        ->and(Token::query()->find($current->claims()->get('jti'))->revoked)->toBeTrue();
+        ->and(AccessToken::query()->find($current->claims()->get('jti'))->revoked)->toBeTrue();
 });

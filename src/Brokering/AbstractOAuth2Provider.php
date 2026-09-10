@@ -38,11 +38,11 @@ abstract class AbstractOAuth2Provider implements SocialProvider
      */
     abstract protected function defaultScopes(): array;
 
-    abstract protected function fetchUser(TokenResponse $tokens, PendingAuthorization $pending, Request $request): SocialUser;
+    abstract protected function fetchUser(TokenResponse $tokens, PendingSocialRedirect $pending, Request $request): SocialUser;
 
-    public function redirect(Request $request, string $intent = PendingAuthorization::INTENT_LOGIN): Response
+    public function redirect(Request $request, string $intent = PendingSocialRedirect::INTENT_LOGIN): Response
     {
-        $pending = new PendingAuthorization(
+        $pending = new PendingSocialRedirect(
             provider: $this->key,
             intent: $intent,
             state: Str::random(40),
@@ -57,7 +57,7 @@ abstract class AbstractOAuth2Provider implements SocialProvider
         ));
     }
 
-    public function user(Request $request, PendingAuthorization $pending): SocialUser
+    public function user(Request $request, PendingSocialRedirect $pending): SocialUser
     {
         $state = $request->input('state');
         $state = is_string($state) ? $state : '';
@@ -89,7 +89,7 @@ abstract class AbstractOAuth2Provider implements SocialProvider
     /**
      * @return array<string, string>
      */
-    protected function authorizationParameters(PendingAuthorization $pending): array
+    protected function authorizationParameters(PendingSocialRedirect $pending): array
     {
         $params = [
             'client_id' => (string) $this->config['client_id'],

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\SendBackChannelLogout;
-use Bambamboole\LaravelOidc\Server\Sessions\OidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Illuminate\Support\Facades\Bus;
 

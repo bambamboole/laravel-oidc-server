@@ -11,7 +11,7 @@ it('honors first-party config mutated after the singletons were resolved', funct
     $provider = app(SessionTokenProvider::class);
 
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
-    config(['oidc.first_party.client_id' => (string) $client->id]);
+    config(['oidc.clients.first_party.client_id' => (string) $client->id]);
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->startSession();

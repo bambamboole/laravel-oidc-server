@@ -16,14 +16,14 @@ interface SigningKeyStore
      *
      * @throws \RuntimeException when the backend holds no usable signing key
      */
-    public function signingKey(): SigningKey;
+    public function signingKey(): SigningKeyPair;
 
     /**
      * Every key signatures may verify against, the signing key first. Verification
      * and JWKS must use the same set, or rotation invalidates live tokens that
      * relying parties still consider valid. Entries need no private key.
      *
-     * @return non-empty-list<SigningKey>
+     * @return non-empty-list<SigningKeyPair>
      */
     public function verificationKeys(): array;
 

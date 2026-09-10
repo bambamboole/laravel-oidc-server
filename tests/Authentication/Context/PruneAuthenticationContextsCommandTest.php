@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
 use Illuminate\Support\Carbon;
 
 function pruneTestContext(string $userId, Carbon $expiresAt): AuthenticationContext

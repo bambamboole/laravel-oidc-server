@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Pkce;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 use Illuminate\Http\Request;
 
@@ -46,7 +46,7 @@ final readonly class AuthorizationCodeGrant implements Grant
             throw OAuthServerException::invalidRequest('The code parameter is missing.');
         }
 
-        $authCode = AuthCode::query()->inRealm()->find($code)
+        $authCode = AuthorizationCode::query()->inRealm()->find($code)
             ?? throw OAuthServerException::invalidGrant('The authorization code is invalid.');
 
         // Ownership before replay detection: only the client the code was
@@ -68,7 +68,7 @@ final readonly class AuthorizationCodeGrant implements Grant
 
         // Consuming before minting makes the code single use under concurrent
         // redemptions: only the request that flips the flag proceeds.
-        $consumed = AuthCode::query()->whereKey($authCode->id)->where('revoked', false)->update(['revoked' => true]) === 1;
+        $consumed = AuthorizationCode::query()->whereKey($authCode->id)->where('revoked', false)->update(['revoked' => true]) === 1;
 
         if (! $consumed) {
             $this->replayed($authCode, $client);
@@ -91,7 +91,7 @@ final readonly class AuthorizationCodeGrant implements Grant
         );
     }
 
-    private function verifyRedirectUri(AuthCode $authCode, Request $request): void
+    private function verifyRedirectUri(AuthorizationCode $authCode, Request $request): void
     {
         if ($authCode->redirect_uri === null) {
             return;
@@ -108,7 +108,7 @@ final readonly class AuthorizationCodeGrant implements Grant
         }
     }
 
-    private function verifyCodeVerifier(AuthCode $authCode, Request $request): void
+    private function verifyCodeVerifier(AuthorizationCode $authCode, Request $request): void
     {
         $verifier = $request->input('code_verifier');
 
@@ -129,7 +129,7 @@ final readonly class AuthorizationCodeGrant implements Grant
         }
     }
 
-    private function replayed(AuthCode $authCode, Client $client): never
+    private function replayed(AuthorizationCode $authCode, Client $client): never
     {
         $this->revoker->revokeChain($authCode->id);
 

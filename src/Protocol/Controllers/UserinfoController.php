@@ -22,7 +22,7 @@ class UserinfoController
 {
     public function __invoke(Request $request, ClaimsResolver $claims): JsonResponse
     {
-        $user = $request->user(config('oidc.api_guard', 'oidc'));
+        $user = $request->user(config('oidc.auth.api_guard', 'oidc'));
 
         if (! $user instanceof OAuthenticatable) {
             throw $request->bearerToken() === null

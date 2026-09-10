@@ -16,7 +16,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Queue;
@@ -46,7 +46,7 @@ it('issues, introspects and revokes under the wire client_id while storing the k
     $result->response->assertOk();
 
     $accessToken = parseAccessToken((string) $result->accessToken);
-    $record = Token::query()->find($accessToken->claims()->get('jti'));
+    $record = AccessToken::query()->find($accessToken->claims()->get('jti'));
 
     expect($accessToken->claims()->get('client_id'))->toBe('my-app')
         ->and($accessToken->claims()->get('aud'))->toBe(['my-app'])
@@ -110,7 +110,7 @@ it('addresses the back-channel logout token to the wire client_id', function () 
 });
 
 it('trusts a client configured by its wire client_id', function () {
-    config(['oidc.trusted_clients' => ['my-app']]);
+    config(['oidc.clients.trusted' => ['my-app']]);
 
     $response = $this->actingAsIdentity($this->user, authTime: time() - 60)
         ->get('/realms/default/oauth/authorize?'.http_build_query([

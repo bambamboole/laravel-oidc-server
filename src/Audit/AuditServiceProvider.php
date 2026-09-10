@@ -14,8 +14,8 @@ class AuditServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(AuditSink::class, fn (Application $app): AuditSink => $app->make(
-            (string) config('oidc.audit.sink', LogSink::class),
+            (string) config('oidc.audit.sink', LogAuditSink::class),
         ));
-        $this->app->singleton(Auditor::class, DefaultAuditor::class);
+        $this->app->singleton(Auditor::class, SinkAuditor::class);
     }
 }

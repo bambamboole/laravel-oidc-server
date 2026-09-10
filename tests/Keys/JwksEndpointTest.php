@@ -21,7 +21,7 @@ it('serves a previous public key alongside the active key during rotation', func
 
     $previousPem = file_get_contents(__DIR__.'/../fixtures/retired-public.key');
     $previousKid = Jwk::fromPem($previousPem)['kid'];
-    config(['oidc.additional_public_keys' => [$previousPem]]);
+    config(['oidc.keys.additional_public_keys' => [$previousPem]]);
 
     $kids = collect((array) $this->getJson('/realms/default/.well-known/jwks.json')->json('keys'))->pluck('kid')->all();
 
@@ -29,7 +29,7 @@ it('serves a previous public key alongside the active key during rotation', func
 });
 
 it('deduplicates a previous key that equals the active key', function () {
-    config(['oidc.additional_public_keys' => [file_get_contents(__DIR__.'/../fixtures/oauth-public.key')]]);
+    config(['oidc.keys.additional_public_keys' => [file_get_contents(__DIR__.'/../fixtures/oauth-public.key')]]);
 
     $this->getJson('/realms/default/.well-known/jwks.json')->assertJsonCount(1, 'keys');
 });

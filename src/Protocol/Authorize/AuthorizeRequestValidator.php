@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Authorize;
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Grants\AuthorizationCodeGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Pkce;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\RedirectUri;

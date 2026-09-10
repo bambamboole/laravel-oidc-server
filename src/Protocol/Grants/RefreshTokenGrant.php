@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
 
-use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
@@ -14,8 +14,8 @@ use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 use Illuminate\Http\Request;
 
@@ -126,7 +126,7 @@ final readonly class RefreshTokenGrant implements Grant
      * Null when the token never carried a context (a non-interactive chain);
      * otherwise the context must still be alive.
      */
-    private function activeContext(Token $accessToken): ?AuthenticationContext
+    private function activeContext(AccessToken $accessToken): ?AuthenticationContext
     {
         $contextId = $accessToken->context_id;
 

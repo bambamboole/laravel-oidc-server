@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
-use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -29,7 +29,7 @@ class PurgeTokensCommand extends Command
         $purgeRevoked = $revokedOnly || ! $expiredOnly;
         $purgeExpired = $expiredOnly || ! $revokedOnly;
 
-        foreach ([Token::class, RefreshToken::class, AuthCode::class] as $model) {
+        foreach ([AccessToken::class, RefreshToken::class, AuthorizationCode::class] as $model) {
             $deleted = $model::query()
                 ->where(function (Builder $query) use ($purgeRevoked, $purgeExpired, $cutoff): void {
                     if ($purgeRevoked) {

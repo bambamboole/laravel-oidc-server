@@ -71,8 +71,8 @@ it('configures a first-party client without any singleton busting', function () 
 
     $client = $this->withFirstPartyClient();
 
-    expect(config('oidc.first_party.client_id'))->toBe((string) $client->getKey())
-        ->and(config('oidc.first_party.trusted'))->toBeTrue();
+    expect(config('oidc.clients.first_party.client_id'))->toBe((string) $client->getKey())
+        ->and(config('oidc.clients.first_party.trusted'))->toBeTrue();
 });
 
 it('generates an RFC 7636 S256 pkce pair', function () {
@@ -92,7 +92,7 @@ it('mints a real signed access token with a persisted row', function () {
         ->and($token->getAttribute('scopes'))->toBe(['openid', 'email'])
         ->and($token->getAttribute('revoked'))->toBeFalse();
 
-    // Passport resolves the requesting client from aud[0], so only a
+    // The access-token guard resolves the requesting client from aud[0], so only a
     // default-audience token can authenticate against this server's own routes.
     $bearerJwt = $this->issueTokenFor($this->user, scopes: ['openid', 'email']);
     $bearer = $this->withHeader('Authorization', 'Bearer '.$bearerJwt)->get('/realms/default/oauth/userinfo');

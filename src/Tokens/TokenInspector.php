@@ -7,7 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Tokens;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -32,7 +32,7 @@ class TokenInspector implements SignedJwtParser
         private readonly IssuerResolver $issuer,
     ) {}
 
-    public function accessToken(string $jwt): ?Token
+    public function accessToken(string $jwt): ?AccessToken
     {
         $parsed = $this->parse($jwt);
 
@@ -66,10 +66,10 @@ class TokenInspector implements SignedJwtParser
         return null;
     }
 
-    public function tokenForParsed(Plain $parsed): ?Token
+    public function tokenForParsed(Plain $parsed): ?AccessToken
     {
         $jti = $parsed->claims()->get('jti');
 
-        return is_string($jti) ? Token::query()->inRealm()->find($jti) : null;
+        return is_string($jti) ? AccessToken::query()->inRealm()->find($jti) : null;
     }
 }

@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -13,9 +13,9 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 });
 
-function purgeTokenFixture(string $id, bool $revoked, ?string $expiresAt, string $userId, string $clientId): Token
+function purgeTokenFixture(string $id, bool $revoked, ?string $expiresAt, string $userId, string $clientId): AccessToken
 {
-    $token = new Token;
+    $token = new AccessToken;
     $token->forceFill([
         'id' => $id,
         'user_id' => $userId,
@@ -35,7 +35,7 @@ it('keeps live tokens and removes revoked and long-expired ones', function () {
 
     $this->artisan('oidc:purge')->assertSuccessful();
 
-    expect(Token::query()->pluck('id')->all())->toBe(['live']);
+    expect(AccessToken::query()->pluck('id')->all())->toBe(['live']);
 });
 
 it('keeps records that expired inside the retention window', function () {
@@ -43,7 +43,7 @@ it('keeps records that expired inside the retention window', function () {
 
     $this->artisan('oidc:purge')->assertSuccessful();
 
-    expect(Token::query()->whereKey('recently-expired')->exists())->toBeTrue();
+    expect(AccessToken::query()->whereKey('recently-expired')->exists())->toBeTrue();
 });
 
 it('purges only revoked records when asked', function () {
@@ -52,7 +52,7 @@ it('purges only revoked records when asked', function () {
 
     $this->artisan('oidc:purge', ['--revoked' => true])->assertSuccessful();
 
-    expect(Token::query()->pluck('id')->all())->toBe(['expired']);
+    expect(AccessToken::query()->pluck('id')->all())->toBe(['expired']);
 });
 
 it('purges refresh tokens and authorization codes too', function () {
@@ -65,7 +65,7 @@ it('purges refresh tokens and authorization codes too', function () {
         'expires_at' => now()->subWeeks(2)->toDateTimeString(),
     ])->save();
 
-    (new AuthCode)->forceFill([
+    (new AuthorizationCode)->forceFill([
         'id' => 'code',
         'user_id' => $this->user->id,
         'client_id' => $this->client->id,
@@ -78,7 +78,7 @@ it('purges refresh tokens and authorization codes too', function () {
 
     $this->artisan('oidc:purge')->assertSuccessful();
 
-    expect(Token::query()->count())->toBe(0)
+    expect(AccessToken::query()->count())->toBe(0)
         ->and(RefreshToken::query()->count())->toBe(0)
-        ->and(AuthCode::query()->count())->toBe(0);
+        ->and(AuthorizationCode::query()->count())->toBe(0);
 });

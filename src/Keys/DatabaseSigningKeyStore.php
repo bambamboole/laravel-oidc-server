@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Keys;
 
+use Bambamboole\LaravelOidc\Server\Keys\Models\SigningKey;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -17,9 +18,9 @@ use RuntimeException;
  */
 final class DatabaseSigningKeyStore implements SigningKeyStore
 {
-    public function signingKey(): SigningKey
+    public function signingKey(): SigningKeyPair
     {
-        $record = SigningKeyRecord::query()
+        $record = SigningKey::query()
             ->inRealm()
             ->whereNull('retired_at')
             ->whereNotNull('private_key')
@@ -35,17 +36,17 @@ final class DatabaseSigningKeyStore implements SigningKeyStore
         return $record->toSigningKey();
     }
 
-    /** @return non-empty-list<SigningKey> */
+    /** @return non-empty-list<SigningKeyPair> */
     public function verificationKeys(): array
     {
         $signing = $this->signingKey();
 
-        $retained = SigningKeyRecord::query()
+        $retained = SigningKey::query()
             ->inRealm()
             ->whereNotNull('retired_at')
             ->orderByDesc('retired_at')
             ->get()
-            ->map(fn (SigningKeyRecord $record): SigningKey => $record->toVerificationKey())
+            ->map(fn (SigningKey $record): SigningKeyPair => $record->toVerificationKey())
             ->all();
 
         return [$signing, ...$retained];
@@ -54,10 +55,10 @@ final class DatabaseSigningKeyStore implements SigningKeyStore
     public function rotate(GeneratedSigningKeys $keys): void
     {
         DB::transaction(function () use ($keys): void {
-            SigningKeyRecord::query()->inRealm()->whereNull('retired_at')->update(['retired_at' => now()]);
+            SigningKey::query()->inRealm()->whereNull('retired_at')->update(['retired_at' => now()]);
 
-            SigningKeyRecord::query()->create([
-                'realm_id' => SigningKeyRecord::currentRealm(),
+            SigningKey::query()->create([
+                'realm_id' => SigningKey::currentRealm(),
                 'kid' => $keys->kid,
                 'public_key' => $keys->publicKeyPem,
                 'private_key' => $keys->privateKeyPem,

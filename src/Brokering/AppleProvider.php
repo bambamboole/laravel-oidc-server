@@ -19,7 +19,7 @@ use Lcobucci\JWT\Token\Builder;
  * the user's name is only delivered once, on first consent, via the `user`
  * request parameter.
  */
-class AppleProvider extends OidcProvider
+class AppleProvider extends GenericOidcProvider
 {
     protected function issuer(): string
     {
@@ -52,7 +52,7 @@ class AppleProvider extends OidcProvider
     /**
      * @return array<string, string>
      */
-    protected function authorizationParameters(PendingAuthorization $pending): array
+    protected function authorizationParameters(PendingSocialRedirect $pending): array
     {
         // Apple requires form_post whenever name/email scopes are requested.
         return parent::authorizationParameters($pending) + ['response_mode' => 'form_post'];
@@ -73,7 +73,7 @@ class AppleProvider extends OidcProvider
             ->toString();
     }
 
-    protected function fetchUser(TokenResponse $tokens, PendingAuthorization $pending, Request $request): SocialUser
+    protected function fetchUser(TokenResponse $tokens, PendingSocialRedirect $pending, Request $request): SocialUser
     {
         $user = parent::fetchUser($tokens, $pending, $request);
 

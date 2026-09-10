@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\PersonalAccessTokenEvent;
@@ -12,7 +12,7 @@ use Workbench\App\Models\User;
 
 beforeEach(function () {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
+    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
 });
 
 it('runs the personal-access trigger once and applies its access-token claims', function () {
@@ -41,7 +41,7 @@ it('denies personal-access issuance before persisting an access token', function
     expect(fn () => $this->user->createToken('cli', ['openid']))
         ->toThrow(TokenIssuanceDeniedException::class);
 
-    expect(Token::query()->count())->toBe(0);
+    expect(AccessToken::query()->count())->toBe(0);
 });
 
 it('does not fire the personal-access trigger for other grants', function () {

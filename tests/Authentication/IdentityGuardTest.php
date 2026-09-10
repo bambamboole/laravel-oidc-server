@@ -38,7 +38,7 @@ it('establishes only the identity session through the credential login route', f
 });
 
 it('redirects identity-protected routes to the configured identity login destination', function () {
-    config(['oidc.login_route' => 'identity.login']);
+    config(['oidc.auth.login_route' => 'identity.login']);
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 

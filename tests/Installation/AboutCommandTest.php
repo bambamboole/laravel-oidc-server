@@ -6,7 +6,7 @@ it('surfaces the OIDC section with the resolved session-token guard', function (
     config([
         'oidc.issuer' => 'https://app.test',
         'oidc.auth.guard' => 'identity',
-        'oidc.session_token.guard' => null,
+        'oidc.session.token.guard' => null,
     ]);
 
     $this->artisan('about --only=oidc')

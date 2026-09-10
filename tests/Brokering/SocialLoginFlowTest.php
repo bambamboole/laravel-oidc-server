@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
@@ -82,7 +82,7 @@ function completeSocialLogin(mixed $test, array $claims = []): TestResponse
     enableCorpIdp();
 
     $test->get(route('identity.social.redirect', ['provider' => 'corp']));
-    $pending = session(PendingAuthorization::SESSION_KEY);
+    $pending = session(PendingSocialRedirect::SESSION_KEY);
 
     $idToken = corpIdToken($claims + [
         'sub' => 'upstream-1',

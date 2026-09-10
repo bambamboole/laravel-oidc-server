@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Sessions\OidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\SessionParticipant;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
-use Bambamboole\LaravelOidc\Server\Sessions\SessionParticipant;
 
 function pruneTestSession(string $userId, DateTimeInterface $expiresAt, ?DateTimeInterface $notifiedAt): string
 {

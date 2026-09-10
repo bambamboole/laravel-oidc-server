@@ -2,7 +2,7 @@
 // tests/Session/OidcSessionRepositoryTest.php
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Sessions\OidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 
 it('creates a session, records participants idempotently, revokes and notifies', function () {

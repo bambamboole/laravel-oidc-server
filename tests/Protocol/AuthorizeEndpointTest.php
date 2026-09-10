@@ -194,21 +194,21 @@ it('rejects an unknown prompt value', function () {
 });
 
 it('forces re-authentication for prompt=login', function () {
-    config(['oidc.login_route' => 'identity.login']);
+    config(['oidc.auth.login_route' => 'identity.login']);
 
     authorizeWith($this, ['prompt' => 'login'])->assertRedirect(route('identity.login'));
 
     expect(auth('identity')->guest())->toBeTrue()
-        ->and(session('promptedForLogin'))->toBeTrue();
+        ->and(session('oidc.prompted_for_login'))->toBeTrue();
 });
 
 it('treats prompt=select_account like prompt=login', function () {
-    config(['oidc.login_route' => 'identity.login']);
+    config(['oidc.auth.login_route' => 'identity.login']);
 
     authorizeWith($this, ['prompt' => 'select_account'])->assertRedirect(route('identity.login'));
 
     expect(auth('identity')->guest())->toBeTrue()
-        ->and(session('promptedForLogin'))->toBeTrue();
+        ->and(session('oidc.prompted_for_login'))->toBeTrue();
 });
 
 // OAuth 2.0 Multiple Response Type Encoding Practices §2.1

@@ -4,7 +4,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 
 /**
@@ -19,12 +19,12 @@ function envStoreFixture(): array
 }
 
 it('filters non-string and empty entries out of retained public keys', function () {
-    config(['oidc.additional_public_keys' => ['valid-key', '', 42, null]]);
+    config(['oidc.keys.additional_public_keys' => ['valid-key', '', 42, null]]);
 
     [$store] = envStoreFixture();
 
     expect(array_map(
-        fn (SigningKey $key): string => $key->publicKeyPem,
+        fn (SigningKeyPair $key): string => $key->publicKeyPem,
         array_slice($store->verificationKeys(), 1),
     ))->toBe(['valid-key']);
 });
@@ -50,7 +50,7 @@ it('rotates by writing the new keypair and rolling the current public key', func
 });
 
 it('omits the previous key when no current key exists', function () {
-    config(['oidc.public_key' => null, 'passport.public_key' => null]);
+    config(['oidc.keys.public_key' => null]);
     config(['oidc.keys.path' => temporaryTestDirectory('env-store-nokeys')]);
 
     [$store, $path] = envStoreFixture();

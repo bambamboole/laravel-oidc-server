@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Keys\Models\SigningKey;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyRecord;
 use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
+use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
@@ -29,13 +29,13 @@ function useDatabaseSigningKeys(): DatabaseSigningKeyStore
     return $store;
 }
 
-function databaseStoreRotate(): SigningKey
+function databaseStoreRotate(): SigningKeyPair
 {
     $store = useDatabaseSigningKeys();
     $generated = (new SigningKeyGenerator($store, app(RealmResolver::class)))->generate();
     $store->rotate($generated);
 
-    return new SigningKey($generated->publicKeyPem, $generated->privateKeyPem, $generated->kid);
+    return new SigningKeyPair($generated->publicKeyPem, $generated->privateKeyPem, $generated->kid);
 }
 
 it('fails loud when no key has been generated yet', function () {
@@ -59,7 +59,7 @@ it('retires the previous key but keeps it for verification', function () {
     $keys = useDatabaseSigningKeys()->verificationKeys();
 
     expect(useDatabaseSigningKeys()->signingKey()->kid())->toBe($second->kid())
-        ->and(array_map(fn (SigningKey $key): string => $key->kid(), $keys))
+        ->and(array_map(fn (SigningKeyPair $key): string => $key->kid(), $keys))
         ->toBe([$second->kid(), $first->kid()]);
 });
 
@@ -69,7 +69,7 @@ it('stores the private key encrypted at rest', function () {
     $raw = DB::table('oidc_signing_keys')->where('kid', $generated->kid())->value('private_key');
 
     expect($raw)->not->toContain('PRIVATE KEY')
-        ->and(SigningKeyRecord::query()->where('kid', $generated->kid())->sole()->private_key)
+        ->and(SigningKey::query()->where('kid', $generated->kid())->sole()->private_key)
         ->toBe($generated->privateKeyPem);
 });
 
@@ -103,7 +103,7 @@ it('keeps tokens signed before a rotation verifiable', function () {
 it('publishes the stored kid rather than re-deriving it', function () {
     $generated = databaseStoreRotate();
 
-    SigningKeyRecord::query()->where('kid', $generated->kid())->update(['kid' => 'pinned-kid']);
+    SigningKey::query()->where('kid', $generated->kid())->update(['kid' => 'pinned-kid']);
 
     expect(useDatabaseSigningKeys()->signingKey()->kid())->toBe('pinned-kid')
         ->and(Jwk::fromPem($generated->publicKeyPem)['kid'])->not->toBe('pinned-kid')

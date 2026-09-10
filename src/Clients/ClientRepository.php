@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -32,12 +33,11 @@ class ClientRepository
         return $client !== null && ! $client->revoked ? $client : null;
     }
 
-    public function personalAccessClient(?string $provider = null): Client
+    public function personalAccessClient(): Client
     {
         $client = Client::query()
             ->inRealm()
             ->whereJsonContains('grant_types', 'personal_access')
-            ->when($provider !== null, fn ($query) => $query->where('provider', $provider))
             ->orderBy('created_at')
             ->first();
 
@@ -62,9 +62,9 @@ class ClientRepository
         );
     }
 
-    public function createPersonalAccessGrantClient(string $name, ?string $provider = null): Client
+    public function createPersonalAccessGrantClient(string $name): Client
     {
-        return $this->create($name, ['personal_access'], provider: $provider);
+        return $this->create($name, ['personal_access']);
     }
 
     public function createClientCredentialsGrantClient(string $name): Client
@@ -87,7 +87,6 @@ class ClientRepository
         string $name,
         array $grantTypes,
         array $redirectUris = [],
-        ?string $provider = null,
         bool $confidential = true,
         ?Authenticatable $user = null,
         ?string $clientId = null,
@@ -101,7 +100,6 @@ class ClientRepository
             // readable name; the two stay separate so renaming never touches tokens.
             'client_id' => $clientId ?? $client->getKey(),
             'name' => $name,
-            'provider' => $provider,
             'redirect_uris' => $redirectUris,
             'post_logout_redirect_uris' => [],
             'grant_types' => $grantTypes,

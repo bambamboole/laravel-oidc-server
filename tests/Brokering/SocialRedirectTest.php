@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Illuminate\Support\Facades\Http;
 
 function enableCorpProvider(): void
@@ -31,8 +31,8 @@ it('redirects to the upstream provider and stores the pending authorization', fu
 
     $response->assertRedirect();
     expect($response->headers->get('Location'))->toStartWith('https://idp.test/authorize?')
-        ->and(session(PendingAuthorization::SESSION_KEY)['provider'])->toBe('corp')
-        ->and(session(PendingAuthorization::SESSION_KEY)['intent'])->toBe('login');
+        ->and(session(PendingSocialRedirect::SESSION_KEY)['provider'])->toBe('corp')
+        ->and(session(PendingSocialRedirect::SESSION_KEY)['intent'])->toBe('login');
 });
 
 it('responds 404 for an unknown or credential-less provider', function () {

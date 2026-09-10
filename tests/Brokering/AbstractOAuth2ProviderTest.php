@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Brokering\AbstractOAuth2Provider;
 use Bambamboole\LaravelOidc\Server\Brokering\InvalidStateException;
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\Request;
@@ -32,7 +32,7 @@ function fakeOAuth2Provider(array $config = []): AbstractOAuth2Provider
             return ['profile'];
         }
 
-        protected function fetchUser(TokenResponse $tokens, PendingAuthorization $pending, Request $request): SocialUser
+        protected function fetchUser(TokenResponse $tokens, PendingSocialRedirect $pending, Request $request): SocialUser
         {
             return new SocialUser(
                 id: 'fake-1',
@@ -64,7 +64,7 @@ it('redirects to the authorization endpoint with state and S256 PKCE', function 
     $response = fakeOAuth2Provider()->redirect($request);
 
     parse_str((string) parse_url($response->headers->get('Location'), PHP_URL_QUERY), $params);
-    $pending = PendingAuthorization::pull($request);
+    $pending = PendingSocialRedirect::pull($request);
 
     expect($response->headers->get('Location'))->toStartWith('https://provider.test/authorize?')
         ->and($params['client_id'])->toBe('client-1')
@@ -81,15 +81,15 @@ it('redirects to the authorization endpoint with state and S256 PKCE', function 
 it('stores the link intent in the pending authorization', function () {
     $request = requestWithSession('/realms/default/auth/social/fake');
 
-    fakeOAuth2Provider()->redirect($request, PendingAuthorization::INTENT_LINK);
+    fakeOAuth2Provider()->redirect($request, PendingSocialRedirect::INTENT_LINK);
 
-    expect(PendingAuthorization::pull($request)->intent)->toBe(PendingAuthorization::INTENT_LINK);
+    expect(PendingSocialRedirect::pull($request)->intent)->toBe(PendingSocialRedirect::INTENT_LINK);
 });
 
 it('exchanges the callback code including the PKCE verifier', function () {
     Http::fake(['https://provider.test/token' => Http::response(['access_token' => 'at-1', 'token_type' => 'Bearer'])]);
 
-    $pending = new PendingAuthorization('fake', 'login', 'state-1', 'verifier-1', null);
+    $pending = new PendingSocialRedirect('fake', 'login', 'state-1', 'verifier-1', null);
     $request = requestWithSession(query: ['code' => 'code-1', 'state' => 'state-1']);
 
     $user = fakeOAuth2Provider()->user($request, $pending);
@@ -105,14 +105,14 @@ it('exchanges the callback code including the PKCE verifier', function () {
 });
 
 it('rejects a state mismatch', function () {
-    $pending = new PendingAuthorization('fake', 'login', 'state-1', null, null);
+    $pending = new PendingSocialRedirect('fake', 'login', 'state-1', null, null);
     $request = requestWithSession(query: ['code' => 'code-1', 'state' => 'tampered']);
 
     fakeOAuth2Provider()->user($request, $pending);
 })->throws(InvalidStateException::class);
 
 it('rejects a pending authorization for a different provider', function () {
-    $pending = new PendingAuthorization('other', 'login', 'state-1', null, null);
+    $pending = new PendingSocialRedirect('other', 'login', 'state-1', null, null);
     $request = requestWithSession(query: ['code' => 'code-1', 'state' => 'state-1']);
 
     fakeOAuth2Provider()->user($request, $pending);

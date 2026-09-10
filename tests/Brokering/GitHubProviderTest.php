@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Brokering\GitHubProvider;
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -49,7 +49,7 @@ it('builds the user from the profile and the verified primary email', function (
         ]),
     ]);
 
-    $pending = new PendingAuthorization('github', 'login', 'state-1', null, null);
+    $pending = new PendingSocialRedirect('github', 'login', 'state-1', null, null);
     $user = githubProvider()->user(githubCallback(), $pending);
 
     expect($user->id)->toBe('12345')
@@ -66,7 +66,7 @@ it('wraps profile fetch failures in a social authentication exception', function
         'https://api.github.com/user' => Http::response([], 500),
     ]);
 
-    $pending = new PendingAuthorization('github', 'login', 'state-1', null, null);
+    $pending = new PendingSocialRedirect('github', 'login', 'state-1', null, null);
 
     githubProvider()->user(githubCallback(), $pending);
 })->throws(SocialAuthenticationException::class);
@@ -80,7 +80,7 @@ it('reports no verified email when GitHub has none', function () {
         ]),
     ]);
 
-    $pending = new PendingAuthorization('github', 'login', 'state-1', null, null);
+    $pending = new PendingSocialRedirect('github', 'login', 'state-1', null, null);
     $user = githubProvider()->user(githubCallback(), $pending);
 
     expect($user->email)->toBeNull()->and($user->emailVerified)->toBeFalse();

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Guard;
 
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 
 /**
@@ -15,7 +15,7 @@ final class CurrentAccessToken
 {
     private ?string $clientId = null;
 
-    public function __construct(public readonly Token $token) {}
+    public function __construct(public readonly AccessToken $token) {}
 
     public function id(): string
     {

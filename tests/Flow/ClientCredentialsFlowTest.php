@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\ClientCredentialsEvent;
@@ -17,7 +17,7 @@ beforeEach(function () {
 });
 
 it('issues a client_credentials token with its own configured lifetime', function () {
-    config(['oidc.token_lifetimes.client_credentials' => 3600]);
+    config(['oidc.tokens.lifetimes.client_credentials' => 3600]);
 
     $response = $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
@@ -129,7 +129,7 @@ it('exposes the requested audiences to the client-credentials trigger', function
 });
 
 it('denies client credentials before persisting an access token', function () {
-    $persistedTokenCount = Token::query()->count();
+    $persistedTokenCount = AccessToken::query()->count();
 
     app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api): void {
         $api->deny('client_blocked');
@@ -144,5 +144,5 @@ it('denies client credentials before persisting an access token', function () {
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 
-    expect(Token::query()->count())->toBe($persistedTokenCount);
+    expect(AccessToken::query()->count())->toBe($persistedTokenCount);
 });

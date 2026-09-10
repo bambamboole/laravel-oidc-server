@@ -8,10 +8,10 @@ use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
-use Bambamboole\LaravelOidc\Server\Tokens\Exchange\DefaultExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Tokens\Exchange\AllowlistExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
-use Bambamboole\LaravelOidc\Server\Tokens\Guard\OidcAccessTokenGuard;
+use Bambamboole\LaravelOidc\Server\Tokens\Guard\AccessTokenGuard;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Debug\ExceptionHandler;
@@ -25,7 +25,7 @@ class TokensServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $apiGuard = (string) config('oidc.api_guard', 'oidc');
+        $apiGuard = (string) config('oidc.auth.api_guard', 'oidc');
 
         if (! config()->has("auth.guards.{$apiGuard}")) {
             config()->set("auth.guards.{$apiGuard}", [
@@ -34,20 +34,20 @@ class TokensServiceProvider extends ServiceProvider
             ]);
         }
 
-        Auth::resolved(fn ($auth) => $auth->extend('oidc', fn ($app, $name, array $config): OidcAccessTokenGuard => tap(
-            new OidcAccessTokenGuard(
+        Auth::resolved(fn ($auth) => $auth->extend('oidc', fn ($app, $name, array $config): AccessTokenGuard => tap(
+            new AccessTokenGuard(
                 $app->make(TokenInspector::class),
                 $auth->createUserProvider($config['provider'] ?? null),
                 $app->make('request'),
             ),
-            fn (OidcAccessTokenGuard $guard) => $app->refresh('request', $guard, 'setRequest'),
+            fn (AccessTokenGuard $guard) => $app->refresh('request', $guard, 'setRequest'),
         )));
 
         $this->app->singleton(AccessTokenPipeline::class);
         $this->app->bind(SignedJwtParser::class, TokenInspector::class);
         $this->app->singleton(AccessTokenMinter::class, JwtAccessTokenMinter::class);
         $this->app->singleton(AccessTokenRevoker::class, TokenRevoker::class);
-        $this->app->singleton(ExchangePolicy::class, DefaultExchangePolicy::class);
+        $this->app->singleton(ExchangePolicy::class, AllowlistExchangePolicy::class);
         $this->app->singleton(TokenExchanger::class);
 
         $this->callAfterResolving(ExceptionHandler::class, function (ExceptionHandler $handler): void {
@@ -84,7 +84,7 @@ class TokensServiceProvider extends ServiceProvider
     /** @param  list<string>  $guards */
     private function challengesWithBearer(array $guards): bool
     {
-        $apiGuard = (string) config('oidc.api_guard', 'oidc');
+        $apiGuard = (string) config('oidc.auth.api_guard', 'oidc');
 
         foreach ($guards as $guard) {
             if ($guard === $apiGuard || config("auth.guards.{$guard}.driver") === 'oidc') {

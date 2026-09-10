@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Pipeline;
 
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\SecondFactorGate;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -34,7 +37,16 @@ final class InteractiveLoginFinalizer implements LoginFinalizer
         private readonly DeviceRecognizer $deviceRecognizer,
         private readonly Auditor $auditor,
         private readonly PendingAuthorization $pending,
+        private readonly ClientRepository $clients,
     ) {}
+
+    /** The active client behind the pending authorization request, if any. */
+    private function pendingClient(Request $request): ?Client
+    {
+        $clientId = $this->pending->clientId($request);
+
+        return $clientId === null ? null : $this->clients->findActive($clientId);
+    }
 
     /**
      * $challengeEnrolledFactors controls whether an enrolled second factor is
@@ -53,7 +65,7 @@ final class InteractiveLoginFinalizer implements LoginFinalizer
 
         $api = $this->pipeline->run(new LoginEvent(
             user: $user,
-            client: $this->pending->client($request),
+            client: $this->pendingClient($request),
             scopes: $this->pending->scopes($request),
             requestedAcrValues: $this->sessionState->requestedAcrValues(),
             ip: $request->ip(),

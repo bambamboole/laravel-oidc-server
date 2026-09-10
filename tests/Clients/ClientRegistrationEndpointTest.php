@@ -6,7 +6,7 @@ declare(strict_types=1);
  * RFC 7591 §3 (dynamic client registration)
  */
 
-use Bambamboole\LaravelOidc\Server\Clients\Client;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
  */
 function enableDynamicClientRegistration(array $overrides = []): void
 {
-    config(['oidc.dcr' => [
+    config(['oidc.clients.registration' => [
         'enabled' => true,
         'allowed_redirect_schemes' => [],
         'allowed_redirect_domains' => ['*'],

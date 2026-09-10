@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions;
 
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\SessionParticipant;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 
 class OidcSessionRepository

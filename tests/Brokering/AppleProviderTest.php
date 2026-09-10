@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Brokering\AppleProvider;
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Lcobucci\JWT\Encoding\JoseEncoder;
@@ -59,7 +59,7 @@ it('signs the client secret as an ES256 JWT with Apple claims', function () {
         return Http::response(['error' => 'stop_here'], 400);
     });
 
-    $pending = new PendingAuthorization('apple', 'login', 'state-1', null, 'nonce-1');
+    $pending = new PendingSocialRedirect('apple', 'login', 'state-1', null, 'nonce-1');
     $request = Request::create('/realms/default/auth/social/apple/callback', 'GET', ['code' => 'code-1', 'state' => 'state-1']);
     $request->setLaravelSession(app('session.store'));
 
@@ -101,7 +101,7 @@ it('uses the first-consent user payload for the name', function () {
         'https://appleid.apple.com/auth/token' => Http::response(['access_token' => 'ap-at', 'id_token' => 'stubbed', 'token_type' => 'Bearer']),
     ]);
 
-    $pending = new PendingAuthorization('apple', 'login', 'state-1', null, 'nonce-1');
+    $pending = new PendingSocialRedirect('apple', 'login', 'state-1', null, 'nonce-1');
     $request = Request::create('/realms/default/auth/social/apple/callback', 'GET', [
         'code' => 'code-1',
         'state' => 'state-1',

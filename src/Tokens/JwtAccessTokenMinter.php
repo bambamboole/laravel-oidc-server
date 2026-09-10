@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use DateInterval;
 use DateTimeImmutable;
 use RuntimeException;
@@ -73,8 +73,8 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
 
         $jwt = $builder->getToken($config->signer(), $config->signingKey())->toString();
 
-        Token::query()->forceCreate([
-            'realm_id' => Token::currentRealm(),
+        AccessToken::query()->forceCreate([
+            'realm_id' => AccessToken::currentRealm(),
             'id' => $jti,
             'user_id' => $userId,
             'client_id' => $client->getKey(),

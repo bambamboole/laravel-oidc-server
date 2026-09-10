@@ -6,7 +6,7 @@ use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenGuard;
 
 it('uses an explicit session_token.guard when configured', function () {
     config([
-        'oidc.session_token.guard' => 'admin',
+        'oidc.session.token.guard' => 'admin',
         'oidc.auth.guard' => 'identity',
         'auth.defaults.guard' => 'web',
     ]);
@@ -16,7 +16,7 @@ it('uses an explicit session_token.guard when configured', function () {
 
 it('falls back to the oidc auth guard when session_token.guard is null', function () {
     config([
-        'oidc.session_token.guard' => null,
+        'oidc.session.token.guard' => null,
         'oidc.auth.guard' => 'identity',
         'auth.defaults.guard' => 'web',
     ]);
@@ -26,7 +26,7 @@ it('falls back to the oidc auth guard when session_token.guard is null', functio
 
 it('falls back to the application default guard when both oidc guards are null', function () {
     config([
-        'oidc.session_token.guard' => null,
+        'oidc.session.token.guard' => null,
         'oidc.auth.guard' => null,
         'auth.defaults.guard' => 'web',
     ]);
@@ -36,7 +36,7 @@ it('falls back to the application default guard when both oidc guards are null',
 
 it('treats an empty session_token.guard as no owner', function () {
     config([
-        'oidc.session_token.guard' => '',
+        'oidc.session.token.guard' => '',
         'oidc.auth.guard' => 'identity',
         'auth.defaults.guard' => 'web',
     ]);

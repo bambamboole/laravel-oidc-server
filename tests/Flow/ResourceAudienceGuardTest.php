@@ -7,7 +7,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Middleware\CheckScopes;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Models\User;
@@ -76,7 +76,7 @@ it('rejects a revoked exchanged token', function () {
     $this->getJson('/probe', ['Authorization' => 'Bearer '.$token])->assertOk();
 
     $jti = parseAccessToken($token)->claims()->get('jti');
-    Token::query()->whereKey($jti)->update(['revoked' => true]);
+    AccessToken::query()->whereKey($jti)->update(['revoked' => true]);
 
     // The oidc guard caches the resolved user on itself after the first call, so a second
     // request in the same test would silently reuse it instead of re-validating; drop

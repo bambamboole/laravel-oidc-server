@@ -7,7 +7,6 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Workbench\App\Models\User;
 
 beforeEach(function () {
@@ -15,7 +14,7 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
     $this->secret = $this->client->plainSecret;
 
-    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
+    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
     $result = $this->user->createToken('t', ['openid']);
 
     $token = $result->token;

@@ -12,7 +12,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeGrantResult;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeRequest;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\TokenExchangeEvent;
@@ -100,7 +100,7 @@ it('runs the token-exchange trigger once with finalized context and applies its 
 
 it('denies token exchange before persisting an access token', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
-    $persistedTokenCount = Token::query()->count();
+    $persistedTokenCount = AccessToken::query()->count();
 
     app(AccessTokenPipeline::class)->register('token_exchange', function (TokenExchangeEvent $event, AccessTokenApi $api): void {
         $api->deny('exchange_blocked');
@@ -118,7 +118,7 @@ it('denies token exchange before persisting an access token', function () {
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 
-    expect(Token::query()->count())->toBe($persistedTokenCount);
+    expect(AccessToken::query()->count())->toBe($persistedTokenCount);
 });
 
 it('keeps the package-owned actor chain when a token-exchange trigger attempts to replace it', function () {
@@ -346,7 +346,7 @@ it('allows a trusted public client to exchange its own token', function () {
         'grant_types' => [...(array) $client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
         'allowed_exchange_audiences' => ['https://api.example.com'],
     ])->save();
-    config()->set('oidc.trusted_clients', [(string) $client->getKey()]);
+    config()->set('oidc.clients.trusted', [(string) $client->getKey()]);
 
     $subject = mintExchangeSubjectToken((string) $client->getKey(), $this->user->getKey(), ['openid']);
 
@@ -365,7 +365,7 @@ it('allows a trusted public client to exchange its own token', function () {
 it('rejects a trusted public client whose grant_types lack token exchange', function () {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Mobile', ['https://rp.test/cb'], confidential: false);
     $client->forceFill(['allowed_exchange_audiences' => ['https://api.example.com']])->save();
-    config()->set('oidc.trusted_clients', [(string) $client->getKey()]);
+    config()->set('oidc.clients.trusted', [(string) $client->getKey()]);
 
     $subject = mintExchangeSubjectToken((string) $client->getKey(), $this->user->getKey(), ['openid']);
 
@@ -480,7 +480,7 @@ it('advertises the grant in discovery when enabled', function () {
 });
 
 it('omits the grant from discovery when disabled', function () {
-    config(['oidc.token_exchange.enabled' => false]);
+    config(['oidc.clients.token_exchange' => false]);
 
     expect($this->getJson('/realms/default/.well-known/openid-configuration')->json('grant_types_supported'))
         ->not->toContain(TestCase::TOKEN_EXCHANGE_GRANT);

@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
@@ -20,16 +20,16 @@ beforeEach(function () {
 });
 
 /**
- * @return array{0: string, 1: Token}
+ * @return array{0: string, 1: AccessToken}
  */
 function issueAccessTokenViaPersonalClient(mixed $test): array
 {
-    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
+    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
     $result = $test->user->createToken('t', ['openid', 'email']);
 
     $token = $result->token;
 
-    if (! $token instanceof Token) {
+    if (! $token instanceof AccessToken) {
         throw new RuntimeException('Expected the personal access token to be persisted.');
     }
 

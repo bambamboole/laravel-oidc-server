@@ -24,8 +24,8 @@ final readonly class LoginSettings
         return new self(
             usernameField: (string) config('oidc.auth.username', 'email'),
             home: (string) config('oidc.auth.home', '/dashboard'),
-            loginRoute: (string) config('oidc.login_route', 'login'),
-            logoutRedirect: (string) config('oidc.logout_redirect', '/'),
+            loginRoute: (string) config('oidc.auth.login_route', 'login'),
+            logoutRedirect: (string) config('oidc.auth.logout_redirect', '/'),
         );
     }
 }

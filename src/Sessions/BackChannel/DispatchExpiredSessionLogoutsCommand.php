@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions\BackChannel;
 
-use Bambamboole\LaravelOidc\Server\Sessions\OidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Illuminate\Console\Command;
 
 class DispatchExpiredSessionLogoutsCommand extends Command

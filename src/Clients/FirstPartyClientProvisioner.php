@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Hashing\Hasher;
@@ -50,7 +51,7 @@ final readonly class FirstPartyClientProvisioner
             throw new FirstPartyClientProvisioningException('At least one redirect URI is required.');
         }
 
-        if ($allowedExchangeAudiences !== [] && ! config('oidc.token_exchange.enabled', true)) {
+        if ($allowedExchangeAudiences !== [] && ! config('oidc.clients.token_exchange', true)) {
             throw new FirstPartyClientProvisioningException('Token exchange audiences cannot be configured while token exchange is disabled.');
         }
 

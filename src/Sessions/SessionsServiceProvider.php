@@ -13,7 +13,7 @@ class SessionsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(SessionTokenProvider::class, SessionMintTokenProvider::class);
+        $this->app->singleton(SessionTokenProvider::class, SessionTokenIssuer::class);
         $this->app->singleton(OidcSessionRepository::class);
         $this->app->singleton(BackChannelLogoutNotifier::class);
     }

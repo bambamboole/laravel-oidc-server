@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Illuminate\Http\Request;
 
 /**
@@ -69,7 +69,7 @@ final readonly class PresentedTokenResolver
             ->find($value);
         $accessToken = $refreshToken?->accessToken;
 
-        return $refreshToken instanceof RefreshToken && $accessToken instanceof Token
+        return $refreshToken instanceof RefreshToken && $accessToken instanceof AccessToken
             ? PresentedToken::refreshToken($refreshToken, $accessToken)
             : null;
     }

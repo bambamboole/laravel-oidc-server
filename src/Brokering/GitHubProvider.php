@@ -37,7 +37,7 @@ class GitHubProvider extends AbstractOAuth2Provider
         return ['read:user', 'user:email'];
     }
 
-    protected function fetchUser(TokenResponse $tokens, PendingAuthorization $pending, Request $request): SocialUser
+    protected function fetchUser(TokenResponse $tokens, PendingSocialRedirect $pending, Request $request): SocialUser
     {
         if ($tokens->accessToken === null) {
             throw new SocialAuthenticationException('The [github] token response did not include an access_token.');

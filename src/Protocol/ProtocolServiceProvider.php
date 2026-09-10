@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
-use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Protocol\Authorize\CompleteAuthorizeRequest;
 use Bambamboole\LaravelOidc\Server\Protocol\Authorize\PendingAuthorizationRequest;
 use Bambamboole\LaravelOidc\Server\Protocol\Clients\ClientAuthenticator;
-use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizationController;
+use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizeController;
 use Bambamboole\LaravelOidc\Server\Protocol\Grants\AuthorizationCodeGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Grants\ClientCredentialsGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Grants\RefreshTokenGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Grants\TokenExchangeGrant;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\AuthorizationCompleter;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\StatefulGuard;
@@ -27,7 +27,7 @@ class ProtocolServiceProvider extends ServiceProvider
         $this->app->bind(PendingAuthorization::class, PendingAuthorizationRequest::class);
         $this->app->bind(AuthorizationCompleter::class, CompleteAuthorizeRequest::class);
 
-        $this->app->when(AuthorizationController::class)
+        $this->app->when(AuthorizeController::class)
             ->needs(StatefulGuard::class)
             ->give(fn () => Auth::guard((string) config('oidc.auth.guard', 'identity')));
 

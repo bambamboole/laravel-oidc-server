@@ -6,8 +6,8 @@ use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 
 it('resolves the new first-party client configuration', function () {
     config([
-        'oidc.first_party' => ['client_id' => 'new-client', 'trusted' => true],
-        'oidc.trusted_clients' => ['additional-client'],
+        'oidc.clients.first_party' => ['client_id' => 'new-client', 'trusted' => true],
+        'oidc.clients.trusted' => ['additional-client'],
     ]);
 
     $config = FirstPartyClientConfig::fromConfig();
@@ -20,8 +20,8 @@ it('resolves the new first-party client configuration', function () {
 
 it('makes first-party trust authoritative when its id overlaps the additional trusted list', function () {
     config([
-        'oidc.first_party' => ['client_id' => 'first-party-client', 'trusted' => false],
-        'oidc.trusted_clients' => ['first-party-client', 'additional-client'],
+        'oidc.clients.first_party' => ['client_id' => 'first-party-client', 'trusted' => false],
+        'oidc.clients.trusted' => ['first-party-client', 'additional-client'],
     ]);
 
     $config = FirstPartyClientConfig::fromConfig();

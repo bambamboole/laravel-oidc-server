@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 
 it('registers a public authorization-code client from RFC 7591 metadata', function () {
     $audit = fakeAudit();
-    config(['oidc.dcr.default_scopes' => ['openid']]);
+    config(['oidc.clients.registration.default_scopes' => ['openid']]);
 
     $client = app(RegisterClient::class)([
         'client_name' => '  Claude ',
@@ -34,7 +34,7 @@ it('rejects metadata without redirect uris', function () {
 })->throws(ClientRegistrationException::class, 'At least one redirect URI is required.');
 
 it('rejects redirect uris outside the allowed domains and schemes', function (array $uris, string $message) {
-    config(['oidc.dcr.allowed_redirect_domains' => ['rp.test'], 'oidc.dcr.allowed_redirect_schemes' => ['myapp']]);
+    config(['oidc.clients.registration.allowed_redirect_domains' => ['rp.test'], 'oidc.clients.registration.allowed_redirect_schemes' => ['myapp']]);
 
     try {
         app(RegisterClient::class)(['redirect_uris' => $uris]);
@@ -54,7 +54,7 @@ it('rejects redirect uris outside the allowed domains and schemes', function (ar
 ]);
 
 it('accepts a custom scheme that is explicitly allowed', function () {
-    config(['oidc.dcr.allowed_redirect_schemes' => ['myapp']]);
+    config(['oidc.clients.registration.allowed_redirect_schemes' => ['myapp']]);
 
     expect(app(RegisterClient::class)(['redirect_uris' => ['myapp://rp.test/cb']])->redirect_uris)->toBe(['myapp://rp.test/cb']);
 });

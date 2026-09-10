@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Lcobucci\JWT\Token\Plain;
 
 /**
@@ -18,17 +18,17 @@ use Lcobucci\JWT\Token\Plain;
 final readonly class PresentedToken
 {
     private function __construct(
-        public Token $accessToken,
+        public AccessToken $accessToken,
         public ?Plain $jwt,
         public ?RefreshToken $refreshToken,
     ) {}
 
-    public static function accessToken(Plain $jwt, Token $accessToken): self
+    public static function accessToken(Plain $jwt, AccessToken $accessToken): self
     {
         return new self($accessToken, $jwt, null);
     }
 
-    public static function refreshToken(RefreshToken $refreshToken, Token $accessToken): self
+    public static function refreshToken(RefreshToken $refreshToken, AccessToken $accessToken): self
     {
         return new self($accessToken, null, $refreshToken);
     }

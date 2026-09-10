@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Brokering\GenericOidcProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\GoogleProvider;
-use Bambamboole\LaravelOidc\Server\Brokering\OidcProvider;
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +31,7 @@ it('resolves the generic oidc driver from config', function () {
         'client_secret' => 'shhh',
     ]);
 
-    expect(app(SocialProviderRegistry::class)->get('corp'))->toBeInstanceOf(OidcProvider::class);
+    expect(app(SocialProviderRegistry::class)->get('corp'))->toBeInstanceOf(GenericOidcProvider::class);
 });
 
 it('supports custom drivers via extend', function () {
@@ -46,12 +46,12 @@ it('supports custom drivers via extend', function () {
             return $this->key;
         }
 
-        public function redirect(Request $request, string $intent = PendingAuthorization::INTENT_LOGIN): RedirectResponse
+        public function redirect(Request $request, string $intent = PendingSocialRedirect::INTENT_LOGIN): RedirectResponse
         {
             return redirect()->away('https://custom.test');
         }
 
-        public function user(Request $request, PendingAuthorization $pending): SocialUser
+        public function user(Request $request, PendingSocialRedirect $pending): SocialUser
         {
             return new SocialUser('c-1', null, false, null, null, null);
         }

@@ -28,7 +28,7 @@ it('rejects the wildcard scope for authorization_code finalization', function ()
 
 it('issues a personal access token with the wildcard scope', function () {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
-    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT', 'users');
+    app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
 
     expect($user->createToken('wildcard', ['*'])->token->getAttribute('scopes'))->toBe(['*']);
 });

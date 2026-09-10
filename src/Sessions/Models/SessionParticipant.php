@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bambamboole\LaravelOidc\Server\Sessions\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $sid
+ * @property string $client_id The client's primary key.
+ * @property ?Carbon $created_at
+ */
+class SessionParticipant extends Model
+{
+    use HasUuids;
+
+    public $timestamps = false;
+
+    protected $table = 'oidc_session_participants';
+
+    protected $guarded = [];
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return ['created_at' => 'datetime'];
+    }
+}

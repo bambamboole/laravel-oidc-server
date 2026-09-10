@@ -50,7 +50,6 @@ it('publishes OIDC and passkeys migrations once and migrates a fresh database', 
             '--database' => 'published',
             '--path' => [
                 dirname(__DIR__).'/vendor/orchestra/testbench-core/laravel/migrations',
-                dirname(__DIR__).'/vendor/laravel/passport/database/migrations',
                 $migrationPath,
             ],
             '--realpath' => true,

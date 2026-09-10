@@ -11,7 +11,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthCode;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use DateInterval;
 use DateTimeImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -48,8 +48,8 @@ final readonly class AuthorizationCodeIssuer
 
         $code = bin2hex(random_bytes(40));
 
-        AuthCode::query()->forceCreate([
-            'realm_id' => AuthCode::currentRealm(),
+        AuthorizationCode::query()->forceCreate([
+            'realm_id' => AuthorizationCode::currentRealm(),
             'id' => $code,
             'user_id' => $userId,
             'client_id' => $client->getKey(),

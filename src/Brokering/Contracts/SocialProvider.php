@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Brokering\Contracts;
 
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ interface SocialProvider
      * Build the upstream authorize redirect and remember state/PKCE/nonce in
      * the session.
      */
-    public function redirect(Request $request, string $intent = PendingAuthorization::INTENT_LOGIN): Response;
+    public function redirect(Request $request, string $intent = PendingSocialRedirect::INTENT_LOGIN): Response;
 
     /**
      * Validate the callback against the pending authorization and exchange the
@@ -26,5 +26,5 @@ interface SocialProvider
      *
      * @throws SocialAuthenticationException
      */
-    public function user(Request $request, PendingAuthorization $pending): SocialUser;
+    public function user(Request $request, PendingSocialRedirect $pending): SocialUser;
 }

@@ -52,7 +52,7 @@ Install the server package on its own, or the full suite (server + client + ui) 
 ```bash
 composer require bambamboole/laravel-oidc-server
 
-# Publish and run the migrations (extends oauth_clients + adds the package's own tables)
+# Publish and run the migrations
 php artisan vendor:publish --tag=oidc-migrations
 php artisan migrate
 

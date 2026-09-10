@@ -5,17 +5,17 @@ declare(strict_types=1);
  * OAuth 2.1 §4.1 authorization code grant + RFC 7636 PKCE (S256); OpenID Connect Core 1.0 §3.1.3 (id_token issuance/validation)
  */
 
-use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContext;
+use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Consents\Controllers\ApproveAuthorizationController;
-use Bambamboole\LaravelOidc\Server\Consents\Controllers\DenyAuthorizationController;
-use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizationController;
-use Bambamboole\LaravelOidc\Server\Sessions\OidcSession;
+use Bambamboole\LaravelOidc\Server\Consents\Controllers\ApproveConsentController;
+use Bambamboole\LaravelOidc\Server\Consents\Controllers\DenyConsentController;
+use Bambamboole\LaravelOidc\Server\Protocol\Controllers\AuthorizeController;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AuthorizationCodeEvent;
@@ -125,7 +125,7 @@ it('merges authorization-code trigger claims into issued and refreshed access to
 });
 
 it('denies authorization-code issuance before persisting when a trigger denies', function () {
-    $persistedTokenCount = Token::query()->count();
+    $persistedTokenCount = AccessToken::query()->count();
 
     app(AccessTokenPipeline::class)->register('authorization_code', function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
         $api->deny('user_blocked');
@@ -136,7 +136,7 @@ it('denies authorization-code issuance before persisting when a trigger denies',
         ->assertJsonPath('error', 'access_denied')
         ->assertJsonMissingPath('access_token');
 
-    expect(Token::query()->count())->toBe($persistedTokenCount);
+    expect(AccessToken::query()->count())->toBe($persistedTokenCount);
 });
 
 // OIDC Core §3.1.2.1 / §5.4 (openid scope)
@@ -316,7 +316,7 @@ it('emits postLogin access-token claims onto the access token and links it', fun
         ->and($accessToken->claims()->has('amr'))->toBeFalse(); // reserved name skipped
 
     // the issued access token carries the context it was issued under
-    expect(Token::query()->sole()->context_id)->toBe(AuthenticationContext::query()->sole()->id);
+    expect(AccessToken::query()->sole()->context_id)->toBe(AuthenticationContext::query()->sole()->id);
 });
 
 // Octane safety: state left behind by a *failed* token exchange must never leak
@@ -419,7 +419,7 @@ it('answers an Inertia approve request with a 409 + X-Inertia-Location instead o
 // approve() — it needs the same Inertia-safety net as the approve/deny
 // controllers, or the redirect is silently swallowed client-side.
 it('answers a trusted client\'s Inertia authorize request with a 409 + X-Inertia-Location instead of a redirect', function () {
-    config()->set('oidc.trusted_clients', [(string) $this->client->getKey()]);
+    config()->set('oidc.clients.trusted', [(string) $this->client->getKey()]);
     $pkce = $this->pkce();
 
     $response = $this->actingAsIdentity($this->user, authTime: time() - 60)
@@ -440,11 +440,11 @@ it('answers a trusted client\'s Inertia authorize request with a 409 + X-Inertia
 /**
  * The authorize route runs on bare `web` middleware — no `auth` guard — so the
  * guest redirect is the controller's own `promptForLogin()`, sending the visitor
- * to `oidc.login_route` and flagging the session so a later `max_age` check does
+ * to `oidc.auth.login_route` and flagging the session so a later `max_age` check does
  * not force a second round trip.
  */
 it('redirects a guest authorize request to the configured login route', function () {
-    config(['oidc.login_route' => 'identity.login']);
+    config(['oidc.auth.login_route' => 'identity.login']);
     $pkce = $this->pkce();
 
     $this->get('/realms/default/oauth/authorize?'.http_build_query([
@@ -457,11 +457,11 @@ it('redirects a guest authorize request to the configured login route', function
         'code_challenge_method' => 'S256',
     ]))->assertRedirect(route('identity.login'));
 
-    expect(session('promptedForLogin'))->toBeTrue();
+    expect(session('oidc.prompted_for_login'))->toBeTrue();
 });
 
 it('redirects a guest to a plain path when login_route is not a registered route name', function () {
-    config(['oidc.login_route' => 'accounts/sign-in']);
+    config(['oidc.auth.login_route' => 'accounts/sign-in']);
     $pkce = $this->pkce();
 
     $this->get('/realms/default/oauth/authorize?'.http_build_query([
@@ -479,11 +479,11 @@ it('owns the oauth routes with package controllers', function () {
     $routes = app('router')->getRoutes();
 
     expect($routes->getByName('oidc.authorize')->getControllerClass())
-        ->toBe(AuthorizationController::class)
+        ->toBe(AuthorizeController::class)
         ->and($routes->getByName('oidc.approve')->getControllerClass())
-        ->toBe(ApproveAuthorizationController::class)
+        ->toBe(ApproveConsentController::class)
         ->and($routes->getByName('oidc.deny')->getControllerClass())
-        ->toBe(DenyAuthorizationController::class);
+        ->toBe(DenyConsentController::class);
 
     expect(collect($routes->getRoutes())->filter(
         fn ($route) => $route->uri() === 'realms/{realm}/oauth/token' && in_array('POST', $route->methods(), true)
@@ -491,11 +491,11 @@ it('owns the oauth routes with package controllers', function () {
 });
 
 it('issues a short-lived access token matching the configured lifetime', function () {
-    config(['oidc.token_lifetimes.access_token' => 900]);
+    config(['oidc.tokens.lifetimes.access_token' => 900]);
 
     $response = completeAuthorizationCodeFlow($this)->assertOk();
 
-    // expires_in reflects the interactive access-token TTL, not Passport's long default
+    // expires_in reflects the interactive access-token TTL, not the client_credentials one
     expect($response->json('expires_in'))->toBeLessThanOrEqual(900)
         ->and($response->json('expires_in'))->toBeGreaterThan(600);
 });

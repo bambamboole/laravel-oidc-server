@@ -21,7 +21,7 @@ class SocialProviderRegistry
      * @var array<string, class-string<SocialProvider>>
      */
     private const array DRIVERS = [
-        'oidc' => OidcProvider::class,
+        'oidc' => GenericOidcProvider::class,
         'google' => GoogleProvider::class,
         'apple' => AppleProvider::class,
         'github' => GitHubProvider::class,

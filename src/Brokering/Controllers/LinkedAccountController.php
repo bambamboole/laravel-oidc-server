@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Brokering\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Actions\UnlinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
-use Bambamboole\LaravelOidc\Server\Brokering\PendingAuthorization;
+use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +27,7 @@ class LinkedAccountController
     {
         $driver = $this->providers->get($provider) ?? abort(404);
 
-        return $driver->redirect($request, PendingAuthorization::INTENT_LINK);
+        return $driver->redirect($request, PendingSocialRedirect::INTENT_LINK);
     }
 
     public function destroy(Request $request, SocialAccount $socialAccount): JsonResponse|RedirectResponse
