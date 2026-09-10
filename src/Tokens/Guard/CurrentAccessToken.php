@@ -28,6 +28,16 @@ final class CurrentAccessToken
         return array_values($this->token->scopes ?? []);
     }
 
+    /**
+     * The context a personal access token was created with; empty for every other grant.
+     *
+     * @return array<string, mixed>
+     */
+    public function context(): array
+    {
+        return $this->token->context ?? [];
+    }
+
     /** The wire client_id, resolved from the token's client. */
     public function clientId(): ?string
     {

@@ -45,9 +45,12 @@ trait HasAccessTokens
         return $this->oidcAccessToken !== null && $this->oidcAccessToken->can($scope);
     }
 
-    /** @param  list<string>  $scopes */
-    public function createToken(string $name, array $scopes = []): PersonalAccessTokenResult
+    /**
+     * @param  list<string>  $scopes
+     * @param  array<string, mixed>  $context  Stored with the token and served back by CurrentAccessToken::context()
+     */
+    public function createToken(string $name, array $scopes = [], array $context = []): PersonalAccessTokenResult
     {
-        return app(PersonalAccessTokenIssuer::class)->make($this, $name, $scopes);
+        return app(PersonalAccessTokenIssuer::class)->make($this, $name, $scopes, $context);
     }
 }

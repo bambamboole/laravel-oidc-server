@@ -35,15 +35,18 @@ final readonly class PersonalAccessTokenIssuer
         private RealmResolver $realms,
     ) {}
 
-    /** @param  list<string>  $scopes */
-    public function make(Authenticatable $user, string $name, array $scopes = []): PersonalAccessTokenResult
+    /**
+     * @param  list<string>  $scopes
+     * @param  array<string, mixed>  $context
+     */
+    public function make(Authenticatable $user, string $name, array $scopes = [], array $context = []): PersonalAccessTokenResult
     {
         $client = $this->clients->personalAccessClient();
         $userId = (string) $user->getAuthIdentifier();
 
         $granted = $this->scopes->finalize($scopes, self::GRANT_TYPE, $client, $userId);
 
-        $claims = $this->runTriggers($user, $client, $granted);
+        $claims = $this->runTriggers($user, $client, $granted, $context);
 
         $token = $this->minter->mint(
             userId: $userId,
@@ -59,7 +62,10 @@ final readonly class PersonalAccessTokenIssuer
             'scopes' => $granted,
         ]);
 
-        AccessToken::query()->whereKey($token->jti)->update(['name' => $name]);
+        AccessToken::query()->whereKey($token->jti)->update([
+            'name' => $name,
+            'context' => $context === [] ? null : json_encode($context),
+        ]);
 
         return new PersonalAccessTokenResult(
             accessToken: $token->jwt,
@@ -69,9 +75,10 @@ final readonly class PersonalAccessTokenIssuer
 
     /**
      * @param  list<string>  $granted
+     * @param  array<string, mixed>  $context
      * @return array<string, mixed>
      */
-    private function runTriggers(Authenticatable $user, Client $client, array $granted): array
+    private function runTriggers(Authenticatable $user, Client $client, array $granted, array $context): array
     {
         if (! $this->pipeline->has('personal_access_token')) {
             return [];
@@ -81,6 +88,7 @@ final readonly class PersonalAccessTokenIssuer
             user: $user,
             client: $client,
             scopes: $granted,
+            context: $context,
         ));
 
         if ($api->isDenied()) {

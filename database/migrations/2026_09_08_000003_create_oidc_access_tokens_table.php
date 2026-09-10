@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignUuid('user_id')->nullable()->index();
             $table->foreignUuid('client_id')->index();
             $table->string('name')->nullable();
+            $table->json('context')->nullable();
             $table->json('scopes')->nullable();
             $table->char('auth_code_id', 80)->nullable()->index();
             $table->uuid('context_id')->nullable();
