@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\SigningKeys;
 
-use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Keyring;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\SigningKeys\Commands\RotateKeysCommand;
 use Illuminate\Contracts\Foundation\Application;
@@ -17,7 +17,7 @@ class SigningKeysServiceProvider extends ServiceProvider
         $this->app->singleton(SigningKeyStore::class, fn (Application $app): SigningKeyStore => $app->make(
             (string) config('oidc.keys.store', DatabaseSigningKeyStore::class),
         ));
-        $this->app->singleton(SigningKeys::class, StoredSigningKeys::class);
+        $this->app->singleton(Keyring::class, StoredKeyring::class);
     }
 
     public function boot(): void

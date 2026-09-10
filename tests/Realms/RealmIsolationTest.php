@@ -11,12 +11,12 @@ use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Keyring;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyPair;
-use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\SigningKeys\DatabaseSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\SigningKeys\StoredSigningKeys;
+use Bambamboole\LaravelOidc\Server\SigningKeys\StoredKeyring;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\PresentedTokenResolver;
@@ -90,7 +90,7 @@ it('does not resolve an access token from another realm', function (): void {
 it('keeps signing keys per realm', function (): void {
     $store = new DatabaseSigningKeyStore;
     app()->instance(SigningKeyStore::class, $store);
-    app()->instance(SigningKeys::class, new StoredSigningKeys($store));
+    app()->instance(Keyring::class, new StoredKeyring($store));
 
     enterRealm('acme');
     $store->rotate(new SigningKeyGenerator($store, app(RealmResolver::class))->generate());

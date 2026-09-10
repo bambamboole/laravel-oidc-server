@@ -9,7 +9,7 @@ use Lcobucci\JWT\Configuration;
 /**
  * The realm's current signing key and every key a token may still be verified with.
  */
-interface SigningKeys
+interface Keyring
 {
     public function signingKey(): SigningKeyPair;
 

@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Sessions;
 
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Keyring;
 use DateTimeImmutable;
 
 class LogoutTokenBuilder
@@ -15,18 +15,18 @@ class LogoutTokenBuilder
 
     public function __construct(
         private readonly IssuerResolver $issuer,
-        private readonly SigningKeys $signingKeys,
+        private readonly Keyring $keyring,
     ) {}
 
     public function build(OidcSession $session, string $clientId): string
     {
-        $config = $this->signingKeys->signingConfiguration();
+        $config = $this->keyring->signingConfiguration();
 
         $now = new DateTimeImmutable;
 
         $token = $config->builder()
             ->withHeader('typ', 'logout+jwt')
-            ->withHeader('kid', $this->signingKeys->signingKid())
+            ->withHeader('kid', $this->keyring->signingKid())
             ->issuedBy($this->issuer->url())
             ->permittedFor($clientId)
             ->identifiedBy(bin2hex(random_bytes(16)))

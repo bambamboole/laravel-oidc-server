@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Tokens;
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Keyring;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
@@ -28,7 +28,7 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
 {
     public function __construct(
         private ClientRepository $clients,
-        private SigningKeys $signingKeys,
+        private Keyring $keyring,
         private IssuerResolver $issuer,
         private RealmAudiences $audiences,
     ) {}
@@ -50,11 +50,11 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
         $expiresAt = $now->add($ttl);
         $audience = $audiences !== [] ? $audiences : $this->audiences->default();
 
-        $config = $this->signingKeys->signingConfiguration();
+        $config = $this->keyring->signingConfiguration();
 
         $builder = $config->builder()
             ->withHeader('typ', 'at+jwt')
-            ->withHeader('kid', $this->signingKeys->signingKid())
+            ->withHeader('kid', $this->keyring->signingKid())
             ->issuedBy($this->issuer->url())
             ->identifiedBy($jti)
             ->issuedAt($now)

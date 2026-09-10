@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\Enums\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Keyring;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
 use Bambamboole\LaravelOidc\Server\Tokens\Concerns\ResolvesTokenUser;
 use DateTimeImmutable;
@@ -23,14 +23,14 @@ class IdTokenBuilder
     public function __construct(
         private readonly ClaimsResolver $claims,
         private readonly IssuerResolver $issuer,
-        private readonly SigningKeys $signingKeys,
+        private readonly Keyring $keyring,
         private readonly RealmResolver $realms,
         private readonly AcrResolver $acr,
     ) {}
 
     public function build(IdTokenRequest $request): string
     {
-        $config = $this->signingKeys->signingConfiguration();
+        $config = $this->keyring->signingConfiguration();
 
         $clientId = $request->clientId;
         $nonce = $request->nonce;
@@ -40,7 +40,7 @@ class IdTokenBuilder
         $now = new DateTimeImmutable;
 
         $builder = $config->builder()
-            ->withHeader('kid', $this->signingKeys->signingKid())
+            ->withHeader('kid', $this->keyring->signingKid())
             ->issuedBy($this->issuer->url())
             ->permittedFor($clientId)
             ->relatedTo($request->userId)

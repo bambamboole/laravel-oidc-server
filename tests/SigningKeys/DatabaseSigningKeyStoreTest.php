@@ -7,8 +7,8 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Keyring;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyPair;
-use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\SigningKeys\Models\SigningKey;
 use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
@@ -79,8 +79,8 @@ it('serves every retained kid from the jwks endpoint', function (): void {
 
 it('keeps tokens signed before a rotation verifiable', function (): void {
     databaseStoreRotate();
-    $beforeRotation = app(SigningKeys::class)->signingConfiguration();
-    $kidBefore = app(SigningKeys::class)->signingKid();
+    $beforeRotation = app(Keyring::class)->signingConfiguration();
+    $kidBefore = app(Keyring::class)->signingKid();
 
     $jwt = $beforeRotation->builder()
         ->withHeader('kid', $kidBefore)
@@ -91,6 +91,6 @@ it('keeps tokens signed before a rotation verifiable', function (): void {
 
     databaseStoreRotate();
 
-    expect(app(SigningKeys::class)->signingKid())->not->toBe($kidBefore)
+    expect(app(Keyring::class)->signingKid())->not->toBe($kidBefore)
         ->and(app(TokenInspector::class)->parse($jwt))->not->toBeNull();
 });

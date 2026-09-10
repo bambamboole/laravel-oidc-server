@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Keyring;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\SigningKeys\Models\SigningKey;
@@ -32,7 +32,7 @@ function inspectorBase64Url(string $data): string
 
 it('validates tokens signed by a retained previous key and rejects keys that are neither current nor retained', function (): void {
     $jwt = mintInspectorToken();
-    $previousKid = app(SigningKeys::class)->signingKid();
+    $previousKid = app(Keyring::class)->signingKid();
 
     app(SigningKeyStore::class)->rotate(app(SigningKeyGenerator::class)->generate());
 
