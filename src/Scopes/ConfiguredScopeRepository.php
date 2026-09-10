@@ -18,8 +18,6 @@ class ConfiguredScopeRepository implements ScopeRepository
         'openid' => 'Authenticate with your account',
         'profile' => 'Access your basic profile information',
         'email' => 'Access your email address',
-        'address' => 'Access your postal address',
-        'phone' => 'Access your phone number',
     ];
 
     /** @var array<string, array<string, string>> keyed by realm id */

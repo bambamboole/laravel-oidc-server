@@ -65,7 +65,7 @@ it('exposes the configured catalog plus the oidc standard scopes, preferring the
 
     $repository = freshScopeRepository();
 
-    expect(scopeIds())->toContain('project:update', 'openid', 'profile', 'email', 'address', 'phone')
+    expect(scopeIds())->toContain('project:update', 'openid', 'profile', 'email')
         ->and($repository->all()->filter(fn (Scope $scope): bool => $scope->id === 'openid'))->toHaveCount(1)
         ->and($repository->find('openid')?->description)->toBe('Custom openid description')
         ->and($repository->find('nope'))->toBeNull();

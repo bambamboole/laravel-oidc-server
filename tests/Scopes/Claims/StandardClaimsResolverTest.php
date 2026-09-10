@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * OpenID Connect Core 1.0 §5.1 (standard claims), §5.1.1 (address), §5.4 (scope → claims mapping)
+ * OpenID Connect Core 1.0 §5.1 (standard claims), §5.4 (scope → claims mapping)
  */
 
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
@@ -45,8 +45,7 @@ it('reports an unverified email and omits attributes the user does not carry', f
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
     expect(standardClaims($user, ['email']))->toBe(['email' => 'm@example.com', 'email_verified' => false])
-        ->and(array_keys(standardClaims($user, ['profile'])))->not->toContain('locale', 'zoneinfo')
-        ->and(standardClaims($user, ['phone', 'address']))->toBe([]);
+        ->and(array_keys(standardClaims($user, ['profile'])))->not->toContain('locale', 'zoneinfo');
 });
 
 it('never reads a column a strict model does not carry', function (): void {
@@ -54,39 +53,10 @@ it('never reads a column a strict model does not carry', function (): void {
     Model::preventAccessingMissingAttributes();
 
     try {
-        expect(standardClaims($user, ['profile', 'email', 'phone', 'address']))
+        expect(standardClaims($user, ['profile', 'email']))
             ->toHaveKeys(['name', 'email'])
-            ->not->toHaveKeys(['phone_number', 'address', 'locale']);
+            ->not->toHaveKey('locale');
     } finally {
         Model::preventAccessingMissingAttributes(false);
     }
-});
-
-// OIDC Core §5.4 — phone scope
-it('maps phone_number and phone_number_verified under the phone scope', function (): void {
-    $verified = (new User)->forceFill(['phone_number' => '+49 30 123456', 'phone_number_verified' => 1]);
-    $unverified = (new User)->forceFill(['phone_number' => '+49 30 123456']);
-
-    expect(standardClaims($verified, ['phone']))->toBe(['phone_number' => '+49 30 123456', 'phone_number_verified' => true])
-        ->and(standardClaims($unverified, ['phone']))->toBe(['phone_number' => '+49 30 123456']);
-});
-
-// OIDC Core §5.1.1 — the structured address claim
-it('maps a structured or plain-string address under the address scope, keeping the standard members only', function (): void {
-    $structured = (new User)->forceFill(['address' => [
-        'street_address' => 'Unter den Linden 1',
-        'locality' => 'Berlin',
-        'postal_code' => '10117',
-        'country' => 'DE',
-        'internal_id' => 'ignored',
-    ]]);
-    $plain = (new User)->forceFill(['address' => "Unter den Linden 1\n10117 Berlin"]);
-
-    expect(standardClaims($structured, ['address']))->toBe(['address' => [
-        'street_address' => 'Unter den Linden 1',
-        'locality' => 'Berlin',
-        'postal_code' => '10117',
-        'country' => 'DE',
-    ]])
-        ->and(standardClaims($plain, ['address']))->toBe(['address' => ['formatted' => "Unter den Linden 1\n10117 Berlin"]]);
 });
