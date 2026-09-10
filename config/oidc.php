@@ -243,17 +243,17 @@ return [
     | Upstream identity providers users can authenticate with. A provider is
     | active only when its client_id is configured. `driver` selects the
     | implementation: google, apple, github, or the generic `oidc` driver for
-    | any OIDC-compliant IdP (requires `issuer`). Register custom drivers via
-    | Oidc::extendSocialProvider().
+    | any OIDC-compliant IdP (requires `issuer`). Register custom drivers with
+    | app(SocialProviderRegistry::class)->extend($driver, $creator).
     |
     */
     'social' => [
         // Attach an upstream identity to an existing local user when the
         // provider reports a verified email that matches.
         'link_by_verified_email' => true,
-        // Create a local user on first social login via the action registered
-        // with Oidc::createUsersFromSocialUsing(). Without a registered
-        // action, provisioning is effectively disabled.
+        // Create a local user on first social login through the bound
+        // Shared\Brokering\CreateUserFromSocialAccount action. Without a
+        // binding, provisioning is effectively disabled.
         'auto_provision' => true,
         'providers' => [
             'google' => [

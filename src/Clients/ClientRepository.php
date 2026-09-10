@@ -45,15 +45,18 @@ class ClientRepository
 
     public function personalAccessClient(): Client
     {
-        $client = Client::query()
+        return $this->findPersonalAccessClient() ?? throw new RuntimeException(
+            'Personal access client not found. Create one with `php artisan oidc:client --personal`.',
+        );
+    }
+
+    public function findPersonalAccessClient(): ?Client
+    {
+        return Client::query()
             ->inRealm()
             ->whereJsonContains('grant_types', 'personal_access')
             ->orderBy('created_at')
             ->first();
-
-        return $client ?? throw new RuntimeException(
-            'Personal access client not found. Create one with `php artisan oidc:provision-client`.',
-        );
     }
 
     /** @param  array<int, string>  $redirectUris */

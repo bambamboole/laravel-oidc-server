@@ -151,10 +151,28 @@ it('rejects invalid invocations with a usage exit code', function (array $argume
 
     expect(Client::query()->count())->toBe(0);
 })->with([
-    'without first-party mode' => [['--name' => 'First-party app', '--redirect-uri' => ['https://app.test/login/callback']]],
+    'without a mode' => [['--name' => 'First-party app', '--redirect-uri' => ['https://app.test/login/callback']]],
+    'both modes' => [['--first-party' => true, '--personal' => true, '--name' => 'First-party app', '--redirect-uri' => ['https://app.test/login/callback']]],
     'missing name' => [['--first-party' => true, '--redirect-uri' => ['https://app.test/login/callback']]],
     'missing redirect URI' => [['--first-party' => true, '--name' => 'First-party app']],
 ]);
+
+it('provisions the personal access client once and reports it afterwards', function (): void {
+    $this->artisan('oidc:client', ['--personal' => true, '--name' => 'CLI tokens'])
+        ->expectsOutputToContain('Personal access client provisioned: ')
+        ->assertSuccessful();
+
+    $client = app(ClientRepository::class)->personalAccessClient();
+
+    expect($client->name)->toBe('CLI tokens')
+        ->and($client->grant_types)->toBe(['personal_access']);
+
+    $this->artisan('oidc:client', ['--personal' => true])
+        ->expectsOutputToContain("Personal access client already provisioned: {$client->client_id}")
+        ->assertSuccessful();
+
+    expect(Client::query()->count())->toBe(1);
+});
 
 it('does not write env when interactive confirmation is declined', function (): void {
     $env = clientCommandEnv();

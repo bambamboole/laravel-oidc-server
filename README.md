@@ -87,7 +87,7 @@ This means:
 - The signing key is read on every request, so a key rotation takes effect without restarting
   the workers.
 - No client-management JSON API ships with the package. Provision clients with
-  `oidc:provision-client`, or through dynamic client registration.
+  `oidc:client`, or through dynamic client registration.
 
 ## Documentation
 

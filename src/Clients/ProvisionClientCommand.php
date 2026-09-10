@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Clients;
 
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentWriteException;
 use Illuminate\Console\Command;
@@ -12,6 +13,7 @@ class ProvisionClientCommand extends Command
 {
     protected $signature = 'oidc:client
         {--first-party : Provision the package-managed first-party client}
+        {--personal : Provision the client personal access tokens are minted against}
         {--name= : Client display name}
         {--redirect-uri=* : Registered authorization callback URI}
         {--post-logout-redirect-uri=* : Registered post-logout redirect URI}
@@ -21,10 +23,11 @@ class ProvisionClientCommand extends Command
         {--rotate : Rotate the client secret explicitly}
         {--write-env : Write provider client ID and trusted state to .env}';
 
-    protected $description = 'Provision the package-managed first-party OIDC client';
+    protected $description = 'Provision the package-managed first-party or personal-access OIDC client';
 
     public function __construct(
         private readonly FirstPartyClientProvisioner $provisioner,
+        private readonly ClientRepository $clients,
         private readonly EnvironmentFile $environment,
     ) {
         parent::__construct();
@@ -32,8 +35,18 @@ class ProvisionClientCommand extends Command
 
     public function handle(): int
     {
+        if ($this->option('first-party') && $this->option('personal')) {
+            $this->error('The --first-party and --personal options are mutually exclusive.');
+
+            return self::INVALID;
+        }
+
+        if ($this->option('personal')) {
+            return $this->provisionPersonalAccessClient();
+        }
+
         if (! $this->option('first-party')) {
-            $this->error('The --first-party option is required.');
+            $this->error('One of --first-party or --personal is required.');
 
             return self::INVALID;
         }
@@ -105,6 +118,27 @@ class ProvisionClientCommand extends Command
 
             return self::FAILURE;
         }
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * One personal-access client per realm: personal tokens are minted against
+     * the oldest one, so a second run reports it instead of creating a rival.
+     */
+    private function provisionPersonalAccessClient(): int
+    {
+        $existing = $this->clients->findPersonalAccessClient();
+
+        if ($existing instanceof Client) {
+            $this->info("Personal access client already provisioned: {$existing->client_id}");
+
+            return self::SUCCESS;
+        }
+
+        $client = $this->clients->createPersonalAccessGrantClient($this->stringOption('name') ?? 'Personal Access Client');
+
+        $this->info("Personal access client provisioned: {$client->client_id}");
 
         return self::SUCCESS;
     }
