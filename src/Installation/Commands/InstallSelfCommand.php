@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Installation;
+namespace Bambamboole\LaravelOidc\Server\Installation\Commands;
 
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;

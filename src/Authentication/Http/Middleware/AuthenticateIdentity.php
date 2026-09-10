@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Authentication;
+namespace Bambamboole\LaravelOidc\Server\Authentication\Http\Middleware;
 
+use Bambamboole\LaravelOidc\Server\Authentication\LoginDestination;
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Http\Request;

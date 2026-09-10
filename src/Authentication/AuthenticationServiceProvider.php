@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication;
 
+use Bambamboole\LaravelOidc\Server\Authentication\Commands\PruneAuthenticationContextsCommand;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
-use Bambamboole\LaravelOidc\Server\Authentication\Context\PruneAuthenticationContextsCommand;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\NullDeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;

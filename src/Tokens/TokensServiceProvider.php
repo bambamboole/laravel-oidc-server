@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
+use Bambamboole\LaravelOidc\Server\Tokens\Commands\PurgeTokensCommand;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\AllowlistExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;

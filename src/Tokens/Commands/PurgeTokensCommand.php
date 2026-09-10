@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Tokens;
+namespace Bambamboole\LaravelOidc\Server\Tokens\Commands;
 
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;

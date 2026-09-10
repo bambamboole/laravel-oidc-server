@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Sessions\BackChannel;
+namespace Bambamboole\LaravelOidc\Server\Sessions\Commands;
 
+use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Illuminate\Console\Command;
 

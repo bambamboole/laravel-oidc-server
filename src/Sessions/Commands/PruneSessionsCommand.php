@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Sessions;
+namespace Bambamboole\LaravelOidc\Server\Sessions\Commands;
 
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\Models\SessionParticipant;

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Authentication\AuthenticateIdentity;
 use Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers\AuthenticatedSessionController;
 use Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers\ConfirmablePasswordController;
 use Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers\EmailVerificationPromptController;
@@ -13,6 +12,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers\RegisteredUse
 use Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers\SendEmailVerificationNotificationController;
 use Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers\ShowConfirmedPasswordStatusController;
 use Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers\VerifyEmailController;
+use Bambamboole\LaravelOidc\Server\Authentication\Http\Middleware\AuthenticateIdentity;
 use Bambamboole\LaravelOidc\Server\Brokering\Http\Controllers\LinkedAccountController;
 use Bambamboole\LaravelOidc\Server\Brokering\Http\Controllers\SocialAuthenticationController;
 use Bambamboole\LaravelOidc\Server\Clients\Http\Controllers\ClientRegistrationController;

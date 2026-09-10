@@ -1,8 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Keys;
+namespace Bambamboole\LaravelOidc\Server\Keys\Commands;
 
+use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;

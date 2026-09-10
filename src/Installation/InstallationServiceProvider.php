@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Installation;
 
+use Bambamboole\LaravelOidc\Server\Installation\Commands\InstallSelfCommand;
 use Illuminate\Support\ServiceProvider;
 
 class InstallationServiceProvider extends ServiceProvider

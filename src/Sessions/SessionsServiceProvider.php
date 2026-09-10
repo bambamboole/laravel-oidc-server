@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Sessions;
 
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
-use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\DispatchExpiredSessionLogoutsCommand;
+use Bambamboole\LaravelOidc\Server\Sessions\Commands\DispatchExpiredSessionLogoutsCommand;
+use Bambamboole\LaravelOidc\Server\Sessions\Commands\PruneSessionsCommand;
 use Bambamboole\LaravelOidc\Server\Sessions\Listeners\EndOidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\Listeners\EstablishSessionToken;
 use Bambamboole\LaravelOidc\Server\Sessions\Listeners\ForgetSessionToken;

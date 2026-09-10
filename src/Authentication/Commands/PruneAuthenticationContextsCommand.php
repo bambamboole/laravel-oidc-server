@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Authentication\Context;
+namespace Bambamboole\LaravelOidc\Server\Authentication\Commands;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
 use Illuminate\Console\Command;
