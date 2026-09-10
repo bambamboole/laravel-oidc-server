@@ -19,6 +19,7 @@ final class AuthorizeRequest
      * @param  int|null  $maxAge  seconds since authentication the client tolerates
      * @param  list<string>  $acrValues
      * @param  string|null  $idTokenHintSubject  the sub of a verified id_token_hint
+     * @param  list<string>  $resources  RFC 8707 resources the token is requested for; empty for the realm default
      */
     public function __construct(
         public readonly string $clientId,
@@ -33,6 +34,7 @@ final class AuthorizeRequest
         public readonly ?int $maxAge = null,
         public readonly array $acrValues = [],
         public readonly ?string $idTokenHintSubject = null,
+        public readonly array $resources = [],
         public ?string $userId = null,
     ) {}
 }

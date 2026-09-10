@@ -132,6 +132,8 @@ it('reports request errors to the client on the redirect URI with the state', fu
 })->with([
     'unsupported response_type' => [['response_type' => 'token'], 'unsupported_response_type'],
     'unknown scope' => [['scope' => 'openid nope'], 'invalid_scope'],
+    'resource the client may not request' => [['resource' => 'https://api.internal/orders'], 'invalid_target'],
+    'relative resource' => [['resource' => 'api.internal/orders'], 'invalid_target'],
     'response_mode other than query' => [['response_mode' => 'fragment'], 'invalid_request'],
     'request object' => [['request' => 'eyJhbGciOiJub25lIn0.e30.'], 'request_not_supported'],
     'request_uri' => [['request_uri' => 'https://rp.test/request.jwt'], 'request_uri_not_supported'],

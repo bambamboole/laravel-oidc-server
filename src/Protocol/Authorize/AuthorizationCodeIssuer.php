@@ -56,6 +56,7 @@ final readonly class AuthorizationCodeIssuer
             'user_id' => $userId,
             'client_id' => $client->getKey(),
             'scopes' => $request->scopes,
+            'audience' => $request->resources,
             'redirect_uri' => $request->redirectUriRequested ? $request->redirectUri : null,
             'code_challenge' => $request->codeChallenge,
             'code_challenge_method' => $request->codeChallengeMethod,

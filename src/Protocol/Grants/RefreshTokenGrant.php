@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Contracts\Grant;
 use Bambamboole\LaravelOidc\Server\Protocol\Events\ClientAuthenticationFailed;
+use Bambamboole\LaravelOidc\Server\Protocol\Http\ResourceParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
@@ -105,6 +106,7 @@ final readonly class RefreshTokenGrant implements Grant
 
         $scopes = $this->scopes->finalize($requested, self::TYPE, $client, (string) $userId);
         $context = $this->activeContext($accessToken);
+        $audiences = $this->requestedAudiences($request, $accessToken->audience ?? []);
 
         $this->revoker->revoke($accessToken->id);
 
@@ -118,7 +120,30 @@ final readonly class RefreshTokenGrant implements Grant
             authTime: $context?->auth_time,
             authCodeId: $accessToken->auth_code_id,
             withRefreshToken: true,
+            audiences: $audiences,
         );
+    }
+
+    /**
+     * RFC 8707 §2.2: the refreshed token keeps the audience of the one it
+     * replaces unless a `resource` narrows it to a subset.
+     *
+     * @param  list<string>  $current
+     * @return list<string>
+     */
+    private function requestedAudiences(Request $request, array $current): array
+    {
+        $requested = ResourceParameter::parse($request->input('resource'));
+
+        if ($requested === []) {
+            return $current;
+        }
+
+        if (array_diff($requested, $current) !== []) {
+            throw OAuthServerException::invalidTarget('The requested resource is not among the audiences of the refresh token.');
+        }
+
+        return $requested;
     }
 
     /**

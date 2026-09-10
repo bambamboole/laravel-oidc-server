@@ -58,15 +58,6 @@ return [
     ],
 
     'tokens' => [
-        // Resource identifiers this realm serves (RFC 9068 §2.2 `aud`). An
-        // access token minted without an explicit audience — authorization
-        // code, refresh, session and personal access tokens — is addressed to
-        // these, and the oidc guard accepts a bearer token only when its `aud`
-        // names one of them or an advertised protected resource. Empty means
-        // the realm issuer URL. Explicit audiences (RFC 8707 `resource` at
-        // client credentials, token exchange `audience`) take precedence.
-        'audiences' => [],
-
         'lifetimes' => [
             // Interactive access token (authorization_code) + refreshed access tokens. Short, per industry.
             'access_token' => (int) env('OIDC_ACCESS_TOKEN_TTL', 900),
@@ -194,20 +185,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Protected resource metadata (RFC 9728)
+    | Resource servers (RFC 8707, RFC 9068, RFC 9728)
     |--------------------------------------------------------------------------
     |
-    | Resources this provider protects, advertised via
-    | `/.well-known/oauth-protected-resource/{path}`. Keys are the resource's
-    | path relative to the issuer origin (no slashes); MCP clients resolve
-    | their authorization server through this document. Unlisted paths 404.
-    | Each advertised resource identifier is also an audience the oidc guard
-    | accepts, next to tokens.audiences.
+    | The realm itself, identified by its issuer URL, is the default audience
+    | of every access token minted without an RFC 8707 `resource`. Resource
+    | servers listed here are further audiences a client may request through
+    | `resource` (authorization code, client credentials) or `audience` (token
+    | exchange), and the oidc guard accepts a bearer token addressed to any of
+    | them; pair the route with CheckAudience to demand a specific one. A key
+    | that is a path relative to the issuer is identified as `<issuer>/<path>`
+    | and advertised through RFC 9728 metadata at
+    | `/.well-known/oauth-protected-resource/<path>`, where MCP clients resolve
+    | their authorization server; an absolute URI names an external resource
+    | server that validates tokens itself.
     |
     | 'mcp' => ['scopes' => ['mcp:use']],
+    | 'https://api.internal/orders' => [],
     |
     */
-    'protected_resources' => [],
+    'resources' => [],
 
     'auth' => [
         'guard' => env('OIDC_AUTH_GUARD', 'identity'),

@@ -79,8 +79,8 @@ it('authenticates a token the realm issued and resolves the user from sub', func
 });
 
 // RFC 9068 §4 — aud must name this resource; the issuing client is not an audience
-it('accepts only tokens addressed to a realm audience', function (): void {
-    config(['oidc.tokens.audiences' => ['https://api.example/orders']]);
+it('accepts only tokens addressed to the issuer or a registered resource', function (): void {
+    config(['oidc.resources' => ['https://api.example/orders' => []]]);
 
     $accepted = resourceServerBearer($this, ['https://api.example/orders']);
     $foreign = resourceServerBearer($this, ['https://other.example/api']);
@@ -93,9 +93,9 @@ it('accepts only tokens addressed to a realm audience', function (): void {
     Auth::forgetGuards();
     $this->getJson('/guarded', ['Authorization' => "Bearer $foreign"])->assertUnauthorized();
 
-    // A configured list replaces the issuer URL rather than extending it.
+    // The issuer stays an audience next to the registered resources.
     Auth::forgetGuards();
-    $this->getJson('/guarded', ['Authorization' => "Bearer $issuerOnly"])->assertUnauthorized();
+    $this->getJson('/guarded', ['Authorization' => "Bearer $issuerOnly"])->assertOk();
 
     Auth::forgetGuards();
     $this->getJson('/guarded', ['Authorization' => "Bearer $clientOnly"])

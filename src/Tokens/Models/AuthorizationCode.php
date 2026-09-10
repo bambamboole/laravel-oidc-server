@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property string $user_id
  * @property string $client_id
  * @property array<int, string> $scopes
+ * @property ?array<int, string> $audience The RFC 8707 resources requested at authorization; empty for the realm default.
  * @property ?string $redirect_uri
  * @property string $code_challenge
  * @property string $code_challenge_method
@@ -46,6 +47,7 @@ class AuthorizationCode extends Model
     {
         return [
             'scopes' => 'array',
+            'audience' => 'array',
             'auth_time' => 'int',
             'revoked' => 'bool',
             'expires_at' => 'datetime',

@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\CredentialSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\KeySettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\LoginSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ResourceSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ScopeSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\SessionSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\TokenSettings;
@@ -32,6 +33,11 @@ final readonly class ConfiguredRealm implements Realm
     public function tokens(): TokenSettings
     {
         return TokenSettings::fromConfig();
+    }
+
+    public function resources(): ResourceSettings
+    {
+        return ResourceSettings::fromConfig();
     }
 
     public function sessions(): SessionSettings

@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\CredentialSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\KeySettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\LoginSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ResourceSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ScopeSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\SessionSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\TokenSettings;
@@ -25,6 +26,8 @@ interface Realm
     public function id(): string;
 
     public function tokens(): TokenSettings;
+
+    public function resources(): ResourceSettings;
 
     public function sessions(): SessionSettings;
 

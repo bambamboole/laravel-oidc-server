@@ -11,6 +11,7 @@ use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
@@ -59,15 +60,17 @@ it('emits a signed RFC 9068 at+jwt access token with a persisted record', functi
         ->and((bool) $record?->getAttribute('revoked'))->toBeFalse();
 });
 
-// RFC 9068 §2.2 — aud names the resources the token is for; the client stays in client_id
-it('addresses the token to the realm audiences unless an audience is given', function (): void {
-    config(['oidc.tokens.audiences' => ['https://api.example/orders', 'https://api.example/billing']]);
+// RFC 9068 §3 — aud is the requested resource, or the realm issuer as the default resource indicator
+it('addresses the token to the realm issuer unless an audience is given', function (): void {
+    config(['app.url' => 'https://op.test', 'oidc.issuer' => null, 'oidc.resources' => ['https://api.example/orders' => []]]);
 
     $defaulted = mintAccessToken($this->client, $this->user);
     $explicit = mintAccessToken($this->client, $this->user, audiences: ['https://api.internal/orders']);
 
-    expect(parseAccessToken($defaulted->jwt)->claims()->get('aud'))->toBe(['https://api.example/orders', 'https://api.example/billing'])
-        ->and($defaulted->audience)->toBe(['https://api.example/orders', 'https://api.example/billing'])
+    expect(parseAccessToken($defaulted->jwt)->claims()->get('aud'))->toBe(['https://op.test'])
+        ->and($defaulted->audience)->toBe(['https://op.test'])
+        ->and(AccessToken::query()->find($defaulted->jti)?->audience)->toBe(['https://op.test'])
+        ->and(AccessToken::query()->find($explicit->jti)?->audience)->toBe(['https://api.internal/orders'])
         ->and(parseAccessToken($defaulted->jwt)->claims()->get('client_id'))->toBe($this->client->client_id)
         ->and(parseAccessToken($explicit->jwt)->claims()->get('aud'))->toBe(['https://api.internal/orders'])
         ->and($explicit->audience)->toBe(['https://api.internal/orders']);

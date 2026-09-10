@@ -29,7 +29,7 @@ it('hangs the realm off the origin when realms are routed by path', function ():
 });
 
 it('drives discovery, protected resource metadata and the id_token issuer from the bound resolver', function (): void {
-    config(['oidc.issuer' => 'https://ignored.example.com', 'oidc.protected_resources' => ['mcp' => ['scopes' => []]]]);
+    config(['oidc.issuer' => 'https://ignored.example.com', 'oidc.resources' => ['mcp' => ['scopes' => []]]]);
     app()->instance(IssuerResolver::class, new class implements IssuerResolver
     {
         public function url(): string

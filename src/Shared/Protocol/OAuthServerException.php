@@ -112,9 +112,9 @@ final class OAuthServerException extends HttpResponseException
     }
 
     /** RFC 8707 §2 / RFC 8693 §2.2.2. */
-    public static function invalidTarget(string $description): self
+    public static function invalidTarget(string $description, ?string $redirectUri = null, ?string $state = null): self
     {
-        return new self('invalid_target', $description, 400);
+        return new self('invalid_target', $description, 400, $redirectUri, $state);
     }
 
     /** OpenID Connect Core §3.1.2.6. */

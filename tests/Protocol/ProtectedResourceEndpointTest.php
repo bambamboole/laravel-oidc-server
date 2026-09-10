@@ -9,7 +9,7 @@ it('serves metadata for a configured protected resource', function (): void {
     config([
         'app.url' => 'https://op.test',
         'oidc.issuer' => null,
-        'oidc.protected_resources' => ['mcp' => ['scopes' => ['mcp:use']]],
+        'oidc.resources' => ['mcp' => ['scopes' => ['mcp:use']]],
     ]);
 
     $this->getJson('/.well-known/oauth-protected-resource/mcp')
@@ -26,7 +26,7 @@ it('serves metadata for a configured protected resource', function (): void {
 it('builds the resource identifier from the configured issuer, serving the issuer root for an empty path', function (): void {
     config([
         'oidc.issuer' => 'https://id.example.com/',
-        'oidc.protected_resources' => ['mcp' => ['scopes' => []], '' => ['scopes' => ['api']]],
+        'oidc.resources' => ['mcp' => ['scopes' => []], '' => ['scopes' => ['api']]],
     ]);
 
     $this->getJson('/.well-known/oauth-protected-resource/mcp')
@@ -40,7 +40,7 @@ it('builds the resource identifier from the configured issuer, serving the issue
 });
 
 it('answers 404 for resources that are not configured', function (): void {
-    config(['oidc.protected_resources' => ['mcp' => ['scopes' => []]]]);
+    config(['oidc.resources' => ['mcp' => ['scopes' => []]]]);
 
     $this->getJson('/.well-known/oauth-protected-resource/unknown')->assertNotFound();
     $this->getJson('/.well-known/oauth-protected-resource')->assertNotFound();

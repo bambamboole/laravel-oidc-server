@@ -20,7 +20,7 @@ use RuntimeException;
  * Mints RFC 9068 (application/at+jwt) access tokens and persists the record
  * the guard, introspection and revocation read them back from. `aud` is the
  * explicit audience list when one is given (RFC 8707 `resource`, token
- * exchange `audience`) and the realm's audiences otherwise (§2.2); the
+ * exchange `audience`) and the realm issuer otherwise (§3); the
  * client is identified by `client_id` either way. The `scopes` array is kept
  * next to the `scope` string for consumers that read it.
  */
@@ -48,7 +48,7 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
         $jti = bin2hex(random_bytes(40));
         $now = new DateTimeImmutable;
         $expiresAt = $now->add($ttl);
-        $audience = $audiences !== [] ? $audiences : $this->audiences->all();
+        $audience = $audiences !== [] ? $audiences : $this->audiences->default();
 
         $config = $this->signingKeys->signingConfiguration();
 
@@ -84,6 +84,7 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
             'user_id' => $userId,
             'client_id' => $client->getKey(),
             'scopes' => $scopeIds,
+            'audience' => $audience,
             'revoked' => false,
             'expires_at' => $expiresAt,
         ]);

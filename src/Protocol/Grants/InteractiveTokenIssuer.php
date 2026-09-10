@@ -47,6 +47,7 @@ final readonly class InteractiveTokenIssuer
     /**
      * @param  list<string>  $scopes
      * @param  string|null  $authCodeId  the code this token descends from, so a replayed code or refresh token can revoke the whole chain
+     * @param  list<string>  $audiences  RFC 8707 resources the token is for; empty for the realm default
      */
     public function issue(
         Client $client,
@@ -58,6 +59,7 @@ final readonly class InteractiveTokenIssuer
         ?int $authTime,
         ?string $authCodeId,
         bool $withRefreshToken,
+        array $audiences = [],
     ): TokenResponse {
         $api = $this->runTriggers($client, $userId, $scopes, $grantType);
 
@@ -80,6 +82,7 @@ final readonly class InteractiveTokenIssuer
             $client->client_id,
             $scopes,
             $tokens->accessToken(),
+            audiences: $audiences,
             extraClaims: [...($context instanceof AuthenticationContext ? $context->access_token_claims : []), ...($api?->accessTokenClaims() ?? [])],
         );
 
@@ -113,6 +116,7 @@ final readonly class InteractiveTokenIssuer
             clientId: $client->client_id,
             userId: $userId,
             sid: $context?->sid,
+            audiences: $audiences,
         ));
 
         return new TokenResponse($accessToken, $refreshToken, $idToken);

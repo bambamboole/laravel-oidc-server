@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
 use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Contracts\Grant;
+use Bambamboole\LaravelOidc\Server\Protocol\Http\ResourceParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
@@ -43,7 +44,7 @@ final readonly class ClientCredentialsGrant implements Grant
 
     public function handle(Client $client, Request $request): TokenResponse
     {
-        $audiences = $this->requestedResources($request);
+        $audiences = ResourceParameter::parse($request->input('resource'));
         $this->assertAudiencesAllowed($client, $audiences);
 
         $requested = ScopeParameter::parse($request->input('scope')) ?? [];
@@ -91,29 +92,6 @@ final readonly class ClientCredentialsGrant implements Grant
         ));
 
         return new TokenResponse($token);
-    }
-
-    /**
-     * RFC 8707 `resource` parameters: each value must be an absolute URI
-     * without a fragment; one value or a list is accepted.
-     *
-     * @return list<string>
-     */
-    private function requestedResources(Request $request): array
-    {
-        $raw = $request->input('resource') ?? [];
-        $resources = array_values(is_array($raw) ? $raw : [$raw]);
-
-        foreach ($resources as $resource) {
-            if (! is_string($resource)
-                || ! filter_var($resource, FILTER_VALIDATE_URL)
-                || str_contains($resource, '#')) {
-                throw OAuthServerException::invalidTarget('The resource parameter must be an absolute URI without a fragment.');
-            }
-        }
-
-        /** @var list<string> $resources */
-        return array_values(array_unique($resources));
     }
 
     /** @param  list<string>  $audiences */

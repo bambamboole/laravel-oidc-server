@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextS
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Contracts\Grant;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Pkce;
+use Bambamboole\LaravelOidc\Server\Protocol\Http\ResourceParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
@@ -76,6 +77,7 @@ final readonly class AuthorizationCodeGrant implements Grant
         $userId = (string) $authCode->user_id;
         $scopes = $this->scopes->finalize($authCode->scopes ?? [], self::TYPE, $client, $userId);
         $context = $authCode->context_id !== null ? $this->contexts->find($authCode->context_id) : null;
+        $audiences = $this->requestedAudiences($request, $authCode->audience ?? []);
 
         return $this->issuer->issue(
             client: $client,
@@ -87,7 +89,30 @@ final readonly class AuthorizationCodeGrant implements Grant
             authTime: $authCode->auth_time,
             authCodeId: $authCode->id,
             withRefreshToken: $client->hasGrantType(RefreshTokenGrant::TYPE),
+            audiences: $audiences,
         );
+    }
+
+    /**
+     * RFC 8707 §2.2: a `resource` at the token endpoint narrows the token to a
+     * subset of what the authorization request asked for; it cannot add one.
+     *
+     * @param  list<string>  $granted
+     * @return list<string>
+     */
+    private function requestedAudiences(Request $request, array $granted): array
+    {
+        $requested = ResourceParameter::parse($request->input('resource'));
+
+        if ($requested === []) {
+            return $granted;
+        }
+
+        if (array_diff($requested, $granted) !== []) {
+            throw OAuthServerException::invalidTarget('The requested resource was not part of the authorization request.');
+        }
+
+        return $requested;
     }
 
     private function verifyRedirectUri(AuthorizationCode $authCode, Request $request): void

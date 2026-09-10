@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Authorize;
 
+use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Grants\AuthorizationCodeGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Pkce;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\RedirectUri;
+use Bambamboole\LaravelOidc\Server\Protocol\Http\ResourceParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
@@ -98,6 +100,12 @@ final readonly class AuthorizeRequestValidator
 
         $scopes = array_values(array_unique([...$scopes, ...$client->default_scopes]));
 
+        $resources = ResourceParameter::parse($request->input('resource'), $redirectUri, $state);
+
+        if (array_diff($resources, AllowedAudiences::of($client)) !== []) {
+            throw OAuthServerException::invalidTarget('The requested resource is not permitted for this client.', $redirectUri, $state);
+        }
+
         $codeChallenge = $this->parameter($request, 'code_challenge')
             ?? throw OAuthServerException::invalidRequest('The code_challenge parameter is required.', $redirectUri, $state);
 
@@ -122,6 +130,7 @@ final readonly class AuthorizeRequestValidator
             maxAge: $this->maxAge($request, $redirectUri, $state),
             acrValues: $this->spaceSeparated($this->parameter($request, 'acr_values')),
             idTokenHintSubject: $this->idTokenHintSubject($request, $redirectUri, $state),
+            resources: $resources,
         );
     }
 

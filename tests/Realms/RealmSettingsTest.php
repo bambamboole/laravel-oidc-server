@@ -13,6 +13,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\CredentialSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\KeySettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\LoginSettings;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ResourceSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ScopeSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\SessionSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\TokenSettings;
@@ -42,6 +43,11 @@ function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSet
         public function tokens(): TokenSettings
         {
             return $this->tokenSettings ?? $this->configured->tokens();
+        }
+
+        public function resources(): ResourceSettings
+        {
+            return $this->configured->resources();
         }
 
         public function sessions(): SessionSettings

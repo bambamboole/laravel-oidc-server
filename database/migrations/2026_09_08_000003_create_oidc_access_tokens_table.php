@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->json('context')->nullable();
             $table->json('scopes')->nullable();
+            $table->json('audience')->nullable();
             $table->char('auth_code_id', 80)->nullable()->index();
             $table->uuid('context_id')->nullable();
             $table->boolean('revoked')->default(false);
