@@ -16,7 +16,7 @@ function installSelfEnv(string $contents = "APP_NAME=Testing\n"): string
 
 it('provisions the first-party client and writes both env halves', function (): void {
     $env = installSelfEnv();
-    config(['oidc-client' => [], 'app.url' => 'https://app.test', 'oidc.issuer' => null]);
+    config(['oidc-client' => [], 'app.url' => 'https://app.test', 'oidc.issuer' => null, 'oidc.realm' => 'admin']);
 
     $this->artisan('oidc:install-self', ['--force' => true])->assertSuccessful();
 
@@ -28,7 +28,7 @@ it('provisions the first-party client and writes both env halves', function (): 
         ->toContain('OIDC_FIRST_PARTY_CLIENT='.$clientId)
         ->toContain('OIDC_FIRST_PARTY_TRUSTED=true')
         ->toContain('OIDC_RP_ENABLED=true')
-        ->toContain('OIDC_RP_ISSUER=https://app.test')
+        ->toContain("OIDC_RP_ISSUER=https://app.test/realms/admin\n")
         ->toContain('OIDC_RP_CLIENT_ID='.$clientId)
         ->toContain('OIDC_RP_REDIRECT_URI=https://app.test/login/callback')
         ->toContain('OIDC_RP_POST_LOGOUT_REDIRECT_URI=https://app.test')
@@ -136,4 +136,19 @@ it('fails when the relying-party package is not installed', function (): void {
     $this->artisan('oidc:install-self', ['--force' => true])->assertFailed();
 
     expect(File::get($env))->toBe($before);
+});
+
+it('refuses to change the first-party client belonging to another realm', function (): void {
+    $env = installSelfEnv();
+    config(['oidc-client' => [], 'app.url' => 'https://app.test', 'oidc.realm' => 'admin']);
+    $this->artisan('oidc:install-self', ['--force' => true])->assertSuccessful();
+    $client = Client::query()->sole();
+    $attributes = $client->getAttributes();
+    $environment = File::get($env);
+
+    config(['oidc.realm' => 'partners']);
+    $this->artisan('oidc:install-self', ['--force' => true, '--fresh' => true])->assertFailed();
+
+    expect($client->refresh()->getAttributes())->toBe($attributes);
+    expect(File::get($env))->toBe($environment);
 });

@@ -80,6 +80,8 @@ return [
     ],
 
     'session' => [
+        'cookie_name' => env('OIDC_SESSION_COOKIE'),
+
         // Absolute cap on an interactive session, from login. Refresh is denied past this and the user
         // must re-authenticate; refresh-token rotation cannot extend it. Drives context.expires_at,
         // the refresh deny-check, and context pruning. The idle cap is tokens.lifetimes.refresh_token.

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions\Actions;
 
-use Bambamboole\LaravelOidc\Server\Sessions\EndOidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\Listeners\EndOidcSession;
 use Illuminate\Contracts\Auth\Factory as AuthFactory;
 use Illuminate\Contracts\Session\Session;
 

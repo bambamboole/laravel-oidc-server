@@ -6,10 +6,22 @@ declare(strict_types=1);
  * OpenID Connect Discovery 1.0 §3 (one issuer per realm)
  */
 
+use Bambamboole\LaravelOidc\Server\Realms\Http\Middleware\ResolveRealm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Testing\FakesAuthViews;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use Symfony\Component\HttpFoundation\Cookie;
+use Symfony\Component\HttpFoundation\Response;
+use Workbench\App\Models\User;
+
+uses(FakesAuthViews::class);
 
 beforeEach(function (): void {
+    $this->fakeAuthViews();
     config(['oidc.issuer' => 'https://id.example.com']);
 });
 
@@ -32,10 +44,11 @@ it('falls back to the configured realm outside a matched route', function (): vo
 });
 
 it('scopes the session cookie to the realm path', function (): void {
+    config(['session.cookie' => 'app-session']);
     $response = $this->get('/realms/acme/auth/login');
 
     $cookie = collect($response->headers->getCookies())
-        ->first(fn ($cookie): bool => $cookie->getName() === config('session.cookie'));
+        ->first(fn (Cookie $cookie): bool => $cookie->getName() === 'app-session-oidc-acme');
 
     expect($cookie)->not->toBeNull()
         ->and($cookie->getPath())->toBe('/realms/acme');
@@ -44,3 +57,104 @@ it('scopes the session cookie to the realm path', function (): void {
 it('rejects a realm segment that would collide with the well-known paths', function (): void {
     $this->getJson('/realms/a%2Fb/.well-known/openid-configuration')->assertNotFound();
 });
+
+it('preserves the application session when the identity login regenerates its session', function (): void {
+    config(['session.cookie' => 'app-session']);
+    Route::middleware('web')->get('/app-state', function (Request $request): JsonResponse {
+        $request->session()->put('oidc-client.state', 'pending-state');
+
+        return response()->json(['state' => $request->session()->get('oidc-client.state')]);
+    });
+    $user = User::create(['name' => 'Alice', 'email' => 'alice@example.com', 'password' => bcrypt('password')]);
+    $application = $this->get('/app-state')->assertOk();
+    $applicationSession = $application->getCookie('app-session')?->getValue();
+    expect($applicationSession)->toBeString();
+    session()->flush();
+
+    $this->withCookie('app-session', $applicationSession);
+    $login = $this->get('/realms/acme/auth/login')->assertOk();
+    $providerCookie = collect($login->headers->getCookies())->first(
+        fn (Cookie $cookie): bool => $cookie->isHttpOnly() && $cookie->getValue() !== null && $cookie->getValue() !== '',
+    ) ?? throw new LogicException('The provider did not issue a session cookie.');
+    $providerSession = $login->getCookie($providerCookie->getName())?->getValue();
+    session()->flush();
+
+    $this->withCookie($providerCookie->getName(), $providerSession)
+        ->post('/realms/acme/auth/login', ['email' => 'alice@example.com', 'password' => 'password'])
+        ->assertRedirect();
+
+    $this->assertAuthenticatedAs($user, 'identity');
+
+    expect(session()->getHandler()->read($applicationSession))->toContain('pending-state');
+    expect(config('session.cookie'))->toBe('app-session')
+        ->and(config('session.path'))->toBe('/')
+        ->and(session()->getName())->toBe('app-session');
+
+    Auth::forgetGuards();
+    session()->flush();
+    Route::middleware('web')->get('/callback-state', fn (Request $request): JsonResponse => response()->json(['state' => $request->session()->pull('oidc-client.state')]));
+    $this->get('/callback-state')->assertOk()->assertJsonPath('state', 'pending-state');
+});
+
+it('expires legacy cookies and clears the provider csrf cookie on external redirects', function (string $location, bool $inertia, bool $leavesRealm): void {
+    config(['session.cookie' => 'app-session']);
+    Route::middleware([ResolveRealm::class, 'web'])->get('/realms/{realm}/leave', fn (): Response => $inertia
+        ? response()->make('', 409, ['X-Inertia-Location' => $location])
+        : redirect()->to($location));
+
+    $response = $this->get('/realms/acme/leave');
+    $response->assertCookieExpired('app-session');
+    expect($response->getCookie('app-session', decrypt: false)?->getPath())->toBe('/realms/acme');
+
+    if ($leavesRealm) {
+        $response->assertCookieExpired('XSRF-TOKEN');
+    } else {
+        $response->assertCookieNotExpired('XSRF-TOKEN');
+    }
+})->with([
+    'callback' => ['/login/callback', false, true],
+    'inertia callback' => ['/login/callback', true, true],
+    'realm login' => ['/realms/acme/auth/login', false, false],
+    'other realm' => ['/realms/partners/auth/login', false, true],
+    'other host same path' => ['https://other.test/realms/acme/auth/login', false, true],
+]);
+
+it('restores cookie configuration after an exception', function (): void {
+    config(['session.cookie' => 'app-session']);
+    Route::middleware([ResolveRealm::class, 'web'])->get('/realms/{realm}/broken', fn (): never => abort(503));
+
+    $this->get('/realms/acme/broken')->assertServiceUnavailable();
+
+    expect(config('session.cookie'))->toBe('app-session')
+        ->and(config('session.path'))->toBe('/')
+        ->and(session()->getName())->toBe('app-session');
+});
+
+it('validates logout csrf against the application session after returning from the provider', function (): void {
+    config(['session.cookie' => 'app-session']);
+    Route::middleware('web')->get('/application', fn (): Response => response()->make('app'));
+    Route::middleware('web')->post('/application/logout', fn (): Response => response()->noContent());
+    Route::middleware([ResolveRealm::class, 'web'])->get('/realms/{realm}/return', fn (): Response => redirect()->to('/application'));
+    app()->instance('env', 'production');
+
+    try {
+        $application = $this->get('/application')->assertOk();
+        $this->withCookie('app-session', $application->getCookie('app-session')?->getValue());
+        $csrf = $application->getCookie('XSRF-TOKEN', decrypt: false)?->getValue();
+        session()->flush();
+        $this->get('/realms/acme/return')->assertRedirect('/application')->assertCookieExpired('XSRF-TOKEN');
+
+        session()->flush();
+        $this->post('/application/logout')->assertStatus(419);
+        session()->flush();
+        $this->post('/application/logout', [], ['X-XSRF-TOKEN' => $csrf])->assertNoContent();
+    } finally {
+        app()->instance('env', 'testing');
+    }
+});
+
+it('rejects a realm cookie name that collides with the application or is invalid', function (string $cookie): void {
+    config(['session.cookie' => 'app-session', 'oidc.session.cookie_name' => $cookie]);
+    $this->get('/realms/acme/auth/login')->assertServerError();
+    expect(config('session.cookie'))->toBe('app-session')->and(config('session.path'))->toBe('/');
+})->with(['app-session', 'bad name', 'bad;name']);

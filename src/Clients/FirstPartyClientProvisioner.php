@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Clients;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +23,7 @@ final readonly class FirstPartyClientProvisioner
         private ClientRepository $clients,
         private Hasher $hasher,
         private Auditor $auditor,
+        private RealmResolver $realms,
     ) {}
 
     /**
@@ -120,6 +122,10 @@ final readonly class FirstPartyClientProvisioner
                 ->where('provisioning_key', self::ProvisioningKey)
                 ->lockForUpdate()
                 ->first();
+            if ($client !== null && $client->realm_id !== $this->realms->current()->id()) {
+                throw new FirstPartyClientProvisioningException('Self-SSO is already provisioned for another realm. Its client cannot be reassigned.');
+            }
+
             $created = false;
 
             if ($client !== null

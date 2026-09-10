@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
+use Bambamboole\LaravelOidc\Server\Realms\Http\Middleware\ResolveRealm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
@@ -15,16 +16,17 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\LoginSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ScopeSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\SessionSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\TokenSettings;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Route;
 
 /** A realm the way an application model would implement it: its own settings, the rest configured. */
-function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSettings $clients = null): Realm
+function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSettings $clients = null, ?SessionSettings $sessions = null): Realm
 {
-    return new readonly class($id, $tokens, $clients) implements Realm
+    return new readonly class($id, $tokens, $clients, $sessions) implements Realm
     {
         private ConfiguredRealm $configured;
 
-        public function __construct(string $id, private ?TokenSettings $tokenSettings, private ?ClientSettings $clientSettings)
+        public function __construct(string $id, private ?TokenSettings $tokenSettings, private ?ClientSettings $clientSettings, private ?SessionSettings $sessionSettings)
         {
             $this->configured = new ConfiguredRealm($id);
         }
@@ -41,7 +43,7 @@ function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSet
 
         public function sessions(): SessionSettings
         {
-            return $this->configured->sessions();
+            return $this->sessionSettings ?? $this->configured->sessions();
         }
 
         public function login(): LoginSettings
@@ -147,4 +149,18 @@ it('advertises token exchange and registration per realm', function (): void {
         ->and($open)->toHaveKey('registration_endpoint')
         ->and($locked['grant_types_supported'])->not->toContain('urn:ietf:params:oauth:grant-type:token-exchange')
         ->and($locked)->not->toHaveKey('registration_endpoint');
+});
+
+it('uses each realms configured session cookie while keeping the app cookie unchanged', function (): void {
+    config(['session.cookie' => 'app-session', 'oidc.session.cookie_name' => 'configured-provider']);
+    bindRealms(
+        realmWithSettings('default'),
+        realmWithSettings('partners', sessions: new SessionSettings(cookieName: 'partners-identity')),
+    );
+    Route::middleware([ResolveRealm::class, 'web'])
+        ->get('/realms/{realm}/session-cookie', fn (): Response => response()->make('ok'));
+
+    $this->get('/realms/default/session-cookie')->assertOk()->assertCookie('configured-provider');
+    $this->get('/realms/partners/session-cookie')->assertOk()->assertCookie('partners-identity');
+    expect(config('session.cookie'))->toBe('app-session');
 });

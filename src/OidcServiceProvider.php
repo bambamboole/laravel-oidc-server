@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditServiceProvider;
-use Bambamboole\LaravelOidc\Server\Audit\RecordLoginAudit;
-use Bambamboole\LaravelOidc\Server\Audit\RecordLogoutAudit;
 use Bambamboole\LaravelOidc\Server\Authentication\AuthenticationServiceProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\BrokeringServiceProvider;
 use Bambamboole\LaravelOidc\Server\Clients\ClientsServiceProvider;
@@ -20,29 +18,23 @@ use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
 use Bambamboole\LaravelOidc\Server\Realms\RealmPath;
 use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
-use Bambamboole\LaravelOidc\Server\Sessions\EndOidcSession;
-use Bambamboole\LaravelOidc\Server\Sessions\EstablishSessionToken;
-use Bambamboole\LaravelOidc\Server\Sessions\ForgetSessionToken;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenGuard;
-use Bambamboole\LaravelOidc\Server\Sessions\StartOidcSession;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Tokens\TokensServiceProvider;
-use Illuminate\Auth\Events\Login;
-use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
 
 class OidcServiceProvider extends ServiceProvider
 {
     /**
-     * Each domain wires its own bindings and commands; this provider owns
-     * what spans them: config, routes, publishing, and the login/logout
-     * listener order.
+     * Each domain wires its own bindings, listeners and commands; this
+     * provider owns what spans them: config, routes and publishing. The order
+     * is also the boot order: Sessions must precede Audit so the login audit
+     * finds the sid StartOidcSession wrote.
      *
      * @var list<class-string<ServiceProvider>>
      */
@@ -77,17 +69,6 @@ class OidcServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // RecordLoginAudit runs after StartOidcSession so the sid it captures
-        // exists; RecordLogoutAudit runs before the teardown listeners so the
-        // sid is still readable from the session. The order crosses the
-        // Session and Audit domains, so it is wired here rather than in either.
-        Event::listen(Login::class, EstablishSessionToken::class);
-        Event::listen(Login::class, StartOidcSession::class);
-        Event::listen(Login::class, RecordLoginAudit::class);
-        Event::listen(Logout::class, RecordLogoutAudit::class);
-        Event::listen(Logout::class, ForgetSessionToken::class);
-        Event::listen(Logout::class, EndOidcSession::class);
-
         // OIDC Core §3.1.2.1: clients POST authorization requests cross-site,
         // so the web group's forgery check must not apply to that route.
         PreventRequestForgery::except(RealmPath::SEGMENT.'/*/oauth/authorize');

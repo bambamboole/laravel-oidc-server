@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers;
+
+use Bambamboole\LaravelOidc\Server\Authentication\PasswordConfirmation;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class ShowConfirmedPasswordStatusController
+{
+    public function __invoke(Request $request): JsonResponse
+    {
+        return new JsonResponse([
+            'confirmed' => PasswordConfirmation::confirmedRecently($request->session()),
+        ]);
+    }
+}

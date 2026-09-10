@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentWriteException;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Illuminate\Console\Command;
 
 class InstallSelfCommand extends Command
@@ -24,6 +25,7 @@ class InstallSelfCommand extends Command
         private readonly FirstPartyClientProvisioner $provisioner,
         private readonly EnvironmentFile $environment,
         private readonly SigningKeyGenerator $keys,
+        private readonly IssuerResolver $issuers,
     ) {
         parent::__construct();
     }
@@ -50,7 +52,7 @@ class InstallSelfCommand extends Command
 
         $configuredIssuer = config('oidc.issuer');
         $hasIssuer = is_string($configuredIssuer) && $configuredIssuer !== '';
-        $issuer = $hasIssuer ? $configuredIssuer : $appUrl;
+        $issuer = $this->issuers->url();
 
         if (! $this->option('force')
             && $this->input->isInteractive()

@@ -1,0 +1,34 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * RFC 6750 §3.1 (insufficient_scope) — scope middleware behind the auth:oidc guard
+ */
+
+use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Tokens\Http\Middleware\CheckScopes;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+use Workbench\App\Models\User;
+
+beforeEach(function (): void {
+    $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+    $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
+
+    Route::middleware(['auth:oidc', CheckScopes::using('openid')])->get('/probe/openid', fn (): array => ['id' => auth()->id()]);
+    Route::middleware(['auth:oidc', CheckScopes::using('admin')])->get('/probe/admin', fn (): array => ['id' => auth()->id()]);
+});
+
+it('passes a token that carries the required scope and forbids one that lacks it', function (): void {
+    $jwt = resourceServerBearer($this);
+
+    $this->getJson('/probe/openid', ['Authorization' => "Bearer $jwt"])
+        ->assertOk()
+        ->assertJson(['id' => $this->user->getKey()]);
+
+    // The guard instance caches the user it resolved; drop it so the second request is validated afresh.
+    Auth::forgetGuards();
+
+    $this->getJson('/probe/admin', ['Authorization' => "Bearer $jwt"])->assertForbidden();
+});
