@@ -50,8 +50,8 @@ final readonly class ProviderMetadata
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => ['RS256'],
             'scopes_supported' => $this->scopes->all()
-                ->reject(fn (Scope $scope) => $scope->hidden)
-                ->map(fn (Scope $scope) => $scope->id)
+                ->reject(fn (Scope $scope): bool => $scope->hidden)
+                ->map(fn (Scope $scope): string => $scope->id)
                 ->values()
                 ->all(),
             'claims_supported' => $realm->scopes()->claimsSupported,

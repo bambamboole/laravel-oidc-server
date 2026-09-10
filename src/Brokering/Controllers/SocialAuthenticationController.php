@@ -18,6 +18,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -57,13 +58,13 @@ class SocialAuthenticationController
         $driver = $this->provider($provider);
 
         if ($request->filled('error')) {
-            return $this->failed($request, __('The sign-in was cancelled or refused by the provider.'));
+            return $this->failed(__('The sign-in was cancelled or refused by the provider.'));
         }
 
         $pending = PendingSocialRedirect::pull($request);
 
-        if ($pending === null) {
-            return $this->failed($request, __('Your sign-in attempt expired. Please try again.'));
+        if (! $pending instanceof PendingSocialRedirect) {
+            return $this->failed(__('Your sign-in attempt expired. Please try again.'));
         }
 
         // Also covers completeLogin/completeLink: linking and JIT provisioning
@@ -77,7 +78,7 @@ class SocialAuthenticationController
                 ? $this->completeLink($request, $provider, $socialUser)
                 : $this->completeLogin($request, $provider, $socialUser);
         } catch (InvalidStateException) {
-            return $this->failed($request, __('Your sign-in attempt expired. Please try again.'));
+            return $this->failed(__('Your sign-in attempt expired. Please try again.'));
         } catch (SocialAuthenticationException $exception) {
             Log::warning("oidc: social authentication with [{$provider}] failed: {$exception->getMessage()}");
             $this->auditor->log(AuditEventType::LoginFailed, context: [
@@ -85,7 +86,7 @@ class SocialAuthenticationController
                 'reason' => $exception->getMessage(),
             ]);
 
-            return $this->failed($request, __('We could not sign you in with this account.'));
+            return $this->failed(__('We could not sign you in with this account.'));
         }
     }
 
@@ -99,12 +100,12 @@ class SocialAuthenticationController
 
         $user = $this->accounts->resolveUser($providerKey, $socialUser, $guard->getProvider());
 
-        if ($user === null) {
-            return $this->failed($request, __('We could not sign you in with this account.'));
+        if (! $user instanceof Authenticatable) {
+            return $this->failed(__('We could not sign you in with this account.'));
         }
 
         return match ($this->finalizer->finalize($request, $user, $providerKey)) {
-            LoginOutcome::Denied => $this->failed($request, __('We could not sign you in with this account.')),
+            LoginOutcome::Denied => $this->failed(__('We could not sign you in with this account.')),
             LoginOutcome::MfaChallenge => redirect()->route('identity.two-factor.login'),
             LoginOutcome::LoggedIn => redirect()->intended($this->homeUrl()),
         };
@@ -114,8 +115,8 @@ class SocialAuthenticationController
     {
         $user = $this->currentUser($request);
 
-        if ($user === null) {
-            return $this->failed($request, __('Please log in before linking an account.'));
+        if (! $user instanceof Authenticatable) {
+            return $this->failed(__('Please log in before linking an account.'));
         }
 
         if (! $user instanceof Model) {
@@ -136,7 +137,7 @@ class SocialAuthenticationController
         return $this->providers->get($key) ?? abort(404);
     }
 
-    private function failed(Request $request, string $message): RedirectResponse
+    private function failed(string $message): RedirectResponse
     {
         return redirect()->route('identity.login')->withErrors(['social' => $message]);
     }

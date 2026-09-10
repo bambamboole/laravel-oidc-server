@@ -10,7 +10,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
 
-it('logs a user in with canonicalized credentials on the identity guard only and redirects home', function () {
+it('logs a user in with canonicalized credentials on the identity guard only and redirects home', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $response = $this->from('/realms/default/auth/login')->post(route('identity.login.store'), [
@@ -23,7 +23,7 @@ it('logs a user in with canonicalized credentials on the identity guard only and
     $this->assertGuest('web');
 });
 
-it('returns the JSON success response after login', function () {
+it('returns the JSON success response after login', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->postJson(route('identity.login.store'), [
@@ -34,7 +34,7 @@ it('returns the JSON success response after login', function () {
     $this->assertAuthenticatedAs($user, 'identity');
 });
 
-it('rejects invalid credentials with a validation error', function () {
+it('rejects invalid credentials with a validation error', function (): void {
     User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->from('/realms/default/auth/login')
@@ -45,7 +45,7 @@ it('rejects invalid credentials with a validation error', function () {
     $this->assertGuest('identity');
 });
 
-it('sets a remember cookie when remember is requested', function () {
+it('sets a remember cookie when remember is requested', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $response = $this->post(route('identity.login.store'), [
@@ -58,7 +58,7 @@ it('sets a remember cookie when remember is requested', function () {
     $response->assertCookie(auth()->guard('identity')->getRecallerName());
 });
 
-it('throttles repeated login attempts', function () {
+it('throttles repeated login attempts', function (): void {
     User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     foreach (range(1, 5) as $ignored) {
@@ -69,7 +69,7 @@ it('throttles repeated login attempts', function () {
         ->assertStatus(429);
 });
 
-it('records the pwd method on a successful password login', function () {
+it('records the pwd method on a successful password login', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->post(route('identity.login.store'), [
@@ -81,7 +81,7 @@ it('records the pwd method on a successful password login', function () {
     expect(session()->get('oidc.amr'))->toBe(['pwd']);
 });
 
-it('redirects identity-protected routes to the identity login even for a web-guard session', function () {
+it('redirects identity-protected routes to the identity login even for a web-guard session', function (): void {
     config(['oidc.auth.login_route' => 'identity.login']);
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 

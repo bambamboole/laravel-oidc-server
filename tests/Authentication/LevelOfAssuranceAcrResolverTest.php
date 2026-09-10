@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 
-it('reports one level for a single method and another for several', function () {
+it('reports one level for a single method and another for several', function (): void {
     $resolver = app(AcrResolver::class);
 
     expect($resolver->fromAmr([]))->toBeNull()
@@ -18,7 +18,7 @@ it('reports one level for a single method and another for several', function () 
         ->and($resolver->supported())->toBe(['1', '2']);
 });
 
-it('uses the realm acr_values mapping', function () {
+it('uses the realm acr_values mapping', function (): void {
     config(['oidc.auth.acr_values' => [
         'single_factor' => 'urn:example:loa:1',
         'multi_factor' => 'urn:example:loa:2',
@@ -31,7 +31,7 @@ it('uses the realm acr_values mapping', function () {
         ->and($resolver->supported())->toBe(['urn:example:loa:1', 'urn:example:loa:2']);
 });
 
-it('advertises a shared value once', function () {
+it('advertises a shared value once', function (): void {
     config(['oidc.auth.acr_values' => ['single_factor' => 'urn:mace:incommon:iap:silver', 'multi_factor' => 'urn:mace:incommon:iap:silver']]);
 
     expect(app(AcrResolver::class)->supported())->toBe(['urn:mace:incommon:iap:silver']);

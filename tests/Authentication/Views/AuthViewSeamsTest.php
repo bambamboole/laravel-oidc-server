@@ -23,50 +23,50 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
-it('renders every auth page through its package view seam', function () {
-    app()->bind(LoginView::class, fn () => new class implements LoginView
+it('renders every auth page through its package view seam', function (): void {
+    app()->bind(LoginView::class, fn (): LoginView => new class implements LoginView
     {
         public function respond(LoginPrompt $prompt, Request $request): Response
         {
             return response('login-view');
         }
     });
-    app()->bind(RegisterView::class, fn () => new class implements RegisterView
+    app()->bind(RegisterView::class, fn (): RegisterView => new class implements RegisterView
     {
         public function respond(Request $request): Response
         {
             return response('register-view');
         }
     });
-    app()->bind(PasswordResetRequestView::class, fn () => new class implements PasswordResetRequestView
+    app()->bind(PasswordResetRequestView::class, fn (): PasswordResetRequestView => new class implements PasswordResetRequestView
     {
         public function respond(PasswordResetRequestPrompt $prompt, Request $request): Response
         {
             return response('forgot-password-view');
         }
     });
-    app()->bind(PasswordResetView::class, fn () => new class implements PasswordResetView
+    app()->bind(PasswordResetView::class, fn (): PasswordResetView => new class implements PasswordResetView
     {
         public function respond(PasswordResetPrompt $prompt, Request $request): Response
         {
             return response('reset-password-view:'.$prompt->token);
         }
     });
-    app()->bind(EmailVerificationView::class, fn () => new class implements EmailVerificationView
+    app()->bind(EmailVerificationView::class, fn (): EmailVerificationView => new class implements EmailVerificationView
     {
         public function respond(EmailVerificationPrompt $prompt, Request $request): Response
         {
             return response('verify-email-view');
         }
     });
-    app()->bind(PasswordConfirmationView::class, fn () => new class implements PasswordConfirmationView
+    app()->bind(PasswordConfirmationView::class, fn (): PasswordConfirmationView => new class implements PasswordConfirmationView
     {
         public function respond(Request $request): Response
         {
             return response('confirm-password-view');
         }
     });
-    app()->bind(TwoFactorChallengeView::class, fn () => new class implements TwoFactorChallengeView
+    app()->bind(TwoFactorChallengeView::class, fn (): TwoFactorChallengeView => new class implements TwoFactorChallengeView
     {
         public function respond(TwoFactorChallengePrompt $prompt, Request $request): Response
         {

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 
-it('creates a session, records participants idempotently, revokes and notifies', function () {
+it('creates a session, records participants idempotently, revokes and notifies', function (): void {
     config(['oidc.session.absolute_lifetime' => 3600]);
     $registry = app(OidcSessionRepository::class);
 

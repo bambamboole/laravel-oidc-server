@@ -24,7 +24,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->withoutMiddleware(ValidateCsrfToken::class);
     fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
 
@@ -66,7 +66,7 @@ function refresh(TestCase $test, string $refreshToken, ?string $scope = null, mi
     ]));
 }
 
-it('reissues the login context claims on refresh without a fresh nonce', function () {
+it('reissues the login context claims on refresh without a fresh nonce', function (): void {
     $refreshToken = obtainRefreshToken($this, amr: ['pwd', 'otp'], idTokenClaims: ['groups' => ['admin']], accessTokenClaims: ['tier' => 'gold']);
 
     $response = refresh($this, $refreshToken)->assertOk();
@@ -81,7 +81,7 @@ it('reissues the login context claims on refresh without a fresh nonce', functio
         ->and($accessToken->claims()->get('tier'))->toBe('gold');
 });
 
-it('carries the sid claim and reruns the authorization-code trigger with the refresh grant type', function () {
+it('carries the sid claim and reruns the authorization-code trigger with the refresh grant type', function (): void {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
 
     app(AccessTokenPipeline::class)->register('authorization_code', function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
@@ -94,7 +94,7 @@ it('carries the sid claim and reruns the authorization-code trigger with the ref
         ->and(parseAccessToken($response->json('access_token'))->claims()->get('via'))->toBe('refresh_token');
 });
 
-it('rotates the refresh token and revokes the whole chain when a rotated-out token is reused', function () {
+it('rotates the refresh token and revokes the whole chain when a rotated-out token is reused', function (): void {
     $original = obtainRefreshToken($this);
 
     $rotated = refresh($this, $original)->assertOk();
@@ -109,7 +109,7 @@ it('rotates the refresh token and revokes the whole chain when a rotated-out tok
     refresh($this, $rotated->json('refresh_token'))->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 });
 
-it('narrows scopes on refresh and refuses escalation', function () {
+it('narrows scopes on refresh and refuses escalation', function (): void {
     $narrowed = refresh($this, obtainRefreshToken($this), scope: 'openid')->assertOk();
 
     expect(parseAccessToken((string) $narrowed->json('access_token'))->claims()->get('scope'))->toBe('openid')
@@ -120,7 +120,7 @@ it('narrows scopes on refresh and refuses escalation', function () {
         ->assertJsonPath('error', 'invalid_scope');
 });
 
-it('rejects a refresh token presented by another client', function () {
+it('rejects a refresh token presented by another client', function (): void {
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://o.test/cb']);
 
     refresh($this, obtainRefreshToken($this), client: $other)
@@ -128,21 +128,21 @@ it('rejects a refresh token presented by another client', function () {
         ->assertJsonPath('error', 'invalid_grant');
 });
 
-it('rejects an expired refresh token', function () {
+it('rejects an expired refresh token', function (): void {
     $refreshToken = obtainRefreshToken($this);
     RefreshToken::query()->whereKey($refreshToken)->update(['expires_at' => now()->subMinute()]);
 
     refresh($this, $refreshToken)->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 });
 
-it('denies refresh once the session absolute lifetime is exceeded', function () {
+it('denies refresh once the session absolute lifetime is exceeded', function (): void {
     $refreshToken = obtainRefreshToken($this);
     AuthenticationContext::query()->update(['expires_at' => now()->subMinute()]);
 
     refresh($this, $refreshToken)->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 });
 
-it('denies refresh after the session is revoked', function () {
+it('denies refresh after the session is revoked', function (): void {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
     $refreshToken = obtainRefreshToken($this, sid: $sid);
 

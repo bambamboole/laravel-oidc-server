@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 
-it('derives a JWK from a PEM public key', function () {
+it('derives a JWK from a PEM public key', function (): void {
     $jwk = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));
 
     expect($jwk)->toHaveKeys(['kty', 'use', 'alg', 'kid', 'n', 'e'])
@@ -19,7 +19,7 @@ it('derives a JWK from a PEM public key', function () {
         ->and($jwk['e'])->toBe('AQAB');
 });
 
-it('computes an RFC 7638 thumbprint as the kid', function () {
+it('computes an RFC 7638 thumbprint as the kid', function (): void {
     $jwk = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));
 
     $expected = rtrim(strtr(base64_encode(hash(
@@ -31,13 +31,13 @@ it('computes an RFC 7638 thumbprint as the kid', function () {
     expect($jwk['kid'])->toBe($expected);
 });
 
-it('derives the same JWK from a PKCS#1 public key', function () {
+it('derives the same JWK from a PKCS#1 public key', function (): void {
     $pkcs8 = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));
     $pkcs1 = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.pkcs1.key'));
 
     expect($pkcs1)->toBe($pkcs8);
 });
 
-it('rejects EC public keys', function () {
+it('rejects EC public keys', function (): void {
     Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/ec-public.key'));
 })->throws(RuntimeException::class, 'Only RSA public keys');

@@ -98,8 +98,13 @@ serves it locally.
 
 ## Testing
 
+The suite runs from the root of the
+[monorepo](https://github.com/bambamboole/laravel-oidc), which holds the single Composer
+install for all packages:
+
 ```bash
-composer check   # pint --test, phpstan (level 6), and the pest suite
+composer install
+composer check   # pint --test, phpstan (level 6), rector --dry-run, and the pest suite
 ```
 
 CI runs the suite on Laravel 13 on every push and pull request.

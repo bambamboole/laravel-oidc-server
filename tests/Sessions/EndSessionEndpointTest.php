@@ -19,7 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
     $this->client->forceFill(['post_logout_redirect_uris' => ['https://rp.test/logged-out']])->save();
@@ -37,7 +37,7 @@ function issueIdToken(TestCase $test, ?User $subject = null): string
     ));
 }
 
-it('logs out and redirects to a registered post_logout_redirect_uri', function () {
+it('logs out and redirects to a registered post_logout_redirect_uri', function (): void {
     $response = $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
         'id_token_hint' => issueIdToken($this),
         'post_logout_redirect_uri' => 'https://rp.test/logged-out',
@@ -48,7 +48,7 @@ it('logs out and redirects to a registered post_logout_redirect_uri', function (
     expect(auth('identity')->guest())->toBeTrue();
 });
 
-it('answers an Inertia logout request with a 409 + X-Inertia-Location instead of a redirect', function () {
+it('answers an Inertia logout request with a 409 + X-Inertia-Location instead of a redirect', function (): void {
     $response = $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
         'id_token_hint' => issueIdToken($this),
         'post_logout_redirect_uri' => 'https://rp.test/logged-out',
@@ -60,14 +60,14 @@ it('answers an Inertia logout request with a 409 + X-Inertia-Location instead of
     expect(auth('identity')->guest())->toBeTrue();
 });
 
-it('falls back to the configured redirect for unregistered uris', function () {
+it('falls back to the configured redirect for unregistered uris', function (): void {
     $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
         'id_token_hint' => issueIdToken($this),
         'post_logout_redirect_uri' => 'https://evil.test/phish',
     ]))->assertRedirect('/');
 });
 
-it('does not log out on a GET without a valid id_token_hint', function () {
+it('does not log out on a GET without a valid id_token_hint', function (): void {
     $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
         'id_token_hint' => 'garbage',
         'post_logout_redirect_uri' => 'https://rp.test/logged-out',
@@ -76,13 +76,13 @@ it('does not log out on a GET without a valid id_token_hint', function () {
     expect(auth('identity')->check())->toBeTrue();
 });
 
-it('does not log out on a parameterless GET', function () {
+it('does not log out on a parameterless GET', function (): void {
     $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout')->assertRedirect('/');
 
     expect(auth('identity')->check())->toBeTrue();
 });
 
-it('logs out on a POST without a valid id_token_hint', function () {
+it('logs out on a POST without a valid id_token_hint', function (): void {
     $this->withoutMiddleware(ValidateCsrfToken::class)
         ->actingAs($this->user, 'identity')
         ->post('/realms/default/oauth/logout')
@@ -91,7 +91,7 @@ it('logs out on a POST without a valid id_token_hint', function () {
     expect(auth('identity')->guest())->toBeTrue();
 });
 
-it('logs out on a GET with a valid id_token_hint', function () {
+it('logs out on a GET with a valid id_token_hint', function (): void {
     $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
         'id_token_hint' => issueIdToken($this),
     ]))->assertRedirect('/');
@@ -99,7 +99,7 @@ it('logs out on a GET with a valid id_token_hint', function () {
     expect(auth('identity')->guest())->toBeTrue();
 });
 
-it('does not log out when the hint sub does not match the current user', function () {
+it('does not log out when the hint sub does not match the current user', function (): void {
     $other = User::create(['name' => 'O', 'email' => 'o@example.com', 'password' => 'x']);
 
     $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
@@ -110,7 +110,7 @@ it('does not log out when the hint sub does not match the current user', functio
 });
 
 // §2 — client_id identifies the RP when no id_token_hint is given
-it('honours a post_logout_redirect_uri registered on the client named by client_id', function () {
+it('honours a post_logout_redirect_uri registered on the client named by client_id', function (): void {
     $this->withoutMiddleware(ValidateCsrfToken::class)
         ->actingAs($this->user, 'identity')
         ->post('/realms/default/oauth/logout', [
@@ -123,7 +123,7 @@ it('honours a post_logout_redirect_uri registered on the client named by client_
     expect(auth('identity')->guest())->toBeTrue();
 });
 
-it('falls back to the configured redirect when client_id names a client the uri is not registered on', function () {
+it('falls back to the configured redirect when client_id names a client the uri is not registered on', function (): void {
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
 
     $this->withoutMiddleware(ValidateCsrfToken::class)
@@ -137,7 +137,7 @@ it('falls back to the configured redirect when client_id names a client the uri 
     expect(auth('identity')->guest())->toBeTrue();
 });
 
-it('sends a signed-out browser on to the uri registered on the client named by client_id', function () {
+it('sends a signed-out browser on to the uri registered on the client named by client_id', function (): void {
     $this->get('/realms/default/oauth/logout?'.http_build_query([
         'client_id' => $this->client->client_id,
         'post_logout_redirect_uri' => 'https://rp.test/logged-out',
@@ -146,7 +146,7 @@ it('sends a signed-out browser on to the uri registered on the client named by c
 });
 
 // §2 — client_id and id_token_hint must agree
-it('rejects a client_id that is not in the audience of the id_token_hint', function () {
+it('rejects a client_id that is not in the audience of the id_token_hint', function (): void {
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
 
     $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
@@ -158,7 +158,7 @@ it('rejects a client_id that is not in the audience of the id_token_hint', funct
     expect(auth('identity')->check())->toBeTrue();
 });
 
-it('accepts a client_id matching the hint audience and ignores logout_hint and ui_locales', function () {
+it('accepts a client_id matching the hint audience and ignores logout_hint and ui_locales', function (): void {
     $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
         'id_token_hint' => issueIdToken($this),
         'client_id' => $this->client->client_id,
@@ -188,7 +188,7 @@ function bindLogoutConfirmationView(): void
 }
 
 // §6 — a GET without a verifiable hint asks the signed-in user; the confirmed POST performs the logout
-it('renders the confirmation view for a GET without a verifiable hint and logs out on the confirmed POST', function () {
+it('renders the confirmation view for a GET without a verifiable hint and logs out on the confirmed POST', function (): void {
     bindLogoutConfirmationView();
 
     $prompt = $this->actingAs($this->user, 'identity')->get('/realms/default/oauth/logout?'.http_build_query([
@@ -211,7 +211,7 @@ it('renders the confirmation view for a GET without a verifiable hint and logs o
     expect(auth('identity')->guest())->toBeTrue();
 });
 
-it('prompts the signed-in user instead of trusting a hint issued to somebody else', function () {
+it('prompts the signed-in user instead of trusting a hint issued to somebody else', function (): void {
     bindLogoutConfirmationView();
     $other = User::create(['name' => 'O', 'email' => 'o@example.com', 'password' => 'x']);
 
@@ -222,7 +222,7 @@ it('prompts the signed-in user instead of trusting a hint issued to somebody els
     expect(auth('identity')->check())->toBeTrue();
 });
 
-it('rejects a confirmation issued to another user or tampered with', function () {
+it('rejects a confirmation issued to another user or tampered with', function (): void {
     $other = User::create(['name' => 'O', 'email' => 'o@example.com', 'password' => 'x']);
     $foreign = app(LogoutConfirmation::class)->issue($other, 'https://rp.test/logged-out', null);
 
@@ -238,7 +238,7 @@ it('rejects a confirmation issued to another user or tampered with', function ()
     expect(auth('identity')->check())->toBeTrue();
 });
 
-it('rejects an expired confirmation', function () {
+it('rejects an expired confirmation', function (): void {
     $token = app(LogoutConfirmation::class)->issue($this->user, null, null);
 
     $this->travel(11)->minutes();

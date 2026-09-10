@@ -16,7 +16,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Workbench\App\Models\User;
 
-it('registers factor providers by stable key and aggregates enrollments', function () {
+it('registers factor providers by stable key and aggregates enrollments', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $provider = new class implements FactorProvider
     {
@@ -54,7 +54,7 @@ it('registers factor providers by stable key and aggregates enrollments', functi
         ->and($registry->challengeableEnrollments($user))->toHaveCount(1);
 });
 
-it('limits configured challengeable enrollments to the challenge providers config', function () {
+it('limits configured challengeable enrollments to the challenge providers config', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $registry = app(FactorRegistry::class);
     $factor = app(TotpFactorProvider::class)->enroll($user);
@@ -70,7 +70,7 @@ it('limits configured challengeable enrollments to the challenge providers confi
         ->toBe(['totp']);
 });
 
-it('reports whether a user has challengeable factors', function () {
+it('reports whether a user has challengeable factors', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $registry = app(FactorRegistry::class);
 
@@ -82,7 +82,7 @@ it('reports whether a user has challengeable factors', function () {
     expect($registry->hasChallengeableFactors($user))->toBeTrue();
 });
 
-it('collects enrollment options across providers in display order, leaving backup providers out', function () {
+it('collects enrollment options across providers in display order, leaving backup providers out', function (): void {
     $registry = app(FactorRegistry::class);
     $options = $registry->enrollmentOptions();
 
@@ -93,7 +93,7 @@ it('collects enrollment options across providers in display order, leaving backu
         ->and($registry->enrollmentOption('nope'))->toBeNull();
 });
 
-it('finds a confirmed enrollment by provider and id', function () {
+it('finds a confirmed enrollment by provider and id', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
@@ -104,7 +104,7 @@ it('finds a confirmed enrollment by provider and id', function () {
         ->and($found->providerKey)->toBe('totp');
 });
 
-it('returns null for an unknown provider, an unknown id, or another user', function () {
+it('returns null for an unknown provider, an unknown id, or another user', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $other = User::create(['name' => 'O', 'email' => 'o@example.com', 'password' => 'secret']);
     $factor = app(TotpFactorProvider::class)->enroll($user);
@@ -115,7 +115,7 @@ it('returns null for an unknown provider, an unknown id, or another user', funct
         ->and($registry->findEnrollment($other, 'totp', (string) $factor->getKey()))->toBeNull();
 });
 
-it('rejects duplicate factor provider keys', function () {
+it('rejects duplicate factor provider keys', function (): void {
     $registry = app(FactorRegistry::class);
     $provider = $registry->get('totp');
 

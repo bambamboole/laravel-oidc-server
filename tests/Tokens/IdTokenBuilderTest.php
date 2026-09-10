@@ -17,7 +17,7 @@ use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['app.url' => 'https://op.test']);
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 });
@@ -38,7 +38,7 @@ function makeIdTokenRequest(User $user, ?string $nonce = null, ?int $authTime = 
     );
 }
 
-it('builds a signed id_token with the required claims', function () {
+it('builds a signed id_token with the required claims', function (): void {
     $parsed = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user, nonce: 'n0nce', authTime: 1700000000)));
     $expectedAtHash = rtrim(strtr(base64_encode(substr(hash('sha256', 'access-token-jwt', true), 0, 16)), '+/', '-_'), '=');
 
@@ -57,7 +57,7 @@ it('builds a signed id_token with the required claims', function () {
         ->and((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
 });
 
-it('omits nonce, auth_time, amr and acr when they are not supplied', function () {
+it('omits nonce, auth_time, amr and acr when they are not supplied', function (): void {
     $parsed = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user)));
 
     expect($parsed->claims()->has('nonce'))->toBeFalse()
@@ -66,7 +66,7 @@ it('omits nonce, auth_time, amr and acr when they are not supplied', function ()
         ->and($parsed->claims()->has('acr'))->toBeFalse();
 });
 
-it('drops protocol claims a claims resolver tries to emit', function () {
+it('drops protocol claims a claims resolver tries to emit', function (): void {
     app()->instance(ClaimsResolver::class, new class implements ClaimsResolver
     {
         public function resolve(ClaimsRequest $request): array
@@ -84,7 +84,7 @@ it('drops protocol claims a claims resolver tries to emit', function () {
         ->and($parsed->claims()->get('tenant'))->toBe('acme');
 });
 
-it('emits amr and the acr the realm resolver derives from it', function () {
+it('emits amr and the acr the realm resolver derives from it', function (): void {
     $single = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user, amr: ['pwd'])));
     $multi = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user, amr: ['pwd', 'otp'])));
 

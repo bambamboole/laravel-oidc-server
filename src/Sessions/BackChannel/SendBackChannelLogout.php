@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Sessions\BackChannel;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Sessions\LogoutTokenBuilder;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -32,7 +33,7 @@ class SendBackChannelLogout implements ShouldQueue
         $session = $registry->find($this->sid);
         $client = Client::query()->find($this->clientKey);
 
-        if ($session === null || $client === null) {
+        if (! $session instanceof OidcSession || $client === null) {
             return;
         }
 

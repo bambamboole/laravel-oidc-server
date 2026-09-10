@@ -28,7 +28,7 @@ function decodeEnvKey(string $envContents, string $name): string
     return str_replace('\n', "\n", $m[1]);
 }
 
-it('writes a new keypair and the previous public key to .env', function () {
+it('writes a new keypair and the previous public key to .env', function (): void {
     $env = rotateKeysEnv();
     $currentKid = Jwk::fromPem(signingPublicKey())['kid'];
 
@@ -44,7 +44,7 @@ it('writes a new keypair and the previous public key to .env', function () {
         ->and(Jwk::fromPem($previousPublic)['kid'])->toBe($currentKid);
 });
 
-it('prints the env variables without touching .env when --print is given', function () {
+it('prints the env variables without touching .env when --print is given', function (): void {
     $env = rotateKeysEnv();
     $before = (string) file_get_contents($env);
 
@@ -56,7 +56,7 @@ it('prints the env variables without touching .env when --print is given', funct
     expect((string) file_get_contents($env))->toBe($before);
 });
 
-it('aborts without writing when the confirmation is declined', function () {
+it('aborts without writing when the confirmation is declined', function (): void {
     $env = rotateKeysEnv();
     $before = (string) file_get_contents($env);
 
@@ -67,7 +67,7 @@ it('aborts without writing when the confirmation is declined', function () {
     expect((string) file_get_contents($env))->toBe($before);
 });
 
-it('omits the previous key on a first-time generation with no current key', function () {
+it('omits the previous key on a first-time generation with no current key', function (): void {
     config(['oidc.keys.path' => temporaryTestDirectory('nokeys')]);
     $env = rotateKeysEnv();
 
@@ -79,7 +79,7 @@ it('omits the previous key on a first-time generation with no current key', func
         ->and($contents)->not->toContain('OIDC_PREVIOUS_PUBLIC_KEY=');
 });
 
-it('skips generation with --if-missing when keys already exist', function () {
+it('skips generation with --if-missing when keys already exist', function (): void {
     $env = rotateKeysEnv();
     $before = (string) file_get_contents($env);
 
@@ -90,7 +90,7 @@ it('skips generation with --if-missing when keys already exist', function () {
     expect((string) file_get_contents($env))->toBe($before);
 });
 
-it('generates without confirmation with --if-missing when no keys exist', function () {
+it('generates without confirmation with --if-missing when no keys exist', function (): void {
     config(['oidc.keys.path' => temporaryTestDirectory('nokeys-if-missing')]);
     $env = rotateKeysEnv();
 
@@ -99,7 +99,7 @@ it('generates without confirmation with --if-missing when no keys exist', functi
     expect((string) file_get_contents($env))->toContain('OIDC_PRIVATE_KEY=');
 });
 
-it('fails with the store error when rotation cannot persist', function () {
+it('fails with the store error when rotation cannot persist', function (): void {
     rotateKeysEnv();
     app()->instance(SigningKeyStore::class, new class implements SigningKeyStore
     {

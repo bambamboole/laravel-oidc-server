@@ -26,9 +26,9 @@ use Workbench\App\Models\User;
 /** Switches realms the way an application's host-derived resolver would. */
 function enterRealm(string $realm): void
 {
-    app()->instance(RealmResolver::class, new class($realm) implements RealmResolver
+    app()->instance(RealmResolver::class, new readonly class($realm) implements RealmResolver
     {
-        public function __construct(private readonly string $realm) {}
+        public function __construct(private string $realm) {}
 
         public function current(): Realm
         {
@@ -37,7 +37,7 @@ function enterRealm(string $realm): void
     });
 }
 
-it('does not resolve a client from another realm', function () {
+it('does not resolve a client from another realm', function (): void {
     enterRealm('acme');
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
@@ -49,7 +49,7 @@ it('does not resolve a client from another realm', function () {
         ->and(app(ClientRepository::class)->find($client->client_id))->toBeNull();
 });
 
-it('allows the same client_id in two realms', function () {
+it('allows the same client_id in two realms', function (): void {
     enterRealm('acme');
     $first = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
     $first->forceFill(['client_id' => 'shared-name'])->save();
@@ -65,7 +65,7 @@ it('allows the same client_id in two realms', function () {
     expect(app(ClientRepository::class)->findActive('shared-name')?->getKey())->toBe($first->getKey());
 });
 
-it('does not resolve an access token from another realm', function () {
+it('does not resolve an access token from another realm', function (): void {
     enterRealm('acme');
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
@@ -87,17 +87,17 @@ it('does not resolve an access token from another realm', function () {
     expect(AccessToken::query()->inRealm()->whereKey('token-in-acme')->exists())->toBeFalse();
 });
 
-it('keeps signing keys per realm', function () {
+it('keeps signing keys per realm', function (): void {
     $store = new DatabaseSigningKeyStore;
     app()->instance(SigningKeyStore::class, $store);
     app()->instance(SigningKeys::class, new StoredSigningKeys($store));
 
     enterRealm('acme');
-    $store->rotate((new SigningKeyGenerator($store, app(RealmResolver::class)))->generate());
+    $store->rotate(new SigningKeyGenerator($store, app(RealmResolver::class))->generate());
     $acmeKid = $store->signingKey()->kid();
 
     enterRealm('globex');
-    $store->rotate((new SigningKeyGenerator($store, app(RealmResolver::class)))->generate());
+    $store->rotate(new SigningKeyGenerator($store, app(RealmResolver::class))->generate());
     $globexKid = $store->signingKey()->kid();
 
     expect($globexKid)->not->toBe($acmeKid)
@@ -108,7 +108,7 @@ it('keeps signing keys per realm', function () {
     expect($store->signingKey()->kid())->toBe($acmeKid);
 });
 
-it('does not resolve a token through the inspector across realms', function () {
+it('does not resolve a token through the inspector across realms', function (): void {
     enterRealm('acme');
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
@@ -122,7 +122,7 @@ it('does not resolve a token through the inspector across realms', function () {
     expect(app(TokenInspector::class)->accessToken($jwt))->toBeNull();
 });
 
-it('does not resolve a refresh token from another realm', function () {
+it('does not resolve a refresh token from another realm', function (): void {
     enterRealm('acme');
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
@@ -138,7 +138,7 @@ it('does not resolve a refresh token from another realm', function () {
         ->and(app(PresentedTokenResolver::class)->resolve($value, 'refresh_token'))->toBeNull();
 });
 
-it('keeps social accounts per realm', function () {
+it('keeps social accounts per realm', function (): void {
     $socialUser = new SocialUser(
         id: 'g-123',
         email: 'm@example.com',
@@ -148,8 +148,6 @@ it('keeps social accounts per realm', function () {
         avatar: null,
         raw: ['sub' => 'g-123'],
         accessToken: 'at-1',
-        refreshToken: null,
-        expiresIn: null,
     );
 
     enterRealm('acme');
@@ -170,7 +168,7 @@ it('keeps social accounts per realm', function () {
         ->and(SocialAccount::query()->count())->toBe(2);
 });
 
-it('keeps consents per realm', function () {
+it('keeps consents per realm', function (): void {
     enterRealm('acme');
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);

@@ -24,6 +24,6 @@ final readonly class PendingAuthorizationRequest implements PendingAuthorization
     {
         $authorizeRequest = $this->session->peek($request);
 
-        return $authorizeRequest === null ? [] : $authorizeRequest->scopes;
+        return $authorizeRequest instanceof AuthorizeRequest ? $authorizeRequest->scopes : [];
     }
 }

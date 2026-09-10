@@ -29,7 +29,7 @@ function auditEvent(AuditEventType $type, array $context = []): AuditEvent
     );
 }
 
-it('logs failure events as warnings on the default channel', function () {
+it('logs failure events as warnings on the default channel', function (): void {
     $logger = Mockery::mock(LoggerInterface::class);
     $logger->expects('log')->withArgs(
         fn (string $level, string $message, array $context): bool => $level === 'warning'
@@ -45,7 +45,7 @@ it('logs failure events as warnings on the default channel', function () {
     (new LogAuditSink)->record(auditEvent(AuditEventType::LoginFailed, ['reason' => 'invalid_credentials']));
 });
 
-it('logs success events as info on the configured channel', function () {
+it('logs success events as info on the configured channel', function (): void {
     config()->set('oidc.audit.log_channel', 'audit');
 
     $logger = Mockery::mock(LoggerInterface::class);

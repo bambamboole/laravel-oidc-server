@@ -16,7 +16,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Bus::fake();
     $this->withoutMiddleware(ValidateCsrfToken::class);
     fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
@@ -26,7 +26,7 @@ beforeEach(function () {
     $this->client->forceFill(['backchannel_logout_uri' => 'https://rp.test/bclo'])->save();
 });
 
-it('revokes the session and notifies each participant once on RP-initiated logout', function () {
+it('revokes the session and notifies each participant once on RP-initiated logout', function (): void {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
     $this->actingAsIdentity($this->user, amr: ['pwd'], authTime: time() - 60)->withSession(['oidc.sid' => $sid]);
 
@@ -42,7 +42,7 @@ it('revokes the session and notifies each participant once on RP-initiated logou
     Bus::assertDispatched(SendBackChannelLogout::class, fn (SendBackChannelLogout $job): bool => $job->clientKey === (string) $this->client->getKey());
 });
 
-it('revokes the session started by a credential login when the user logs out', function () {
+it('revokes the session started by a credential login when the user logs out', function (): void {
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])->assertRedirect();
     $sid = session('oidc.sid');
 

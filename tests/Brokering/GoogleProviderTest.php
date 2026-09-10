@@ -6,7 +6,7 @@ use Bambamboole\LaravelOidc\Server\Brokering\GoogleProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
-it('is pinned to the Google issuer regardless of config', function () {
+it('is pinned to the Google issuer regardless of config', function (): void {
     Http::fake([
         'https://accounts.google.com/.well-known/openid-configuration' => Http::response([
             'issuer' => 'https://accounts.google.com',

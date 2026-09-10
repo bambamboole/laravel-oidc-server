@@ -21,7 +21,7 @@ function auditTestUser(): User
     return User::create(['name' => 'M', 'email' => 'audit@example.com', 'password' => Hash::make('password')]);
 }
 
-it('audits a successful password login with sid and amr', function () {
+it('audits a successful password login with sid and amr', function (): void {
     $sink = fakeAudit();
     $user = auditTestUser();
 
@@ -35,7 +35,7 @@ it('audits a successful password login with sid and amr', function () {
         ->and($event->ip)->not->toBeNull();
 });
 
-it('audits a login attempt with invalid credentials', function () {
+it('audits a login attempt with invalid credentials', function (): void {
     $sink = fakeAudit();
     auditTestUser();
 
@@ -47,7 +47,7 @@ it('audits a login attempt with invalid credentials', function () {
     $sink->assertNotRecorded(AuditEventType::LoginSucceeded);
 });
 
-it('audits a login denied by the postLogin policy', function () {
+it('audits a login denied by the postLogin policy', function (): void {
     $sink = fakeAudit();
     auditTestUser();
     app(PostLoginPipeline::class)->register(fn (LoginEvent $event, LoginApi $api) => $api->deny('blocked'));
@@ -59,7 +59,7 @@ it('audits a login denied by the postLogin policy', function () {
     $sink->assertNotRecorded(AuditEventType::LoginSucceeded);
 });
 
-it('audits a full mfa challenge round trip', function () {
+it('audits a full mfa challenge round trip', function (): void {
     $sink = fakeAudit();
     $user = auditTestUser();
     $factor = app(TotpFactorProvider::class)->enroll($user);
@@ -87,7 +87,7 @@ it('audits a full mfa challenge round trip', function () {
     $sink->assertNotRecorded(AuditEventType::RecoveryCodeUsed);
 });
 
-it('audits a recovery code login', function () {
+it('audits a recovery code login', function (): void {
     $sink = fakeAudit();
     $user = auditTestUser();
     $factor = app(TotpFactorProvider::class)->enroll($user);
@@ -103,7 +103,7 @@ it('audits a recovery code login', function () {
     $sink->assertRecorded(AuditEventType::MfaChallengeSucceeded, fn (AuditEvent $event): bool => $event->context['factor'] === 'recovery_code');
 });
 
-it('audits the factor enrollment lifecycle', function () {
+it('audits the factor enrollment lifecycle', function (): void {
     $sink = fakeAudit();
     $user = auditTestUser();
     $session = ['auth.password_confirmed_at' => time()];
@@ -133,7 +133,7 @@ it('audits the factor enrollment lifecycle', function () {
         && $event->context['enrollment_id'] === $enrollment['id']);
 });
 
-it('audits a registration', function () {
+it('audits a registration', function (): void {
     $sink = fakeAudit();
     createUsersUsing(fn (array $input): Authenticatable => User::create([
         'name' => $input['name'],
@@ -154,7 +154,7 @@ it('audits a registration', function () {
     $sink->assertRecorded(AuditEventType::LoginSucceeded);
 });
 
-it('audits a password reset', function () {
+it('audits a password reset', function (): void {
     $sink = fakeAudit();
     $user = auditTestUser();
     $broker = app('auth.password.broker');
@@ -178,7 +178,7 @@ it('audits a password reset', function () {
     $sink->assertRecorded(AuditEventType::PasswordReset, fn (AuditEvent $event): bool => $event->userId === (string) $user->getAuthIdentifier());
 });
 
-it('audits a logout with the sid still attached', function () {
+it('audits a logout with the sid still attached', function (): void {
     $sink = fakeAudit();
     $user = auditTestUser();
 

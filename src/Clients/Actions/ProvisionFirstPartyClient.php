@@ -8,9 +8,9 @@ use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningResult;
 use SensitiveParameter;
 
-final class ProvisionFirstPartyClient
+final readonly class ProvisionFirstPartyClient
 {
-    public function __construct(private readonly FirstPartyClientProvisioner $provisioner) {}
+    public function __construct(private FirstPartyClientProvisioner $provisioner) {}
 
     /**
      * @param  string[]  $redirectUris

@@ -20,7 +20,7 @@ function pruneTestSession(string $userId, DateTimeInterface $expiresAt, ?DateTim
     return $sid;
 }
 
-it('prunes sessions only once both expiry and logout notification are past the grace window', function () {
+it('prunes sessions only once both expiry and logout notification are past the grace window', function (): void {
     $unnotified = pruneTestSession('3', now()->subDays(2), null);
     $recentlyNotified = pruneTestSession('4', now()->subDays(2), now());
     $notified = pruneTestSession('5', now()->subDays(2), now()->subDays(2));

@@ -22,7 +22,7 @@ use Workbench\App\Models\User;
 
 const ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['oidc.scopes.catalog' => [
         'openid' => 'Authenticate',
         'orders:read' => 'Read orders',
@@ -59,7 +59,7 @@ function exchange(TestCase $test, array $parameters = [], array $subjectScopes =
     ]);
 }
 
-it('exchanges a reciprocal token for a narrowed, audience-scoped access token without an id_token', function () {
+it('exchanges a reciprocal token for a narrowed, audience-scoped access token without an id_token', function (): void {
     config(['app.url' => 'https://op.test']);
 
     $response = exchange($this, ['audience' => 'https://api.internal/orders', 'scope' => 'openid orders:read'])->assertOk();
@@ -78,7 +78,7 @@ it('exchanges a reciprocal token for a narrowed, audience-scoped access token wi
         ->and($at->claims()->get('act'))->toBe(['client_id' => $this->client->id]);
 });
 
-it('inherits the full subject scope set when scope is omitted', function () {
+it('inherits the full subject scope set when scope is omitted', function (): void {
     $response = exchange($this, ['audience' => 'https://api.internal/orders'])->assertOk();
 
     expect(explode(' ', (string) $response->json('scope')))->toEqualCanonicalizing(['openid', 'orders:read', 'orders:write'])
@@ -86,13 +86,13 @@ it('inherits the full subject scope set when scope is omitted', function () {
         ->toEqualCanonicalizing(['openid', 'orders:read', 'orders:write']);
 });
 
-it('accepts resource in place of audience', function () {
+it('accepts resource in place of audience', function (): void {
     $response = exchange($this, ['resource' => 'https://api.internal/orders'])->assertOk();
 
     expect(parseAccessToken((string) $response->json('access_token'))->claims()->get('aud'))->toBe(['https://api.internal/orders']);
 });
 
-it('rejects an unusable target with invalid_target', function (array $parameters) {
+it('rejects an unusable target with invalid_target', function (array $parameters): void {
     exchange($this, $parameters)->assertStatus(400)->assertJsonPath('error', 'invalid_target');
 })->with([
     'unlisted audience' => [['audience' => 'https://evil/api']],
@@ -100,7 +100,7 @@ it('rejects an unusable target with invalid_target', function (array $parameters
     'audience and resource disagree' => [['audience' => 'https://api.internal/orders', 'resource' => 'https://api.internal/invoices']],
 ]);
 
-it('rejects a malformed request with invalid_request', function (array $parameters) {
+it('rejects a malformed request with invalid_request', function (array $parameters): void {
     exchange($this, $parameters)->assertStatus(400)->assertJsonPath('error', 'invalid_request');
 })->with([
     'neither audience nor resource' => [[]],
@@ -108,7 +108,7 @@ it('rejects a malformed request with invalid_request', function (array $paramete
     'wrong subject_token_type' => [['audience' => 'https://api.internal/orders', 'subject_token_type' => 'urn:ietf:params:oauth:token-type:refresh_token']],
 ]);
 
-it('rejects a subject token that is expired, revoked or not bound to a user with invalid_grant', function (array $subject) {
+it('rejects a subject token that is expired, revoked or not bound to a user with invalid_grant', function (array $subject): void {
     $subjectToken = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid'], ...$subject);
 
     exchange($this, ['audience' => 'https://api.internal/orders'], subjectToken: $subjectToken)
@@ -121,7 +121,7 @@ it('rejects a subject token that is expired, revoked or not bound to a user with
     'userless' => [['userless' => true]],
 ]);
 
-it('rejects a public client unless it is trusted and registered for the grant', function (bool $trusted, bool $registered, int $status, ?string $error) {
+it('rejects a public client unless it is trusted and registered for the grant', function (bool $trusted, bool $registered, int $status, ?string $error): void {
     $public = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Mobile', ['https://rp.test/cb'], confidential: false);
     $public->forceFill([
         'grant_types' => $registered ? [...(array) $public->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT] : $public->getAttribute('grant_types'),
@@ -146,7 +146,7 @@ it('rejects a public client unless it is trusted and registered for the grant', 
     'trusted with the grant' => [true, true, 200, null],
 ]);
 
-it('runs the token-exchange trigger once with the finalized context and applies its claims', function () {
+it('runs the token-exchange trigger once with the finalized context and applies its claims', function (): void {
     $triggerCount = 0;
 
     app(AccessTokenPipeline::class)->register('token_exchange', function (TokenExchangeEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
@@ -167,7 +167,7 @@ it('runs the token-exchange trigger once with the finalized context and applies 
         ->and(parseAccessToken((string) $response->json('access_token'))->claims()->get('tenant'))->toBe('acme');
 });
 
-it('denies the exchange before persisting when a trigger denies', function () {
+it('denies the exchange before persisting when a trigger denies', function (): void {
     app(AccessTokenPipeline::class)->register('token_exchange', fn (TokenExchangeEvent $event, AccessTokenApi $api) => $api->deny('exchange_blocked'));
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
     $persisted = AccessToken::query()->count();
@@ -180,7 +180,7 @@ it('denies the exchange before persisting when a trigger denies', function () {
     expect(AccessToken::query()->count())->toBe($persisted);
 });
 
-it('keeps the package-owned actor chain when a trigger attempts to replace it', function () {
+it('keeps the package-owned actor chain when a trigger attempts to replace it', function (): void {
     $root = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
     $chained = app(TokenExchanger::class)->exchange($root, $this->client, 'https://api.internal/orders', ['orders:read'])->toString();
 
@@ -194,7 +194,7 @@ it('keeps the package-owned actor chain when a trigger attempts to replace it', 
     ]);
 });
 
-it('hands extension parameters to the exchange policy and its context to the trigger', function () {
+it('hands extension parameters to the exchange policy and its context to the trigger', function (): void {
     $policy = new class implements ExchangePolicy
     {
         public ?ExchangeRequest $request = null;

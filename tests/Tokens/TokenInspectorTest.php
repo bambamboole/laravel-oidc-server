@@ -27,7 +27,7 @@ function inspectorBase64Url(string $data): string
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
-it('validates tokens signed by a retained previous key and rejects keys that are neither current nor retained', function () {
+it('validates tokens signed by a retained previous key and rejects keys that are neither current nor retained', function (): void {
     $jwt = mintInspectorToken();
     $previousPublicKey = signingPublicKey();
 
@@ -46,7 +46,7 @@ it('validates tokens signed by a retained previous key and rejects keys that are
 });
 
 // RFC 9068 §4 — every path that accepts a token goes through parse(), so iss is checked once here
-it('rejects a token issued under another issuer even when signed with the realm key', function () {
+it('rejects a token issued under another issuer even when signed with the realm key', function (): void {
     config(['app.url' => 'https://op.test']);
     $jwt = mintInspectorToken();
 
@@ -55,7 +55,7 @@ it('rejects a token issued under another issuer even when signed with the realm 
     expect(app(TokenInspector::class)->parse($jwt))->toBeNull();
 });
 
-it('rejects an unsigned token with header alg none', function () {
+it('rejects an unsigned token with header alg none', function (): void {
     $jwt = inspectorBase64Url((string) json_encode(['typ' => 'at+jwt', 'alg' => 'none']))
         .'.'.inspectorBase64Url((string) json_encode(['jti' => 'forged', 'sub' => '1', 'exp' => time() + 3600]))
         .'.';
@@ -63,7 +63,7 @@ it('rejects an unsigned token with header alg none', function () {
     expect(app(TokenInspector::class)->parse($jwt))->toBeNull();
 });
 
-it('rejects an HS256 token signed with the server public key as the HMAC secret', function () {
+it('rejects an HS256 token signed with the server public key as the HMAC secret', function (): void {
     $header = inspectorBase64Url((string) json_encode(['typ' => 'at+jwt', 'alg' => 'HS256']));
     $payload = inspectorBase64Url((string) json_encode(['jti' => 'forged', 'sub' => '1', 'exp' => time() + 3600]));
     $signature = inspectorBase64Url(hash_hmac('sha256', $header.'.'.$payload, signingPublicKey(), true));

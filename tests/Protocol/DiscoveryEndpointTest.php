@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 
-it('serves a spec-compliant discovery document', function () {
+it('serves a spec-compliant discovery document', function (): void {
     config(['app.url' => 'https://op.test', 'oidc.issuer' => null]);
 
     $response = $this->getJson('/realms/default/.well-known/openid-configuration')
@@ -41,7 +41,7 @@ it('serves a spec-compliant discovery document', function () {
         ->and($response->json('claims_supported'))->toContain('acr', 'amr', 'sid');
 });
 
-it('builds the issuer and every endpoint from the configured issuer host, trimming a trailing slash', function () {
+it('builds the issuer and every endpoint from the configured issuer host, trimming a trailing slash', function (): void {
     config(['oidc.issuer' => 'https://id.example.com/', 'app.url' => 'https://app.internal']);
 
     $doc = $this->getJson('/realms/default/.well-known/openid-configuration')->assertOk();
@@ -54,7 +54,7 @@ it('builds the issuer and every endpoint from the configured issuer host, trimmi
 });
 
 // OIDC Discovery 1.0 §3 — acr_values_supported follows the realm mapping
-it('advertises the realm acr values', function () {
+it('advertises the realm acr values', function (): void {
     expect($this->getJson('/realms/default/.well-known/openid-configuration')->json('acr_values_supported'))->toBe(['1', '2']);
 
     config(['oidc.auth.acr_values' => ['single_factor' => 'urn:example:loa:1', 'multi_factor' => 'urn:example:loa:2']]);
@@ -63,7 +63,7 @@ it('advertises the realm acr values', function () {
         ->toBe(['urn:example:loa:1', 'urn:example:loa:2']);
 });
 
-it('advertises token exchange and dynamic registration only while enabled', function () {
+it('advertises token exchange and dynamic registration only while enabled', function (): void {
     $doc = $this->getJson('/realms/default/.well-known/openid-configuration')->assertOk();
 
     expect($doc->json('grant_types_supported'))->toContain(TestCase::TOKEN_EXCHANGE_GRANT)

@@ -35,17 +35,17 @@ function useDatabaseSigningKeys(): DatabaseSigningKeyStore
 function databaseStoreRotate(): SigningKeyPair
 {
     $store = useDatabaseSigningKeys();
-    $generated = (new SigningKeyGenerator($store, app(RealmResolver::class)))->generate();
+    $generated = new SigningKeyGenerator($store, app(RealmResolver::class))->generate();
     $store->rotate($generated);
 
     return new SigningKeyPair($generated->publicKeyPem, $generated->privateKeyPem, $generated->kid);
 }
 
-it('fails loud when no key has been generated yet', function () {
+it('fails loud when no key has been generated yet', function (): void {
     useDatabaseSigningKeys()->signingKey();
 })->throws(RuntimeException::class, 'oidc:rotate-keys');
 
-it('signs with the key stored by the last rotation', function () {
+it('signs with the key stored by the last rotation', function (): void {
     $generated = databaseStoreRotate();
 
     $key = useDatabaseSigningKeys()->signingKey();
@@ -55,7 +55,7 @@ it('signs with the key stored by the last rotation', function () {
         ->and($key->privateKey())->toBe($generated->privateKeyPem);
 });
 
-it('retires the previous key but keeps it for verification', function () {
+it('retires the previous key but keeps it for verification', function (): void {
     $first = databaseStoreRotate();
     $second = databaseStoreRotate();
 
@@ -66,7 +66,7 @@ it('retires the previous key but keeps it for verification', function () {
         ->toBe([$second->kid(), $first->kid()]);
 });
 
-it('stores the private key encrypted at rest', function () {
+it('stores the private key encrypted at rest', function (): void {
     $generated = databaseStoreRotate();
 
     $raw = DB::table('oidc_signing_keys')->where('kid', $generated->kid())->value('private_key');
@@ -76,7 +76,7 @@ it('stores the private key encrypted at rest', function () {
         ->toBe($generated->privateKeyPem);
 });
 
-it('serves every retained kid from the jwks endpoint', function () {
+it('serves every retained kid from the jwks endpoint', function (): void {
     $first = databaseStoreRotate();
     $second = databaseStoreRotate();
 
@@ -85,7 +85,7 @@ it('serves every retained kid from the jwks endpoint', function () {
     expect(array_column($response->json('keys'), 'kid'))->toBe([$second->kid(), $first->kid()]);
 });
 
-it('keeps tokens signed before a rotation verifiable', function () {
+it('keeps tokens signed before a rotation verifiable', function (): void {
     databaseStoreRotate();
     $beforeRotation = app(SigningKeys::class)->signingConfiguration();
     $kidBefore = app(SigningKeys::class)->signingKid();

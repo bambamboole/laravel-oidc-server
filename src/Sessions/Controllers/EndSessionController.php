@@ -61,7 +61,7 @@ class EndSessionController
         $user = $this->currentUser();
 
         if ($request->isMethod('post') && $request->filled('logout_confirmation')) {
-            $target = $user !== null ? $this->confirmation->verify((string) $request->input('logout_confirmation'), $user) : null;
+            $target = $user instanceof Authenticatable ? $this->confirmation->verify((string) $request->input('logout_confirmation'), $user) : null;
 
             if ($target === null) {
                 throw OAuthServerException::invalidRequest('The logout confirmation is invalid or has expired.');
@@ -72,13 +72,13 @@ class EndSessionController
             return $this->redirectAfterLogout($request, $target['redirect_uri'], $target['state']);
         }
 
-        if ($request->isMethod('post') || ($hint !== null && $this->hintNamesCurrentUser($hint, $user))) {
+        if ($request->isMethod('post') || ($hint instanceof Plain && $this->hintNamesCurrentUser($hint, $user))) {
             $this->logout($request);
 
             return $this->redirectAfterLogout($request, $redirectUri, $state);
         }
 
-        if ($user === null) {
+        if (! $user instanceof Authenticatable) {
             return $this->redirectAfterLogout($request, $redirectUri, $state);
         }
 
@@ -129,7 +129,7 @@ class EndSessionController
     /** A hint is proof for the signed-in user only; a signed-out browser has nobody it could contradict. */
     private function hintNamesCurrentUser(Plain $hint, ?Authenticatable $user): bool
     {
-        return $user === null || (string) $hint->claims()->get('sub') === (string) $user->getAuthIdentifier();
+        return ! $user instanceof Authenticatable || (string) $hint->claims()->get('sub') === (string) $user->getAuthIdentifier();
     }
 
     private function validatedHint(Request $request): ?Plain
@@ -142,7 +142,7 @@ class EndSessionController
 
         $token = $this->parser->parse($hint);
 
-        if ($token === null || ! (new Validator)->validate($token, new IssuedBy($this->issuer->url()))) {
+        if (! $token instanceof Plain || ! (new Validator)->validate($token, new IssuedBy($this->issuer->url()))) {
             return null;
         }
 
@@ -155,9 +155,9 @@ class EndSessionController
     private function relyingParty(Request $request, ?Plain $hint): ?Client
     {
         $clientId = $this->stringInput($request, 'client_id');
-        $audience = $hint !== null ? $this->audience($hint) : [];
+        $audience = $hint instanceof Plain ? $this->audience($hint) : [];
 
-        if ($hint !== null && $clientId !== null && ! in_array($clientId, $audience, true)) {
+        if ($hint instanceof Plain && $clientId !== null && ! in_array($clientId, $audience, true)) {
             throw OAuthServerException::invalidRequest('The client_id does not match the audience of the id_token_hint.');
         }
 
@@ -170,7 +170,7 @@ class EndSessionController
     {
         $uri = $this->stringInput($request, 'post_logout_redirect_uri');
 
-        if ($uri === null || $client === null) {
+        if ($uri === null || ! $client instanceof Client) {
             return null;
         }
 

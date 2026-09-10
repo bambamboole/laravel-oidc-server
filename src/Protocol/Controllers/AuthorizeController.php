@@ -86,7 +86,7 @@ class AuthorizeController
         $client = $this->clients->find($authRequest->clientId);
 
         if ($prompt->doesntContain('consent')
-            && $client !== null
+            && $client instanceof Client
             && ($client->skipsConsent() || $this->hasGrantedScopes($user, $client, $scopes))) {
             return $this->respondToInertia($request, $this->codes->approve($authRequest));
         }

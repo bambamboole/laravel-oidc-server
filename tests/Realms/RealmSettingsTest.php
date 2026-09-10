@@ -20,11 +20,11 @@ use Illuminate\Support\Facades\Route;
 /** A realm the way an application model would implement it: its own settings, the rest configured. */
 function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSettings $clients = null): Realm
 {
-    return new class($id, $tokens, $clients) implements Realm
+    return new readonly class($id, $tokens, $clients) implements Realm
     {
-        private readonly ConfiguredRealm $configured;
+        private ConfiguredRealm $configured;
 
-        public function __construct(string $id, private readonly ?TokenSettings $tokenSettings, private readonly ?ClientSettings $clientSettings)
+        public function __construct(string $id, private ?TokenSettings $tokenSettings, private ?ClientSettings $clientSettings)
         {
             $this->configured = new ConfiguredRealm($id);
         }
@@ -78,10 +78,10 @@ function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSet
 
 function bindRealms(Realm ...$realms): void
 {
-    app()->instance(RealmRepository::class, new class($realms) implements RealmRepository
+    app()->instance(RealmRepository::class, new readonly class($realms) implements RealmRepository
     {
         /** @param  list<Realm>  $realms */
-        public function __construct(private readonly array $realms) {}
+        public function __construct(private array $realms) {}
 
         public function find(string $id): ?Realm
         {
@@ -97,7 +97,7 @@ function bindRealms(Realm ...$realms): void
     app()->forgetInstance(RealmResolver::class);
 }
 
-it('issues tokens with the lifetime of the realm they are issued in', function () {
+it('issues tokens with the lifetime of the realm they are issued in', function (): void {
     config(['oidc.tokens.lifetimes.client_credentials' => 3600]);
     bindRealms(realmWithSettings('default'), realmWithSettings('short', new TokenSettings(clientCredentialsLifetime: 60)));
 
@@ -126,14 +126,14 @@ it('issues tokens with the lifetime of the realm they are issued in', function (
         ->and($expiresIn('short'))->toBeLessThanOrEqual(60);
 });
 
-it('answers 404 for a realm the repository does not know', function () {
+it('answers 404 for a realm the repository does not know', function (): void {
     bindRealms(realmWithSettings('default'));
 
     $this->get('/realms/ghost/.well-known/openid-configuration')->assertNotFound();
     $this->get('/realms/default/.well-known/openid-configuration')->assertOk();
 });
 
-it('advertises token exchange and registration per realm', function () {
+it('advertises token exchange and registration per realm', function (): void {
     bindRealms(
         realmWithSettings('default'),
         realmWithSettings('locked', clients: new ClientSettings(dynamicRegistration: false, tokenExchange: false)),

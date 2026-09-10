@@ -14,9 +14,9 @@ use SensitiveParameter;
 
 final readonly class FirstPartyClientProvisioner
 {
-    private const ProvisioningKey = 'first-party';
+    private const string ProvisioningKey = 'first-party';
 
-    private const TokenExchangeGrant = 'urn:ietf:params:oauth:grant-type:token-exchange';
+    private const string TokenExchangeGrant = 'urn:ietf:params:oauth:grant-type:token-exchange';
 
     public function __construct(
         private ClientRepository $clients,

@@ -7,7 +7,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Illuminate\Support\Facades\File;
 
-it('audits a dynamic client registration', function () {
+it('audits a dynamic client registration', function (): void {
     config(['oidc.clients.registration.enabled' => true]);
     reloadOidcRoutes();
     $sink = fakeAudit();
@@ -22,7 +22,7 @@ it('audits a dynamic client registration', function () {
         && $event->context['redirect_uris'] === ['https://mcp.test/callback']);
 });
 
-it('audits first party client provisioning and secret rotation', function () {
+it('audits first party client provisioning and secret rotation', function (): void {
     $sink = fakeAudit();
 
     $result = app(FirstPartyClientProvisioner::class)->provision(
@@ -44,7 +44,7 @@ it('audits first party client provisioning and secret rotation', function () {
         && $event->context['created'] === false);
 });
 
-it('audits a key rotation but not a print run', function () {
+it('audits a key rotation but not a print run', function (): void {
     $directory = temporaryTestDirectory('audit-rotate-keys');
     File::put($directory.'/.env', "APP_NAME=Testing\n");
     app()->useEnvironmentPath($directory);

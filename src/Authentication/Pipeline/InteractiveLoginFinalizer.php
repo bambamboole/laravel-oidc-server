@@ -26,18 +26,18 @@ use Illuminate\Support\Facades\Log;
  * password reset, passkey) must finalize through here — a path that calls
  * guard->login() directly bypasses the policy and leaves amr untracked.
  */
-final class InteractiveLoginFinalizer implements LoginFinalizer
+final readonly class InteractiveLoginFinalizer implements LoginFinalizer
 {
     use ResolvesIdentityGuard;
 
     public function __construct(
-        private readonly SecondFactorGate $secondFactor,
-        private readonly AuthSessionState $sessionState,
-        private readonly PostLoginPipeline $pipeline,
-        private readonly DeviceRecognizer $deviceRecognizer,
-        private readonly Auditor $auditor,
-        private readonly PendingAuthorization $pending,
-        private readonly ClientRepository $clients,
+        private SecondFactorGate $secondFactor,
+        private AuthSessionState $sessionState,
+        private PostLoginPipeline $pipeline,
+        private DeviceRecognizer $deviceRecognizer,
+        private Auditor $auditor,
+        private PendingAuthorization $pending,
+        private ClientRepository $clients,
     ) {}
 
     /** The active client behind the pending authorization request, if any. */

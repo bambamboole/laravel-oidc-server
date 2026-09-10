@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Illuminate\Support\Facades\Auth;
 use Workbench\App\Models\User;
 
-it('records auth_time and a sid without starting the session store on an identity-guard login', function () {
+it('records auth_time and a sid without starting the session store on an identity-guard login', function (): void {
     $session = app('session.store');
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 
@@ -24,7 +24,7 @@ it('records auth_time and a sid without starting the session store on an identit
         ->and(OidcSession::query()->where('user_id', (string) $user->id)->count())->toBe(1);
 });
 
-it('records nothing for one-off authentication or logins on another guard', function () {
+it('records nothing for one-off authentication or logins on another guard', function (): void {
     $session = app('session.store');
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 

@@ -18,10 +18,10 @@ function environmentFileFixture(string $contents): string
     return $path;
 }
 
-it('upserts an existing key and appends a new one in a single write', function () {
+it('upserts an existing key and appends a new one in a single write', function (): void {
     $path = environmentFileFixture("APP_NAME=Testing\nOIDC_FIRST_PARTY_CLIENT=stale\n");
 
-    (new EnvironmentFile($path))->write([
+    new EnvironmentFile($path)->write([
         'OIDC_FIRST_PARTY_CLIENT' => 'abc-123',
         'OIDC_FIRST_PARTY_TRUSTED' => 'true',
     ]);
@@ -34,23 +34,23 @@ it('upserts an existing key and appends a new one in a single write', function (
         ->and($contents)->toContain('APP_NAME=Testing');
 });
 
-it('replaces the target atomically, keeping its permissions and leaving no temp file behind', function () {
+it('replaces the target atomically, keeping its permissions and leaving no temp file behind', function (): void {
     $path = environmentFileFixture("APP_NAME=Testing\n");
     chmod($path, 0600);
 
-    (new EnvironmentFile($path))->write(['OIDC_PRIVATE_KEY' => 'secret']);
+    new EnvironmentFile($path)->write(['OIDC_PRIVATE_KEY' => 'secret']);
 
     expect(glob(dirname($path).'/*.tmp') ?: [])->toBe([])
         ->and(fileperms($path) & 0777)->toBe(0600)
         ->and((string) file_get_contents($path))->toContain('OIDC_PRIVATE_KEY=secret');
 });
 
-it('throws when the environment file cannot be read and reads null when it does not exist', function () {
-    expect((new EnvironmentFile('/nonexistent/dir/.env'))->value('APP_NAME'))->toBeNull()
-        ->and(fn () => (new EnvironmentFile('/nonexistent/dir/.env'))->write(['A' => 'b']))->toThrow(EnvironmentWriteException::class);
+it('throws when the environment file cannot be read and reads null when it does not exist', function (): void {
+    expect(new EnvironmentFile('/nonexistent/dir/.env')->value('APP_NAME'))->toBeNull()
+        ->and(fn () => new EnvironmentFile('/nonexistent/dir/.env')->write(['A' => 'b']))->toThrow(EnvironmentWriteException::class);
 });
 
-it('reads plain, quoted and commented values and returns null for empty or absent keys', function () {
+it('reads plain, quoted and commented values and returns null for empty or absent keys', function (): void {
     $path = environmentFileFixture(implode("\n", [
         'APP_NAME=Testing',
         "SINGLE='with spaces'",
@@ -70,7 +70,7 @@ it('reads plain, quoted and commented values and returns null for empty or absen
         ->and($store->value('MISSING'))->toBeNull();
 });
 
-it('round-trips multi-line values through encode() regardless of line endings', function () {
+it('round-trips multi-line values through encode() regardless of line endings', function (): void {
     $encoded = EnvironmentFile::encode("-----BEGIN X-----\nabc\n-----END X-----\n");
 
     expect($encoded)->toBe('"-----BEGIN X-----\nabc\n-----END X-----"')

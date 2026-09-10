@@ -18,7 +18,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->withoutMiddleware(ValidateCsrfToken::class);
     fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
 
@@ -51,7 +51,7 @@ function storedConsent(TestCase $test): ?Consent
     return app(ConsentRepository::class)->find((string) $test->user->id, $test->client);
 }
 
-it('records the approved scopes as a consent', function () {
+it('records the approved scopes as a consent', function (): void {
     $this->authorizeAndApprove($this->user, $this->client, 'openid email');
 
     expect(storedConsent($this))->not->toBeNull()
@@ -59,7 +59,7 @@ it('records the approved scopes as a consent', function () {
         ->and(storedConsent($this)?->revoked_at)->toBeNull();
 });
 
-it('does not record a consent when the user denies', function () {
+it('does not record a consent when the user denies', function (): void {
     $view = authorizeExpectingDecision($this)->assertOk();
 
     $this->delete(route('oidc.deny'), ['auth_token' => $view->json('authToken')])->assertRedirect();
@@ -67,7 +67,7 @@ it('does not record a consent when the user denies', function () {
     expect(storedConsent($this))->toBeNull();
 });
 
-it('skips the consent screen once the tokens it led to have expired', function () {
+it('skips the consent screen once the tokens it led to have expired', function (): void {
     $this->authorizeAndApprove($this->user, $this->client);
 
     AccessToken::query()->update(['expires_at' => now()->subHour()]);
@@ -75,7 +75,7 @@ it('skips the consent screen once the tokens it led to have expired', function (
     authorizeExpectingDecision($this)->assertRedirect();
 });
 
-it('keeps the consent when the tokens are revoked', function () {
+it('keeps the consent when the tokens are revoked', function (): void {
     $result = $this->authorizeAndApprove($this->user, $this->client);
 
     app(AccessTokenRevoker::class)->revoke((string) parseAccessToken($result->accessToken)->claims()->get('jti'));
@@ -85,7 +85,7 @@ it('keeps the consent when the tokens are revoked', function () {
     authorizeExpectingDecision($this)->assertRedirect();
 });
 
-it('shows the consent screen again after the consent was withdrawn', function () {
+it('shows the consent screen again after the consent was withdrawn', function (): void {
     $this->authorizeAndApprove($this->user, $this->client);
 
     app(ConsentRepository::class)->revoke((string) $this->user->id, $this->client);
@@ -94,7 +94,7 @@ it('shows the consent screen again after the consent was withdrawn', function ()
     expect(storedConsent($this)?->revoked_at)->not->toBeNull();
 });
 
-it('re-activates a withdrawn consent on the next approval', function () {
+it('re-activates a withdrawn consent on the next approval', function (): void {
     $this->authorizeAndApprove($this->user, $this->client);
     app(ConsentRepository::class)->revoke((string) $this->user->id, $this->client);
 
@@ -104,7 +104,7 @@ it('re-activates a withdrawn consent on the next approval', function () {
         ->and(storedConsent($this)?->revoked_at)->toBeNull();
 });
 
-it('asks again for a scope the consent does not cover and merges it in', function () {
+it('asks again for a scope the consent does not cover and merges it in', function (): void {
     $this->authorizeAndApprove($this->user, $this->client);
 
     authorizeExpectingDecision($this, 'openid email')->assertOk();
@@ -117,7 +117,7 @@ it('asks again for a scope the consent does not cover and merges it in', functio
     authorizeExpectingDecision($this, 'openid')->assertRedirect();
 });
 
-it('always shows the screen for prompt=consent', function () {
+it('always shows the screen for prompt=consent', function (): void {
     $this->authorizeAndApprove($this->user, $this->client);
 
     $this->actingAsIdentity($this->user, authTime: time() - 60)
@@ -134,7 +134,7 @@ it('always shows the screen for prompt=consent', function () {
         ->assertOk();
 });
 
-it('keeps consents per user', function () {
+it('keeps consents per user', function (): void {
     $this->authorizeAndApprove($this->user, $this->client);
 
     $this->user = User::create(['name' => 'N', 'email' => 'n@example.com', 'email_verified_at' => now(), 'password' => 'x']);
@@ -142,7 +142,7 @@ it('keeps consents per user', function () {
     authorizeExpectingDecision($this)->assertOk();
 });
 
-it('grants through the store idempotently', function () {
+it('grants through the store idempotently', function (): void {
     $store = app(ConsentStore::class);
     $userId = (string) $this->user->id;
     $clientKey = (string) $this->client->getKey();

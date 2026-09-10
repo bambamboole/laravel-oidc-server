@@ -12,11 +12,11 @@ use phpseclib3\Crypt\RSA;
 use phpseclib3\Crypt\RSA\PrivateKey;
 use Throwable;
 
-final class SigningKeyGenerator
+final readonly class SigningKeyGenerator
 {
     public function __construct(
-        private readonly SigningKeyStore $store,
-        private readonly RealmResolver $realms,
+        private SigningKeyStore $store,
+        private RealmResolver $realms,
     ) {}
 
     public function generate(): GeneratedSigningKeys

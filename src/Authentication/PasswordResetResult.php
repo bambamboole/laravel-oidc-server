@@ -19,6 +19,6 @@ final readonly class PasswordResetResult
 
     public function succeeded(): bool
     {
-        return $this->user !== null;
+        return $this->user instanceof Authenticatable;
     }
 }

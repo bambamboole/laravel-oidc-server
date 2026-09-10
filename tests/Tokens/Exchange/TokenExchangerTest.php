@@ -15,7 +15,7 @@ use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['app.url' => 'https://op.test']);
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->appClient = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
@@ -25,7 +25,7 @@ beforeEach(function () {
         ->toString();
 });
 
-it('exchanges the root token for an audience-scoped, narrowed token naming the actor', function () {
+it('exchanges the root token for an audience-scoped, narrowed token naming the actor', function (): void {
     $entity = app(TokenExchanger::class)->exchange($this->root, $this->appClient, 'https://api.orders.test', ['openid']);
 
     $parsed = parseAccessToken($entity->toString());
@@ -43,7 +43,7 @@ it('rejects an invalid exchange with the matching OAuth error type', function (
     string $audience,
     array $scopes,
     string $errorType,
-) {
+): void {
     expectExchangeDenied(
         fn () => app(TokenExchanger::class)->exchange($subjectToken ?? $this->root, $this->appClient, $audience, $scopes),
         $errorType,
@@ -54,7 +54,7 @@ it('rejects an invalid exchange with the matching OAuth error type', function (
     'invalid subject token' => ['garbage', 'https://api.orders.test', ['openid'], 'invalid_grant'],
 ]);
 
-it('nests the prior act claim on a chained exchange', function () {
+it('nests the prior act claim on a chained exchange', function (): void {
     $root = app(AccessTokenMinter::class)
         ->mint((string) $this->user->id, $this->appClient->client_id, ['openid'], new DateInterval('PT1H'), actor: ['client_id' => 'client-a'])
         ->toString();

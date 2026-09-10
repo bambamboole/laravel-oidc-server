@@ -19,7 +19,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class]);
     fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
 
@@ -78,7 +78,7 @@ function redirectParams(TestResponse $response): array
 }
 
 // RFC 6749 §4.1.2.1: the resource owner is informed, never redirected, and no client authentication is challenged.
-it('rejects an unknown or missing client without redirecting', function (?string $clientId) {
+it('rejects an unknown or missing client without redirecting', function (?string $clientId): void {
     authorizeWith($this, ['client_id' => $clientId])
         ->assertStatus(400)
         ->assertJsonPath('error', 'invalid_request')
@@ -86,13 +86,13 @@ it('rejects an unknown or missing client without redirecting', function (?string
 })->with(['unknown' => 'nope', 'missing' => null]);
 
 // OAuth 2.1 §4.1.3 / §7.5 — exact redirect-URI matching
-it('rejects a redirect_uri that is not an exact registered match without redirecting', function () {
+it('rejects a redirect_uri that is not an exact registered match without redirecting', function (): void {
     authorizeWith($this, ['redirect_uri' => 'https://rp.test/callback/extra'])
         ->assertStatus(400)
         ->assertJsonPath('error', 'invalid_request');
 });
 
-it('falls back to the single registered redirect_uri and requires one when several are registered', function () {
+it('falls back to the single registered redirect_uri and requires one when several are registered', function (): void {
     $view = authorizeWith($this, ['redirect_uri' => null])->assertOk();
     $approve = $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]);
 
@@ -106,7 +106,7 @@ it('falls back to the single registered redirect_uri and requires one when sever
 });
 
 // RFC 8252 §7.3
-it('accepts a loopback redirect_uri on any port', function () {
+it('accepts a loopback redirect_uri on any port', function (): void {
     $this->client->forceFill(['redirect_uris' => ['http://127.0.0.1:8080/cb']])->save();
 
     authorizeWith($this, ['redirect_uri' => 'http://127.0.0.1:53211/cb'])->assertOk();
@@ -114,7 +114,7 @@ it('accepts a loopback redirect_uri on any port', function () {
 });
 
 // OAuth 2.1 §4.1.1 / §7.6 — PKCE with S256 for every client
-it('rejects a missing code_challenge or the plain method on the redirect URI', function (array $overrides) {
+it('rejects a missing code_challenge or the plain method on the redirect URI', function (array $overrides): void {
     $params = redirectParams(authorizeWith($this, $overrides));
 
     expect($params['error'])->toBe('invalid_request')
@@ -124,7 +124,7 @@ it('rejects a missing code_challenge or the plain method on the redirect URI', f
     'plain method' => [['code_challenge_method' => 'plain']],
 ]);
 
-it('reports request errors to the client on the redirect URI with the state', function (array $overrides, string $error) {
+it('reports request errors to the client on the redirect URI with the state', function (array $overrides, string $error): void {
     $params = redirectParams(authorizeWith($this, $overrides));
 
     expect($params['error'])->toBe($error)
@@ -141,18 +141,18 @@ it('reports request errors to the client on the redirect URI with the state', fu
     'unverifiable id_token_hint' => [['id_token_hint' => 'not.a.jwt'], 'invalid_request'],
 ]);
 
-it('accepts response_mode=query', function () {
+it('accepts response_mode=query', function (): void {
     authorizeWith($this, ['response_mode' => 'query'])->assertOk();
 });
 
-it('reports a client without the authorization_code grant to the client', function () {
+it('reports a client without the authorization_code grant to the client', function (): void {
     $this->client->forceFill(['grant_types' => ['client_credentials']])->save();
 
     expect(redirectParams(authorizeWith($this, []))['error'])->toBe('unauthorized_client');
 });
 
 // RFC 6749 §4.1.2.1 — denial
-it('redirects a denied consent with access_denied and the state', function () {
+it('redirects a denied consent with access_denied and the state', function (): void {
     $view = authorizeWith($this, [])->assertOk();
 
     $params = redirectParams($this->delete('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]));
@@ -162,14 +162,14 @@ it('redirects a denied consent with access_denied and the state', function () {
         ->and($params)->not->toHaveKey('code');
 });
 
-it('refuses to complete a consent with a foreign auth token', function () {
+it('refuses to complete a consent with a foreign auth token', function (): void {
     authorizeWith($this, [])->assertOk();
 
     $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => 'forged'])->assertForbidden();
 });
 
 // OIDC Core §3.1.2.1 — GET and POST
-it('accepts the authorization request as a POST read from the body only', function () {
+it('accepts the authorization request as a POST read from the body only', function (): void {
     $view = $this->actingAsIdentity($this->user, authTime: time() - 60)
         ->post('/realms/default/oauth/authorize', authorizeParameters($this, []))
         ->assertOk();
@@ -183,7 +183,7 @@ it('accepts the authorization request as a POST read from the body only', functi
 });
 
 // OAuth 2.1 §4.1.1 / RFC 6749 §3.1 — duplicate parameters
-it('rejects duplicated parameters', function () {
+it('rejects duplicated parameters', function (): void {
     $params = redirectParams($this->actingAsIdentity($this->user, authTime: time() - 60)
         ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])).'&scope=openid'));
 
@@ -204,7 +204,7 @@ it('rejects duplicated parameters', function () {
 });
 
 // OIDC Core §3.1.2.1 — max_age
-it('forces re-authentication when the session is older than max_age', function (?int $authTime, string $maxAge) {
+it('forces re-authentication when the session is older than max_age', function (?int $authTime, string $maxAge): void {
     if ($authTime === null) {
         $this->actingAs($this->user, 'identity')
             ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, ['max_age' => $maxAge])))
@@ -220,12 +220,12 @@ it('forces re-authentication when the session is older than max_age', function (
     'no auth_time recorded' => [null, '300'],
 ]);
 
-it('proceeds when the session is fresh enough for max_age', function () {
+it('proceeds when the session is fresh enough for max_age', function (): void {
     authorizeWith($this, ['max_age' => '300'])->assertOk();
 });
 
 // OIDC Core §3.1.2.1 / §3.1.2.6 — prompt
-it('answers prompt=none without interaction', function (bool $authenticated, array $overrides, string $error) {
+it('answers prompt=none without interaction', function (bool $authenticated, array $overrides, string $error): void {
     $response = $authenticated
         ? authorizeWith($this, ['prompt' => 'none', ...$overrides])
         : authorizeAsGuest($this, ['prompt' => 'none', ...$overrides]);
@@ -241,7 +241,7 @@ it('answers prompt=none without interaction', function (bool $authenticated, arr
     'no prior consent' => [true, [], 'consent_required'],
 ]);
 
-it('forces re-authentication for prompt=login and prompt=select_account', function (string $prompt) {
+it('forces re-authentication for prompt=login and prompt=select_account', function (string $prompt): void {
     config(['oidc.auth.login_route' => 'identity.login']);
 
     authorizeWith($this, ['prompt' => $prompt])->assertRedirect(route('identity.login'));
@@ -250,7 +250,7 @@ it('forces re-authentication for prompt=login and prompt=select_account', functi
         ->and(session('oidc.prompted_for_login'))->toBeTrue();
 })->with(['login', 'select_account']);
 
-it('redirects a guest to the configured login route name or path', function (string $loginRoute, string $destination) {
+it('redirects a guest to the configured login route name or path', function (string $loginRoute, string $destination): void {
     config(['oidc.auth.login_route' => $loginRoute]);
 
     authorizeAsGuest($this)->assertRedirect($destination);
@@ -262,7 +262,7 @@ it('redirects a guest to the configured login route name or path', function (str
 ]);
 
 // OIDC Core §3.1.2.1 — id_token_hint
-it('answers login_required when the id_token_hint names another user and proceeds for the current one', function () {
+it('answers login_required when the id_token_hint names another user and proceeds for the current one', function (): void {
     $other = User::create(['name' => 'O', 'email' => 'o@example.com', 'email_verified_at' => now(), 'password' => 'x']);
     $foreignHint = $this->authorizeAndApprove($other, $this->client)->idToken;
 
@@ -278,7 +278,7 @@ it('answers login_required when the id_token_hint names another user and proceed
 });
 
 // RFC 9207 §2
-it('adds iss to code and error redirects', function () {
+it('adds iss to code and error redirects', function (): void {
     $view = authorizeWith($this, [])->assertOk();
 
     $success = redirectParams($this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]));
@@ -290,7 +290,7 @@ it('adds iss to code and error redirects', function () {
         ->and($error['iss'])->toBe(app(IssuerResolver::class)->url());
 });
 
-it('answers an Inertia request with 409 + X-Inertia-Location instead of an external redirect', function () {
+it('answers an Inertia request with 409 + X-Inertia-Location instead of an external redirect', function (): void {
     $view = authorizeWith($this, [])->assertOk();
 
     $approve = $this->post(route('oidc.approve'), ['auth_token' => $view->json('authToken')], ['X-Inertia' => 'true']);

@@ -68,7 +68,7 @@ class FactorEnrollmentController
         $enrollable = $this->enrollable($provider);
         $enrollment = $this->factors->findEnrollment($user, $provider, (string) $request->input('enrollment_id'));
 
-        if ($enrollment === null || ! ($this->confirmEnrollment)($user, $enrollable, $enrollment, $request->except('enrollment_id'))) {
+        if (! $enrollment instanceof FactorEnrollment || ! ($this->confirmEnrollment)($user, $enrollable, $enrollment, $request->except('enrollment_id'))) {
             throw ValidationException::withMessages(['code' => __('The provided two factor authentication code was invalid.')]);
         }
 
@@ -106,7 +106,7 @@ class FactorEnrollmentController
 
         $option = $this->factors->enrollmentOption($id);
 
-        if ($option === null || $option->providerKey !== $provider) {
+        if (! $option instanceof EnrollmentOption || $option->providerKey !== $provider) {
             throw ValidationException::withMessages(['option' => __('The selected enrollment option is invalid.')]);
         }
 

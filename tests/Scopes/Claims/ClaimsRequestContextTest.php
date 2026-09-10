@@ -46,7 +46,7 @@ function recordClaimsRequests(): ClaimsContextRecorder
 /** @param  list<string>  $scopes */
 function claimsContextIdToken(User $user, string $clientId, array $scopes): UnencryptedToken
 {
-    $parsed = (new Parser(new JoseEncoder))->parse(
+    $parsed = new Parser(new JoseEncoder)->parse(
         app(IdTokenBuilder::class)->build(new IdTokenRequest(
             userId: (string) $user->id,
             clientId: $clientId,
@@ -62,7 +62,7 @@ function claimsContextIdToken(User $user, string $clientId, array $scopes): Unen
     return $parsed;
 }
 
-it('hands the id_token builder the client, scopes and id_token audience', function () {
+it('hands the id_token builder the client, scopes and id_token audience', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $seen = recordClaimsRequests();
 
@@ -76,7 +76,7 @@ it('hands the id_token builder the client, scopes and id_token audience', functi
         ->and($parsed->claims()->get('seen_openid'))->toBeTrue();
 });
 
-it('hands userinfo the client, scopes and userinfo audience', function () {
+it('hands userinfo the client, scopes and userinfo audience', function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
     recordClaimsRequests();
@@ -90,7 +90,7 @@ it('hands userinfo the client, scopes and userinfo audience', function () {
         ->and($response->json('seen_client'))->toBe((string) $this->client->id);
 });
 
-it('lets a resolver emit different claims per client', function () {
+it('lets a resolver emit different claims per client', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
     app()->instance(ClaimsResolver::class, new class implements ClaimsResolver

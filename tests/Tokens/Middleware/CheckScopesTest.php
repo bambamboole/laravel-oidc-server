@@ -12,15 +12,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
-    Route::middleware(['auth:oidc', CheckScopes::using('openid')])->get('/probe/openid', fn () => ['id' => auth()->id()]);
-    Route::middleware(['auth:oidc', CheckScopes::using('admin')])->get('/probe/admin', fn () => ['id' => auth()->id()]);
+    Route::middleware(['auth:oidc', CheckScopes::using('openid')])->get('/probe/openid', fn (): array => ['id' => auth()->id()]);
+    Route::middleware(['auth:oidc', CheckScopes::using('admin')])->get('/probe/admin', fn (): array => ['id' => auth()->id()]);
 });
 
-it('passes a token that carries the required scope and forbids one that lacks it', function () {
+it('passes a token that carries the required scope and forbids one that lacks it', function (): void {
     $jwt = resourceServerBearer($this);
 
     $this->getJson('/probe/openid', ['Authorization' => "Bearer $jwt"])

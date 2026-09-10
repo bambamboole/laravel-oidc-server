@@ -39,7 +39,7 @@ class SocialAccountManager
     {
         $account = $this->findAccount($provider, $socialUser->id);
 
-        if ($account !== null) {
+        if ($account instanceof SocialAccount) {
             $this->sync($account, $socialUser);
 
             $user = $account->authenticatable;

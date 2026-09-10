@@ -15,11 +15,11 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 });
 
-it('authenticates on the identity guard and seeds the auth context session keys', function () {
+it('authenticates on the identity guard and seeds the auth context session keys', function (): void {
     $result = $this->actingAsIdentity(
         $this->user,
         idTokenClaims: ['locale' => 'de'],
@@ -36,7 +36,7 @@ it('authenticates on the identity guard and seeds the auth context session keys'
         ->and(session('oidc.access_token_claims'))->toBe(['tenant' => 't1']);
 });
 
-it('defaults auth_time to now and leaves optional context keys unset', function () {
+it('defaults auth_time to now and leaves optional context keys unset', function (): void {
     $this->actingAsIdentity($this->user);
 
     expect(session('oidc.auth_time'))->toBeGreaterThanOrEqual(time() - 5)
@@ -45,7 +45,7 @@ it('defaults auth_time to now and leaves optional context keys unset', function 
         ->and(session()->has('oidc.access_token_claims'))->toBeFalse();
 });
 
-it('creates an authorization-code grant client with sane defaults', function () {
+it('creates an authorization-code grant client with sane defaults', function (): void {
     $client = $this->createOidcClient();
 
     expect($client->exists)->toBeTrue()
@@ -54,21 +54,21 @@ it('creates an authorization-code grant client with sane defaults', function () 
         ->and($client->plainSecret)->toBeString();
 });
 
-it('configures a trusted first-party client', function () {
+it('configures a trusted first-party client', function (): void {
     $client = $this->withFirstPartyClient();
 
     expect(config('oidc.clients.first_party.client_id'))->toBe((string) $client->getKey())
         ->and(config('oidc.clients.first_party.trusted'))->toBeTrue();
 });
 
-it('generates an RFC 7636 S256 pkce pair', function () {
+it('generates an RFC 7636 S256 pkce pair', function (): void {
     $pair = $this->pkce();
 
     expect(strlen($pair->verifier))->toBe(64)
         ->and($pair->challenge)->toBe(rtrim(strtr(base64_encode(hash('sha256', $pair->verifier, true)), '+/', '-_'), '='));
 });
 
-it('mints a real signed access token with a persisted row', function () {
+it('mints a real signed access token with a persisted row', function (): void {
     $jwt = $this->issueTokenFor($this->user, scopes: ['openid', 'email'], audience: ['https://api.orders.test']);
 
     $token = app(TokenInspector::class)->accessToken($jwt);
@@ -86,7 +86,7 @@ it('mints a real signed access token with a persisted row', function () {
         ->assertJsonPath('sub', (string) $this->user->id);
 });
 
-it('drives the full authorize-approve-token dance, honoring parameter overrides and prior consent', function () {
+it('drives the full authorize-approve-token dance, honoring parameter overrides and prior consent', function (): void {
     $client = $this->createOidcClient();
 
     $result = $this->authorizeAndApprove($this->user, $client, scopes: 'openid email', params: ['nonce' => 'fixed-nonce']);
@@ -99,7 +99,7 @@ it('drives the full authorize-approve-token dance, honoring parameter overrides 
     expect($this->authorizeAndApprove($this->user, $client)->accessToken)->toBeString();
 });
 
-it('scopes the CSRF exemption to the authorizeAndApprove flow', function () {
+it('scopes the CSRF exemption to the authorizeAndApprove flow', function (): void {
     Route::post('/csrf-probe', fn () => response()->noContent())->middleware('web');
 
     // Both CSRF middlewares short-circuit under the `testing` env, so the probe only enforces
@@ -116,7 +116,7 @@ it('scopes the CSRF exemption to the authorizeAndApprove flow', function () {
     }
 });
 
-it('returns the raw token error response for a broken token leg', function () {
+it('returns the raw token error response for a broken token leg', function (): void {
     $confidential = $this->createOidcClient();
     $confidential->plainSecret = 'wrong-secret';
 

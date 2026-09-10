@@ -15,9 +15,9 @@ use SensitiveParameter;
  * failure; the failure is audited here so every caller reports it the
  * same way. Establishing the session is the caller's job.
  */
-final class AuthenticateWithPassword
+final readonly class AuthenticateWithPassword
 {
-    public function __construct(private readonly Auditor $auditor) {}
+    public function __construct(private Auditor $auditor) {}
 
     public function __invoke(
         UserProvider $users,

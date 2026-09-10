@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
@@ -48,7 +49,7 @@ final readonly class ClientCredentialsGrant implements Grant
         $requested = ScopeParameter::parse($request->input('scope')) ?? [];
 
         foreach ($requested as $scope) {
-            if ($scope !== '*' && $this->scopes->find($scope) === null) {
+            if ($scope !== '*' && ! $this->scopes->find($scope) instanceof Scope) {
                 throw OAuthServerException::invalidScope($scope);
             }
         }

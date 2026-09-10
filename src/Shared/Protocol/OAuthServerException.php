@@ -36,7 +36,7 @@ final class OAuthServerException extends HttpResponseException
         $headers = ['Cache-Control' => 'no-store', 'Pragma' => 'no-cache', ...$headers];
 
         parent::__construct(match (true) {
-            $redirectUri !== null => new RedirectResponse(self::appendQuery($redirectUri, array_filter([
+            $redirectUri !== null => new RedirectResponse($this->appendQuery($redirectUri, array_filter([
                 'error' => $error,
                 'error_description' => $description,
                 'state' => $state,
@@ -176,7 +176,7 @@ final class OAuthServerException extends HttpResponseException
      *
      * @param  array<string, string>  $parameters
      */
-    private static function appendQuery(string $uri, array $parameters): string
+    private function appendQuery(string $uri, array $parameters): string
     {
         return $uri.(str_contains($uri, '?') ? '&' : '?').http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);
     }

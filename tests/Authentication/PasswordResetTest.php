@@ -28,7 +28,7 @@ function resolvePasswordBroker(): PasswordBroker
     return $broker;
 }
 
-it('sends a password reset link through the Laravel broker', function () {
+it('sends a password reset link through the Laravel broker', function (): void {
     Notification::fake();
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
@@ -48,7 +48,7 @@ it('sends a password reset link through the Laravel broker', function () {
     );
 });
 
-it('resets a password through the package action seam and logs the user in', function () {
+it('resets a password through the package action seam and logs the user in', function (): void {
     Event::fake([PasswordReset::class]);
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
@@ -71,7 +71,7 @@ it('resets a password through the package action seam and logs the user in', fun
 });
 
 // `confirmed` is enforced by the request itself, ahead of the broker and the app's reset action.
-it('rejects a mismatched or missing password confirmation before reaching the reset action', function () {
+it('rejects a mismatched or missing password confirmation before reaching the reset action', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);
     $actionRan = false;
@@ -104,7 +104,7 @@ it('rejects a mismatched or missing password confirmation before reaching the re
 });
 
 // Rules beyond `confirmed` belong to the app's reset action; its ValidationException must surface, not 500.
-it('surfaces a validation error the reset action raises for its own password rules', function () {
+it('surfaces a validation error the reset action raises for its own password rules', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);
 
@@ -128,7 +128,7 @@ it('surfaces a validation error the reset action raises for its own password rul
     expect(Hash::check('old-password', (string) User::query()->findOrFail($user->getKey())->getAttribute('password')))->toBeTrue();
 });
 
-it('returns validation errors for an invalid reset token', function () {
+it('returns validation errors for an invalid reset token', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
 
     resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {

@@ -24,7 +24,7 @@ use Webauthn\PublicKeyCredential;
 use Webauthn\PublicKeyCredentialRequestOptions;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 });
 
@@ -91,7 +91,7 @@ function pendingChallenge(mixed $test, User $user, string $factor = 'totp', arra
     return $test->withSession(['login.id' => $user->getAuthIdentifier(), 'login.factor' => $factor, ...$extra]);
 }
 
-it('rejects invalid and replayed TOTP codes', function () {
+it('rejects invalid and replayed TOTP codes', function (): void {
     $secret = challengeEnrollTotp($this->user);
 
     pendingChallenge($this, $this->user)
@@ -111,7 +111,7 @@ it('rejects invalid and replayed TOTP codes', function () {
         ->assertSessionHasErrors('code');
 });
 
-it('rejects a recovery code that was already used', function () {
+it('rejects a recovery code that was already used', function (): void {
     challengeEnrollTotp($this->user);
     $recoveryCode = $this->user->recoveryCodes()->firstOrFail()->code;
 
@@ -126,14 +126,14 @@ it('rejects a recovery code that was already used', function () {
         ->assertSessionHasErrors('recovery_code');
 });
 
-it('redirects challenge and factor-switch requests without a pending login to the login page', function () {
+it('redirects challenge and factor-switch requests without a pending login to the login page', function (): void {
     $this->get(route('identity.two-factor.login'))->assertRedirect(route('identity.login'));
     $this->get(route('identity.two-factor.login.factor', ['provider' => 'totp']))->assertRedirect(route('identity.login'));
     $this->getJson(route('identity.two-factor.login.options'))->assertUnauthorized();
 });
 
-it('exposes the pending factor and the available factors on the challenge prompt', function () {
-    app()->bind(TwoFactorChallengeView::class, fn () => new class implements TwoFactorChallengeView
+it('exposes the pending factor and the available factors on the challenge prompt', function (): void {
+    app()->bind(TwoFactorChallengeView::class, fn (): TwoFactorChallengeView => new class implements TwoFactorChallengeView
     {
         public function respond(TwoFactorChallengePrompt $prompt, Request $request): Response
         {
@@ -151,7 +151,7 @@ it('exposes the pending factor and the available factors on the challenge prompt
         ->assertJsonPath('availableFactors.1.providerKey', 'webauthn');
 });
 
-it('switches the pending challenge to another enrolled factor and drops stale challenge state', function () {
+it('switches the pending challenge to another enrolled factor and drops stale challenge state', function (): void {
     challengeEnrollTotp($this->user);
     $passkey = challengeEnrollPasskey($this->user);
 
@@ -163,7 +163,7 @@ it('switches the pending challenge to another enrolled factor and drops stale ch
         ->assertSessionMissing('login.challenge_state');
 });
 
-it('switches to a specific enrollment and keeps the current one for an unknown id', function () {
+it('switches to a specific enrollment and keeps the current one for an unknown id', function (): void {
     $first = app(TotpFactorProvider::class)->enroll($this->user);
     $first->forceFill(['confirmed_at' => now()])->save();
     $second = app(TotpFactorProvider::class)->enroll($this->user, 'Second');
@@ -180,7 +180,7 @@ it('switches to a specific enrollment and keeps the current one for an unknown i
         ->assertSessionHas('login.factor_id', (string) $first->getKey());
 });
 
-it('ignores a switch to a provider without a challengeable enrollment', function (string $provider) {
+it('ignores a switch to a provider without a challengeable enrollment', function (string $provider): void {
     challengeEnrollTotp($this->user);
 
     pendingChallenge($this, $this->user)
@@ -189,7 +189,7 @@ it('ignores a switch to a provider without a challengeable enrollment', function
         ->assertSessionHas('login.factor', 'totp');
 })->with(['webauthn', 'recovery_code']);
 
-it('throttles repeated challenge attempts', function () {
+it('throttles repeated challenge attempts', function (): void {
     challengeEnrollTotp($this->user);
 
     foreach (range(1, 5) as $ignored) {
@@ -201,7 +201,7 @@ it('throttles repeated challenge attempts', function () {
         ->assertStatus(429);
 });
 
-it('issues WebAuthn options into private challenge state and rejects an assertion without them', function () {
+it('issues WebAuthn options into private challenge state and rejects an assertion without them', function (): void {
     $passkey = challengeEnrollPasskey($this->user);
     challengeVerifiesPasskey($passkey);
 
@@ -219,7 +219,7 @@ it('issues WebAuthn options into private challenge state and rejects an assertio
     expect(session('login.challenge_state'))->toBeArray()->toHaveKey('options');
 });
 
-it('accepts any of the user passkeys, not only the pinned enrollment', function () {
+it('accepts any of the user passkeys, not only the pinned enrollment', function (): void {
     $pinned = challengeEnrollPasskey($this->user);
     challengeVerifiesPasskey(challengeEnrollPasskey($this->user));
 
@@ -233,7 +233,7 @@ it('accepts any of the user passkeys, not only the pinned enrollment', function 
     $this->assertAuthenticatedAs($this->user, 'identity');
 });
 
-it('consumes the WebAuthn challenge state on a failed assertion', function () {
+it('consumes the WebAuthn challenge state on a failed assertion', function (): void {
     $passkey = challengeEnrollPasskey($this->user);
     challengeVerifiesPasskey(null);
 

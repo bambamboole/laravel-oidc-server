@@ -15,6 +15,7 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Traits\Macroable;
+use Lcobucci\JWT\Token\Plain;
 
 /**
  * Purpose-built `auth:oidc` guard: a self-contained RFC 9068 resource-server validator (signature,
@@ -55,7 +56,7 @@ class AccessTokenGuard implements Guard
 
         $token = $this->verifyBearerToken($jwt);
 
-        if ($token === null) {
+        if (! $token instanceof AccessToken) {
             return null;
         }
 
@@ -82,7 +83,7 @@ class AccessTokenGuard implements Guard
             return false;
         }
 
-        return (new self($this->inspector, $this->provider, $request))->user() !== null;
+        return new self($this->inspector, $this->provider, $request)->user() instanceof Authenticatable;
     }
 
     public function setRequest(Request $request): static
@@ -101,7 +102,7 @@ class AccessTokenGuard implements Guard
     {
         $parsed = $this->inspector->parse($jwt);
 
-        if ($parsed === null || $parsed->headers()->get('typ') !== 'at+jwt') {
+        if (! $parsed instanceof Plain || $parsed->headers()->get('typ') !== 'at+jwt') {
             return null;
         }
 
@@ -114,7 +115,7 @@ class AccessTokenGuard implements Guard
 
         $token = $this->inspector->tokenForParsed($parsed);
 
-        if ($token === null || $token->getAttribute('revoked')) {
+        if (! $token instanceof AccessToken || $token->getAttribute('revoked')) {
             return null;
         }
 
@@ -134,6 +135,6 @@ class AccessTokenGuard implements Guard
     /** @return list<string> */
     private function normalizeAudience(mixed $aud): array
     {
-        return array_values(array_filter(is_array($aud) ? $aud : [$aud], 'is_string'));
+        return array_values(array_filter(is_array($aud) ? $aud : [$aud], is_string(...)));
     }
 }

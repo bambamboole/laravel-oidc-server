@@ -46,7 +46,7 @@ function userProvider(): UserProvider
     return $guard->getProvider();
 }
 
-it('resolves an already linked account, refreshes its tokens and keeps them encrypted at rest', function () {
+it('resolves an already linked account, refreshes its tokens and keeps them encrypted at rest', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $manager = app(SocialAccountManager::class);
     $manager->link($user, 'google', socialUser(['accessToken' => 'old-at']));
@@ -61,7 +61,7 @@ it('resolves an already linked account, refreshes its tokens and keeps them encr
         ->and($stored->refresh_token)->not->toContain('rt-1');
 });
 
-it('links by verified email only while enabled', function () {
+it('links by verified email only while enabled', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $manager = app(SocialAccountManager::class);
 
@@ -77,7 +77,7 @@ it('links by verified email only while enabled', function () {
         ->and(SocialAccount::query()->where('provider', 'google')->where('provider_user_id', 'g-123')->exists())->toBeTrue();
 });
 
-it('provisions a new user through the registered action only while auto-provisioning is enabled', function () {
+it('provisions a new user through the registered action only while auto-provisioning is enabled', function (): void {
     $manager = app(SocialAccountManager::class);
 
     expect($manager->resolveUser('google', socialUser(), userProvider()))->toBeNull();
@@ -100,7 +100,7 @@ it('provisions a new user through the registered action only while auto-provisio
     $this->assertDatabaseHas('users', ['email' => 'm@example.com']);
 });
 
-it('preserves profile fields and the refresh token when a re-login omits them', function () {
+it('preserves profile fields and the refresh token when a re-login omits them', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $manager = app(SocialAccountManager::class);
     $manager->link($user, 'apple', socialUser([
@@ -127,7 +127,7 @@ it('preserves profile fields and the refresh token when a re-login omits them', 
         ->and($account->access_token)->toBe('at-2');
 });
 
-it('re-associates an existing link instead of duplicating it', function () {
+it('re-associates an existing link instead of duplicating it', function (): void {
     $userA = User::create(['name' => 'A', 'email' => 'a@example.com', 'password' => 'secret']);
     $userB = User::create(['name' => 'B', 'email' => 'b@example.com', 'password' => 'secret']);
     $manager = app(SocialAccountManager::class);

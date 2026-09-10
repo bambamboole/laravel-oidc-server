@@ -16,9 +16,9 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * ceremonies (webauthn) return their public options in the enrollment
  * metadata and complete through ConfirmFactorEnrollment.
  */
-final class EnrollFactor
+final readonly class EnrollFactor
 {
-    public function __construct(private readonly Auditor $auditor) {}
+    public function __construct(private Auditor $auditor) {}
 
     public function __invoke(
         Authenticatable $user,

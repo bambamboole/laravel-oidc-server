@@ -14,13 +14,7 @@ final class RedirectUri
      */
     public static function matches(string $requested, array $registered): bool
     {
-        foreach ($registered as $candidate) {
-            if (hash_equals($candidate, $requested) || self::loopbackMatches($requested, $candidate)) {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($registered, fn (string $candidate): bool => hash_equals($candidate, $requested) || self::loopbackMatches($requested, $candidate));
     }
 
     private static function loopbackMatches(string $requested, string $registered): bool

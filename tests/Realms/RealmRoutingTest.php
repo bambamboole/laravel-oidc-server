@@ -10,11 +10,11 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['oidc.issuer' => 'https://id.example.com']);
 });
 
-it('gives each realm its own issuer and realm-scoped endpoints', function () {
+it('gives each realm its own issuer and realm-scoped endpoints', function (): void {
     $acme = $this->getJson('/realms/acme/.well-known/openid-configuration')->assertOk()->json();
     $globex = $this->getJson('/realms/globex/.well-known/openid-configuration')->assertOk()->json();
 
@@ -25,14 +25,14 @@ it('gives each realm its own issuer and realm-scoped endpoints', function () {
         ->and($acme['jwks_uri'])->toBe('https://id.example.com/realms/acme/.well-known/jwks.json');
 });
 
-it('falls back to the configured realm outside a matched route', function () {
+it('falls back to the configured realm outside a matched route', function (): void {
     config(['oidc.realm' => 'fallback']);
 
     expect(app(RealmResolver::class)->current()->id())->toBe('fallback')
         ->and(app(IssuerResolver::class)->url())->toBe('https://id.example.com/realms/fallback');
 });
 
-it('scopes the session cookie to the realm path', function () {
+it('scopes the session cookie to the realm path', function (): void {
     $response = $this->get('/realms/acme/auth/login');
 
     $cookie = collect($response->headers->getCookies())
@@ -42,6 +42,6 @@ it('scopes the session cookie to the realm path', function () {
         ->and($cookie->getPath())->toBe('/realms/acme');
 });
 
-it('rejects a realm segment that would collide with the well-known paths', function () {
+it('rejects a realm segment that would collide with the well-known paths', function (): void {
     $this->getJson('/realms/a%2Fb/.well-known/openid-configuration')->assertNotFound();
 });

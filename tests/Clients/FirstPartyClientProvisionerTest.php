@@ -16,7 +16,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
 
-it('creates a confidential managed client and returns its plain secret once', function () {
+it('creates a confidential managed client and returns its plain secret once', function (): void {
     $result = app(FirstPartyClientProvisioner::class)->provision(
         name: 'First-party app',
         redirectUris: ['https://app.test/login/callback'],
@@ -37,7 +37,7 @@ it('creates a confidential managed client and returns its plain secret once', fu
         ->and($result->secretRotated)->toBeFalse();
 });
 
-it('reconciles the managed client without rotating its secret', function () {
+it('reconciles the managed client without rotating its secret', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('Old name', ['https://old.test/callback']);
     $storedSecret = $created->client->getRawOriginal('secret');
@@ -60,7 +60,7 @@ it('reconciles the managed client without rotating its secret', function () {
         ->and($result->secretRotated)->toBeFalse();
 });
 
-it('reconciles the managed client with a matching credential and returns the verified secret', function () {
+it('reconciles the managed client with a matching credential and returns the verified secret', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('Old name', ['https://old.test/callback']);
     $storedSecret = $created->client->getRawOriginal('secret');
@@ -83,7 +83,7 @@ it('reconciles the managed client with a matching credential and returns the ver
         ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token', TestCase::TOKEN_EXCHANGE_GRANT]);
 });
 
-it('rejects a mismatched managed client credential without mutating the client', function (string $existingClientSecret) {
+it('rejects a mismatched managed client credential without mutating the client', function (string $existingClientSecret): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('Original name', ['https://original.test/callback']);
     $originalAttributes = $created->client->getRawOriginal();
@@ -105,7 +105,7 @@ it('rejects a mismatched managed client credential without mutating the client',
     'empty secret' => '',
 ]);
 
-it('adopts an explicit eligible client and then rotates only when requested', function () {
+it('adopts an explicit eligible client and then rotates only when requested', function (): void {
     $existing = app(ClientRepository::class)
         ->createAuthorizationCodeGrantClient('Existing', ['https://existing.test/callback']);
     $oldHash = $existing->getRawOriginal('secret');
@@ -129,7 +129,7 @@ it('adopts an explicit eligible client and then rotates only when requested', fu
         ->and($rotated->client->getRawOriginal('secret'))->not->toBe($oldHash);
 });
 
-it('rejects a mismatched adoption credential without mutating the client', function () {
+it('rejects a mismatched adoption credential without mutating the client', function (): void {
     $existing = app(ClientRepository::class)
         ->createAuthorizationCodeGrantClient('Existing', ['https://existing.test/callback']);
     $originalAttributes = $existing->refresh()->getRawOriginal();
@@ -144,7 +144,7 @@ it('rejects a mismatched adoption credential without mutating the client', funct
     expect($existing->refresh()->getRawOriginal())->toBe($originalAttributes);
 });
 
-it('verifies the existing credential before rotating it', function () {
+it('verifies the existing credential before rotating it', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('Original name', ['https://original.test/callback']);
     $originalHash = $created->client->getRawOriginal('secret');
@@ -171,7 +171,7 @@ it('verifies the existing credential before rotating it', function () {
         ->and(Hash::check($rotated->clientSecret, (string) $rotated->client->getRawOriginal('secret')))->toBeTrue();
 });
 
-it('rejects unsafe adoption targets', function (Closure $mutate, string $message) {
+it('rejects unsafe adoption targets', function (Closure $mutate, string $message): void {
     $client = app(ClientRepository::class)
         ->createAuthorizationCodeGrantClient('Unsafe', ['https://unsafe.test/callback']);
     $mutate($client, User::create(['name' => 'Owner', 'email' => 'owner@example.com', 'password' => 'secret']));
@@ -187,7 +187,7 @@ it('rejects unsafe adoption targets', function (Closure $mutate, string $message
     'user-owned' => [fn (Client $client, User $owner) => $client->forceFill(['owner_type' => $owner::class, 'owner_id' => $owner->getKey()])->save(), 'must not be owned'],
 ]);
 
-it('rejects exchange audiences when token exchange is disabled', function () {
+it('rejects exchange audiences when token exchange is disabled', function (): void {
     config(['oidc.clients.token_exchange' => false]);
 
     expect(fn () => app(FirstPartyClientProvisioner::class)->provision(
@@ -199,7 +199,7 @@ it('rejects exchange audiences when token exchange is disabled', function () {
     expect(Client::query()->where('provisioning_key', 'first-party')->exists())->toBeFalse();
 });
 
-it('does not revoke existing tokens when rotating the client secret', function () {
+it('does not revoke existing tokens when rotating the client secret', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('First-party app', ['https://app.test/login/callback']);
     $token = AccessToken::query()->create([
@@ -225,7 +225,7 @@ it('rejects invalid provisioning input before writing', function (
     array $audiences,
     string $message,
     array $postLogoutRedirectUris = [],
-) {
+): void {
     expect(fn () => app(FirstPartyClientProvisioner::class)->provision(
         $name,
         $redirectUris,
@@ -246,7 +246,7 @@ it('rejects invalid provisioning input before writing', function (
     'audience non-http scheme' => ['App', ['https://app.test/callback'], ['mailto:orders@example.com'], 'HTTP(S) URL or a urn: identifier'],
 ]);
 
-it('accepts https and urn audience identifiers', function () {
+it('accepts https and urn audience identifiers', function (): void {
     $result = app(FirstPartyClientProvisioner::class)->provision(
         'First-party app',
         ['https://app.test/callback'],
@@ -257,7 +257,7 @@ it('accepts https and urn audience identifiers', function () {
         ->toBe(['urn:example:orders', 'https://api.test/orders']);
 });
 
-it('rejects adoption when another managed client already exists', function () {
+it('rejects adoption when another managed client already exists', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $managed = $provisioner->provision('Managed', ['https://managed.test/callback']);
     $other = app(ClientRepository::class)
@@ -273,7 +273,7 @@ it('rejects adoption when another managed client already exists', function () {
         ->and($other->refresh()->getRawOriginal('provisioning_key'))->toBeNull();
 });
 
-it('normalizes metadata and removes exchange capability when audiences become empty', function () {
+it('normalizes metadata and removes exchange capability when audiences become empty', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $provisioner->provision(
         ' First-party app ',
@@ -300,7 +300,7 @@ it('normalizes metadata and removes exchange capability when audiences become em
         ->and(json_decode((string) $result->client->getRawOriginal('allowed_exchange_audiences'), true, flags: JSON_THROW_ON_ERROR))->toBe([]);
 });
 
-it('rolls back a created client by deleting it, never an adopted or reconciled one', function () {
+it('rolls back a created client by deleting it, never an adopted or reconciled one', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('First-party app', ['https://app.test/login/callback']);
 

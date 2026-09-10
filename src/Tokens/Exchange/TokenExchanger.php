@@ -12,12 +12,15 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\TokenExchangeEvent;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use DateInterval;
 use DateTimeImmutable;
 use DateTimeInterface;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Lcobucci\JWT\Token\Plain;
 
 class TokenExchanger
 {
@@ -48,9 +51,9 @@ class TokenExchanger
         array $parameters = [],
     ): MintedAccessToken {
         $parsed = $this->inspector->parse($subjectToken);
-        $dbToken = $parsed !== null ? $this->inspector->tokenForParsed($parsed) : null;
+        $dbToken = $parsed instanceof Plain ? $this->inspector->tokenForParsed($parsed) : null;
 
-        if ($parsed === null || $dbToken === null || (bool) $dbToken->getAttribute('revoked')) {
+        if (! $parsed instanceof Plain || ! $dbToken instanceof AccessToken || (bool) $dbToken->getAttribute('revoked')) {
             $this->deny($requestingClient, 'subject_token_invalid', 'The subject token is invalid.');
         }
 
@@ -83,7 +86,7 @@ class TokenExchanger
 
         $user = $this->resolveUser($result->userId);
 
-        if ($user === null) {
+        if (! $user instanceof Authenticatable) {
             $this->deny($requestingClient, 'subject_user_missing', 'The subject token user no longer exists.');
         }
 

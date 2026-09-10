@@ -11,7 +11,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
-it('omits providers without credentials and resolves configured ones', function () {
+it('omits providers without credentials and resolves configured ones', function (): void {
     config()->set('oidc.social.providers.google.client_id', 'g-client');
     config()->set('oidc.social.providers.google.client_secret', 'g-secret');
 
@@ -23,7 +23,7 @@ it('omits providers without credentials and resolves configured ones', function 
         ->and(array_keys($registry->enabled()))->toBe(['google']);
 });
 
-it('resolves the generic oidc driver from config', function () {
+it('resolves the generic oidc driver from config', function (): void {
     config()->set('oidc.social.providers.corp', [
         'driver' => 'oidc',
         'issuer' => 'https://idp.test',
@@ -34,12 +34,12 @@ it('resolves the generic oidc driver from config', function () {
     expect(app(SocialProviderRegistry::class)->get('corp'))->toBeInstanceOf(GenericOidcProvider::class);
 });
 
-it('supports custom drivers via extend', function () {
+it('supports custom drivers via extend', function (): void {
     config()->set('oidc.social.providers.custom', ['driver' => 'my-driver', 'client_id' => 'x']);
 
-    app(SocialProviderRegistry::class)->extend('my-driver', fn (string $key, array $config): SocialProvider => new class($key) implements SocialProvider
+    app(SocialProviderRegistry::class)->extend('my-driver', fn (string $key, array $config): SocialProvider => new readonly class($key) implements SocialProvider
     {
-        public function __construct(private readonly string $key) {}
+        public function __construct(private string $key) {}
 
         public function key(): string
         {

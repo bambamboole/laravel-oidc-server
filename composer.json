@@ -33,25 +33,9 @@
         "phpseclib/phpseclib": "^3.0.15",
         "pragmarx/google2fa": "^9.0"
     },
-    "require-dev": {
-        "larastan/larastan": "^3.0",
-        "laravel/boost": "^2.6",
-        "laravel/pint": "^1.16",
-        "mockery/mockery": "^1.6",
-        "orchestra/testbench": "^11.0",
-        "pestphp/pest": "^5.0",
-        "pestphp/pest-plugin-laravel": "^5.0",
-        "pestphp/pest-plugin-phpstan": "^5.0"
-    },
     "autoload": {
         "psr-4": {
             "Bambamboole\\LaravelOidc\\Server\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "Bambamboole\\LaravelOidc\\Server\\Tests\\": "tests/",
-            "Workbench\\App\\": "workbench/app/"
         }
     },
     "homepage": "https://github.com/bambamboole/laravel-oidc-server",
@@ -66,30 +50,8 @@
             ]
         }
     },
-    "scripts": {
-        "analyse": "./vendor/bin/phpstan analyse",
-        "check": [
-            "@test:lint",
-            "@analyse",
-            "@test"
-        ],
-        "lint": "./vendor/bin/pint",
-        "test:lint": "./vendor/bin/pint --test",
-        "test": "./vendor/bin/pest",
-        "post-autoload-dump": [
-            "@clear",
-            "@prepare"
-        ],
-        "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
-        "prepare": "@php vendor/bin/testbench package:discover --ansi",
-        "boost:refresh": "@php vendor/bin/testbench boost:update --no-interaction"
-    },
     "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true,
-            "php-http/discovery": true
-        }
+        "sort-packages": true
     },
     "minimum-stability": "stable",
     "prefer-stable": true

@@ -24,7 +24,7 @@ use Webauthn\PublicKeyCredential;
 use Webauthn\PublicKeyCredentialCreationOptions;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 });
 
@@ -66,7 +66,7 @@ function webauthnAttestationPayload(): array
 
     $authData = str_repeat("\x00", 32).chr(0x41).pack('N', 0)
         .str_repeat("\x00", 16).pack('n', 4).'cred'
-        .(string) $coseKey;
+        .$coseKey;
 
     $attestationObject = (string) MapObject::create()
         ->add(TextStringObject::create('fmt'), TextStringObject::create('none'))
@@ -87,7 +87,7 @@ function webauthnAttestationPayload(): array
     ];
 }
 
-it('enrolls and confirms a TOTP factor, storing the secret encrypted and backfilling recovery codes', function () {
+it('enrolls and confirms a TOTP factor, storing the secret encrypted and backfilling recovery codes', function (): void {
     $enrollment = enrolling($this)
         ->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))
         ->assertCreated()
@@ -121,7 +121,7 @@ it('enrolls and confirms a TOTP factor, storing the secret encrypted and backfil
         ->and($this->user->recoveryCodes()->count())->toBe(8);
 });
 
-it('returns the existing pending enrollment instead of stacking rows, but starts a fresh one beside a confirmed factor', function () {
+it('returns the existing pending enrollment instead of stacking rows, but starts a fresh one beside a confirmed factor', function (): void {
     $first = enrolling($this)->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))->json();
     $second = enrolling($this)->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))->assertCreated()->json();
 
@@ -137,7 +137,7 @@ it('returns the existing pending enrollment instead of stacking rows, but starts
         ->and($third['id'])->not->toBe($first['id']);
 });
 
-it('lists enrollments across providers, regenerates recovery codes and revokes factors', function () {
+it('lists enrollments across providers, regenerates recovery codes and revokes factors', function (): void {
     $enrollmentId = enrollConfirmedTotp($this);
     $originalCodes = $this->user->recoveryCodes()->pluck('code')->all();
 
@@ -163,7 +163,7 @@ it('lists enrollments across providers, regenerates recovery codes and revokes f
         ->and($this->user->recoveryCodes()->count())->toBe(0);
 });
 
-it('requires authentication and a recent password confirmation', function () {
+it('requires authentication and a recent password confirmation', function (): void {
     $this->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))->assertUnauthorized();
 
     $this->actingAs($this->user, 'identity')
@@ -173,7 +173,7 @@ it('requires authentication and a recent password confirmation', function () {
     expect($this->user->totpFactors()->exists())->toBeFalse();
 });
 
-it('returns 404 for an unknown provider and rejects an option that belongs to another provider', function () {
+it('returns 404 for an unknown provider and rejects an option that belongs to another provider', function (): void {
     enrolling($this)->postJson(route('identity.two-factor.enroll', ['provider' => 'sms']))->assertNotFound();
 
     enrolling($this)
@@ -184,7 +184,7 @@ it('returns 404 for an unknown provider and rejects an option that belongs to an
     expect($this->user->totpFactors()->count())->toBe(0);
 });
 
-it('removes provider-owned factors when the authenticatable is deleted', function () {
+it('removes provider-owned factors when the authenticatable is deleted', function (): void {
     enrollConfirmedTotp($this);
 
     $this->user->delete();
@@ -193,7 +193,7 @@ it('removes provider-owned factors when the authenticatable is deleted', functio
         ->and(DB::table('oidc_recovery_codes')->count())->toBe(0);
 });
 
-it('enrolls a passkey through the generic webauthn ceremony', function () {
+it('enrolls a passkey through the generic webauthn ceremony', function (): void {
     config(['passkeys.user_handle_secret' => 'user-handle-secret']);
 
     // The attestation validation itself belongs to laravel/passkeys; stub the
@@ -247,7 +247,7 @@ it('enrolls a passkey through the generic webauthn ceremony', function () {
     expect($this->user->passkeys()->count())->toBe(0);
 });
 
-it('asks the browser for the authenticator the chosen option names', function () {
+it('asks the browser for the authenticator the chosen option names', function (): void {
     config(['passkeys.user_handle_secret' => 'user-handle-secret']);
 
     $securityKey = enrolling($this)

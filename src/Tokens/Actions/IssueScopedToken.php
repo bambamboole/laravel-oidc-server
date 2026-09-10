@@ -15,13 +15,13 @@ use RuntimeException;
  * Exchange the current user's session root token for an access token scoped
  * to one audience, on behalf of the first-party client (RFC 8693).
  */
-final class IssueScopedToken
+final readonly class IssueScopedToken
 {
     public function __construct(
-        private readonly ClientRepository $clients,
-        private readonly SessionTokenProvider $sessionTokens,
-        private readonly FirstPartyClientConfig $firstParty,
-        private readonly TokenExchanger $exchanger,
+        private ClientRepository $clients,
+        private SessionTokenProvider $sessionTokens,
+        private FirstPartyClientConfig $firstParty,
+        private TokenExchanger $exchanger,
     ) {}
 
     /**

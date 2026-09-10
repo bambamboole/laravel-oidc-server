@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Http;
 
 beforeEach(fn () => Http::fake());
 
-it('posts a logout_token to the client backchannel_logout_uri', function () {
+it('posts a logout_token to the client backchannel_logout_uri', function (): void {
     $sid = app(OidcSessionRepository::class)->start('9');
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
     $client->forceFill(['backchannel_logout_uri' => 'https://rp.test/bclo'])->save();
@@ -26,7 +26,7 @@ it('posts a logout_token to the client backchannel_logout_uri', function () {
         && $request['logout_token'] !== '');
 });
 
-it('sends nothing when the session, the client or its backchannel_logout_uri is missing', function (string $case) {
+it('sends nothing when the session, the client or its backchannel_logout_uri is missing', function (string $case): void {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
     $sid = app(OidcSessionRepository::class)->start('9');
 

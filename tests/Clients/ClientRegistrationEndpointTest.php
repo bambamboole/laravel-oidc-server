@@ -26,11 +26,11 @@ function enableDynamicClientRegistration(array $overrides = []): void
     reloadOidcRoutes();
 }
 
-it('answers 404 while dynamic registration is disabled for the realm', function () {
+it('answers 404 while dynamic registration is disabled for the realm', function (): void {
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://rp.test/cb']])->assertNotFound();
 });
 
-it('registers a public client and returns the RFC 7591 response', function () {
+it('registers a public client and returns the RFC 7591 response', function (): void {
     enableDynamicClientRegistration();
 
     $response = $this->postJson('/realms/default/oauth/register', [
@@ -58,7 +58,7 @@ it('registers a public client and returns the RFC 7591 response', function () {
         ->assertJsonPath('client_name', 'agent.test');
 });
 
-it('restricts the registered client to the configured default scopes', function () {
+it('restricts the registered client to the configured default scopes', function (): void {
     enableDynamicClientRegistration(['default_scopes' => ['mcp:use', 'openid']]);
 
     $response = $this->postJson('/realms/default/oauth/register', [
@@ -69,7 +69,7 @@ it('restricts the registered client to the configured default scopes', function 
 });
 
 // RFC 7591 §2, §3.2.1 — a secret-based auth method registers a confidential client; the secret is returned once
-it('issues a secret to a client registering a secret-based token_endpoint_auth_method', function (string $method) {
+it('issues a secret to a client registering a secret-based token_endpoint_auth_method', function (string $method): void {
     enableDynamicClientRegistration();
 
     $response = $this->postJson('/realms/default/oauth/register', [
@@ -88,7 +88,7 @@ it('issues a secret to a client registering a secret-based token_endpoint_auth_m
 })->with(['client_secret_basic', 'client_secret_post']);
 
 // RFC 7591 §2 — grant_types ⊆ {authorization_code, refresh_token}, response_types == [code]
-it('rejects client metadata this endpoint does not provision', function (array $metadata) {
+it('rejects client metadata this endpoint does not provision', function (array $metadata): void {
     enableDynamicClientRegistration();
 
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://rp.test/cb'], ...$metadata])
@@ -108,7 +108,7 @@ it('rejects client metadata this endpoint does not provision', function (array $
     'post_logout_redirect_uris not a list' => [['post_logout_redirect_uris' => 'https://rp.test/out']],
 ]);
 
-it('registers the grant types a client asks for', function () {
+it('registers the grant types a client asks for', function (): void {
     enableDynamicClientRegistration();
 
     $response = $this->postJson('/realms/default/oauth/register', [
@@ -120,7 +120,7 @@ it('registers the grant types a client asks for', function () {
     expect(Client::query()->whereKey($response->json('client_id'))->firstOrFail()->grant_types)->toBe(['authorization_code']);
 });
 
-it('persists and echoes the logout metadata', function () {
+it('persists and echoes the logout metadata', function (): void {
     enableDynamicClientRegistration();
 
     $response = $this->postJson('/realms/default/oauth/register', [
@@ -141,7 +141,7 @@ it('persists and echoes the logout metadata', function () {
         ->and($client->backchannel_logout_session_required)->toBeTrue();
 });
 
-it('rejects a missing or empty redirect uri list', function () {
+it('rejects a missing or empty redirect uri list', function (): void {
     enableDynamicClientRegistration();
 
     $this->postJson('/realms/default/oauth/register', ['client_name' => 'X'])
@@ -153,7 +153,7 @@ it('rejects a missing or empty redirect uri list', function () {
         ->assertJsonPath('error', 'invalid_client_metadata');
 });
 
-it('rejects malformed redirect uris', function (string $uri) {
+it('rejects malformed redirect uris', function (string $uri): void {
     enableDynamicClientRegistration();
 
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => [$uri]])
@@ -167,7 +167,7 @@ it('rejects malformed redirect uris', function (string $uri) {
     'relative' => '/callback',
 ]);
 
-it('rejects custom schemes unless allow-listed', function () {
+it('rejects custom schemes unless allow-listed', function (): void {
     enableDynamicClientRegistration();
 
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['myapp://auth/callback']])
@@ -184,7 +184,7 @@ it('rejects custom schemes unless allow-listed', function () {
         ->assertJsonPath('error', 'invalid_redirect_uri');
 });
 
-it('enforces the redirect domain allowlist for redirect and post-logout uris', function () {
+it('enforces the redirect domain allowlist for redirect and post-logout uris', function (): void {
     enableDynamicClientRegistration(['allowed_redirect_domains' => ['rp.test']]);
 
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://rp.test/cb']])

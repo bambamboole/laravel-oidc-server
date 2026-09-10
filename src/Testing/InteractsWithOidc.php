@@ -209,7 +209,7 @@ trait InteractsWithOidc
         $pkce ??= PkcePair::generate();
 
         if (! $this->consentViewIsBound()) {
-            app()->bind(ConsentView::class, fn () => new class implements ConsentView
+            app()->bind(ConsentView::class, fn (): ConsentView => new class implements ConsentView
             {
                 public function respond(ConsentPrompt $prompt, Request $request): JsonResponse
                 {

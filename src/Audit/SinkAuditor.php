@@ -21,9 +21,9 @@ use Throwable;
  * sink or listener must never take down an auth or token flow, so failures
  * are reported and swallowed.
  */
-final class SinkAuditor implements Auditor
+final readonly class SinkAuditor implements Auditor
 {
-    public function __construct(private readonly Container $app) {}
+    public function __construct(private Container $app) {}
 
     /**
      * @param  array<string, mixed>  $context

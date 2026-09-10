@@ -21,6 +21,6 @@ final readonly class ClaimSet
             $claims = array_merge($claims, $this->claimsByScope[$scopeId] ?? []);
         }
 
-        return array_filter($claims, fn (mixed $value) => $value !== null);
+        return array_filter($claims, fn (mixed $value): bool => $value !== null);
     }
 }

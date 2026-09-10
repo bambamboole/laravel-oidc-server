@@ -21,7 +21,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class]);
     fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
 
@@ -69,7 +69,7 @@ function codeRedemption(TestCase $test, string $code, PkcePair $pkce, array $ove
 }
 
 // RFC 6749 §5.2 / OAuth 2.1 §1.5
-it('rejects a missing, unknown or removed grant_type before authenticating the client', function (?string $grantType, string $error) {
+it('rejects a missing, unknown or removed grant_type before authenticating the client', function (?string $grantType, string $error): void {
     $this->post('/realms/default/oauth/token', array_filter(['grant_type' => $grantType]))
         ->assertStatus(400)
         ->assertJsonPath('error', $error);
@@ -80,7 +80,7 @@ it('rejects a missing, unknown or removed grant_type before authenticating the c
 ]);
 
 // RFC 6749 §2.3.1 (client_secret_basic)
-it('authenticates a client through HTTP Basic credentials and forbids caching the response', function () {
+it('authenticates a client through HTTP Basic credentials and forbids caching the response', function (): void {
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
     $client->forceFill(['token_endpoint_auth_method' => TokenEndpointAuthMethod::ClientSecretBasic])->save();
 
@@ -94,7 +94,7 @@ it('authenticates a client through HTTP Basic credentials and forbids caching th
 });
 
 // RFC 6749 §2.3.1 — one authentication method per request, and the registered one
-it('rejects a client that presents its secret through both Basic and body credentials', function () {
+it('rejects a client that presents its secret through both Basic and body credentials', function (): void {
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
     $this->withBasicAuth($client->client_id, (string) $client->plainSecret)
@@ -104,7 +104,7 @@ it('rejects a client that presents its secret through both Basic and body creden
         ])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
 });
 
-it('rejects a client that authenticates with a method it is not registered for', function () {
+it('rejects a client that authenticates with a method it is not registered for', function (): void {
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
     $this->withBasicAuth($client->client_id, (string) $client->plainSecret)
@@ -113,7 +113,7 @@ it('rejects a client that authenticates with a method it is not registered for',
         ->assertJsonPath('error', 'invalid_client');
 });
 
-it('rejects missing or wrong client credentials with a Basic challenge', function () {
+it('rejects missing or wrong client credentials with a Basic challenge', function (): void {
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
     $this->post('/realms/default/oauth/token', ['grant_type' => 'client_credentials'])
@@ -129,7 +129,7 @@ it('rejects missing or wrong client credentials with a Basic challenge', functio
         ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
 });
 
-it('rejects a public client that presents a secret', function () {
+it('rejects a public client that presents a secret', function (): void {
     $public = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Public', ['https://p.test/cb'], confidential: false);
 
     $this->post('/realms/default/oauth/token', [
@@ -141,7 +141,7 @@ it('rejects a public client that presents a secret', function () {
 });
 
 // RFC 6749 §5.2 (unauthorized_client)
-it('rejects a client that is not registered for the grant', function () {
+it('rejects a client that is not registered for the grant', function (): void {
     $this->post('/realms/default/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
@@ -150,7 +150,7 @@ it('rejects a client that is not registered for the grant', function () {
 });
 
 // RFC 6749 §5.1
-it('names the granted scope in the token response', function () {
+it('names the granted scope in the token response', function (): void {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
 
@@ -160,7 +160,7 @@ it('names the granted scope in the token response', function () {
 });
 
 // OAuth 2.1 §4.1.3 — a replayed code revokes everything it produced
-it('rejects a replayed code and revokes the tokens it produced', function () {
+it('rejects a replayed code and revokes the tokens it produced', function (): void {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
 
@@ -183,7 +183,7 @@ it('rejects a replayed code and revokes the tokens it produced', function () {
     ])->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 });
 
-it('rejects a code presented by another client and leaves it usable for its rightful client', function () {
+it('rejects a code presented by another client and leaves it usable for its rightful client', function (): void {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://rp.test/callback']);
@@ -206,7 +206,7 @@ it('rejects a code presented by another client and leaves it usable for its righ
         ->and(RefreshToken::query()->find($first->json('refresh_token'))->revoked)->toBeFalse();
 });
 
-it('rejects an expired authorization code', function () {
+it('rejects an expired authorization code', function (): void {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
     AuthorizationCode::query()->whereKey($code)->update(['expires_at' => now()->subMinute()]);
@@ -217,7 +217,7 @@ it('rejects an expired authorization code', function () {
 });
 
 // RFC 6749 §4.1.3 — redirect_uri must be repeated and must match
-it('requires the redirect_uri the authorization request carried', function () {
+it('requires the redirect_uri the authorization request carried', function (): void {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
 
@@ -231,7 +231,7 @@ it('requires the redirect_uri the authorization request carried', function () {
 });
 
 // RFC 7636 §4.6
-it('requires a well-formed code_verifier that matches the challenge', function () {
+it('requires a well-formed code_verifier that matches the challenge', function (): void {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
 
@@ -248,7 +248,7 @@ it('requires a well-formed code_verifier that matches the challenge', function (
         ->assertJsonPath('error', 'invalid_grant');
 });
 
-it('issues no refresh token to a client without the refresh_token grant', function () {
+it('issues no refresh token to a client without the refresh_token grant', function (): void {
     $this->client->forceFill(['grant_types' => ['authorization_code']])->save();
 
     $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid')

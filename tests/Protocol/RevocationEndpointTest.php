@@ -13,7 +13,7 @@ use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
 
@@ -37,13 +37,13 @@ function revoke(mixed $test, array $parameters, mixed $client = null): TestRespo
     ]);
 }
 
-it('revokes an access token for its own client', function () {
+it('revokes an access token for its own client', function (): void {
     revoke($this, ['token' => $this->jwt])->assertOk();
 
     expect($this->token->fresh()->revoked)->toBeTrue();
 });
 
-it('revokes a refresh token together with its linked access token', function () {
+it('revokes a refresh token together with its linked access token', function (): void {
     [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
 
     revoke($this, ['token' => $refreshTokenValue, 'token_type_hint' => 'refresh_token'])->assertOk();
@@ -53,7 +53,7 @@ it('revokes a refresh token together with its linked access token', function () 
 });
 
 // RFC 7009 §2.1 — token_type_hint only orders the lookup
-it('revokes the token whatever token_type_hint says', function () {
+it('revokes the token whatever token_type_hint says', function (): void {
     [$refreshTokenValue, $refreshToken] = issueRefreshToken($this);
 
     revoke($this, ['token' => $this->jwt, 'token_type_hint' => 'refresh_token'])->assertOk();
@@ -64,7 +64,7 @@ it('revokes the token whatever token_type_hint says', function () {
 });
 
 // RFC 7009 §2.2 — tokens of other clients and unknown tokens are silently ignored
-it('answers 200 without revoking for tokens of other clients or unknown tokens', function () {
+it('answers 200 without revoking for tokens of other clients or unknown tokens', function (): void {
     $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb']);
     [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
 
@@ -78,20 +78,20 @@ it('answers 200 without revoking for tokens of other clients or unknown tokens',
 });
 
 // RFC 7009 §2.2.1
-it('rejects a revocation request without a token parameter', function () {
+it('rejects a revocation request without a token parameter', function (): void {
     revoke($this, [])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
 
     expect($this->token->fresh()->revoked)->toBeFalse();
 });
 
-it('rejects unauthenticated revocation', function () {
+it('rejects unauthenticated revocation', function (): void {
     $this->postJson('/realms/default/oauth/revoke', ['token' => $this->jwt])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
         ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
 });
 
-it('lets a public client revoke its own refresh token', function () {
+it('lets a public client revoke its own refresh token', function (): void {
     $public = app(ClientRepository::class)->createAuthorizationCodeGrantClient('SPA', ['https://spa.test/cb'], confidential: false);
     [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this, (string) $public->id);
 

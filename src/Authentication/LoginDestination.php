@@ -8,9 +8,9 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\URL;
 
-final class LoginDestination
+final readonly class LoginDestination
 {
-    public function __construct(private readonly RealmResolver $realms) {}
+    public function __construct(private RealmResolver $realms) {}
 
     public function url(): string
     {

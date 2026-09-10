@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tests;
 
+use Bambamboole\LaravelOidc\Server\OidcServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\ParallelTesting;
 use Laravel\Passkeys\Passkeys;
+use Laravel\Passkeys\PasskeysServiceProvider;
 use Orchestra\Testbench\Concerns\WithLaravelMigrations;
 use Orchestra\Testbench\Concerns\WithWorkbench;
 use Orchestra\Testbench\TestCase as BaseTestCase;
@@ -17,7 +19,21 @@ abstract class TestCase extends BaseTestCase
     use WithLaravelMigrations;
     use WithWorkbench;
 
+    protected $enablesPackageDiscoveries = false;
+
     public const string TOKEN_EXCHANGE_GRANT = 'urn:ietf:params:oauth:grant-type:token-exchange';
+
+    /**
+     * Only this package's providers: the suite must prove the server works without the
+     * client or ui packages that share this monorepo's vendor directory.
+     */
+    protected function getPackageProviders($app): array
+    {
+        return [
+            PasskeysServiceProvider::class,
+            OidcServiceProvider::class,
+        ];
+    }
 
     protected function getEnvironmentSetUp($app): void
     {
@@ -52,7 +68,7 @@ abstract class TestCase extends BaseTestCase
 
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(dirname(__DIR__).'/workbench/database/migrations');
+        $this->loadMigrationsFrom(dirname(__DIR__, 3).'/workbench/database/migrations');
         $this->loadMigrationsFrom(Passkeys::migrationPath());
         $this->loadMigrationsFrom(dirname(__DIR__).'/database/migrations');
     }

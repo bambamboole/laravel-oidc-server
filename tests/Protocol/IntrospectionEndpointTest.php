@@ -13,7 +13,7 @@ use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
     $this->secret = $this->client->plainSecret;
@@ -49,7 +49,7 @@ function introspect(mixed $test, array $parameters): TestResponse
     ]);
 }
 
-it('rejects requests without client authentication', function () {
+it('rejects requests without client authentication', function (): void {
     $this->postJson('/realms/default/oauth/introspect', ['token' => 'x'])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
@@ -57,13 +57,13 @@ it('rejects requests without client authentication', function () {
 });
 
 // RFC 7662 §2.3
-it('rejects a request without a token parameter', function () {
+it('rejects a request without a token parameter', function (): void {
     introspect($this, [])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
     introspect($this, ['token' => ''])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
 });
 
 // RFC 7662 §2.2 — members of an active access token, with the RFC 9068 §2.2 claims of the JWT
-it('reports active for a valid access token of the same client', function () {
+it('reports active for a valid access token of the same client', function (): void {
     config(['app.url' => 'https://op.test']);
     [$jwt, $token] = issueIntrospectableToken($this);
     $claims = parseAccessToken($jwt)->claims();
@@ -83,7 +83,7 @@ it('reports active for a valid access token of the same client', function () {
     ]);
 });
 
-it('reports active for a token that names the caller in its audience', function () {
+it('reports active for a token that names the caller in its audience', function (): void {
     $requester = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Requester', ['https://req.test/cb']);
 
     $jwt = app(AccessTokenMinter::class)->mint(
@@ -98,9 +98,9 @@ it('reports active for a token that names the caller in its audience', function 
     ]);
 });
 
-it('reports inactive without leaking why', function (string $case) {
+it('reports inactive without leaking why', function (string $case): void {
     $token = match ($case) {
-        'revoked' => (function () {
+        'revoked' => (function (): string {
             [$jwt, $token] = issueIntrospectableToken($this);
             $token->forceFill(['revoked' => true])->save();
 
@@ -111,7 +111,7 @@ it('reports inactive without leaking why', function (string $case) {
             $this,
             app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://other.test/cb'])->client_id,
         )[0],
-        'revoked refresh token' => (function () {
+        'revoked refresh token' => (function (): string {
             [$value, $refreshToken] = issueRefreshToken($this);
             $refreshToken->forceFill(['revoked' => true])->save();
 
@@ -128,7 +128,7 @@ it('reports inactive without leaking why', function (string $case) {
 })->with(['revoked', 'garbage', 'another client', 'revoked refresh token', 'refresh token of another client']);
 
 // RFC 7662 §2.2 — a refresh token has no token_type; iss is the realm's
-it('reports active for a valid refresh token of the same client', function () {
+it('reports active for a valid refresh token of the same client', function (): void {
     config(['app.url' => 'https://op.test']);
     [$refreshTokenValue, $refreshToken] = issueRefreshToken($this);
 
@@ -143,7 +143,7 @@ it('reports active for a valid refresh token of the same client', function () {
 });
 
 // RFC 7662 §2.1 — token_type_hint only orders the lookup
-it('finds the token whatever token_type_hint says', function () {
+it('finds the token whatever token_type_hint says', function (): void {
     [$refreshTokenValue] = issueRefreshToken($this);
     [$jwt] = issueIntrospectableToken($this);
 

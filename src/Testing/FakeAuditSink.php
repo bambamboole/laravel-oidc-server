@@ -27,7 +27,7 @@ final class FakeAuditSink implements AuditSink
     {
         return array_values(array_filter(
             $this->events,
-            static fn (AuditEvent $event): bool => $type === null || $event->type === $type,
+            static fn (AuditEvent $event): bool => ! $type instanceof AuditEventType || $event->type === $type,
         ));
     }
 
@@ -40,7 +40,7 @@ final class FakeAuditSink implements AuditSink
 
         Assert::assertNotEmpty($events, "Expected audit event [{$type->value}] was not recorded.");
 
-        if ($filter === null) {
+        if (! $filter instanceof Closure) {
             return $events[0];
         }
 

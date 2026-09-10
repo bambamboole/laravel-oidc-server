@@ -21,7 +21,7 @@ function clientCommandEnv(string $contents = "APP_NAME=Testing\n"): string
     return $directory.'/.env';
 }
 
-it('creates and prints first-party credentials without changing env', function () {
+it('creates and prints first-party credentials without changing env', function (): void {
     $env = clientCommandEnv();
     $before = File::get($env);
 
@@ -63,7 +63,7 @@ it('creates and prints first-party credentials without changing env', function (
         ->and(File::get($env))->toBe($before);
 });
 
-it('reconciles without printing a secret and writes selected config explicitly', function () {
+it('reconciles without printing a secret and writes selected config explicitly', function (): void {
     $env = clientCommandEnv("APP_NAME=Testing\nOTHER=keep\n");
     $arguments = [
         '--first-party' => true,
@@ -84,7 +84,7 @@ it('reconciles without printing a secret and writes selected config explicitly',
         ->toContain('OTHER=keep');
 });
 
-it('prompts for required interactive values and confirms env writes', function () {
+it('prompts for required interactive values and confirms env writes', function (): void {
     $env = clientCommandEnv();
 
     $this->artisan('oidc:client', [
@@ -98,7 +98,7 @@ it('prompts for required interactive values and confirms env writes', function (
     expect(File::get($env))->toContain('OIDC_FIRST_PARTY_CLIENT=');
 });
 
-it('adopts an eligible client without printing its stored hash', function () {
+it('adopts an eligible client without printing its stored hash', function (): void {
     $env = clientCommandEnv();
     $client = app(ClientRepository::class)
         ->createAuthorizationCodeGrantClient('Legacy', ['https://legacy.test/callback']);
@@ -118,7 +118,7 @@ it('adopts an eligible client without printing its stored hash', function () {
         ->and($client->refresh()->getRawOriginal('provisioning_key'))->toBe('first-party');
 });
 
-it('leaves env unchanged after a provisioning failure', function () {
+it('leaves env unchanged after a provisioning failure', function (): void {
     $env = clientCommandEnv();
     $before = File::get($env);
 
@@ -133,7 +133,7 @@ it('leaves env unchanged after a provisioning failure', function () {
     expect(File::get($env))->toBe($before);
 });
 
-it('requires explicit rotation before printing a replacement secret', function () {
+it('requires explicit rotation before printing a replacement secret', function (): void {
     $base = [
         '--first-party' => true,
         '--name' => 'First-party app',
@@ -150,7 +150,7 @@ it('requires explicit rotation before printing a replacement secret', function (
         ->assertSuccessful();
 });
 
-it('rejects invalid invocations with a usage exit code', function (array $arguments) {
+it('rejects invalid invocations with a usage exit code', function (array $arguments): void {
     $this->artisan('oidc:client', ['--no-interaction' => true, ...$arguments])->assertExitCode(2);
 })->with([
     'without first-party mode' => [['--name' => 'First-party app', '--redirect-uri' => ['https://app.test/login/callback']]],
@@ -158,7 +158,7 @@ it('rejects invalid invocations with a usage exit code', function (array $argume
     'missing redirect URI' => [['--first-party' => true, '--name' => 'First-party app']],
 ]);
 
-it('does not write env when interactive confirmation is declined', function () {
+it('does not write env when interactive confirmation is declined', function (): void {
     $env = clientCommandEnv();
     $before = File::get($env);
 

@@ -36,20 +36,20 @@ final readonly class TokenSettings
 
     public function accessToken(): DateInterval
     {
-        return self::seconds($this->accessTokenLifetime);
+        return $this->seconds($this->accessTokenLifetime);
     }
 
     public function clientCredentials(): DateInterval
     {
-        return self::seconds($this->clientCredentialsLifetime);
+        return $this->seconds($this->clientCredentialsLifetime);
     }
 
     public function refreshToken(): DateInterval
     {
-        return self::seconds($this->refreshTokenLifetime);
+        return $this->seconds($this->refreshTokenLifetime);
     }
 
-    private static function seconds(int $seconds): DateInterval
+    private function seconds(int $seconds): DateInterval
     {
         return new DateInterval('PT'.max($seconds, 1).'S');
     }

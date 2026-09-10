@@ -46,7 +46,7 @@ class OidcServiceProvider extends ServiceProvider
      *
      * @var list<class-string<ServiceProvider>>
      */
-    private const DOMAIN_PROVIDERS = [
+    private const array DOMAIN_PROVIDERS = [
         RealmsServiceProvider::class,
         KeysServiceProvider::class,
         ScopesServiceProvider::class,

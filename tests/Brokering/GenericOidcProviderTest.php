@@ -96,7 +96,7 @@ function oidcCallback(string $idToken): Request
     return $request;
 }
 
-it('reads endpoints from the discovery document for the redirect', function () {
+it('reads endpoints from the discovery document for the redirect', function (): void {
     fakeDiscovery();
 
     $request = Request::create('/realms/default/auth/social/corp');
@@ -110,7 +110,7 @@ it('reads endpoints from the discovery document for the redirect', function () {
         ->and($params['nonce'])->not->toBeEmpty();
 });
 
-it('verifies the id_token against the upstream JWKS and returns the user', function () {
+it('verifies the id_token against the upstream JWKS and returns the user', function (): void {
     fakeDiscovery();
 
     $idToken = upstreamIdToken([
@@ -133,7 +133,7 @@ it('verifies the id_token against the upstream JWKS and returns the user', funct
         ->and($user->expiresIn)->toBe(3600);
 });
 
-it('rejects an id_token with a wrong nonce', function () {
+it('rejects an id_token with a wrong nonce', function (): void {
     fakeDiscovery();
     $idToken = upstreamIdToken(nonce: 'other-nonce');
 
@@ -141,7 +141,7 @@ it('rejects an id_token with a wrong nonce', function () {
     oidcTestProvider()->user(oidcCallback($idToken), $pending);
 })->throws(SocialAuthenticationException::class);
 
-it('rejects an id_token issued to a different audience', function () {
+it('rejects an id_token issued to a different audience', function (): void {
     fakeDiscovery();
     $idToken = upstreamIdToken(nonce: 'nonce-1', audience: 'someone-else');
 
@@ -149,7 +149,7 @@ it('rejects an id_token issued to a different audience', function () {
     oidcTestProvider()->user(oidcCallback($idToken), $pending);
 })->throws(SocialAuthenticationException::class);
 
-it('rejects an id_token from a different issuer', function () {
+it('rejects an id_token from a different issuer', function (): void {
     fakeDiscovery();
     $idToken = upstreamIdToken(nonce: 'nonce-1', issuer: 'https://evil.test');
 
@@ -157,14 +157,14 @@ it('rejects an id_token from a different issuer', function () {
     oidcTestProvider()->user(oidcCallback($idToken), $pending);
 })->throws(SocialAuthenticationException::class);
 
-it('rejects a malformed id_token', function () {
+it('rejects a malformed id_token', function (): void {
     fakeDiscovery();
 
     $pending = new PendingSocialRedirect('corp', 'login', 'state-1', null, 'nonce-1');
     oidcTestProvider()->user(oidcCallback('not-a-jwt'), $pending);
 })->throws(SocialAuthenticationException::class);
 
-it('rejects an id_token signed by a key not in the JWKS', function () {
+it('rejects an id_token signed by a key not in the JWKS', function (): void {
     fakeDiscovery();
 
     $resource = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
@@ -177,7 +177,7 @@ it('rejects an id_token signed by a key not in the JWKS', function () {
     oidcTestProvider()->user(oidcCallback($idToken), $pending);
 })->throws(SocialAuthenticationException::class);
 
-it('rejects an expired id_token', function () {
+it('rejects an expired id_token', function (): void {
     fakeDiscovery();
     $idToken = upstreamIdToken(nonce: 'nonce-1', expired: true);
 
@@ -185,7 +185,7 @@ it('rejects an expired id_token', function () {
     oidcTestProvider()->user(oidcCallback($idToken), $pending);
 })->throws(SocialAuthenticationException::class);
 
-it('rejects an id_token whose kid matches no JWKS key', function () {
+it('rejects an id_token whose kid matches no JWKS key', function (): void {
     fakeDiscovery();
     $idToken = upstreamIdToken(nonce: 'nonce-1', kid: 'unknown-kid');
 
@@ -193,7 +193,7 @@ it('rejects an id_token whose kid matches no JWKS key', function () {
     oidcTestProvider()->user(oidcCallback($idToken), $pending);
 })->throws(SocialAuthenticationException::class, 'No JWKS key matches the [corp] id_token.');
 
-it('falls back to userinfo for profile claims missing from the id_token', function () {
+it('falls back to userinfo for profile claims missing from the id_token', function (): void {
     fakeDiscovery();
     Http::fake([
         'https://idp.test/userinfo' => Http::response([

@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\SendBackChannelLogout;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Illuminate\Support\Facades\Bus;
 
-it('dispatches a job only for participants with a backchannel_logout_uri', function () {
+it('dispatches a job only for participants with a backchannel_logout_uri', function (): void {
     Bus::fake();
     $sid = app(OidcSessionRepository::class)->start('7');
 
@@ -22,5 +22,5 @@ it('dispatches a job only for participants with a backchannel_logout_uri', funct
     app(BackChannelLogoutNotifier::class)->notify($sid);
 
     Bus::assertDispatchedTimes(SendBackChannelLogout::class, 1);
-    Bus::assertDispatched(SendBackChannelLogout::class, fn (SendBackChannelLogout $j) => $j->clientKey === (string) $withUri->id);
+    Bus::assertDispatched(SendBackChannelLogout::class, fn (SendBackChannelLogout $j): bool => $j->clientKey === (string) $withUri->id);
 });

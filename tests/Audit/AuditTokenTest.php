@@ -14,7 +14,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class]);
     fakeConsentViewUsing(fn (array $parameters) => response()->json([
         'authToken' => $parameters['authToken'],
@@ -24,7 +24,7 @@ beforeEach(function () {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
 });
 
-it('audits consent approval and token issuance through the code flow', function () {
+it('audits consent approval and token issuance through the code flow', function (): void {
     $sink = fakeAudit();
 
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
@@ -44,7 +44,7 @@ it('audits consent approval and token issuance through the code flow', function 
         ->and($issued->context['scopes'])->toBe(['openid']);
 });
 
-it('audits a denied consent', function () {
+it('audits a denied consent', function (): void {
     $sink = fakeAudit();
     $pkce = $this->pkce();
 
@@ -69,7 +69,7 @@ it('audits a denied consent', function () {
     $sink->assertNotRecorded(AuditEventType::TokenIssued);
 });
 
-it('audits a refresh token grant as token issuance', function () {
+it('audits a refresh token grant as token issuance', function (): void {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
     $result = $this->actingAsIdentity($this->user, authTime: time() - 60)
         ->withSession(['oidc.sid' => $sid])
@@ -89,7 +89,7 @@ it('audits a refresh token grant as token issuance', function () {
         && $event->sid !== null);
 });
 
-it('audits a refresh denied after the session ended', function () {
+it('audits a refresh denied after the session ended', function (): void {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
     $result = $this->actingAsIdentity($this->user, authTime: time() - 60)
         ->withSession(['oidc.sid' => $sid])
@@ -110,7 +110,7 @@ it('audits a refresh denied after the session ended', function () {
     $sink->assertNotRecorded(AuditEventType::TokenIssued);
 });
 
-it('audits a client credentials token issuance', function () {
+it('audits a client credentials token issuance', function (): void {
     $sink = fakeAudit();
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
@@ -126,7 +126,7 @@ it('audits a client credentials token issuance', function () {
         && $event->userId === null);
 });
 
-it('audits a token exchange and its failure paths', function () {
+it('audits a token exchange and its failure paths', function (): void {
     config(['oidc.scopes.catalog' => ['openid' => 'Authenticate', 'orders:read' => 'Read orders']]);
     $this->client->forceFill([
         'grant_types' => [...(array) $this->client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
@@ -165,7 +165,7 @@ it('audits a token exchange and its failure paths', function () {
         && $event->clientId === (string) $this->client->id);
 });
 
-it('audits a personal access token issuance', function () {
+it('audits a personal access token issuance', function (): void {
     $sink = fakeAudit();
     app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
 
@@ -178,7 +178,7 @@ it('audits a personal access token issuance', function () {
         && $event->context['jti'] === (string) $token->getKey());
 });
 
-it('audits an access token revocation', function () {
+it('audits an access token revocation', function (): void {
     app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
     $result = $this->user->createToken('t', ['openid']);
     $token = $result->token;
@@ -198,7 +198,7 @@ it('audits an access token revocation', function () {
         && $event->context['jti'] === (string) $token->getKey());
 });
 
-it('audits a failed client authentication at the introspection endpoint', function () {
+it('audits a failed client authentication at the introspection endpoint', function (): void {
     $sink = fakeAudit();
 
     $this->postJson('/realms/default/oauth/introspect', [
@@ -211,7 +211,7 @@ it('audits a failed client authentication at the introspection endpoint', functi
         && $event->context['endpoint'] === 'realms/default/oauth/introspect');
 });
 
-it('audits a failed client authentication at the token endpoint', function () {
+it('audits a failed client authentication at the token endpoint', function (): void {
     $sink = fakeAudit();
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 

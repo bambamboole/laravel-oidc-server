@@ -8,15 +8,7 @@ use RuntimeException;
 
 final class SigningKeyPair
 {
-    private ?string $kid;
-
-    public function __construct(
-        public readonly string $publicKeyPem,
-        public readonly ?string $privateKeyPem = null,
-        ?string $kid = null,
-    ) {
-        $this->kid = $kid;
-    }
+    public function __construct(public readonly string $publicKeyPem, public readonly ?string $privateKeyPem = null, private ?string $kid = null) {}
 
     /**
      * Derived from the public key (RFC 7638) unless the store carries one, so a

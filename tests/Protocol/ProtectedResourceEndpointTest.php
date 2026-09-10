@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * RFC 9728 §3 (protected resource metadata)
  */
-it('serves metadata for a configured protected resource', function () {
+it('serves metadata for a configured protected resource', function (): void {
     config([
         'app.url' => 'https://op.test',
         'oidc.issuer' => null,
@@ -23,7 +23,7 @@ it('serves metadata for a configured protected resource', function () {
         ]);
 });
 
-it('builds the resource identifier from the configured issuer, serving the issuer root for an empty path', function () {
+it('builds the resource identifier from the configured issuer, serving the issuer root for an empty path', function (): void {
     config([
         'oidc.issuer' => 'https://id.example.com/',
         'oidc.protected_resources' => ['mcp' => ['scopes' => []], '' => ['scopes' => ['api']]],
@@ -39,7 +39,7 @@ it('builds the resource identifier from the configured issuer, serving the issue
         ->assertJsonPath('resource', 'https://id.example.com/realms/default');
 });
 
-it('answers 404 for resources that are not configured', function () {
+it('answers 404 for resources that are not configured', function (): void {
     config(['oidc.protected_resources' => ['mcp' => ['scopes' => []]]]);
 
     $this->getJson('/.well-known/oauth-protected-resource/realms/default/unknown')->assertNotFound();

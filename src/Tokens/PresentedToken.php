@@ -35,6 +35,6 @@ final readonly class PresentedToken
 
     public function isRefreshToken(): bool
     {
-        return $this->refreshToken !== null;
+        return $this->refreshToken instanceof RefreshToken;
     }
 }

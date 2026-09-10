@@ -26,7 +26,7 @@ function standardClaims(Authenticatable $user, array $scopes): array
     ));
 }
 
-it('maps the profile and email scopes onto the user attributes', function () {
+it('maps the profile and email scopes onto the user attributes', function (): void {
     $user = User::create(['name' => 'Manuel', 'email' => 'manuel@example.com', 'email_verified_at' => now(), 'password' => 'secret']);
     $user->forceFill(['locale' => 'de', 'timezone' => 'Europe/Berlin']);
 
@@ -40,7 +40,7 @@ it('maps the profile and email scopes onto the user attributes', function () {
         ->and(standardClaims($user, ['openid']))->toBe([]);
 });
 
-it('reports an unverified email and omits attributes the user does not carry', function () {
+it('reports an unverified email and omits attributes the user does not carry', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 
     expect(standardClaims($user, ['email']))->toBe(['email' => 'm@example.com', 'email_verified' => false])
@@ -49,7 +49,7 @@ it('reports an unverified email and omits attributes the user does not carry', f
 });
 
 // OIDC Core §5.4 — phone scope
-it('maps phone_number and phone_number_verified under the phone scope', function () {
+it('maps phone_number and phone_number_verified under the phone scope', function (): void {
     $verified = (new User)->forceFill(['phone_number' => '+49 30 123456', 'phone_number_verified' => 1]);
     $unverified = (new User)->forceFill(['phone_number' => '+49 30 123456']);
 
@@ -58,7 +58,7 @@ it('maps phone_number and phone_number_verified under the phone scope', function
 });
 
 // OIDC Core §5.1.1 — the structured address claim
-it('maps a structured or plain-string address under the address scope, keeping the standard members only', function () {
+it('maps a structured or plain-string address under the address scope, keeping the standard members only', function (): void {
     $structured = (new User)->forceFill(['address' => [
         'street_address' => 'Unter den Linden 1',
         'locality' => 'Berlin',

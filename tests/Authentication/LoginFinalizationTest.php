@@ -94,7 +94,7 @@ function finalizationPasskeyLogin(mixed $test, User $user): TestResponse
     ]);
 }
 
-it('applies the postLogin policy to registration', function () {
+it('applies the postLogin policy to registration', function (): void {
     finalizationRegisterUsers();
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
@@ -109,7 +109,7 @@ it('applies the postLogin policy to registration', function () {
     $this->assertGuest('identity');
 });
 
-it('records amr for registration logins', function () {
+it('records amr for registration logins', function (): void {
     finalizationRegisterUsers();
 
     $this->post(route('identity.register.store'), [
@@ -122,7 +122,7 @@ it('records amr for registration logins', function () {
     expect(session(AuthSessionState::AMR_KEY))->toContain('pwd');
 });
 
-it('applies the postLogin policy to password resets', function () {
+it('applies the postLogin policy to password resets', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = finalizationPasswordToken($user);
 
@@ -142,7 +142,7 @@ it('applies the postLogin policy to password resets', function () {
     $this->assertGuest('identity');
 });
 
-it('records amr for password-reset logins', function () {
+it('records amr for password-reset logins', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = finalizationPasswordToken($user);
 
@@ -161,7 +161,7 @@ it('records amr for password-reset logins', function () {
     expect(session(AuthSessionState::AMR_KEY))->toContain('pwd');
 });
 
-it('applies the postLogin policy to passkey logins', function () {
+it('applies the postLogin policy to passkey logins', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
@@ -170,7 +170,7 @@ it('applies the postLogin policy to passkey logins', function () {
     $this->assertGuest('identity');
 });
 
-it('records amr swk for passkey logins', function () {
+it('records amr swk for passkey logins', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     finalizationPasskeyLogin($this, $user);
@@ -179,7 +179,7 @@ it('records amr swk for passkey logins', function () {
     expect(session(AuthSessionState::AMR_KEY))->toContain('swk');
 });
 
-it('does not challenge an enrolled second factor after a passkey login', function () {
+it('does not challenge an enrolled second factor after a passkey login', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
     $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
@@ -189,7 +189,7 @@ it('does not challenge an enrolled second factor after a passkey login', functio
     $this->assertAuthenticatedAs($user, 'identity');
 });
 
-it('still requires a challenge after passkey login when the pipeline demands MFA', function () {
+it('still requires a challenge after passkey login when the pipeline demands MFA', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
     $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();

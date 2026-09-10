@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Illuminate\Http\Request;
+use Lcobucci\JWT\Token\Plain;
 
 /**
  * Resolves the `token` a client presented to the introspection or revocation
@@ -45,7 +46,7 @@ final readonly class PresentedTokenResolver
         foreach ($order as $type) {
             $presented = $type === self::ACCESS_TOKEN ? $this->accessToken($value) : $this->refreshToken($value);
 
-            if ($presented !== null) {
+            if ($presented instanceof PresentedToken) {
                 return $presented;
             }
         }
@@ -56,9 +57,9 @@ final readonly class PresentedTokenResolver
     private function accessToken(string $value): ?PresentedToken
     {
         $jwt = $this->inspector->parse($value);
-        $token = $jwt !== null ? $this->inspector->tokenForParsed($jwt) : null;
+        $token = $jwt instanceof Plain ? $this->inspector->tokenForParsed($jwt) : null;
 
-        return $jwt !== null && $token !== null ? PresentedToken::accessToken($jwt, $token) : null;
+        return $jwt instanceof Plain && $token instanceof AccessToken ? PresentedToken::accessToken($jwt, $token) : null;
     }
 
     private function refreshToken(string $value): ?PresentedToken

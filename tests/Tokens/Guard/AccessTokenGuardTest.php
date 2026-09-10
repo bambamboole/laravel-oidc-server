@@ -20,11 +20,11 @@ use Workbench\App\Models\User;
 
 const GUARD_RESOURCE_METADATA = 'resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"';
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
-    Route::middleware('auth:oidc')->get('/guarded', fn () => ['id' => auth()->id()]);
+    Route::middleware('auth:oidc')->get('/guarded', fn (): array => ['id' => auth()->id()]);
 });
 
 /**
@@ -70,7 +70,7 @@ function bearerIssuedElsewhere(mixed $test): string
     return $jwt;
 }
 
-it('authenticates a token the realm issued and resolves the user from sub', function () {
+it('authenticates a token the realm issued and resolves the user from sub', function (): void {
     $jwt = resourceServerBearer($this);
 
     $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
@@ -79,7 +79,7 @@ it('authenticates a token the realm issued and resolves the user from sub', func
 });
 
 // RFC 9068 §4 — aud must name this resource; the issuing client is not an audience
-it('accepts only tokens addressed to a realm audience', function () {
+it('accepts only tokens addressed to a realm audience', function (): void {
     config(['oidc.tokens.audiences' => ['https://api.example/orders']]);
 
     $accepted = resourceServerBearer($this, ['https://api.example/orders']);
@@ -104,14 +104,14 @@ it('accepts only tokens addressed to a realm audience', function () {
 });
 
 // RFC 6750 §3.1 — no credentials presented: a challenge without an error code
-it('challenges a request without a bearer token and names no error', function () {
+it('challenges a request without a bearer token and names no error', function (): void {
     $this->getJson('/guarded')
         ->assertUnauthorized()
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", '.GUARD_RESOURCE_METADATA)
         ->assertHeader('Cache-Control', 'no-store, private')
         ->assertNoContent(401);
 
-    Route::get('/login', fn () => 'login')->name('login');
+    Route::get('/login', fn (): string => 'login')->name('login');
     Route::getRoutes()->refreshNameLookups();
 
     $this->get('/guarded')
@@ -119,7 +119,7 @@ it('challenges a request without a bearer token and names no error', function ()
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", '.GUARD_RESOURCE_METADATA);
 });
 
-it('answers a rejected bearer token with invalid_token', function (string $case) {
+it('answers a rejected bearer token with invalid_token', function (string $case): void {
     $jwt = match ($case) {
         'garbage' => 'garbage',
         'revoked' => resourceServerBearer($this, revoked: true),
@@ -136,8 +136,8 @@ it('answers a rejected bearer token with invalid_token', function (string $case)
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", '.GUARD_RESOURCE_METADATA);
 })->with(['garbage', 'revoked', 'expired', 'foreign issuer', 'unknown subject', 'id_token as bearer']);
 
-it('leaves other guards to Laravel', function () {
-    Route::middleware('auth:web')->get('/session-guarded', fn () => 'ok');
+it('leaves other guards to Laravel', function (): void {
+    Route::middleware('auth:web')->get('/session-guarded', fn (): string => 'ok');
 
     $this->getJson('/session-guarded')
         ->assertUnauthorized()

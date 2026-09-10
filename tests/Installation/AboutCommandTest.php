@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-it('surfaces the OIDC section with the resolved session-token guard', function () {
+it('surfaces the OIDC section with the resolved session-token guard', function (): void {
     config([
         'oidc.issuer' => 'https://app.test',
         'oidc.auth.guard' => 'identity',

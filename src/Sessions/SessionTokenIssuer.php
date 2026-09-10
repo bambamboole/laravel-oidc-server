@@ -111,7 +111,7 @@ class SessionTokenIssuer implements SessionTokenProvider
             return $configured;
         }
 
-        return $this->scopes->all()->reject(fn (Scope $scope) => $scope->hidden)->map(fn (Scope $scope) => $scope->id)->values()->all();
+        return $this->scopes->all()->reject(fn (Scope $scope): bool => $scope->hidden)->map(fn (Scope $scope): string => $scope->id)->values()->all();
     }
 
     private function key(): string

@@ -69,7 +69,7 @@ class SocialProviderRegistry
         foreach (array_keys($this->realms->current()->brokering()->providers) as $key) {
             $provider = $this->get((string) $key);
 
-            if ($provider !== null) {
+            if ($provider instanceof SocialProvider) {
                 $providers[(string) $key] = $provider;
             }
         }

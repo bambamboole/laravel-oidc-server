@@ -8,21 +8,21 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['app.url' => 'https://op.test', 'oidc.issuer' => null]);
 });
 
-it('defaults to the realm issuer url', function () {
+it('defaults to the realm issuer url', function (): void {
     expect(app(RealmAudiences::class)->all())->toBe(['https://op.test/realms/default']);
 });
 
-it('replaces the issuer with the configured audiences', function () {
+it('replaces the issuer with the configured audiences', function (): void {
     config(['oidc.tokens.audiences' => ['https://api.example/orders', 'https://api.example/billing']]);
 
     expect(app(RealmAudiences::class)->all())->toBe(['https://api.example/orders', 'https://api.example/billing']);
 });
 
-it('adds every advertised protected resource, without duplicates', function () {
+it('adds every advertised protected resource, without duplicates', function (): void {
     config(['oidc.protected_resources' => ['mcp' => ['scopes' => []], '' => ['scopes' => []]]]);
 
     $audiences = app(RealmAudiences::class);
@@ -32,7 +32,7 @@ it('adds every advertised protected resource, without duplicates', function () {
         ->and($audiences->protectedResource(''))->toBe('https://op.test/realms/default');
 });
 
-it('accepts an audience naming one of them and rejects any other', function () {
+it('accepts an audience naming one of them and rejects any other', function (): void {
     config(['oidc.tokens.audiences' => ['https://api.example/orders']]);
 
     $audiences = app(RealmAudiences::class);

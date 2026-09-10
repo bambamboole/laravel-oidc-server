@@ -153,23 +153,21 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
         }
 
         $lockKey = 'oidc.recovery_codes.'.md5($user::class.':'.$user->getAuthIdentifier());
-        $verified = Cache::lock($lockKey, 10)->block(10, function () use ($user, $submittedCode): bool {
-            return DB::transaction(function () use ($user, $submittedCode): bool {
-                $codes = $this->recoveryCodes($user)->whereNull('used_at')->lockForUpdate()->get();
+        $verified = Cache::lock($lockKey, 10)->block(10, fn (): bool => DB::transaction(function () use ($user, $submittedCode): bool {
+            $codes = $this->recoveryCodes($user)->whereNull('used_at')->lockForUpdate()->get();
 
-                foreach ($codes as $code) {
-                    if (! hash_equals($code->code, $submittedCode)) {
-                        continue;
-                    }
-
-                    $code->forceFill(['used_at' => now()])->save();
-
-                    return true;
+            foreach ($codes as $code) {
+                if (! hash_equals($code->code, $submittedCode)) {
+                    continue;
                 }
 
-                return false;
-            });
-        });
+                $code->forceFill(['used_at' => now()])->save();
+
+                return true;
+            }
+
+            return false;
+        }));
 
         return new FactorVerification($verified, $verified ? ['otp'] : []);
     }

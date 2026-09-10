@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
@@ -140,7 +141,7 @@ final readonly class RefreshTokenGrant implements Grant
         if ($context->sid !== null) {
             $session = $this->sessions->find($context->sid);
 
-            if ($session === null || ! $session->isActive()) {
+            if (! $session instanceof OidcSession || ! $session->isActive()) {
                 $this->deny('session_ended', 'The authentication session has ended; re-authentication is required.', $context->sid);
             }
         } elseif ($context->expires_at !== null && $context->expires_at->isPast()) {

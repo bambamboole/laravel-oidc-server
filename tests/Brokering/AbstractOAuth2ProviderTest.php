@@ -62,7 +62,7 @@ function requestWithSession(string $uri = '/realms/default/auth/social/fake/call
     return $request;
 }
 
-it('redirects to the authorization endpoint with state and S256 PKCE', function () {
+it('redirects to the authorization endpoint with state and S256 PKCE', function (): void {
     $request = requestWithSession('/realms/default/auth/social/fake');
 
     $response = fakeOAuth2Provider()->redirect($request);
@@ -82,7 +82,7 @@ it('redirects to the authorization endpoint with state and S256 PKCE', function 
         ->and($params['redirect_uri'])->toBe(route('identity.social.callback', ['provider' => 'fake']));
 });
 
-it('exchanges the callback code including the PKCE verifier', function () {
+it('exchanges the callback code including the PKCE verifier', function (): void {
     Http::fake(['https://provider.test/token' => Http::response(['access_token' => 'at-1', 'token_type' => 'Bearer'])]);
 
     $pending = new PendingSocialRedirect('fake', 'login', 'state-1', 'verifier-1', null);
@@ -91,23 +91,21 @@ it('exchanges the callback code including the PKCE verifier', function () {
     $user = fakeOAuth2Provider()->user($request, $pending);
 
     expect($user->accessToken)->toBe('at-1');
-    Http::assertSent(function ($httpRequest): bool {
-        return $httpRequest->url() === 'https://provider.test/token'
-            && $httpRequest['code'] === 'code-1'
-            && $httpRequest['code_verifier'] === 'verifier-1'
-            && $httpRequest['client_secret'] === 'shhh'
-            && $httpRequest['grant_type'] === 'authorization_code';
-    });
+    Http::assertSent(fn ($httpRequest): bool => $httpRequest->url() === 'https://provider.test/token'
+        && $httpRequest['code'] === 'code-1'
+        && $httpRequest['code_verifier'] === 'verifier-1'
+        && $httpRequest['client_secret'] === 'shhh'
+        && $httpRequest['grant_type'] === 'authorization_code');
 });
 
-it('rejects a state mismatch', function () {
+it('rejects a state mismatch', function (): void {
     $pending = new PendingSocialRedirect('fake', 'login', 'state-1', null, null);
     $request = requestWithSession(query: ['code' => 'code-1', 'state' => 'tampered']);
 
     fakeOAuth2Provider()->user($request, $pending);
 })->throws(InvalidStateException::class);
 
-it('rejects a pending authorization for a different provider', function () {
+it('rejects a pending authorization for a different provider', function (): void {
     $pending = new PendingSocialRedirect('other', 'login', 'state-1', null, null);
     $request = requestWithSession(query: ['code' => 'code-1', 'state' => 'state-1']);
 

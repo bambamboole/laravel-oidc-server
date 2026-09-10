@@ -41,7 +41,7 @@ class IntrospectionController
 
         $presented = $this->tokens->fromRequest($request);
 
-        if ($presented === null) {
+        if (! $presented instanceof PresentedToken) {
             return $this->inactive();
         }
 
@@ -57,7 +57,7 @@ class IntrospectionController
         $jwt = $presented->jwt;
         $expiresAt = $token->expires_at;
 
-        if ($jwt === null
+        if (! $jwt instanceof Plain
             || $token->revoked
             || ($expiresAt instanceof CarbonInterface && $expiresAt->isPast())
             || (! $token->issuedTo($client) && ! $this->callerInAudience($client, $jwt))) {

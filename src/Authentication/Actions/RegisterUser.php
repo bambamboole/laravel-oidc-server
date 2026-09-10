@@ -16,11 +16,11 @@ use Illuminate\Contracts\Container\Container;
  * Registered and records the audit event. Signing the new user in is the
  * caller's job (InteractiveLoginFinalizer).
  */
-final class RegisterUser
+final readonly class RegisterUser
 {
     public function __construct(
-        private readonly Container $container,
-        private readonly Auditor $auditor,
+        private Container $container,
+        private Auditor $auditor,
     ) {}
 
     public function enabled(): bool

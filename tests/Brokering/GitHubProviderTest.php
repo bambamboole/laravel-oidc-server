@@ -21,7 +21,7 @@ function githubCallback(): Request
     return $request;
 }
 
-it('redirects to GitHub without PKCE and with default scopes', function () {
+it('redirects to GitHub without PKCE and with default scopes', function (): void {
     $request = Request::create('/realms/default/auth/social/github');
     $request->setLaravelSession(app('session.store'));
 
@@ -33,7 +33,7 @@ it('redirects to GitHub without PKCE and with default scopes', function () {
         ->and($params)->not->toHaveKey('code_challenge');
 });
 
-it('builds the user from the profile and the verified primary email', function () {
+it('builds the user from the profile and the verified primary email', function (): void {
     Http::fake([
         'https://github.com/login/oauth/access_token' => Http::response(['access_token' => 'gh-at', 'token_type' => 'bearer']),
         'https://api.github.com/user' => Http::response([
@@ -60,7 +60,7 @@ it('builds the user from the profile and the verified primary email', function (
         ->and($user->avatar)->toBe('https://avatars.github.test/mona');
 });
 
-it('wraps profile fetch failures in a social authentication exception', function () {
+it('wraps profile fetch failures in a social authentication exception', function (): void {
     Http::fake([
         'https://github.com/login/oauth/access_token' => Http::response(['access_token' => 'gh-at', 'token_type' => 'bearer']),
         'https://api.github.com/user' => Http::response([], 500),
@@ -71,7 +71,7 @@ it('wraps profile fetch failures in a social authentication exception', function
     githubProvider()->user(githubCallback(), $pending);
 })->throws(SocialAuthenticationException::class);
 
-it('reports no verified email when GitHub has none', function () {
+it('reports no verified email when GitHub has none', function (): void {
     Http::fake([
         'https://github.com/login/oauth/access_token' => Http::response(['access_token' => 'gh-at', 'token_type' => 'bearer']),
         'https://api.github.com/user' => Http::response(['id' => 12345, 'login' => 'mona', 'name' => null, 'avatar_url' => null, 'email' => null]),

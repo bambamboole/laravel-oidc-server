@@ -20,11 +20,11 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * rejected; every outcome is audited here. Establishing the session
  * afterwards is the caller's job.
  */
-final class VerifyFactorChallenge
+final readonly class VerifyFactorChallenge
 {
     public function __construct(
-        private readonly FactorRegistry $factors,
-        private readonly Auditor $auditor,
+        private FactorRegistry $factors,
+        private Auditor $auditor,
     ) {}
 
     /**

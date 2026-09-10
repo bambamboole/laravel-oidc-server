@@ -11,6 +11,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -58,7 +59,7 @@ class AuthenticatedSessionController
             $request->string('password')->value(),
         );
 
-        if ($user === null) {
+        if (! $user instanceof Authenticatable) {
             throw ValidationException::withMessages([$username => __('auth.failed')]);
         }
 

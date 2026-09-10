@@ -16,25 +16,25 @@ uses(InteractsWithOidc::class);
 
 const USERINFO_RESOURCE_METADATA = 'resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"';
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 });
 
-it('challenges a request without a bearer token and names no error', function () {
+it('challenges a request without a bearer token and names no error', function (): void {
     $this->getJson('/realms/default/oauth/userinfo')
         ->assertUnauthorized()
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", '.USERINFO_RESOURCE_METADATA)
         ->assertNoContent(401);
 });
 
-it('returns invalid_token for a bearer token the guard rejects', function () {
+it('returns invalid_token for a bearer token the guard rejects', function (): void {
     $this->getJson('/realms/default/oauth/userinfo', ['Authorization' => 'Bearer garbage'])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", '.USERINFO_RESOURCE_METADATA);
 });
 
-it('returns insufficient_scope when the token lacks openid', function () {
+it('returns insufficient_scope when the token lacks openid', function (): void {
     $this->actingAsOidcUser($this->user, ['email'], 'oidc');
 
     $this->getJson('/realms/default/oauth/userinfo')
@@ -43,7 +43,7 @@ it('returns insufficient_scope when the token lacks openid', function () {
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="insufficient_scope", '.USERINFO_RESOURCE_METADATA);
 });
 
-it('returns sub plus the claims the granted scopes cover on GET and POST', function () {
+it('returns sub plus the claims the granted scopes cover on GET and POST', function (): void {
     $this->actingAsOidcUser($this->user, ['openid', 'profile', 'email'], 'oidc');
 
     $response = $this->getJson('/realms/default/oauth/userinfo')->assertOk();
@@ -56,7 +56,7 @@ it('returns sub plus the claims the granted scopes cover on GET and POST', funct
     $this->postJson('/realms/default/oauth/userinfo')->assertOk()->assertJson(['sub' => (string) $this->user->id]);
 });
 
-it('includes scoped claims from a custom claims resolver and drops the protocol claims it emits', function () {
+it('includes scoped claims from a custom claims resolver and drops the protocol claims it emits', function (): void {
     app()->instance(ClaimsResolver::class, new class implements ClaimsResolver
     {
         public function resolve(ClaimsRequest $request): array
@@ -65,7 +65,7 @@ it('includes scoped claims from a custom claims resolver and drops the protocol 
                 'sub' => 'someone-else',
                 'iss' => 'https://evil.test',
                 'aud' => ['other'],
-                ...(new ClaimSet(['tenant' => ['tenant' => 'acme']]))->forScopes($request->scopes),
+                ...new ClaimSet(['tenant' => ['tenant' => 'acme']])->forScopes($request->scopes),
             ];
         }
     });

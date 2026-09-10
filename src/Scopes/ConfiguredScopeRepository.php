@@ -33,7 +33,7 @@ class ConfiguredScopeRepository implements ScopeRepository
     {
         return collect($this->catalog())
             ->union(self::OIDC_SCOPES)
-            ->map(fn (string $description, string $id) => new Scope($id, $description))
+            ->map(fn (string $description, string $id): Scope => new Scope($id, $description))
             ->values();
     }
 
@@ -72,14 +72,14 @@ class ConfiguredScopeRepository implements ScopeRepository
 
     public function find(string $identifier): ?Scope
     {
-        return $this->all()->first(fn (Scope $scope) => $scope->id === $identifier);
+        return $this->all()->first(fn (Scope $scope): bool => $scope->id === $identifier);
     }
 
     public function finalize(array $requested, string $grantType, ?Client $client, ?string $userIdentifier = null): array
     {
         return array_values(array_filter(
             $requested,
-            fn (Scope $scope) => $this->find($scope->id) instanceof Scope,
+            fn (Scope $scope): bool => $this->find($scope->id) instanceof Scope,
         ));
     }
 }

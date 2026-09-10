@@ -14,7 +14,7 @@ use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 
-it('mints a signed logout token with the spec claims and an events object', function () {
+it('mints a signed logout token with the spec claims and an events object', function (): void {
     $sid = app(OidcSessionRepository::class)->start('99');
     $session = OidcSession::query()->findOrFail($sid);
 

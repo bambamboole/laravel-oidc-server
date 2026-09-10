@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 });
@@ -28,7 +28,7 @@ function purgeTokenFixture(mixed $test, string $id, bool $revoked, string $expir
     return $token;
 }
 
-it('keeps live and recently expired tokens and removes revoked and long-expired ones', function () {
+it('keeps live and recently expired tokens and removes revoked and long-expired ones', function (): void {
     purgeTokenFixture($this, 'live', false, now()->addHour()->toDateTimeString());
     purgeTokenFixture($this, 'recently-expired', false, now()->subHour()->toDateTimeString());
     purgeTokenFixture($this, 'revoked', true, now()->addHour()->toDateTimeString());
@@ -39,7 +39,7 @@ it('keeps live and recently expired tokens and removes revoked and long-expired 
     expect(AccessToken::query()->pluck('id')->all())->toEqualCanonicalizing(['live', 'recently-expired']);
 });
 
-it('purges only revoked records when asked', function () {
+it('purges only revoked records when asked', function (): void {
     purgeTokenFixture($this, 'revoked', true, now()->addHour()->toDateTimeString());
     purgeTokenFixture($this, 'expired', false, now()->subWeeks(2)->toDateTimeString());
 
@@ -48,7 +48,7 @@ it('purges only revoked records when asked', function () {
     expect(AccessToken::query()->pluck('id')->all())->toBe(['expired']);
 });
 
-it('purges refresh tokens and authorization codes too', function () {
+it('purges refresh tokens and authorization codes too', function (): void {
     purgeTokenFixture($this, 'access', false, now()->subWeeks(2)->toDateTimeString());
 
     (new RefreshToken)->forceFill([

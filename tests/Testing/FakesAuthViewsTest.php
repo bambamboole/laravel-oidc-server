@@ -7,7 +7,7 @@ use Workbench\App\Models\User;
 
 uses(FakesAuthViews::class);
 
-it('binds every controller-facing auth view contract to its JSON stub', function () {
+it('binds every controller-facing auth view contract to its JSON stub', function (): void {
     $this->fakeAuthViews();
 
     $this->get(route('identity.login'))->assertOk()->assertJson(['view' => 'login']);

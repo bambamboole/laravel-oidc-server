@@ -20,7 +20,7 @@ use Webauthn\PublicKeyCredential;
 use Webauthn\PublicKeyCredentialRequestOptions;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 });
 
@@ -78,7 +78,7 @@ function mfaAssertionPayload(): array
     ];
 }
 
-it('defers the login until the TOTP challenge is verified and records both methods', function () {
+it('defers the login until the TOTP challenge is verified and records both methods', function (): void {
     $secret = mfaEnrollTotp($this->user);
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password', 'remember' => true])
@@ -95,7 +95,7 @@ it('defers the login until the TOTP challenge is verified and records both metho
     expect(session(AuthSessionState::AMR_KEY))->toBe(['pwd', 'otp']);
 });
 
-it('signals the pending challenge to JSON clients', function () {
+it('signals the pending challenge to JSON clients', function (): void {
     mfaEnrollTotp($this->user);
 
     $this->postJson(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])
@@ -105,7 +105,7 @@ it('signals the pending challenge to JSON clients', function () {
     $this->assertGuest('identity');
 });
 
-it('completes the challenge with a recovery code, consuming it', function () {
+it('completes the challenge with a recovery code, consuming it', function (): void {
     mfaEnrollTotp($this->user);
     $recoveryCode = $this->user->recoveryCodes()->firstOrFail()->code;
 
@@ -120,7 +120,7 @@ it('completes the challenge with a recovery code, consuming it', function () {
         ->and($this->user->recoveryCodes()->whereNull('used_at')->count())->toBe(7);
 });
 
-it('completes a WebAuthn second-factor challenge through the options and assertion legs', function () {
+it('completes a WebAuthn second-factor challenge through the options and assertion legs', function (): void {
     config(['oidc.auth.two_factor.challenge_providers' => ['webauthn']]);
     mfaEnrollPasskey($this->user);
 
@@ -138,7 +138,7 @@ it('completes a WebAuthn second-factor challenge through the options and asserti
     expect(session(AuthSessionState::AMR_KEY))->toBe(['pwd', 'webauthn']);
 });
 
-it('lets the user switch from the default TOTP challenge to a passkey mid-challenge', function () {
+it('lets the user switch from the default TOTP challenge to a passkey mid-challenge', function (): void {
     mfaEnrollTotp($this->user);
     mfaEnrollPasskey($this->user);
 
@@ -158,7 +158,7 @@ it('lets the user switch from the default TOTP challenge to a passkey mid-challe
     $this->assertAuthenticatedAs($this->user, 'identity');
 });
 
-it('challenges a password login with an enrolled passkey only while webauthn is a challenge provider', function () {
+it('challenges a password login with an enrolled passkey only while webauthn is a challenge provider', function (): void {
     $this->user->passkeys()->create(['name' => 'Security key', 'credential_id' => 'credential-id', 'credential' => []]);
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])

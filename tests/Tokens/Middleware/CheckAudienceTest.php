@@ -15,7 +15,7 @@ use Workbench\App\Models\User;
 
 const CHECK_AUDIENCE_CHALLENGE = 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"';
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
@@ -27,7 +27,7 @@ beforeEach(function () {
         ->get('/test/orders', fn (Request $request) => response()->json(['user' => $request->user()?->getAuthIdentifier()]));
 });
 
-it('passes a token addressed to the route audience and rejects one addressed elsewhere', function () {
+it('passes a token addressed to the route audience and rejects one addressed elsewhere', function (): void {
     $orders = resourceServerBearer($this, ['https://api.internal/orders']);
     $other = resourceServerBearer($this, ['https://other/api']);
 
@@ -44,7 +44,7 @@ it('passes a token addressed to the route audience and rejects one addressed els
         ->assertHeader('WWW-Authenticate', CHECK_AUDIENCE_CHALLENGE);
 });
 
-it('rejects with invalid_token when no preceding guard populated the user', function () {
+it('rejects with invalid_token when no preceding guard populated the user', function (): void {
     Route::middleware(CheckAudience::using('https://api.internal/orders'))
         ->get('/test/orders-unguarded', fn (Request $request) => response()->json(['user' => $request->user()?->getAuthIdentifier()]));
 

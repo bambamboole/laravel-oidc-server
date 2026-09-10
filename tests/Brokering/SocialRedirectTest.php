@@ -24,7 +24,7 @@ function enableCorpProvider(): void
     ]);
 }
 
-it('redirects to the upstream provider and stores the pending authorization', function () {
+it('redirects to the upstream provider and stores the pending authorization', function (): void {
     enableCorpProvider();
 
     $response = $this->get(route('identity.social.redirect', ['provider' => 'corp']));
@@ -35,12 +35,12 @@ it('redirects to the upstream provider and stores the pending authorization', fu
         ->and(session(PendingSocialRedirect::SESSION_KEY)['intent'])->toBe('login');
 });
 
-it('responds 404 for an unknown or credential-less provider', function () {
+it('responds 404 for an unknown or credential-less provider', function (): void {
     $this->get(route('identity.social.redirect', ['provider' => 'github']))->assertNotFound();
     $this->get(route('identity.social.redirect', ['provider' => 'nope']))->assertNotFound();
 });
 
-it('bounces the form_post callback to a GET so the session cookie is available', function () {
+it('bounces the form_post callback to a GET so the session cookie is available', function (): void {
     enableCorpProvider();
 
     $this->post(route('identity.social.callback', ['provider' => 'corp']), [
@@ -53,7 +53,7 @@ it('bounces the form_post callback to a GET so the session cookie is available',
     );
 });
 
-it('redirects to login with an error when the provider reports one', function () {
+it('redirects to login with an error when the provider reports one', function (): void {
     enableCorpProvider();
 
     $this->get(route('identity.social.callback', ['provider' => 'corp']).'?error=access_denied')
@@ -61,7 +61,7 @@ it('redirects to login with an error when the provider reports one', function ()
         ->assertSessionHasErrors('social');
 });
 
-it('redirects to login when no pending authorization exists', function () {
+it('redirects to login when no pending authorization exists', function (): void {
     enableCorpProvider();
 
     $this->get(route('identity.social.callback', ['provider' => 'corp']).'?code=x&state=y')

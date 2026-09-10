@@ -54,7 +54,7 @@ class AllowlistExchangePolicy implements ExchangePolicy
     /** @return string[] */
     private function normalize(mixed $aud): array
     {
-        return array_values(array_filter(is_array($aud) ? $aud : [$aud], 'is_string'));
+        return array_values(array_filter(is_array($aud) ? $aud : [$aud], is_string(...)));
     }
 
     /** @return string[] */

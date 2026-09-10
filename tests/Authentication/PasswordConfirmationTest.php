@@ -9,7 +9,7 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
 
-it('confirms the password and records the confirmation timestamp', function () {
+it('confirms the password and records the confirmation timestamp', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->actingAs($user, 'identity')
@@ -19,7 +19,7 @@ it('confirms the password and records the confirmation timestamp', function () {
         ->assertSessionHas('auth.password_confirmed_at');
 });
 
-it('rejects password confirmation with the wrong password', function () {
+it('rejects password confirmation with the wrong password', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->actingAs($user, 'identity')
@@ -31,7 +31,7 @@ it('rejects password confirmation with the wrong password', function () {
     expect(session()->has('auth.password_confirmed_at'))->toBeFalse();
 });
 
-it('reports the confirmation status through the status endpoint', function () {
+it('reports the confirmation status through the status endpoint', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->actingAs($user, 'identity')
@@ -48,7 +48,7 @@ it('reports the confirmation status through the status endpoint', function () {
         ->assertJson(['confirmed' => true]);
 });
 
-it('treats an elapsed confirmation as unconfirmed', function () {
+it('treats an elapsed confirmation as unconfirmed', function (): void {
     config()->set('auth.password_timeout', 900);
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);

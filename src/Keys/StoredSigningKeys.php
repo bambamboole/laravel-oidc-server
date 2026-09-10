@@ -11,9 +11,9 @@ use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 
-final class StoredSigningKeys implements SigningKeys
+final readonly class StoredSigningKeys implements SigningKeys
 {
-    public function __construct(private readonly SigningKeyStore $store) {}
+    public function __construct(private SigningKeyStore $store) {}
 
     public function signingKey(): SigningKeyPair
     {

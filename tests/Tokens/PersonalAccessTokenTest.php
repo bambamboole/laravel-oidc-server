@@ -14,12 +14,12 @@ use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\PersonalAccessTokenEvent;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenIssuanceDeniedException;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     app(ClientRepository::class)->createPersonalAccessGrantClient('PAT');
 });
 
-it('runs the personal-access trigger once and applies its claims to the issued token', function () {
+it('runs the personal-access trigger once and applies its claims to the issued token', function (): void {
     $triggerCount = 0;
 
     app(AccessTokenPipeline::class)->register('personal_access_token', function (PersonalAccessTokenEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
@@ -38,7 +38,7 @@ it('runs the personal-access trigger once and applies its claims to the issued t
         ->and($triggerCount)->toBe(1);
 });
 
-it('denies issuance before persisting when a trigger denies', function () {
+it('denies issuance before persisting when a trigger denies', function (): void {
     app(AccessTokenPipeline::class)->register('personal_access_token', fn (PersonalAccessTokenEvent $event, AccessTokenApi $api) => $api->deny('pat_blocked'));
 
     expect(fn () => $this->user->createToken('cli', ['openid']))->toThrow(TokenIssuanceDeniedException::class)

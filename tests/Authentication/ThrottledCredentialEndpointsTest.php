@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
  * sit behind a rate limiter. A new endpoint that forgets its limiter fails
  * here instead of shipping unthrottled.
  */
-it('rate limits every credential-handling endpoint', function (string $routeName) {
+it('rate limits every credential-handling endpoint', function (string $routeName): void {
     $route = Route::getRoutes()->getByName($routeName);
 
     expect($route)->not->toBeNull();

@@ -14,6 +14,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Scopes\ScopeCatalog;
+use Illuminate\Support\Collection;
 
 class RepositoryClassCatalog implements ScopeCatalog
 {
@@ -64,7 +65,7 @@ function scopeIds(): array
     return freshScopeRepository()->all()->map(fn (Scope $scope): string => $scope->id)->all();
 }
 
-it('exposes the configured catalog plus the oidc standard scopes, preferring the catalog description', function () {
+it('exposes the configured catalog plus the oidc standard scopes, preferring the catalog description', function (): void {
     config(['oidc.scopes.catalog' => ['project:update' => 'Update projects', 'openid' => 'Custom openid description']]);
 
     $repository = freshScopeRepository();
@@ -75,17 +76,17 @@ it('exposes the configured catalog plus the oidc standard scopes, preferring the
         ->and($repository->find('nope'))->toBeNull();
 });
 
-it('resolves a class-string catalog from the container and rejects one that does not implement the contract', function () {
+it('resolves a class-string catalog from the container and rejects one that does not implement the contract', function (): void {
     config()->set('oidc.scopes.catalog', RepositoryClassCatalog::class);
 
     expect(scopeIds())->toContain('catalog:read');
 
     config()->set('oidc.scopes.catalog', stdClass::class);
 
-    expect(fn () => freshScopeRepository()->all())->toThrow(LogicException::class);
+    expect(fn (): Collection => freshScopeRepository()->all())->toThrow(LogicException::class);
 });
 
-it('caches the catalog per realm on one instance', function () {
+it('caches the catalog per realm on one instance', function (): void {
     config()->set('oidc.scopes.catalog', RepositoryRealmCatalog::class);
     $resolver = new RepositorySwitchableRealmResolver('acme');
     app()->instance(RealmResolver::class, $resolver);
@@ -103,7 +104,7 @@ it('caches the catalog per realm on one instance', function () {
     expect($repository->find('acme:read'))->not->toBeNull();
 });
 
-it('falls back to the standard scopes when the catalog throws', function () {
+it('falls back to the standard scopes when the catalog throws', function (): void {
     config()->set('oidc.scopes.catalog', RepositoryThrowingCatalog::class);
 
     expect(scopeIds())->toContain('openid')->not->toContain('catalog:read');

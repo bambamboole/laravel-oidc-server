@@ -17,7 +17,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->withoutMiddleware(ValidateCsrfToken::class);
     fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
 
@@ -44,7 +44,7 @@ function selfSsoAuthorize(mixed $test, array $overrides = []): TestResponse
     ]));
 }
 
-it('returns a credential login to the pending authorization request without creating a web session', function () {
+it('returns a credential login to the pending authorization request without creating a web session', function (): void {
     config(['oidc.auth.login_route' => 'identity.login']);
 
     selfSsoAuthorize($this)->assertRedirect('/realms/default/auth/login');
@@ -56,7 +56,7 @@ it('returns a credential login to the pending authorization request without crea
         ->and(auth('web')->guest())->toBeTrue();
 });
 
-it('auto-approves a trusted client, also for prompt=consent and prompt=none', function (array $overrides) {
+it('auto-approves a trusted client, also for prompt=consent and prompt=none', function (array $overrides): void {
     config(['oidc.clients.trusted' => [$this->client->id]]);
     $this->actingAsIdentity($this->user);
 
@@ -69,7 +69,7 @@ it('auto-approves a trusted client, also for prompt=consent and prompt=none', fu
     'prompt=none' => [['prompt' => 'none']],
 ]);
 
-it('lets the first-party trusted flag decide over the trusted list', function (bool $firstPartyTrusted, array $trustedList) {
+it('lets the first-party trusted flag decide over the trusted list', function (bool $firstPartyTrusted, array $trustedList): void {
     config([
         'oidc.clients.first_party' => ['client_id' => (string) $this->client->id, 'trusted' => $firstPartyTrusted],
         'oidc.clients.trusted' => array_map(fn (string $id): string => $id === '{client}' ? (string) $this->client->id : $id, $trustedList),

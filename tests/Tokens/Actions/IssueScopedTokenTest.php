@@ -16,7 +16,7 @@ use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['oidc.session.token.guard' => 'web']);
     $this->appClient = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
     $this->appClient->forceFill(['allowed_exchange_audiences' => ['https://api.orders.test']])->save();
@@ -25,7 +25,7 @@ beforeEach(function () {
     $this->startSession();
 });
 
-it('issues an audience-scoped token for the session user', function () {
+it('issues an audience-scoped token for the session user', function (): void {
     $this->actingAs($this->user);
 
     $issued = app(IssueScopedToken::class)('https://api.orders.test', ['openid']);
@@ -34,7 +34,7 @@ it('issues an audience-scoped token for the session user', function () {
         ->and($issued->scopes)->toBe(['openid'])
         ->and($issued->tokenType)->toBe('Bearer');
 
-    $parsed = (new Parser(new JoseEncoder))->parse($issued->accessToken);
+    $parsed = new Parser(new JoseEncoder)->parse($issued->accessToken);
 
     if (! $parsed instanceof UnencryptedToken) {
         throw new RuntimeException('Expected an unencrypted token.');
@@ -46,6 +46,6 @@ it('issues an audience-scoped token for the session user', function () {
     expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
 });
 
-it('throws when there is no session token (unauthenticated)', function () {
+it('throws when there is no session token (unauthenticated)', function (): void {
     app(IssueScopedToken::class)('https://api.orders.test', ['openid']);
 })->throws(RuntimeException::class);

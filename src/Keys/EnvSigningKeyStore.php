@@ -11,9 +11,9 @@ use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use RuntimeException;
 use Throwable;
 
-final class EnvSigningKeyStore implements SigningKeyStore
+final readonly class EnvSigningKeyStore implements SigningKeyStore
 {
-    public function __construct(private readonly EnvironmentFile $environment) {}
+    public function __construct(private EnvironmentFile $environment) {}
 
     public function signingKey(): SigningKeyPair
     {
@@ -57,7 +57,7 @@ final class EnvSigningKeyStore implements SigningKeyStore
 
         return array_values(array_filter(
             is_array($additional) ? $additional : [],
-            fn ($key) => is_string($key) && $key !== '',
+            fn ($key): bool => is_string($key) && $key !== '',
         ));
     }
 

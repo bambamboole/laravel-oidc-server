@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Shared\Installation;
 
-final class EnvironmentFile
+final readonly class EnvironmentFile
 {
-    public function __construct(private readonly ?string $path = null) {}
+    public function __construct(private ?string $path = null) {}
 
     /**
      * Encode a value as a double-quoted, `\n`-escaped single-line env value,

@@ -31,7 +31,7 @@ function pipelineEvent(string $grant): ClientCredentialsEvent|TokenExchangeEvent
     };
 }
 
-it('runs the triggers of a grant in registration order and stops after an explicit denial', function (string $grant) {
+it('runs the triggers of a grant in registration order and stops after an explicit denial', function (string $grant): void {
     $pipeline = new AccessTokenPipeline;
     $order = [];
 
@@ -55,7 +55,7 @@ it('runs the triggers of a grant in registration order and stops after an explic
         ->and($api->denyReason())->toBe('blocked');
 })->with(['client_credentials', 'token_exchange', 'personal_access_token', 'authorization_code']);
 
-it('fails closed with a grant-specific reason and skips later triggers when one throws', function (string $grant) {
+it('fails closed with a grant-specific reason and skips later triggers when one throws', function (string $grant): void {
     $pipeline = new AccessTokenPipeline;
     $laterTriggerRan = false;
 
@@ -73,7 +73,7 @@ it('fails closed with a grant-specific reason and skips later triggers when one 
         ->and($laterTriggerRan)->toBeFalse();
 })->with(['client_credentials', 'token_exchange', 'personal_access_token', 'authorization_code']);
 
-it('runs each grant independently with its own event and seeded context', function () {
+it('runs each grant independently with its own event and seeded context', function (): void {
     $pipeline = new AccessTokenPipeline;
     $clientCredentialsTriggerRan = false;
 
@@ -103,7 +103,7 @@ it('runs each grant independently with its own event and seeded context', functi
         ->and($code->accessTokenClaims())->toBe(['via' => 'refresh_token']);
 });
 
-it('returns a fresh access-token api for every invocation', function () {
+it('returns a fresh access-token api for every invocation', function (): void {
     $pipeline = new AccessTokenPipeline;
 
     $first = $pipeline->run('client_credentials', pipelineEvent('client_credentials'));
@@ -117,7 +117,7 @@ it('returns a fresh access-token api for every invocation', function () {
         ->and($second->accessTokenClaims())->toBe([]);
 });
 
-it('refuses protected access-token claim :dataset', function (string $claim) {
+it('refuses protected access-token claim :dataset', function (string $claim): void {
     $api = new AccessTokenApi;
 
     $api->setAccessTokenClaim($claim, 'forged');

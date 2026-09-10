@@ -9,7 +9,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Clients\Actions\ProvisionFirstPartyClient;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 
-it('redacts the existing client credential from exception traces', function () {
+it('redacts the existing client credential from exception traces', function (): void {
     app(ProvisionFirstPartyClient::class)(name: 'First-party app', redirectUris: ['https://app.test/login/callback']);
     $existingClientSecret = 'trace-secret-that-must-be-redacted';
 

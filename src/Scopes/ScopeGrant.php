@@ -12,11 +12,11 @@ use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
  * screen, unknown scopes are dropped, the client's allow-list applies, and
  * the ScopeRepository has the final say.
  */
-final class ScopeGrant
+final readonly class ScopeGrant
 {
     private const array WILDCARD_GRANTS = ['personal_access', 'client_credentials'];
 
-    public function __construct(private readonly ScopeRepository $scopes) {}
+    public function __construct(private ScopeRepository $scopes) {}
 
     /**
      * @param  list<string>  $requested
@@ -30,14 +30,14 @@ final class ScopeGrant
             $ids = array_values(array_filter($ids, fn (string $id): bool => $id !== '*'));
         }
 
-        if ($client !== null) {
-            $ids = array_values(array_filter($ids, fn (string $id): bool => $client->hasScope($id)));
+        if ($client instanceof Client) {
+            $ids = array_values(array_filter($ids, $client->hasScope(...)));
         }
 
         $wildcard = in_array('*', $ids, true);
 
         $candidates = array_values(array_filter(array_map(
-            fn (string $id): ?Scope => $this->scopes->find($id),
+            $this->scopes->find(...),
             $ids,
         )));
 

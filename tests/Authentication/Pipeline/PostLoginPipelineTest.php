@@ -25,7 +25,7 @@ function makeLoginEvent(array $amr = ['pwd']): LoginEvent
     );
 }
 
-it('runs registered hooks in order and returns the api', function () {
+it('runs registered hooks in order and returns the api', function (): void {
     $pipeline = new PostLoginPipeline;
     $pipeline->register(fn (LoginEvent $e, LoginApi $api) => $api->setIdTokenClaim('a', 1));
     $pipeline->register(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
@@ -37,7 +37,7 @@ it('runs registered hooks in order and returns the api', function () {
         ->and($api->isDenied())->toBeFalse();
 });
 
-it('fails closed when a hook throws', function () {
+it('fails closed when a hook throws', function (): void {
     $pipeline = new PostLoginPipeline;
     $pipeline->register(function (): void {
         throw new RuntimeException('boom');
@@ -51,7 +51,7 @@ it('fails closed when a hook throws', function () {
         ->and($api->idTokenClaims())->toBe([]); // later hook skipped
 });
 
-it('refuses protected id_token and access-token claim names from hooks', function () {
+it('refuses protected id_token and access-token claim names from hooks', function (): void {
     $api = new LoginApi;
 
     $api->setIdTokenClaim('groups', ['admin']);

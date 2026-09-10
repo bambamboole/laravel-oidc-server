@@ -14,7 +14,7 @@ function installSelfEnv(string $contents = "APP_NAME=Testing\n"): string
     return $directory.'/.env';
 }
 
-it('provisions the first-party client and writes both env halves', function () {
+it('provisions the first-party client and writes both env halves', function (): void {
     $env = installSelfEnv();
     config(['oidc-client' => [], 'app.url' => 'https://app.test', 'oidc.issuer' => null]);
 
@@ -36,7 +36,7 @@ it('provisions the first-party client and writes both env halves', function () {
         ->and(preg_match('/^OIDC_RP_CLIENT_SECRET=.+$/m', $contents))->toBe(1);
 });
 
-it('forwards configured provisioning options to the first-party client', function () {
+it('forwards configured provisioning options to the first-party client', function (): void {
     installSelfEnv();
     config([
         'oidc-client' => [],
@@ -60,7 +60,7 @@ it('forwards configured provisioning options to the first-party client', functio
         ->and($client->getAttribute('grant_types'))->toContain('urn:ietf:params:oauth:grant-type:token-exchange');
 });
 
-it('provisions without token exchange when no audiences are configured', function () {
+it('provisions without token exchange when no audiences are configured', function (): void {
     installSelfEnv();
     config(['oidc-client' => [], 'app.url' => 'https://app.test']);
 
@@ -72,7 +72,7 @@ it('provisions without token exchange when no audiences are configured', functio
         ->and($client->getAttribute('grant_types'))->not->toContain('urn:ietf:params:oauth:grant-type:token-exchange');
 });
 
-it('adopts the existing client on a second run instead of minting a new one', function () {
+it('adopts the existing client on a second run instead of minting a new one', function (): void {
     $env = installSelfEnv();
     config(['oidc-client' => [], 'app.url' => 'https://app.test']);
 
@@ -91,7 +91,7 @@ it('adopts the existing client on a second run instead of minting a new one', fu
         ->and($secondContents)->toContain('OIDC_RP_CLIENT_SECRET='.$secret[1]);
 });
 
-it('rotates the client secret when run again with --fresh', function () {
+it('rotates the client secret when run again with --fresh', function (): void {
     $env = installSelfEnv();
     config(['oidc-client' => [], 'app.url' => 'https://app.test']);
 
@@ -110,7 +110,7 @@ it('rotates the client secret when run again with --fresh', function () {
         ->and($rotated[1])->not->toBe($secret[1]);
 });
 
-it('fails instead of rotating when the configured secret no longer matches', function () {
+it('fails instead of rotating when the configured secret no longer matches', function (): void {
     $env = installSelfEnv();
     config(['oidc-client' => [], 'app.url' => 'https://app.test']);
 
@@ -125,7 +125,7 @@ it('fails instead of rotating when the configured secret no longer matches', fun
     $this->artisan('oidc:install-self', ['--force' => true])->assertFailed();
 });
 
-it('fails when the relying-party package is not installed', function () {
+it('fails when the relying-party package is not installed', function (): void {
     $env = installSelfEnv();
     $before = File::get($env);
     config(['oidc-client' => null, 'app.url' => 'https://app.test']);

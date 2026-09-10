@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * RFC 8414 §3 (authorization server metadata well-known path, path-insertion form)
  */
-it('serves the same document as the openid configuration under both well-known forms', function () {
+it('serves the same document as the openid configuration under both well-known forms', function (): void {
     config(['oidc.issuer' => 'https://id.example.com']);
 
     $oidc = $this->getJson('/realms/default/.well-known/openid-configuration')->assertOk()->json();
@@ -20,7 +20,7 @@ it('serves the same document as the openid configuration under both well-known f
         ->assertJsonPath('issuer', 'https://id.example.com/realms/default');
 });
 
-it('advertises the registration endpoint once dynamic client registration is enabled', function () {
+it('advertises the registration endpoint once dynamic client registration is enabled', function (): void {
     $this->getJson('/.well-known/oauth-authorization-server/realms/default')
         ->assertOk()
         ->assertJsonMissingPath('registration_endpoint');
@@ -30,5 +30,5 @@ it('advertises the registration endpoint once dynamic client registration is ena
 
     $this->getJson('/.well-known/oauth-authorization-server/realms/default')
         ->assertOk()
-        ->assertJsonPath('registration_endpoint', fn (string $url) => str_contains($url, '/realms/default/oauth/register'));
+        ->assertJsonPath('registration_endpoint', fn (string $url): bool => str_contains($url, '/realms/default/oauth/register'));
 });

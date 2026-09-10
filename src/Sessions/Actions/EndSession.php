@@ -15,15 +15,15 @@ use Illuminate\Contracts\Session\Session;
  * so every logout path — this action or the application's own — does that
  * work exactly once.
  */
-final class EndSession
+final readonly class EndSession
 {
-    public function __construct(private readonly AuthFactory $auth) {}
+    public function __construct(private AuthFactory $auth) {}
 
     public function __invoke(?Session $session = null): void
     {
         $this->auth->guard((string) config('oidc.auth.guard', 'identity'))->logout();
 
-        if ($session !== null) {
+        if ($session instanceof Session) {
             $session->invalidate();
             $session->regenerateToken();
         }

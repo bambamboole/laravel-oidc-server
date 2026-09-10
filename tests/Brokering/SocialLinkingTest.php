@@ -71,7 +71,7 @@ function linkCallbackFor(mixed $test, string $sub = 'upstream-1'): TestResponse
         .'?'.http_build_query(['code' => 'code-1', 'state' => $pending['state']]));
 }
 
-it('links a provider to the authenticated user', function () {
+it('links a provider to the authenticated user', function (): void {
     enableCorpForLinking();
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
@@ -90,7 +90,7 @@ it('links a provider to the authenticated user', function () {
         ->and($account->authenticatable->is($user))->toBeTrue();
 });
 
-it('refuses to link an identity already attached to another user', function () {
+it('refuses to link an identity already attached to another user', function (): void {
     enableCorpForLinking();
     $other = User::create(['name' => 'O', 'email' => 'other@example.com', 'password' => 'secret']);
     app(SocialAccountManager::class)->link($other, 'corp', new SocialUser('upstream-1', 'other@example.com', true, 'O', null, null));
@@ -106,7 +106,7 @@ it('refuses to link an identity already attached to another user', function () {
     expect(SocialAccount::query()->sole()->authenticatable->is($other))->toBeTrue();
 });
 
-it('rejects a link-intent callback when the identity session is gone', function () {
+it('rejects a link-intent callback when the identity session is gone', function (): void {
     enableCorpForLinking();
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
@@ -124,14 +124,14 @@ it('rejects a link-intent callback when the identity session is gone', function 
     expect(SocialAccount::query()->count())->toBe(0);
 });
 
-it('requires authentication to start linking', function () {
+it('requires authentication to start linking', function (): void {
     enableCorpForLinking();
 
     $this->get(route('identity.social.link', ['provider' => 'corp']))->assertRedirect();
     expect(session(PendingSocialRedirect::SESSION_KEY))->toBeNull();
 });
 
-it('unlinks an account owned by the user', function () {
+it('unlinks an account owned by the user', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $account = app(SocialAccountManager::class)->link($user, 'corp', new SocialUser('upstream-1', 'm@example.com', true, 'M', null, null));
 
@@ -143,7 +143,7 @@ it('unlinks an account owned by the user', function () {
     expect(SocialAccount::query()->count())->toBe(0);
 });
 
-it('forbids unlinking another user\'s account', function () {
+it('forbids unlinking another user\'s account', function (): void {
     $owner = User::create(['name' => 'O', 'email' => 'o@example.com', 'password' => 'secret']);
     $account = app(SocialAccountManager::class)->link($owner, 'corp', new SocialUser('upstream-1', 'o@example.com', true, 'O', null, null));
 

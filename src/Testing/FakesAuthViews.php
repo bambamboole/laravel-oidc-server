@@ -34,7 +34,7 @@ trait FakesAuthViews
 {
     protected function fakeAuthViews(): static
     {
-        app()->bind(LoginView::class, fn () => new class implements LoginView
+        app()->bind(LoginView::class, fn (): LoginView => new class implements LoginView
         {
             public function respond(LoginPrompt $prompt, Request $request): JsonResponse
             {
@@ -42,7 +42,7 @@ trait FakesAuthViews
             }
         });
 
-        app()->bind(RegisterView::class, fn () => new class implements RegisterView
+        app()->bind(RegisterView::class, fn (): RegisterView => new class implements RegisterView
         {
             public function respond(Request $request): JsonResponse
             {
@@ -50,7 +50,7 @@ trait FakesAuthViews
             }
         });
 
-        app()->bind(PasswordResetRequestView::class, fn () => new class implements PasswordResetRequestView
+        app()->bind(PasswordResetRequestView::class, fn (): PasswordResetRequestView => new class implements PasswordResetRequestView
         {
             public function respond(PasswordResetRequestPrompt $prompt, Request $request): JsonResponse
             {
@@ -58,7 +58,7 @@ trait FakesAuthViews
             }
         });
 
-        app()->bind(PasswordResetView::class, fn () => new class implements PasswordResetView
+        app()->bind(PasswordResetView::class, fn (): PasswordResetView => new class implements PasswordResetView
         {
             public function respond(PasswordResetPrompt $prompt, Request $request): JsonResponse
             {
@@ -66,7 +66,7 @@ trait FakesAuthViews
             }
         });
 
-        app()->bind(EmailVerificationView::class, fn () => new class implements EmailVerificationView
+        app()->bind(EmailVerificationView::class, fn (): EmailVerificationView => new class implements EmailVerificationView
         {
             public function respond(EmailVerificationPrompt $prompt, Request $request): JsonResponse
             {
@@ -74,7 +74,7 @@ trait FakesAuthViews
             }
         });
 
-        app()->bind(PasswordConfirmationView::class, fn () => new class implements PasswordConfirmationView
+        app()->bind(PasswordConfirmationView::class, fn (): PasswordConfirmationView => new class implements PasswordConfirmationView
         {
             public function respond(Request $request): JsonResponse
             {
@@ -82,7 +82,7 @@ trait FakesAuthViews
             }
         });
 
-        app()->bind(TwoFactorChallengeView::class, fn () => new class implements TwoFactorChallengeView
+        app()->bind(TwoFactorChallengeView::class, fn (): TwoFactorChallengeView => new class implements TwoFactorChallengeView
         {
             public function respond(TwoFactorChallengePrompt $prompt, Request $request): JsonResponse
             {
@@ -90,7 +90,7 @@ trait FakesAuthViews
             }
         });
 
-        app()->bind(ConsentView::class, fn () => new class implements ConsentView
+        app()->bind(ConsentView::class, fn (): ConsentView => new class implements ConsentView
         {
             public function respond(ConsentPrompt $prompt, Request $request): JsonResponse
             {
@@ -98,7 +98,7 @@ trait FakesAuthViews
             }
         });
 
-        app()->bind(LogoutConfirmationView::class, fn () => new class implements LogoutConfirmationView
+        app()->bind(LogoutConfirmationView::class, fn (): LogoutConfirmationView => new class implements LogoutConfirmationView
         {
             public function respond(LogoutPrompt $prompt, Request $request): JsonResponse
             {

@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Illuminate\Support\Facades\Bus;
 
-it('dispatches logout for expired un-notified sessions exactly once', function () {
+it('dispatches logout for expired un-notified sessions exactly once', function (): void {
     Bus::fake();
     $sid = app(OidcSessionRepository::class)->start('5');
     OidcSession::query()->whereKey($sid)->update(['expires_at' => now()->subMinute()]);

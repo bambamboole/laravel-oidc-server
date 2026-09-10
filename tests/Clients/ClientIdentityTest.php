@@ -25,7 +25,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->withoutMiddleware([ValidateCsrfToken::class, PreventRequestForgery::class]);
     fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
 
@@ -38,7 +38,7 @@ beforeEach(function () {
     ])->save();
 });
 
-it('issues, introspects and revokes under the wire client_id while storing the key', function () {
+it('issues, introspects and revokes under the wire client_id while storing the key', function (): void {
     $sink = fakeAudit();
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
     $this->actingAsIdentity($this->user, authTime: time() - 60)->withSession(['oidc.sid' => $sid]);
@@ -80,7 +80,7 @@ it('issues, introspects and revokes under the wire client_id while storing the k
     $sink->assertRecorded(AuditEventType::TokenRevoked, fn (AuditEvent $event): bool => $event->clientId === 'my-app');
 });
 
-it('exchanges a token issued under the wire client_id and names it in the act claim', function () {
+it('exchanges a token issued under the wire client_id and names it in the act claim', function (): void {
     config(['oidc.scopes.catalog' => ['openid' => 'Authenticate', 'orders:read' => 'Read orders']]);
     $subject = mintExchangeSubjectToken('my-app', (string) $this->user->id, ['openid', 'orders:read']);
 
@@ -97,7 +97,7 @@ it('exchanges a token issued under the wire client_id and names it in the act cl
     expect(parseAccessToken((string) $response->json('access_token'))->claims()->get('act'))->toBe(['client_id' => 'my-app']);
 });
 
-it('addresses the back-channel logout token to the wire client_id', function () {
+it('addresses the back-channel logout token to the wire client_id', function (): void {
     Queue::fake();
     $this->client->forceFill(['backchannel_logout_uri' => 'https://rp.test/backchannel'])->save();
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
@@ -110,7 +110,7 @@ it('addresses the back-channel logout token to the wire client_id', function () 
     Queue::assertPushed(SendBackChannelLogout::class, fn (SendBackChannelLogout $job): bool => $job->clientKey === (string) $this->client->getKey());
 });
 
-it('trusts a client configured by its wire client_id', function () {
+it('trusts a client configured by its wire client_id', function (): void {
     config(['oidc.clients.trusted' => ['my-app']]);
 
     $response = $this->actingAsIdentity($this->user, authTime: time() - 60)

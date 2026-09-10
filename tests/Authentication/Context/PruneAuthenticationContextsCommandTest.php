@@ -21,7 +21,7 @@ function pruneTestContext(string $userId, Carbon $expiresAt): AuthenticationCont
     return $context;
 }
 
-it('prunes expired contexts and keeps live ones', function () {
+it('prunes expired contexts and keeps live ones', function (): void {
     $live = pruneTestContext('1', now()->addDay());
     pruneTestContext('2', now()->subDay());
 

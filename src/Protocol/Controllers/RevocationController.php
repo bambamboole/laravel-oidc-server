@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 use Bambamboole\LaravelOidc\Server\Protocol\Clients\ClientAuthenticator;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Tokens\PresentedToken;
 use Bambamboole\LaravelOidc\Server\Tokens\PresentedTokenResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 use Illuminate\Http\Request;
@@ -30,7 +31,7 @@ class RevocationController
         $client = $clients->authenticate($request);
         $presented = $this->tokens->fromRequest($request);
 
-        if ($presented === null || ! $presented->accessToken->issuedTo($client)) {
+        if (! $presented instanceof PresentedToken || ! $presented->accessToken->issuedTo($client)) {
             return response()->noContent(200);
         }
 

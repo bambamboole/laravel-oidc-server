@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Consents\Actions;
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Consents\ConsentRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
@@ -17,13 +18,13 @@ use Symfony\Component\HttpFoundation\Response;
  * with the user's decision, and on approval remembers the consent so the
  * next request for the same client and scopes skips the screen.
  */
-final class CompleteAuthorization
+final readonly class CompleteAuthorization
 {
     public function __construct(
-        private readonly AuthorizationCompleter $completer,
-        private readonly ConsentRepository $consents,
-        private readonly ClientRepository $clients,
-        private readonly Auditor $auditor,
+        private AuthorizationCompleter $completer,
+        private ConsentRepository $consents,
+        private ClientRepository $clients,
+        private Auditor $auditor,
     ) {}
 
     public function __invoke(Request $request, bool $approved): Response
@@ -33,7 +34,7 @@ final class CompleteAuthorization
         if ($approved && $completed->userId !== null) {
             $client = $this->clients->find($completed->clientId);
 
-            if ($client !== null) {
+            if ($client instanceof Client) {
                 $this->consents->grant($completed->userId, (string) $client->getKey(), $completed->scopes);
             }
         }

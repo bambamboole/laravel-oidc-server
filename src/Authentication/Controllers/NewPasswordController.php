@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -57,7 +58,7 @@ class NewPasswordController
 
         $result = ($this->reset)($request->all());
 
-        if ($result->user !== null) {
+        if ($result->user instanceof Authenticatable) {
             // The password is reset either way; a postLogin denial or pending
             // second factor only affects the session that follows.
             $outcome = $this->finalizer->finalize($request, $result->user, 'pwd');

@@ -24,16 +24,16 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
  * `application_type`, `software_id`, and similar. PKCE is enforced by the
  * grant for every client.
  */
-final class RegisterClient
+final readonly class RegisterClient
 {
     private const array GRANT_TYPES = ['authorization_code', 'refresh_token'];
 
     private const array RESPONSE_TYPES = ['code'];
 
     public function __construct(
-        private readonly ClientRepository $clients,
-        private readonly Auditor $auditor,
-        private readonly RealmResolver $realms,
+        private ClientRepository $clients,
+        private Auditor $auditor,
+        private RealmResolver $realms,
     ) {}
 
     /**

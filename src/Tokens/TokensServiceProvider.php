@@ -86,12 +86,6 @@ class TokensServiceProvider extends ServiceProvider
     {
         $apiGuard = (string) config('oidc.auth.api_guard', 'oidc');
 
-        foreach ($guards as $guard) {
-            if ($guard === $apiGuard || config("auth.guards.{$guard}.driver") === 'oidc') {
-                return true;
-            }
-        }
-
-        return false;
+        return array_any($guards, fn (string $guard): bool => $guard === $apiGuard || config("auth.guards.{$guard}.driver") === 'oidc');
     }
 }

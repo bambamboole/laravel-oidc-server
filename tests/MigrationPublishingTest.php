@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passkeys\Passkeys;
 
-it('publishes only OIDC-owned migrations under the oidc migrations tag', function () {
+it('publishes only OIDC-owned migrations under the oidc migrations tag', function (): void {
     $publishPaths = ServiceProvider::pathsToPublish(OidcServiceProvider::class, 'oidc-migrations');
 
     $sourcePaths = array_map(realpath(...), array_keys($publishPaths));
@@ -17,7 +17,7 @@ it('publishes only OIDC-owned migrations under the oidc migrations tag', functio
         ->not->toContain(realpath(Passkeys::migrationPath()));
 });
 
-it('publishes OIDC and passkeys migrations once and migrates a fresh database', function () {
+it('publishes OIDC and passkeys migrations once and migrates a fresh database', function (): void {
     $temporaryPath = sys_get_temp_dir().'/laravel-oidc-publish-'.bin2hex(random_bytes(8));
     $migrationPath = $temporaryPath.'/migrations';
     $databasePath = $temporaryPath.'/database.sqlite';
@@ -49,7 +49,7 @@ it('publishes OIDC and passkeys migrations once and migrates a fresh database', 
         $this->artisan('migrate:fresh', [
             '--database' => 'published',
             '--path' => [
-                dirname(__DIR__).'/vendor/orchestra/testbench-core/laravel/migrations',
+                dirname(__DIR__, 3).'/vendor/orchestra/testbench-core/laravel/migrations',
                 $migrationPath,
             ],
             '--realpath' => true,

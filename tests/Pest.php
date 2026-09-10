@@ -39,9 +39,9 @@ uses(RefreshDatabase::class)->in(__DIR__);
 
 function createUsersUsing(Closure $action): void
 {
-    app()->bind(CreateUser::class, fn (): CreateUser => new class($action) implements CreateUser
+    app()->bind(CreateUser::class, fn (): CreateUser => new readonly class($action) implements CreateUser
     {
-        public function __construct(private readonly Closure $action) {}
+        public function __construct(private Closure $action) {}
 
         public function __invoke(array $input): Authenticatable
         {
@@ -52,9 +52,9 @@ function createUsersUsing(Closure $action): void
 
 function resetUserPasswordsUsing(Closure $action): void
 {
-    app()->bind(ResetUserPassword::class, fn (): ResetUserPassword => new class($action) implements ResetUserPassword
+    app()->bind(ResetUserPassword::class, fn (): ResetUserPassword => new readonly class($action) implements ResetUserPassword
     {
-        public function __construct(private readonly Closure $action) {}
+        public function __construct(private Closure $action) {}
 
         public function __invoke(CanResetPassword $user, array $input): void
         {
@@ -65,9 +65,9 @@ function resetUserPasswordsUsing(Closure $action): void
 
 function createUsersFromSocialUsing(Closure $action): void
 {
-    app()->bind(CreateUserFromSocialAccount::class, fn (): CreateUserFromSocialAccount => new class($action) implements CreateUserFromSocialAccount
+    app()->bind(CreateUserFromSocialAccount::class, fn (): CreateUserFromSocialAccount => new readonly class($action) implements CreateUserFromSocialAccount
     {
-        public function __construct(private readonly Closure $action) {}
+        public function __construct(private Closure $action) {}
 
         public function __invoke(SocialUser $socialUser, string $provider): Authenticatable
         {
@@ -137,7 +137,7 @@ function fakeAudit(): FakeAuditSink
 /** Parses any JWS the package issues (access, id or logout token) without validating it. */
 function parseAccessToken(string $jwt): UnencryptedToken
 {
-    $token = (new Parser(new JoseEncoder))->parse($jwt);
+    $token = new Parser(new JoseEncoder)->parse($jwt);
 
     if (! $token instanceof UnencryptedToken) {
         throw new RuntimeException('Expected an unencrypted token.');
@@ -272,9 +272,9 @@ function ttlUntil(DateTimeImmutable $expiresAt): DateInterval
  */
 function fakeConsentViewUsing(Closure $callback): void
 {
-    app()->instance(ConsentView::class, new class($callback) implements ConsentView
+    app()->instance(ConsentView::class, new readonly class($callback) implements ConsentView
     {
-        public function __construct(private readonly Closure $callback) {}
+        public function __construct(private Closure $callback) {}
 
         public function respond(ConsentPrompt $prompt, Request $request): Responsable|Response
         {

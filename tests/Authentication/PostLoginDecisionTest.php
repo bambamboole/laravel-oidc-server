@@ -13,11 +13,11 @@ use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => bcrypt('secret-password')]);
 });
 
-it('denies a login when the postLogin hook denies', function () {
+it('denies a login when the postLogin hook denies', function (): void {
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])
@@ -26,7 +26,7 @@ it('denies a login when the postLogin hook denies', function () {
     $this->assertGuest('identity');
 });
 
-it('buffers postLogin id_token claims into the session', function () {
+it('buffers postLogin id_token claims into the session', function (): void {
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->setIdTokenClaim('groups', ['admin']));
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password']);
@@ -34,7 +34,7 @@ it('buffers postLogin id_token claims into the session', function () {
     expect(session()->get('oidc.id_token_claims'))->toBe(['groups' => ['admin']]);
 });
 
-it('buffers postLogin access_token claims into the session', function () {
+it('buffers postLogin access_token claims into the session', function (): void {
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->setAccessTokenClaim('tier', 'gold'));
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password']);
@@ -42,7 +42,7 @@ it('buffers postLogin access_token claims into the session', function () {
     expect(session()->get('oidc.access_token_claims'))->toBe(['tier' => 'gold']);
 });
 
-it('denies when requireMfa is requested but the user has no factor', function () {
+it('denies when requireMfa is requested but the user has no factor', function (): void {
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])
@@ -51,7 +51,7 @@ it('denies when requireMfa is requested but the user has no factor', function ()
     $this->assertGuest('identity');
 });
 
-it('forces the two-factor challenge when requireMfa is requested and a factor is enrolled', function () {
+it('forces the two-factor challenge when requireMfa is requested and a factor is enrolled', function (): void {
     $factor = app(TotpFactorProvider::class)->enroll($this->user);
     $factor->forceFill(['confirmed_at' => now()])->save();
 
@@ -64,7 +64,7 @@ it('forces the two-factor challenge when requireMfa is requested and a factor is
     $this->assertGuest('identity');
 });
 
-it('exposes the pending authorize request acr_values to postLogin hooks', function () {
+it('exposes the pending authorize request acr_values to postLogin hooks', function (): void {
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
     $captured = null;
     app(PostLoginPipeline::class)->register(function (LoginEvent $event) use (&$captured): void {

@@ -29,7 +29,7 @@ use Workbench\App\Models\User;
 
 uses(InteractsWithOidc::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->withoutMiddleware(ValidateCsrfToken::class);
     fakeConsentViewUsing(fn (array $parameters) => response()->json(['authToken' => $parameters['authToken']]));
 
@@ -64,7 +64,7 @@ function completeAuthorizationCodeFlow(
     return $test->authorizeAndApprove($test->user, $test->client, scopes: $scopes, params: ['state' => 'st4te', 'nonce' => 'n0nce', ...$params])->response;
 }
 
-it('issues a signed id_token and access token through the code + PKCE flow', function () {
+it('issues a signed id_token and access token through the code + PKCE flow', function (): void {
     config(['app.url' => 'https://op.test', 'oidc.issuer' => null]);
 
     $response = completeAuthorizationCodeFlow($this)->assertOk();
@@ -85,14 +85,14 @@ it('issues a signed id_token and access token through the code + PKCE flow', fun
         ->and($idToken->headers()->get('kid'))->toBe($this->getJson('/realms/default/.well-known/jwks.json')->json('keys.0.kid'));
 });
 
-it('omits the id_token without the openid scope', function () {
+it('omits the id_token without the openid scope', function (): void {
     $response = completeAuthorizationCodeFlow($this, scopes: 'email')->assertOk();
 
     expect($response->json())->toHaveKey('access_token')
         ->and($response->json())->not->toHaveKey('id_token');
 });
 
-it('carries the login session amr, derived acr and postLogin claims into the issued tokens', function () {
+it('carries the login session amr, derived acr and postLogin claims into the issued tokens', function (): void {
     $response = completeAuthorizationCodeFlow(
         $this,
         amr: ['pwd', 'otp'],
@@ -110,14 +110,14 @@ it('carries the login session amr, derived acr and postLogin claims into the iss
         ->and($accessToken->claims()->has('amr'))->toBeFalse();
 });
 
-it('omits amr and acr when the login session recorded no methods', function () {
+it('omits amr and acr when the login session recorded no methods', function (): void {
     $idToken = parseIdToken(completeAuthorizationCodeFlow($this)->assertOk()->json('id_token'));
 
     expect($idToken->claims()->has('amr'))->toBeFalse()
         ->and($idToken->claims()->has('acr'))->toBeFalse();
 });
 
-it('carries a real credential login and its postLogin claims through to the id_token', function () {
+it('carries a real credential login and its postLogin claims through to the id_token', function (): void {
     app(PostLoginPipeline::class)->register(fn (LoginEvent $event, LoginApi $api) => $api->setIdTokenClaim('groups', ['admin']));
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])->assertRedirect();
@@ -129,7 +129,7 @@ it('carries a real credential login and its postLogin claims through to the id_t
         ->and($idToken->claims()->get('acr'))->toBe('1');
 });
 
-it('emits the sid claim and records the client as a session participant', function () {
+it('emits the sid claim and records the client as a session participant', function (): void {
     $sid = app(OidcSessionRepository::class)->start((string) $this->user->id);
 
     $response = completeAuthorizationCodeFlow($this, amr: ['pwd'], sid: $sid)->assertOk();
@@ -139,7 +139,7 @@ it('emits the sid claim and records the client as a session participant', functi
         ->and(app(OidcSessionRepository::class)->participantClientIds($sid))->toBe([$this->client->id]);
 });
 
-it('applies authorization-code trigger claims to the issued access token', function () {
+it('applies authorization-code trigger claims to the issued access token', function (): void {
     app(AccessTokenPipeline::class)->register('authorization_code', function (AuthorizationCodeEvent $event, AccessTokenApi $api): void {
         expect($event->user->getAuthIdentifier())->toBe($this->user->id)
             ->and((string) $event->client->getKey())->toBe((string) $this->client->id)
@@ -155,7 +155,7 @@ it('applies authorization-code trigger claims to the issued access token', funct
         ->and($accessToken->claims()->get('via'))->toBe('authorization_code');
 });
 
-it('denies issuance before persisting when a trigger denies', function () {
+it('denies issuance before persisting when a trigger denies', function (): void {
     app(AccessTokenPipeline::class)->register('authorization_code', fn (AuthorizationCodeEvent $event, AccessTokenApi $api) => $api->deny('user_blocked'));
 
     completeAuthorizationCodeFlow($this)

@@ -13,7 +13,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Workbench\App\Models\User;
 
-it('hangs the realm off the configured issuer, trimming a trailing slash, or the app url', function () {
+it('hangs the realm off the configured issuer, trimming a trailing slash, or the app url', function (): void {
     config(['oidc.issuer' => 'https://id.example.com/']);
 
     expect(app(RealmIssuerResolver::class)->url())->toBe('https://id.example.com/realms/default');
@@ -23,7 +23,7 @@ it('hangs the realm off the configured issuer, trimming a trailing slash, or the
     expect(app(RealmIssuerResolver::class)->url())->toBe('https://op.test/realms/default');
 });
 
-it('drives discovery, protected resource metadata and the id_token issuer from the bound resolver', function () {
+it('drives discovery, protected resource metadata and the id_token issuer from the bound resolver', function (): void {
     config(['oidc.issuer' => 'https://ignored.example.com', 'oidc.protected_resources' => ['mcp' => ['scopes' => []]]]);
     app()->instance(IssuerResolver::class, new class implements IssuerResolver
     {

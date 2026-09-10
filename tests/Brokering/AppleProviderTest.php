@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Brokering\AppleProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
+use Illuminate\Http\Client\Request as ClientRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Lcobucci\JWT\Encoding\JoseEncoder;
@@ -35,7 +36,7 @@ function appleProvider(string $privatePem): AppleProvider
     ]);
 }
 
-it('requests form_post and name/email scopes without PKCE', function () {
+it('requests form_post and name/email scopes without PKCE', function (): void {
     [$privatePem] = appleEcKeypair();
 
     $request = Request::create('/realms/default/auth/social/apple');
@@ -50,7 +51,7 @@ it('requests form_post and name/email scopes without PKCE', function () {
         ->and($params)->not->toHaveKey('code_challenge');
 })->skip(fn (): bool => ! function_exists('openssl_pkey_new'), 'requires openssl');
 
-it('signs the client secret as an ES256 JWT with Apple claims', function () {
+it('signs the client secret as an ES256 JWT with Apple claims', function (): void {
     [$privatePem, $publicPem] = appleEcKeypair();
 
     Http::fake(function ($httpRequest) {
@@ -69,9 +70,9 @@ it('signs the client secret as an ES256 JWT with Apple claims', function () {
         // The 400 aborts the flow; we only care about the request that was sent.
     }
 
-    Http::assertSent(function ($httpRequest) use ($publicPem): bool {
+    Http::assertSent(function (ClientRequest $httpRequest) use ($publicPem): bool {
         /** @var UnencryptedToken $secret */
-        $secret = (new Parser(new JoseEncoder))->parse($httpRequest['client_secret']);
+        $secret = new Parser(new JoseEncoder)->parse($httpRequest['client_secret']);
 
         return (new Validator)->validate($secret, new SignedWith(new Es256, InMemory::plainText($publicPem)))
             && $secret->headers()->get('kid') === 'KEY456'
@@ -81,7 +82,7 @@ it('signs the client secret as an ES256 JWT with Apple claims', function () {
     });
 })->skip(fn (): bool => ! function_exists('openssl_pkey_new'), 'requires openssl');
 
-it('uses the first-consent user payload for the name', function () {
+it('uses the first-consent user payload for the name', function (): void {
     [$privatePem] = appleEcKeypair();
     $provider = new class('apple', ['client_id' => 'com.example.app', 'team_id' => 'TEAM123', 'key_id' => 'KEY456', 'private_key' => $privatePem]) extends AppleProvider
     {

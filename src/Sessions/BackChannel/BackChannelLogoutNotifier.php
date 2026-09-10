@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Sessions\BackChannel;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 
 class BackChannelLogoutNotifier
@@ -15,7 +16,7 @@ class BackChannelLogoutNotifier
     {
         $session = $this->registry->find($sid);
 
-        if ($session === null || $session->logout_notified_at !== null) {
+        if (! $session instanceof OidcSession || $session->logout_notified_at !== null) {
             return;
         }
 

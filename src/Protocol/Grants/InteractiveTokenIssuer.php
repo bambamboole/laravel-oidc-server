@@ -22,6 +22,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AuthorizationCodeEvent;
 use DateTimeImmutable;
+use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
  * Issues the token set of an interactive grant (authorization code and its
@@ -78,10 +79,10 @@ final readonly class InteractiveTokenIssuer
             $client->client_id,
             $scopes,
             $tokens->accessToken(),
-            extraClaims: [...($context !== null ? $context->access_token_claims : []), ...($api?->accessTokenClaims() ?? [])],
+            extraClaims: [...($context instanceof AuthenticationContext ? $context->access_token_claims : []), ...($api?->accessTokenClaims() ?? [])],
         );
 
-        if ($context !== null || $authCodeId !== null) {
+        if ($context instanceof AuthenticationContext || $authCodeId !== null) {
             AccessToken::query()->whereKey($accessToken->jti)->update([
                 'auth_code_id' => $authCodeId,
                 'context_id' => $context?->id,
@@ -98,8 +99,8 @@ final readonly class InteractiveTokenIssuer
                 accessToken: $accessToken->jwt,
                 nonce: $nonce,
                 authTime: $authTime,
-                amr: $context !== null ? $context->amr : [],
-                idTokenClaims: $context !== null ? $context->id_token_claims : [],
+                amr: $context instanceof AuthenticationContext ? $context->amr : [],
+                idTokenClaims: $context instanceof AuthenticationContext ? $context->id_token_claims : [],
                 sid: $context?->sid,
             ))
             : null;
@@ -124,7 +125,7 @@ final readonly class InteractiveTokenIssuer
 
         $user = $this->resolveUser($userId);
 
-        if ($user === null) {
+        if (! $user instanceof Authenticatable) {
             return null;
         }
 

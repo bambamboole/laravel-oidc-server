@@ -11,11 +11,11 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-final class RevokeFactor
+final readonly class RevokeFactor
 {
     public function __construct(
-        private readonly EnrollmentPolicy $policy,
-        private readonly Auditor $auditor,
+        private EnrollmentPolicy $policy,
+        private Auditor $auditor,
     ) {}
 
     public function __invoke(Authenticatable $user, EnrollableFactorProvider $provider, FactorEnrollment $enrollment): void

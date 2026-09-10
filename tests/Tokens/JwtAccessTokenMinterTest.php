@@ -18,7 +18,7 @@ use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['app.url' => 'https://op.test']);
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://rp.test/cb']);
@@ -35,7 +35,7 @@ function mintAccessToken(Client $client, User $user, array $scopes = ['openid', 
     return app(AccessTokenMinter::class)->mint((string) $user->id, $client->client_id, $scopes, new DateInterval('PT1H'), $audiences, $extraClaims, $actor);
 }
 
-it('emits a signed RFC 9068 at+jwt access token with a persisted record', function () {
+it('emits a signed RFC 9068 at+jwt access token with a persisted record', function (): void {
     $minted = mintAccessToken($this->client, $this->user);
     $parsed = parseAccessToken($minted->jwt);
     $record = app(TokenInspector::class)->accessToken($minted->jwt);
@@ -60,7 +60,7 @@ it('emits a signed RFC 9068 at+jwt access token with a persisted record', functi
 });
 
 // RFC 9068 §2.2 — aud names the resources the token is for; the client stays in client_id
-it('addresses the token to the realm audiences unless an audience is given', function () {
+it('addresses the token to the realm audiences unless an audience is given', function (): void {
     config(['oidc.tokens.audiences' => ['https://api.example/orders', 'https://api.example/billing']]);
 
     $defaulted = mintAccessToken($this->client, $this->user);
@@ -73,14 +73,14 @@ it('addresses the token to the realm audiences unless an audience is given', fun
         ->and($explicit->audience)->toBe(['https://api.internal/orders']);
 });
 
-it('falls back to the client id as subject for a userless token', function () {
+it('falls back to the client id as subject for a userless token', function (): void {
     $minted = app(AccessTokenMinter::class)->mint(null, $this->client->client_id, [], new DateInterval('PT1H'));
 
     expect(parseAccessToken($minted->jwt)->claims()->get('sub'))->toBe($this->client->client_id)
         ->and($minted->userId)->toBeNull();
 });
 
-it('does not let extra claims override protected access-token claims', function () {
+it('does not let extra claims override protected access-token claims', function (): void {
     $minted = mintAccessToken($this->client, $this->user, extraClaims: [
         'scope' => 'forged',
         'scopes' => ['forged'],
@@ -102,14 +102,14 @@ it('does not let extra claims override protected access-token claims', function 
         ->and($parsed->claims()->get('tier'))->toBe('gold');
 });
 
-it('emits the actor claim', function () {
+it('emits the actor claim', function (): void {
     $minted = mintAccessToken($this->client, $this->user, actor: ['client_id' => 'trusted']);
 
     expect(parseAccessToken($minted->jwt)->claims()->get('act'))->toBe(['client_id' => 'trusted']);
 });
 
-it('refuses to mint for a revoked client', function () {
+it('refuses to mint for a revoked client', function (): void {
     $this->client->forceFill(['revoked' => true])->save();
 
-    expect(fn () => mintAccessToken($this->client, $this->user))->toThrow(RuntimeException::class);
+    expect(fn (): MintedAccessToken => mintAccessToken($this->client, $this->user))->toThrow(RuntimeException::class);
 });

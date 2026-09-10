@@ -118,9 +118,9 @@ class GenericOidcProvider extends AbstractOAuth2Provider
     protected function verifiedIdTokenClaims(string $idToken, ?string $nonce): array
     {
         try {
-            $token = (new Parser(new JoseEncoder))->parse($idToken);
+            $token = new Parser(new JoseEncoder)->parse($idToken);
         } catch (Throwable $exception) {
-            throw new SocialAuthenticationException("The [{$this->key}] id_token could not be parsed: {$exception->getMessage()}");
+            throw new SocialAuthenticationException("The [{$this->key}] id_token could not be parsed: {$exception->getMessage()}", $exception->getCode(), $exception);
         }
 
         assert($token instanceof Plain);

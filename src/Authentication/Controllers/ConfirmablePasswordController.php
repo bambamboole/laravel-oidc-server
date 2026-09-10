@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Controllers;
 use Bambamboole\LaravelOidc\Server\Authentication\Actions\ConfirmPassword;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordConfirmationView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -36,7 +37,7 @@ class ConfirmablePasswordController
 
         $user = $this->currentUser($request);
 
-        if ($user === null || ! ($this->confirm)($user, $request->string('password')->value(), $request->session())) {
+        if (! $user instanceof Authenticatable || ! ($this->confirm)($user, $request->string('password')->value(), $request->session())) {
             throw ValidationException::withMessages(['password' => __('auth.password')]);
         }
 

@@ -14,7 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Exceptions;
 
-it('records events through the configured sink and dispatches them to listeners', function () {
+it('records events through the configured sink and dispatches them to listeners', function (): void {
     $sink = fakeAudit();
     Event::fake([AuditEvent::class]);
 
@@ -28,7 +28,7 @@ it('records events through the configured sink and dispatches them to listeners'
     Event::assertDispatched(AuditEvent::class, fn (AuditEvent $event): bool => $event->type === AuditEventType::LoginSucceeded && $event->clientId === 'client-1');
 });
 
-it('short-circuits when audit logging is disabled', function () {
+it('short-circuits when audit logging is disabled', function (): void {
     config()->set('oidc.audit.enabled', false);
     $sink = fakeAudit();
     Event::fake([AuditEvent::class]);
@@ -39,7 +39,7 @@ it('short-circuits when audit logging is disabled', function () {
     Event::assertNotDispatched(AuditEvent::class);
 });
 
-it('enriches events with request ip and truncated user agent', function () {
+it('enriches events with request ip and truncated user agent', function (): void {
     $sink = fakeAudit();
     app()->instance('request', Request::create(
         '/login', 'POST', [], [], [],
@@ -54,7 +54,7 @@ it('enriches events with request ip and truncated user agent', function () {
         ->and($event->userAgent)->toBe(str_repeat('a', 255));
 });
 
-it('falls back to the session sid unless one is passed explicitly', function () {
+it('falls back to the session sid unless one is passed explicitly', function (): void {
     $sink = fakeAudit();
     $this->session(['oidc.sid' => 'sid-123']);
 
@@ -65,7 +65,7 @@ it('falls back to the session sid unless one is passed explicitly', function () 
         ->and($sink->assertRecorded(AuditEventType::TokenIssued)->sid)->toBe('sid-456');
 });
 
-it('reports and swallows sink failures', function () {
+it('reports and swallows sink failures', function (): void {
     Exceptions::fake();
     app()->instance(AuditSink::class, new class implements AuditSink
     {

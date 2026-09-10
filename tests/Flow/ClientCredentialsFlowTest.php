@@ -16,7 +16,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\ClientCredentialsEvent;
 use Illuminate\Testing\TestResponse;
 use Symfony\Component\HttpFoundation\Response;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 });
 
@@ -35,7 +35,7 @@ function requestClientCredentials(TestCase $test, array $extra = []): TestRespon
     ]);
 }
 
-it('issues a userless token addressed to the realm audiences', function () {
+it('issues a userless token addressed to the realm audiences', function (): void {
     $accessToken = parseAccessToken((string) requestClientCredentials($this)->assertOk()->json('access_token'));
 
     expect($accessToken->claims()->get('aud'))->toBe([app(IssuerResolver::class)->url()])
@@ -43,7 +43,7 @@ it('issues a userless token addressed to the realm audiences', function () {
         ->and($accessToken->claims()->get('sub'))->toBe((string) $this->client->id);
 });
 
-it('binds the token to an allowlisted resource and exposes it to the trigger', function () {
+it('binds the token to an allowlisted resource and exposes it to the trigger', function (): void {
     $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
     $seen = null;
 
@@ -57,7 +57,7 @@ it('binds the token to an allowlisted resource and exposes it to the trigger', f
         ->and($seen)->toBe(['https://mail.test']);
 });
 
-it('rejects a resource that is not allowlisted or not an absolute URI', function (string $resource) {
+it('rejects a resource that is not allowlisted or not an absolute URI', function (string $resource): void {
     $this->client->forceFill(['allowed_exchange_audiences' => ['https://mail.test']])->save();
 
     requestClientCredentials($this, ['resource' => $resource])
@@ -69,7 +69,7 @@ it('rejects a resource that is not allowlisted or not an absolute URI', function
     'relative resource' => 'not-a-uri',
 ]);
 
-it('runs the client-credentials trigger once and applies its access-token claims', function () {
+it('runs the client-credentials trigger once and applies its access-token claims', function (): void {
     $triggerCount = 0;
 
     app(AccessTokenPipeline::class)->register('client_credentials', function (ClientCredentialsEvent $event, AccessTokenApi $api) use (&$triggerCount): void {
@@ -87,7 +87,7 @@ it('runs the client-credentials trigger once and applies its access-token claims
         ->and($triggerCount)->toBe(1);
 });
 
-it('denies issuance before persisting when a trigger denies', function () {
+it('denies issuance before persisting when a trigger denies', function (): void {
     app(AccessTokenPipeline::class)->register('client_credentials', fn (ClientCredentialsEvent $event, AccessTokenApi $api) => $api->deny('client_blocked'));
 
     requestClientCredentials($this)

@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Middleware;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\AccessTokenBearer;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\AccessTokenGuard;
+use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,7 +32,7 @@ class CheckAudience
     {
         $user = $request->user();
 
-        if (! $user instanceof AccessTokenBearer || $user->currentAccessToken() === null) {
+        if (! $user instanceof AccessTokenBearer || ! $user->currentAccessToken() instanceof CurrentAccessToken) {
             throw OAuthServerException::invalidToken();
         }
 

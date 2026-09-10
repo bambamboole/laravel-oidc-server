@@ -17,8 +17,8 @@ use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
-it('redirects verified users away from the verification notice', function () {
-    app()->bind(EmailVerificationView::class, fn () => new class implements EmailVerificationView
+it('redirects verified users away from the verification notice', function (): void {
+    app()->bind(EmailVerificationView::class, fn (): EmailVerificationView => new class implements EmailVerificationView
     {
         public function respond(EmailVerificationPrompt $prompt, Request $request): Response
         {
@@ -36,7 +36,7 @@ it('redirects verified users away from the verification notice', function () {
     $this->actingAs($user, 'identity')->get('/realms/default/auth/email/verify')->assertRedirect('/dashboard');
 });
 
-it('verifies a signed email verification URL and fires the event', function () {
+it('verifies a signed email verification URL and fires the event', function (): void {
     Event::fake([Verified::class]);
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
@@ -52,7 +52,7 @@ it('verifies a signed email verification URL and fires the event', function () {
     Event::assertDispatched(Verified::class);
 });
 
-it('resends the email verification notification', function () {
+it('resends the email verification notification', function (): void {
     Notification::fake();
 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);

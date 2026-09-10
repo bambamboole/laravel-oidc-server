@@ -10,11 +10,13 @@ use Bambamboole\LaravelOidc\Server\Protocol\Grants\AuthorizationCodeGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Pkce;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\RedirectUri;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
+use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
 use Illuminate\Http\Request;
+use Lcobucci\JWT\Token\Plain;
 use Lcobucci\JWT\Validation\Constraint\IssuedBy;
 use Lcobucci\JWT\Validation\Validator;
 
@@ -89,7 +91,7 @@ final readonly class AuthorizeRequestValidator
         $scopes = ScopeParameter::parse($this->parameter($request, 'scope')) ?? [];
 
         foreach ($scopes as $scope) {
-            if ($scope !== '*' && $this->scopes->find($scope) === null) {
+            if ($scope !== '*' && ! $this->scopes->find($scope) instanceof Scope) {
                 throw OAuthServerException::invalidScope($scope, $redirectUri, $state);
             }
         }
@@ -197,7 +199,7 @@ final readonly class AuthorizeRequestValidator
 
         $token = $this->jwts->parse($hint);
 
-        if ($token === null || ! (new Validator)->validate($token, new IssuedBy($this->issuer->url()))) {
+        if (! $token instanceof Plain || ! (new Validator)->validate($token, new IssuedBy($this->issuer->url()))) {
             throw OAuthServerException::invalidRequest('The id_token_hint could not be verified.', $redirectUri, $state);
         }
 

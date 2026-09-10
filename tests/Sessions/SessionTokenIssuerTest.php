@@ -20,7 +20,7 @@ use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
 
-beforeEach(function () {
+beforeEach(function (): void {
     config(['oidc.session.token.guard' => 'web']);
     $this->appClient = app(ClientRepository::class)->createAuthorizationCodeGrantClient('App', ['https://app.test/cb']);
     config(['oidc.clients.first_party.client_id' => (string) $this->appClient->id]);
@@ -35,7 +35,7 @@ function sessionTokenIsRevoked(string $jwt): bool
     return $token === null || (bool) $token->getAttribute('revoked');
 }
 
-it('establishes a persisted, signed root token for the user on login', function () {
+it('establishes a persisted, signed root token for the user on login', function (): void {
     event(new Login('web', $this->user, false));
 
     $jwt = session('oidc.session_token')['jwt'] ?? null;
@@ -50,7 +50,7 @@ it('establishes a persisted, signed root token for the user on login', function 
         ->and(app(TokenInspector::class)->accessToken($jwt))->not->toBeNull();
 });
 
-it('establishes no token when the first-party client is unset or unknown', function (string $clientId) {
+it('establishes no token when the first-party client is unset or unknown', function (string $clientId): void {
     config(['oidc.clients.first_party.client_id' => $clientId]);
 
     event(new Login('web', $this->user, false));
@@ -58,7 +58,7 @@ it('establishes no token when the first-party client is unset or unknown', funct
     expect(session('oidc.session_token'))->toBeNull();
 })->with(['empty' => '', 'unknown' => 'nonexistent-client-id']);
 
-it('ignores logins and logouts on guards other than the owning guard', function () {
+it('ignores logins and logouts on guards other than the owning guard', function (): void {
     event(new Login('admin', $this->user, false));
 
     expect(session('oidc.session_token'))->toBeNull();
@@ -72,7 +72,7 @@ it('ignores logins and logouts on guards other than the owning guard', function 
         ->and(sessionTokenIsRevoked($jwt))->toBeFalse();
 });
 
-it('revokes and clears the token on logout', function () {
+it('revokes and clears the token on logout', function (): void {
     app(SessionTokenProvider::class)->establish($this->user);
     $jwt = session('oidc.session_token')['jwt'];
 
@@ -82,7 +82,7 @@ it('revokes and clears the token on logout', function () {
         ->and(sessionTokenIsRevoked($jwt))->toBeTrue();
 });
 
-it('mints on demand and re-establishes when the stored token belongs to another user', function () {
+it('mints on demand and re-establishes when the stored token belongs to another user', function (): void {
     expect(app(SessionTokenProvider::class)->currentToken())->toBeNull();
 
     $this->actingAs($this->user);
@@ -97,7 +97,7 @@ it('mints on demand and re-establishes when the stored token belongs to another 
     expect(parseAccessToken((string) app(SessionTokenProvider::class)->currentToken())->claims()->get('sub'))->toBe((string) $other->id);
 });
 
-it('revokes the superseded root token when re-establishing', function () {
+it('revokes the superseded root token when re-establishing', function (): void {
     $this->actingAs($this->user);
     app(SessionTokenProvider::class)->establish($this->user);
     $firstJti = session('oidc.session_token')['jti'];

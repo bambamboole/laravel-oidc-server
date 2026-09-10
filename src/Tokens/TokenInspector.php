@@ -36,13 +36,13 @@ class TokenInspector implements SignedJwtParser
     {
         $parsed = $this->parse($jwt);
 
-        return $parsed !== null ? $this->tokenForParsed($parsed) : null;
+        return $parsed instanceof Plain ? $this->tokenForParsed($parsed) : null;
     }
 
     public function parse(string $jwt): ?Plain
     {
         try {
-            $parsed = (new Parser(new JoseEncoder))->parse($jwt);
+            $parsed = new Parser(new JoseEncoder)->parse($jwt);
         } catch (Throwable) {
             return null;
         }

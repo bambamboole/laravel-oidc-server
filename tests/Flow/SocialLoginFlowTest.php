@@ -109,7 +109,7 @@ function completeSocialLogin(mixed $test, array $claims = []): TestResponse
         .'?'.http_build_query(['code' => 'code-1', 'state' => $pending['state']]));
 }
 
-it('logs in an existing user via verified email link and records the provider amr', function () {
+it('logs in an existing user via verified email link and records the provider amr', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
     completeSocialLogin($this)->assertRedirect('/dashboard');
@@ -119,7 +119,7 @@ it('logs in an existing user via verified email link and records the provider am
         ->and(SocialAccount::query()->where('provider', 'corp')->where('provider_user_id', 'upstream-1')->exists())->toBeTrue();
 });
 
-it('provisions a user just-in-time via the registered action', function () {
+it('provisions a user just-in-time via the registered action', function (): void {
     createUsersFromSocialUsing(fn (SocialUser $socialUser): User => User::create([
         'name' => $socialUser->name ?? 'Unknown',
         'email' => $socialUser->email,
@@ -132,7 +132,7 @@ it('provisions a user just-in-time via the registered action', function () {
     $this->assertAuthenticated('identity');
 });
 
-it('rejects the login with a friendly error when the provisioning action refuses the identity', function () {
+it('rejects the login with a friendly error when the provisioning action refuses the identity', function (): void {
     createUsersFromSocialUsing(function (SocialUser $socialUser): User {
         throw new SocialAuthenticationException('The account has no verified email address.');
     });
@@ -144,7 +144,7 @@ it('rejects the login with a friendly error when the provisioning action refuses
     $this->assertGuest('identity');
 });
 
-it('rejects the login when no account can be resolved', function () {
+it('rejects the login when no account can be resolved', function (): void {
     config()->set('oidc.social.auto_provision', false);
 
     completeSocialLogin($this)
@@ -154,7 +154,7 @@ it('rejects the login when no account can be resolved', function () {
     $this->assertGuest('identity');
 });
 
-it('denies the login when a postLogin hook rejects it', function () {
+it('denies the login when a postLogin hook rejects it', function (): void {
     User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     app(PostLoginPipeline::class)->register(function ($event, $api): void {
         $api->deny('blocked');
@@ -167,7 +167,7 @@ it('denies the login when a postLogin hook rejects it', function () {
     $this->assertGuest('identity');
 });
 
-it('sends an MFA-enrolled user to the two-factor challenge instead of logging in', function () {
+it('sends an MFA-enrolled user to the two-factor challenge instead of logging in', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $factor = app(TotpFactorProvider::class)->enroll($user);
     $factor->forceFill(['confirmed_at' => now()])->save();
@@ -179,7 +179,7 @@ it('sends an MFA-enrolled user to the two-factor challenge instead of logging in
         ->and(session('login.factor'))->toBe('totp');
 });
 
-it('stores pipeline claims in the session for the id_token', function () {
+it('stores pipeline claims in the session for the id_token', function (): void {
     User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     app(PostLoginPipeline::class)->register(function ($event, $api): void {
         $api->setIdTokenClaim('department', 'engineering');

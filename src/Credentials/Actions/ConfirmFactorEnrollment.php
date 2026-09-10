@@ -15,11 +15,11 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * Completes a pending enrollment with the provider-specific proof (a TOTP
  * code, a WebAuthn attestation). Returns false when the proof is rejected.
  */
-final class ConfirmFactorEnrollment
+final readonly class ConfirmFactorEnrollment
 {
     public function __construct(
-        private readonly EnrollmentPolicy $policy,
-        private readonly Auditor $auditor,
+        private EnrollmentPolicy $policy,
+        private Auditor $auditor,
     ) {}
 
     /**
