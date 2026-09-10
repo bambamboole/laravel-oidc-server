@@ -278,5 +278,12 @@ return [
 
     'routes' => [
         'middleware' => [],
+
+        // `single` serves the configured realm from the application root, so the
+        // issuer is the bare origin and provider and application share one
+        // session. `path` serves every realm below /realms/{realm} with its own
+        // issuer and its own session cookie — required for more than one realm
+        // per deployment.
+        'realms' => env('OIDC_ROUTE_REALMS', 'single'),
     ],
 ];

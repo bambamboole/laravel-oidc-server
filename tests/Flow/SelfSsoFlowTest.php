@@ -30,7 +30,7 @@ beforeEach(function (): void {
  */
 function selfSsoAuthorize(mixed $test, array $overrides = []): TestResponse
 {
-    return $test->get('/realms/default/oauth/authorize?'.http_build_query([
+    return $test->get('/oauth/authorize?'.http_build_query([
         'client_id' => (string) $test->client->id,
         'redirect_uri' => 'https://rp.test/callback',
         'response_type' => 'code',
@@ -46,11 +46,11 @@ function selfSsoAuthorize(mixed $test, array $overrides = []): TestResponse
 it('returns a credential login to the pending authorization request without creating a web session', function (): void {
     config(['oidc.auth.login_route' => 'identity.login']);
 
-    selfSsoAuthorize($this)->assertRedirect('/realms/default/auth/login');
+    selfSsoAuthorize($this)->assertRedirect('/auth/login');
 
     $response = $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])->assertRedirect();
 
-    expect($response->headers->get('Location'))->toContain('/realms/default/oauth/authorize?')
+    expect($response->headers->get('Location'))->toContain('/oauth/authorize?')
         ->and(auth('identity')->check())->toBeTrue()
         ->and(auth('web')->guest())->toBeTrue();
 });

@@ -55,7 +55,7 @@ function refresh(TestCase $test, string $refreshToken, ?string $scope = null, mi
 {
     $client ??= $test->client;
 
-    return $test->post('/realms/default/oauth/token', array_filter([
+    return $test->post('/oauth/token', array_filter([
         'grant_type' => 'refresh_token',
         'client_id' => $client->id,
         'client_secret' => $client->plainSecret,

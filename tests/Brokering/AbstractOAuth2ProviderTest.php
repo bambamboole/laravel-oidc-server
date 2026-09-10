@@ -54,7 +54,7 @@ function fakeOAuth2Provider(array $config = []): AbstractOAuth2Provider
 /**
  * @param  array<string, mixed>  $query
  */
-function requestWithSession(string $uri = '/realms/default/auth/social/fake/callback', array $query = []): Request
+function requestWithSession(string $uri = '/auth/social/fake/callback', array $query = []): Request
 {
     $request = Request::create($uri, 'GET', $query);
     $request->setLaravelSession(app('session.store'));
@@ -63,7 +63,7 @@ function requestWithSession(string $uri = '/realms/default/auth/social/fake/call
 }
 
 it('redirects to the authorization endpoint with state and S256 PKCE', function (): void {
-    $request = requestWithSession('/realms/default/auth/social/fake');
+    $request = requestWithSession('/auth/social/fake');
 
     $response = fakeOAuth2Provider()->redirect($request);
 

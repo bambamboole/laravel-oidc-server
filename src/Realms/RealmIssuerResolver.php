@@ -8,8 +8,9 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 
 /**
- * Every realm is its own OpenID Provider, so each gets its own issuer below
- * the deployment's origin. The configured issuer supplies that origin.
+ * The configured issuer supplies the origin. Below `/realms/{realm}` every
+ * realm is its own OpenID Provider with its own issuer; a single-realm
+ * deployment is the origin itself.
  */
 final readonly class RealmIssuerResolver implements IssuerResolver
 {
@@ -19,6 +20,6 @@ final readonly class RealmIssuerResolver implements IssuerResolver
     {
         $origin = rtrim((string) (config('oidc.issuer') ?: config('app.url')), '/');
 
-        return $origin.RealmPath::for($this->realms->current()->id());
+        return $origin.RealmRouting::configured()->issuerPath($this->realms->current()->id());
     }
 }

@@ -71,7 +71,7 @@ it('exposes the pending authorize request acr_values to postLogin hooks', functi
         $captured = $event;
     });
 
-    $this->get('/realms/default/oauth/authorize?'.http_build_query([
+    $this->get('/oauth/authorize?'.http_build_query([
         'client_id' => $client->id,
         'redirect_uri' => 'https://rp.test/callback',
         'response_type' => 'code',

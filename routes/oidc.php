@@ -30,7 +30,7 @@ use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\RevocationControlle
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\TokenController;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\UserinfoController;
 use Bambamboole\LaravelOidc\Server\Realms\Http\Middleware\ResolveRealm;
-use Bambamboole\LaravelOidc\Server\Realms\RealmPath;
+use Bambamboole\LaravelOidc\Server\Realms\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Sessions\Http\Controllers\EndSessionController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -48,9 +48,10 @@ $passwordConfirmed = RequirePassword::using('identity.password.confirm');
 
 /** @var array<int, string> $shared */
 $shared = (array) config('oidc.routes.middleware', []);
+$routing = RealmRouting::configured();
 
 Route::middleware([ResolveRealm::class, ...$shared])
-    ->prefix(RealmPath::SEGMENT.'/{realm}')
+    ->prefix($routing->prefix())
     ->where(['realm' => '[A-Za-z0-9._-]+'])
     ->group(function () use ($guest, $authenticated, $passwordConfirmed): void {
         Route::middleware('web')->group(function () use ($guest, $authenticated, $passwordConfirmed): void {
@@ -133,11 +134,11 @@ Route::middleware([ResolveRealm::class, ...$shared])
  */
 Route::middleware([ResolveRealm::class, ...$shared])
     ->where(['realm' => '[A-Za-z0-9._-]+'])
-    ->group(function (): void {
-        Route::get('.well-known/oauth-authorization-server/'.RealmPath::SEGMENT.'/{realm}/{path?}', AuthorizationServerMetadataController::class)
+    ->group(function () use ($routing): void {
+        Route::get('.well-known/oauth-authorization-server/'.$routing->wellKnownSuffix().'{path?}', AuthorizationServerMetadataController::class)
             ->where('path', '.*')
             ->name('oidc.authorization-server');
-        Route::get('.well-known/oauth-protected-resource/'.RealmPath::SEGMENT.'/{realm}/{path?}', ProtectedResourceController::class)
+        Route::get('.well-known/oauth-protected-resource/'.$routing->wellKnownSuffix().'{path?}', ProtectedResourceController::class)
             ->where('path', '.*')
             ->name('oidc.protected-resource');
     });

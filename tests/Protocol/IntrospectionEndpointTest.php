@@ -40,7 +40,7 @@ function issueIntrospectableToken(mixed $test, ?string $clientId = null): array
  */
 function introspect(mixed $test, array $parameters): TestResponse
 {
-    return $test->postJson('/realms/default/oauth/introspect', [
+    return $test->postJson('/oauth/introspect', [
         'client_id' => $test->client->id,
         'client_secret' => $test->secret,
         ...$parameters,
@@ -48,7 +48,7 @@ function introspect(mixed $test, array $parameters): TestResponse
 }
 
 it('rejects requests without client authentication', function (): void {
-    $this->postJson('/realms/default/oauth/introspect', ['token' => 'x'])
+    $this->postJson('/oauth/introspect', ['token' => 'x'])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
         ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
@@ -76,8 +76,8 @@ it('reports active for a valid access token of the same client', function (): vo
         'iat' => $claims->get('iat')->getTimestamp(),
         'nbf' => $claims->get('nbf')->getTimestamp(),
         'jti' => $token->id,
-        'iss' => 'https://op.test/realms/default',
-        'aud' => ['https://op.test/realms/default'],
+        'iss' => 'https://op.test',
+        'aud' => ['https://op.test'],
     ]);
 });
 
@@ -136,7 +136,7 @@ it('reports active for a valid refresh token of the same client', function (): v
         'client_id' => $this->client->id,
         'sub' => (string) $this->user->id,
         'exp' => $refreshToken->expires_at?->getTimestamp(),
-        'iss' => 'https://op.test/realms/default',
+        'iss' => 'https://op.test',
     ]);
 });
 

@@ -26,7 +26,7 @@ beforeEach(function (): void {
  */
 function requestClientCredentials(TestCase $test, array $extra = []): TestResponse
 {
-    return $test->post('/realms/default/oauth/token', [
+    return $test->post('/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $test->client->id,
         'client_secret' => $test->client->plainSecret,

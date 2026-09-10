@@ -15,14 +15,14 @@ function githubProvider(): GitHubProvider
 
 function githubCallback(): Request
 {
-    $request = Request::create('/realms/default/auth/social/github/callback', 'GET', ['code' => 'code-1', 'state' => 'state-1']);
+    $request = Request::create('/auth/social/github/callback', 'GET', ['code' => 'code-1', 'state' => 'state-1']);
     $request->setLaravelSession(app('session.store'));
 
     return $request;
 }
 
 it('redirects to GitHub without PKCE and with default scopes', function (): void {
-    $request = Request::create('/realms/default/auth/social/github');
+    $request = Request::create('/auth/social/github');
     $request->setLaravelSession(app('session.store'));
 
     $response = githubProvider()->redirect($request);

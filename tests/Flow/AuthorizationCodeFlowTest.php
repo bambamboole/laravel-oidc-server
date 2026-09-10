@@ -72,7 +72,7 @@ it('issues a signed id_token and access token through the code + PKCE flow', fun
     $idToken = parseIdToken($response->json('id_token'));
     $expectedAtHash = rtrim(strtr(base64_encode(substr(hash('sha256', $response->json('access_token'), true), 0, 16)), '+/', '-_'), '=');
 
-    expect($idToken->claims()->get('iss'))->toBe('https://op.test/realms/default')
+    expect($idToken->claims()->get('iss'))->toBe('https://op.test')
         ->and($idToken->claims()->get('sub'))->toBe((string) $this->user->id)
         ->and($idToken->claims()->get('aud'))->toBe([$this->client->id])
         ->and($idToken->claims()->get('nonce'))->toBe('n0nce')
@@ -80,7 +80,7 @@ it('issues a signed id_token and access token through the code + PKCE flow', fun
         ->and($idToken->claims()->get('email'))->toBe('m@example.com')
         ->and($idToken->claims()->get('at_hash'))->toBe($expectedAtHash)
         ->and((new Validator)->validate($idToken, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue()
-        ->and($idToken->headers()->get('kid'))->toBe($this->getJson('/realms/default/.well-known/jwks.json')->json('keys.0.kid'));
+        ->and($idToken->headers()->get('kid'))->toBe($this->getJson('/.well-known/jwks.json')->json('keys.0.kid'));
 });
 
 it('omits the id_token without the openid scope', function (): void {

@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Realms\Http\Middleware\ResolveRealm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Testing\FakesAuthViews;
+use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByPath;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 use Workbench\App\Models\User;
 
-uses(FakesAuthViews::class);
+uses(RoutesRealmsByPath::class, FakesAuthViews::class);
 
 beforeEach(function (): void {
     $this->fakeAuthViews();

@@ -12,7 +12,7 @@ use Workbench\App\Models\User;
 it('logs a user in with canonicalized credentials on the identity guard only and redirects home', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
-    $response = $this->from('/realms/default/auth/login')->post(route('identity.login.store'), [
+    $response = $this->from('/auth/login')->post(route('identity.login.store'), [
         'email' => 'M@Example.com',
         'password' => 'password',
     ]);
@@ -36,9 +36,9 @@ it('returns the JSON success response after login', function (): void {
 it('rejects invalid credentials with a validation error', function (): void {
     User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
-    $this->from('/realms/default/auth/login')
+    $this->from('/auth/login')
         ->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'wrong-password'])
-        ->assertRedirect('/realms/default/auth/login')
+        ->assertRedirect('/auth/login')
         ->assertSessionHasErrors('email');
 
     $this->assertGuest('identity');
@@ -87,8 +87,8 @@ it('redirects identity-protected routes to the identity login even for a web-gua
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
     $this->actingAs($user, 'web')
-        ->get('/realms/default/auth/user/confirmed-password-status')
-        ->assertRedirect('/realms/default/auth/login');
+        ->get('/auth/user/confirmed-password-status')
+        ->assertRedirect('/auth/login');
 
     $this->assertAuthenticatedAs($user, 'web');
     $this->assertGuest('identity');

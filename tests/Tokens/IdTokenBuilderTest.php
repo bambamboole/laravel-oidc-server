@@ -44,7 +44,7 @@ it('builds a signed id_token with the required claims', function (): void {
 
     expect($parsed->headers()->get('alg'))->toBe('RS256')
         ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(signingPublicKey())['kid'])
-        ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
+        ->and($parsed->claims()->get('iss'))->toBe('https://op.test')
         ->and($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
         ->and($parsed->claims()->get('aud'))->toBe(['client-uuid'])
         ->and($parsed->claims()->get('azp'))->toBe('client-uuid')
@@ -78,7 +78,7 @@ it('drops protocol claims a claims resolver tries to emit', function (): void {
     $parsed = parseIdToken(app(IdTokenBuilder::class)->build(makeIdTokenRequest($this->user, nonce: 'n0nce')));
 
     expect($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
-        ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
+        ->and($parsed->claims()->get('iss'))->toBe('https://op.test')
         ->and($parsed->claims()->get('aud'))->toBe(['client-uuid'])
         ->and($parsed->claims()->get('nonce'))->toBe('n0nce')
         ->and($parsed->claims()->get('tenant'))->toBe('acme');

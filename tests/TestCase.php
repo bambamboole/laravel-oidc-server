@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tests;
 
 use Bambamboole\LaravelOidc\Server\OidcServiceProvider;
+use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByPath;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\ParallelTesting;
@@ -55,6 +56,10 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('auth.providers.users.model', User::class);
         $app['config']->set('auth.guards.api', ['driver' => 'oidc', 'provider' => 'users']);
         $app['config']->set('session.driver', 'array');
+
+        if (in_array(RoutesRealmsByPath::class, class_uses_recursive($this), true)) {
+            $app['config']->set('oidc.routes.realms', 'path');
+        }
     }
 
     protected function setUp(): void

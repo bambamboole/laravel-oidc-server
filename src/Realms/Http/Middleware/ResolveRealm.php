@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms\Http\Middleware;
 
-use Bambamboole\LaravelOidc\Server\Realms\RealmPath;
+use Bambamboole\LaravelOidc\Server\Realms\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Closure;
 use Illuminate\Http\Request;
@@ -14,8 +14,11 @@ use LogicException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Runs before StartSession so provider logins cannot consume or regenerate the
- * relying party's session. Removing the realm parameter preserves controller arguments.
+ * Runs before StartSession. Below `/realms/{realm}` the provider gets its own
+ * session cookie, so a login there cannot consume or regenerate the relying
+ * party's session; at the application root (`single`) provider and application
+ * deliberately share one session, the way one host would. Removing the realm
+ * parameter preserves controller arguments.
  */
 final readonly class ResolveRealm
 {
@@ -31,10 +34,17 @@ final readonly class ResolveRealm
         $request->route()?->forgetParameter('realm');
 
         URL::defaults(['realm' => $realm]);
+
+        $routing = RealmRouting::configured();
+
+        if ($routing === RealmRouting::Single) {
+            return $next($request);
+        }
+
         $originalCookie = (string) config('session.cookie');
         $originalPath = config('session.path');
         $originalName = $this->session->getName();
-        $path = RealmPath::for($realm);
+        $path = $routing->path($realm);
         $cookie = $this->realms->current()->sessions()->cookieName ?? $originalCookie.'-oidc-'.str_replace('.', '_', $realm);
 
         if ($cookie === $originalCookie || preg_match('/\A[A-Za-z0-9_-]+\z/', $cookie) !== 1) {

@@ -11,12 +11,12 @@ use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 it('serves a spec-compliant discovery document', function (): void {
     config(['app.url' => 'https://op.test', 'oidc.issuer' => null]);
 
-    $response = $this->getJson('/realms/default/.well-known/openid-configuration')
+    $response = $this->getJson('/.well-known/openid-configuration')
         ->assertOk()
         ->assertHeader('Cache-Control', 'max-age=3600, public');
 
     $response->assertJson([
-        'issuer' => 'https://op.test/realms/default',
+        'issuer' => 'https://op.test',
         'response_types_supported' => ['code'],
         'response_modes_supported' => ['query'],
         'subject_types_supported' => ['public'],
@@ -33,9 +33,9 @@ it('serves a spec-compliant discovery document', function (): void {
         'backchannel_logout_session_supported' => true,
     ]);
 
-    expect($response->json('authorization_endpoint'))->toBe('https://op.test/realms/default/oauth/authorize')
-        ->and($response->json('token_endpoint'))->toBe('https://op.test/realms/default/oauth/token')
-        ->and($response->json('jwks_uri'))->toBe('https://op.test/realms/default/.well-known/jwks.json')
+    expect($response->json('authorization_endpoint'))->toBe('https://op.test/oauth/authorize')
+        ->and($response->json('token_endpoint'))->toBe('https://op.test/oauth/token')
+        ->and($response->json('jwks_uri'))->toBe('https://op.test/.well-known/jwks.json')
         ->and($response->json('scopes_supported'))->toContain('openid', 'profile', 'email')
         ->and($response->json('grant_types_supported'))->toContain('authorization_code', 'refresh_token', 'client_credentials')
         ->and($response->json('claims_supported'))->toContain('acr', 'amr', 'sid');
@@ -44,9 +44,9 @@ it('serves a spec-compliant discovery document', function (): void {
 it('builds the issuer and every endpoint from the configured issuer host, trimming a trailing slash', function (): void {
     config(['oidc.issuer' => 'https://id.example.com/', 'app.url' => 'https://app.internal']);
 
-    $doc = $this->getJson('/realms/default/.well-known/openid-configuration')->assertOk();
+    $doc = $this->getJson('/.well-known/openid-configuration')->assertOk();
 
-    expect($doc->json('issuer'))->toBe('https://id.example.com/realms/default')
+    expect($doc->json('issuer'))->toBe('https://id.example.com')
         ->and($doc->json('authorization_endpoint'))->toStartWith('https://id.example.com/')
         ->and($doc->json('token_endpoint'))->toStartWith('https://id.example.com/')
         ->and($doc->json('jwks_uri'))->toStartWith('https://id.example.com/')
@@ -57,12 +57,12 @@ it('builds the issuer and every endpoint from the configured issuer host, trimmi
 it('advertises the realm acr values', function (): void {
     config(['oidc.auth.acr_values' => ['single_factor' => 'urn:example:loa:1', 'multi_factor' => 'urn:example:loa:2']]);
 
-    expect($this->getJson('/realms/default/.well-known/openid-configuration')->json('acr_values_supported'))
+    expect($this->getJson('/.well-known/openid-configuration')->json('acr_values_supported'))
         ->toBe(['urn:example:loa:1', 'urn:example:loa:2']);
 });
 
 it('advertises token exchange and dynamic registration only while enabled', function (): void {
-    $doc = $this->getJson('/realms/default/.well-known/openid-configuration')->assertOk();
+    $doc = $this->getJson('/.well-known/openid-configuration')->assertOk();
 
     expect($doc->json('grant_types_supported'))->toContain(TestCase::TOKEN_EXCHANGE_GRANT)
         ->and($doc->json())->not->toHaveKey('registration_endpoint');
@@ -70,8 +70,8 @@ it('advertises token exchange and dynamic registration only while enabled', func
     config(['oidc.clients.token_exchange' => false, 'oidc.clients.registration.enabled' => true]);
     reloadOidcRoutes();
 
-    $doc = $this->getJson('/realms/default/.well-known/openid-configuration')->assertOk();
+    $doc = $this->getJson('/.well-known/openid-configuration')->assertOk();
 
     expect($doc->json('grant_types_supported'))->not->toContain(TestCase::TOKEN_EXCHANGE_GRANT)
-        ->and($doc->json('registration_endpoint'))->toContain('/realms/default/oauth/register');
+        ->and($doc->json('registration_endpoint'))->toContain('/oauth/register');
 });

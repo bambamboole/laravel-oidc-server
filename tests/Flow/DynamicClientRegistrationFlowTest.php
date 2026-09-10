@@ -17,7 +17,7 @@ it('lets a dynamically registered client complete the PKCE authorization code fl
     config(['oidc.clients.registration.enabled' => true, 'oidc.clients.registration.default_scopes' => []]);
     reloadOidcRoutes();
 
-    $registrationEndpoint = $this->getJson('/realms/default/.well-known/openid-configuration')
+    $registrationEndpoint = $this->getJson('/.well-known/openid-configuration')
         ->assertOk()
         ->json('registration_endpoint');
 
@@ -33,5 +33,5 @@ it('lets a dynamically registered client complete the PKCE authorization code fl
 
     $result->response->assertOk();
 
-    $this->withToken((string) $result->accessToken)->getJson('/realms/default/oauth/userinfo')->assertOk();
+    $this->withToken((string) $result->accessToken)->getJson('/oauth/userinfo')->assertOk();
 });

@@ -52,7 +52,7 @@ function authorizeParameters(mixed $test, array $overrides): array
 function authorizeWith(mixed $test, array $overrides, ?int $authTime = null): TestResponse
 {
     return $test->actingAsIdentity($test->user, authTime: $authTime ?? time() - 60)
-        ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($test, $overrides)));
+        ->get('/oauth/authorize?'.http_build_query(authorizeParameters($test, $overrides)));
 }
 
 /**
@@ -61,7 +61,7 @@ function authorizeWith(mixed $test, array $overrides, ?int $authTime = null): Te
  */
 function authorizeAsGuest(mixed $test, array $overrides = []): TestResponse
 {
-    return $test->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($test, $overrides)));
+    return $test->get('/oauth/authorize?'.http_build_query(authorizeParameters($test, $overrides)));
 }
 
 /**
@@ -94,7 +94,7 @@ it('rejects a redirect_uri that is not an exact registered match without redirec
 
 it('falls back to the single registered redirect_uri and requires one when several are registered', function (): void {
     $view = authorizeWith($this, ['redirect_uri' => null])->assertOk();
-    $approve = $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]);
+    $approve = $this->post('/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]);
 
     expect(redirectParams($approve))->toHaveKey('code');
 
@@ -155,7 +155,7 @@ it('reports a client without the authorization_code grant to the client', functi
 it('redirects a denied consent with access_denied and the state', function (): void {
     $view = authorizeWith($this, [])->assertOk();
 
-    $params = redirectParams($this->delete('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]));
+    $params = redirectParams($this->delete('/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]));
 
     expect($params['error'])->toBe('access_denied')
         ->and($params['state'])->toBe('st4te')
@@ -165,19 +165,19 @@ it('redirects a denied consent with access_denied and the state', function (): v
 it('refuses to complete a consent with a foreign auth token', function (): void {
     authorizeWith($this, [])->assertOk();
 
-    $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => 'forged'])->assertForbidden();
+    $this->post('/oauth/authorize/consent', ['auth_token' => 'forged'])->assertForbidden();
 });
 
 // OIDC Core §3.1.2.1 — GET and POST
 it('accepts the authorization request as a POST read from the body only', function (): void {
     $view = $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->post('/realms/default/oauth/authorize', authorizeParameters($this, []))
+        ->post('/oauth/authorize', authorizeParameters($this, []))
         ->assertOk();
 
-    expect(redirectParams($this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')])))->toHaveKey('code');
+    expect(redirectParams($this->post('/oauth/authorize/consent', ['auth_token' => $view->json('authToken')])))->toHaveKey('code');
 
     $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->post('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])), ['scope' => 'openid'])
+        ->post('/oauth/authorize?'.http_build_query(authorizeParameters($this, [])), ['scope' => 'openid'])
         ->assertStatus(400)
         ->assertJsonPath('error', 'invalid_request');
 });
@@ -185,13 +185,13 @@ it('accepts the authorization request as a POST read from the body only', functi
 // OAuth 2.1 §4.1.1 / RFC 6749 §3.1 — duplicate parameters
 it('rejects duplicated parameters', function (): void {
     $params = redirectParams($this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])).'&scope=openid'));
+        ->get('/oauth/authorize?'.http_build_query(authorizeParameters($this, [])).'&scope=openid'));
 
     expect($params['error'])->toBe('invalid_request')
         ->and($params['state'])->toBe('st4te');
 
     $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])).'&client_id='.$this->client->id)
+        ->get('/oauth/authorize?'.http_build_query(authorizeParameters($this, [])).'&client_id='.$this->client->id)
         ->assertStatus(400)
         ->assertJsonPath('error', 'invalid_request');
 
@@ -199,7 +199,7 @@ it('rejects duplicated parameters', function (): void {
     $body = http_build_query($parameters).'&state=other';
 
     expect(redirectParams($this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->call('POST', '/realms/default/oauth/authorize', $parameters, [], [], ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'], $body))['error'])
+        ->call('POST', '/oauth/authorize', $parameters, [], [], ['CONTENT_TYPE' => 'application/x-www-form-urlencoded'], $body))['error'])
         ->toBe('invalid_request');
 });
 
@@ -207,7 +207,7 @@ it('rejects duplicated parameters', function (): void {
 it('forces re-authentication when the session is older than max_age', function (?int $authTime, string $maxAge): void {
     if ($authTime === null) {
         $this->actingAs($this->user, 'identity')
-            ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, ['max_age' => $maxAge])))
+            ->get('/oauth/authorize?'.http_build_query(authorizeParameters($this, ['max_age' => $maxAge])))
             ->assertRedirect();
     } else {
         authorizeWith($this, ['max_age' => $maxAge], authTime: $authTime)->assertRedirect();
@@ -257,7 +257,7 @@ it('redirects a guest to the configured login route name or path', function (str
 
     expect(session('oidc.prompted_for_login'))->toBeTrue();
 })->with([
-    'route name' => ['identity.login', '/realms/default/auth/login'],
+    'route name' => ['identity.login', '/auth/login'],
     'literal path' => ['/custom/identity-login', '/custom/identity-login'],
 ]);
 
@@ -281,7 +281,7 @@ it('answers login_required when the id_token_hint names another user and proceed
 it('adds iss to code and error redirects', function (): void {
     $view = authorizeWith($this, [])->assertOk();
 
-    $success = redirectParams($this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]));
+    $success = redirectParams($this->post('/oauth/authorize/consent', ['auth_token' => $view->json('authToken')]));
     $error = redirectParams(authorizeWith($this, ['response_type' => 'token']));
 
     expect($success)->toHaveKey('code')
@@ -301,7 +301,7 @@ it('answers an Inertia request with 409 + X-Inertia-Location instead of an exter
     config()->set('oidc.clients.trusted', [(string) $this->client->getKey()]);
 
     $trusted = $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->get('/realms/default/oauth/authorize?'.http_build_query(authorizeParameters($this, [])), ['X-Inertia' => 'true']);
+        ->get('/oauth/authorize?'.http_build_query(authorizeParameters($this, [])), ['X-Inertia' => 'true']);
 
     $trusted->assertStatus(409);
     expect($trusted->headers->get('X-Inertia-Location'))->toStartWith('https://rp.test/callback?');

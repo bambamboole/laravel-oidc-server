@@ -28,7 +28,7 @@ it('provisions the first-party client and writes both env halves', function (): 
         ->toContain('OIDC_FIRST_PARTY_CLIENT='.$clientId)
         ->toContain('OIDC_FIRST_PARTY_TRUSTED=true')
         ->toContain('OIDC_RP_ENABLED=true')
-        ->toContain("OIDC_RP_ISSUER=https://app.test/realms/admin\n")
+        ->toContain("OIDC_RP_ISSUER=https://app.test\n")
         ->toContain('OIDC_RP_CLIENT_ID='.$clientId)
         ->toContain('OIDC_RP_REDIRECT_URI=https://app.test/login/callback')
         ->toContain('OIDC_RP_POST_LOGOUT_REDIRECT_URI=https://app.test')

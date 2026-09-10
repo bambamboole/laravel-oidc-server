@@ -16,8 +16,11 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\LoginSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ScopeSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\SessionSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\TokenSettings;
+use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByPath;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Route;
+
+uses(RoutesRealmsByPath::class);
 
 /** A realm the way an application model would implement it: its own settings, the rest configured. */
 function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSettings $clients = null, ?SessionSettings $sessions = null): Realm

@@ -9,7 +9,7 @@ it('confirms the password and records the confirmation timestamp', function (): 
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->actingAs($user, 'identity')
-        ->from('/realms/default/auth/user/confirm-password')
+        ->from('/auth/user/confirm-password')
         ->post(route('identity.password.confirm.store'), ['password' => 'password'])
         ->assertRedirect('/dashboard')
         ->assertSessionHas('auth.password_confirmed_at');
@@ -19,9 +19,9 @@ it('rejects password confirmation with the wrong password', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
     $this->actingAs($user, 'identity')
-        ->from('/realms/default/auth/user/confirm-password')
+        ->from('/auth/user/confirm-password')
         ->post(route('identity.password.confirm.store'), ['password' => 'wrong-password'])
-        ->assertRedirect('/realms/default/auth/user/confirm-password')
+        ->assertRedirect('/auth/user/confirm-password')
         ->assertSessionHasErrors('password');
 
     expect(session()->has('auth.password_confirmed_at'))->toBeFalse();

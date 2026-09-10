@@ -57,20 +57,20 @@ it('issues, introspects and revokes under the wire client_id while storing the k
 
     $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditEvent $event): bool => $event->clientId === 'my-app');
 
-    $this->postJson('/realms/default/oauth/introspect', [
+    $this->postJson('/oauth/introspect', [
         'client_id' => 'my-app',
         'client_secret' => $this->client->plainSecret,
         'token' => $result->accessToken,
     ])->assertOk()->assertJsonPath('active', true)->assertJsonPath('client_id', 'my-app');
 
-    $this->postJson('/realms/default/oauth/introspect', [
+    $this->postJson('/oauth/introspect', [
         'client_id' => 'my-app',
         'client_secret' => $this->client->plainSecret,
         'token' => $result->refreshToken,
         'token_type_hint' => 'refresh_token',
     ])->assertOk()->assertJsonPath('active', true)->assertJsonPath('client_id', 'my-app');
 
-    $this->postJson('/realms/default/oauth/revoke', [
+    $this->postJson('/oauth/revoke', [
         'client_id' => 'my-app',
         'client_secret' => $this->client->plainSecret,
         'token' => $result->accessToken,
@@ -84,7 +84,7 @@ it('exchanges a token issued under the wire client_id and names it in the act cl
     config(['oidc.scopes.catalog' => ['openid' => 'Authenticate', 'orders:read' => 'Read orders']]);
     $subject = mintExchangeSubjectToken('my-app', (string) $this->user->id, ['openid', 'orders:read']);
 
-    $response = $this->post('/realms/default/oauth/token', [
+    $response = $this->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => 'my-app',
         'client_secret' => $this->client->plainSecret,
@@ -114,7 +114,7 @@ it('trusts a client configured by its wire client_id', function (): void {
     config(['oidc.clients.trusted' => ['my-app']]);
 
     $response = $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->get('/realms/default/oauth/authorize?'.http_build_query([
+        ->get('/oauth/authorize?'.http_build_query([
             'client_id' => 'my-app',
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',

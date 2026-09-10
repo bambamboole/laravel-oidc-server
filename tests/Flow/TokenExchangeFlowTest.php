@@ -47,7 +47,7 @@ function exchange(TestCase $test, array $parameters = [], array $subjectScopes =
 {
     $subjectToken ??= mintExchangeSubjectToken((string) $test->client->id, (string) $test->user->id, $subjectScopes);
 
-    return $test->post('/realms/default/oauth/token', [
+    return $test->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $test->client->id,
         'client_secret' => $test->client->plainSecret,
@@ -127,7 +127,7 @@ it('rejects a public client unless it is trusted and registered for the grant', 
     ])->save();
     config(['oidc.clients.trusted' => $trusted ? [(string) $public->getKey()] : []]);
 
-    $response = $this->post('/realms/default/oauth/token', [
+    $response = $this->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $public->id,
         'subject_token' => mintExchangeSubjectToken((string) $public->id, (string) $this->user->id, ['openid']),

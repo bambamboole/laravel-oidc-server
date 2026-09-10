@@ -49,7 +49,7 @@ it('audits a denied consent', function (): void {
     $pkce = $this->pkce();
 
     $view = $this->actingAsIdentity($this->user, authTime: time() - 60)
-        ->get('/realms/default/oauth/authorize?'.http_build_query([
+        ->get('/oauth/authorize?'.http_build_query([
             'client_id' => $this->client->id,
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',
@@ -77,7 +77,7 @@ it('audits a refresh token grant as token issuance', function (): void {
 
     $sink = fakeAudit();
 
-    $this->post('/realms/default/oauth/token', [
+    $this->post('/oauth/token', [
         'grant_type' => 'refresh_token',
         'refresh_token' => $result->response->json('refresh_token'),
         'client_id' => $this->client->id,
@@ -98,7 +98,7 @@ it('audits a refresh denied after the session ended', function (): void {
     $sink = fakeAudit();
     app(OidcSessionRepository::class)->revoke($sid);
 
-    $this->post('/realms/default/oauth/token', [
+    $this->post('/oauth/token', [
         'grant_type' => 'refresh_token',
         'refresh_token' => $result->response->json('refresh_token'),
         'client_id' => $this->client->id,
@@ -114,7 +114,7 @@ it('audits a client credentials token issuance', function (): void {
     $sink = fakeAudit();
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
-    $this->post('/realms/default/oauth/token', [
+    $this->post('/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $client->id,
         'client_secret' => $client->plainSecret,
@@ -136,7 +136,7 @@ it('audits a token exchange and its failure paths', function (): void {
     $sink = fakeAudit();
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
 
-    $this->post('/realms/default/oauth/token', [
+    $this->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -152,7 +152,7 @@ it('audits a token exchange and its failure paths', function (): void {
 
     $revoked = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid'], revoked: true);
 
-    $this->post('/realms/default/oauth/token', [
+    $this->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
@@ -187,7 +187,7 @@ it('audits an access token revocation', function (): void {
 
     $sink = fakeAudit();
 
-    $this->postJson('/realms/default/oauth/revoke', [
+    $this->postJson('/oauth/revoke', [
         'client_id' => $this->client->id,
         'client_secret' => $this->client->plainSecret,
         'token' => $result->accessToken,
@@ -201,21 +201,21 @@ it('audits an access token revocation', function (): void {
 it('audits a failed client authentication at the introspection endpoint', function (): void {
     $sink = fakeAudit();
 
-    $this->postJson('/realms/default/oauth/introspect', [
+    $this->postJson('/oauth/introspect', [
         'client_id' => $this->client->id,
         'client_secret' => 'wrong-secret',
         'token' => 'irrelevant',
     ])->assertStatus(401);
 
     $sink->assertRecorded(AuditEventType::ClientAuthenticationFailed, fn (AuditEvent $event): bool => $event->clientId === (string) $this->client->id
-        && $event->context['endpoint'] === 'realms/default/oauth/introspect');
+        && $event->context['endpoint'] === 'oauth/introspect');
 });
 
 it('audits a failed client authentication at the token endpoint', function (): void {
     $sink = fakeAudit();
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
-    $this->post('/realms/default/oauth/token', [
+    $this->post('/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $client->id,
         'client_secret' => 'wrong-secret',
@@ -223,5 +223,5 @@ it('audits a failed client authentication at the token endpoint', function (): v
     ])->assertStatus(401);
 
     $sink->assertRecorded(AuditEventType::ClientAuthenticationFailed, fn (AuditEvent $event): bool => $event->clientId === (string) $client->id
-        && $event->context['endpoint'] === 'realms/default/oauth/token');
+        && $event->context['endpoint'] === 'oauth/token');
 });

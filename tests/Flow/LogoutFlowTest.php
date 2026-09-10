@@ -33,7 +33,7 @@ it('revokes the session and notifies each participant once on RP-initiated logou
     $idToken = $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid')->idToken;
     $this->authorizeAndApprove($this->user, $this->client, scopes: 'openid');
 
-    $this->post('/realms/default/oauth/logout', ['id_token_hint' => $idToken])->assertRedirect();
+    $this->post('/oauth/logout', ['id_token_hint' => $idToken])->assertRedirect();
 
     expect(auth('identity')->guest())->toBeTrue()
         ->and(app(OidcSessionRepository::class)->find($sid)->revoked_at)->not->toBeNull();

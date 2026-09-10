@@ -15,7 +15,7 @@ use Bambamboole\LaravelOidc\Server\Installation\InstallationServiceProvider;
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Keys\KeysServiceProvider;
 use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
-use Bambamboole\LaravelOidc\Server\Realms\RealmPath;
+use Bambamboole\LaravelOidc\Server\Realms\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;
@@ -71,7 +71,7 @@ class OidcServiceProvider extends ServiceProvider
     {
         // OIDC Core §3.1.2.1: clients POST authorization requests cross-site,
         // so the web group's forgery check must not apply to that route.
-        PreventRequestForgery::except(RealmPath::SEGMENT.'/*/oauth/authorize');
+        PreventRequestForgery::except(RealmRouting::configured()->pattern('oauth/authorize'));
 
         $this->loadRoutesFrom(__DIR__.'/../routes/oidc.php');
 

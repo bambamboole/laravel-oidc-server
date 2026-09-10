@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Models\User;
 
-const CHECK_AUDIENCE_CHALLENGE = 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"';
+const CHECK_AUDIENCE_CHALLENGE = 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource"';
 
 beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);

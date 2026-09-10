@@ -76,7 +76,7 @@ it('mints a real signed access token with a persisted row', function (): void {
     $bearerJwt = $this->issueTokenFor($this->user, scopes: ['openid', 'email']);
 
     $this->withHeader('Authorization', 'Bearer '.$bearerJwt)
-        ->get('/realms/default/oauth/userinfo')
+        ->get('/oauth/userinfo')
         ->assertOk()
         ->assertJsonPath('sub', (string) $this->user->id);
 });

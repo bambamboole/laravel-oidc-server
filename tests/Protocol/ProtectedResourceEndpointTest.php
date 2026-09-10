@@ -12,12 +12,12 @@ it('serves metadata for a configured protected resource', function (): void {
         'oidc.protected_resources' => ['mcp' => ['scopes' => ['mcp:use']]],
     ]);
 
-    $this->getJson('/.well-known/oauth-protected-resource/realms/default/mcp')
+    $this->getJson('/.well-known/oauth-protected-resource/mcp')
         ->assertOk()
         ->assertHeader('Cache-Control', 'max-age=3600, public')
         ->assertExactJson([
-            'resource' => 'https://op.test/realms/default/mcp',
-            'authorization_servers' => ['https://op.test/realms/default'],
+            'resource' => 'https://op.test/mcp',
+            'authorization_servers' => ['https://op.test'],
             'scopes_supported' => ['mcp:use'],
             'bearer_methods_supported' => ['header'],
         ]);
@@ -29,19 +29,19 @@ it('builds the resource identifier from the configured issuer, serving the issue
         'oidc.protected_resources' => ['mcp' => ['scopes' => []], '' => ['scopes' => ['api']]],
     ]);
 
-    $this->getJson('/.well-known/oauth-protected-resource/realms/default/mcp')
+    $this->getJson('/.well-known/oauth-protected-resource/mcp')
         ->assertOk()
-        ->assertJsonPath('resource', 'https://id.example.com/realms/default/mcp')
-        ->assertJsonPath('authorization_servers.0', 'https://id.example.com/realms/default');
+        ->assertJsonPath('resource', 'https://id.example.com/mcp')
+        ->assertJsonPath('authorization_servers.0', 'https://id.example.com');
 
-    $this->getJson('/.well-known/oauth-protected-resource/realms/default')
+    $this->getJson('/.well-known/oauth-protected-resource')
         ->assertOk()
-        ->assertJsonPath('resource', 'https://id.example.com/realms/default');
+        ->assertJsonPath('resource', 'https://id.example.com');
 });
 
 it('answers 404 for resources that are not configured', function (): void {
     config(['oidc.protected_resources' => ['mcp' => ['scopes' => []]]]);
 
-    $this->getJson('/.well-known/oauth-protected-resource/realms/default/unknown')->assertNotFound();
-    $this->getJson('/.well-known/oauth-protected-resource/realms/default')->assertNotFound();
+    $this->getJson('/.well-known/oauth-protected-resource/unknown')->assertNotFound();
+    $this->getJson('/.well-known/oauth-protected-resource')->assertNotFound();
 });

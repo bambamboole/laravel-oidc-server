@@ -18,7 +18,7 @@ use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Workbench\App\Models\User;
 
-const GUARD_RESOURCE_METADATA = 'resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"';
+const GUARD_RESOURCE_METADATA = 'resource_metadata="http://localhost/.well-known/oauth-protected-resource"';
 
 beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
@@ -45,7 +45,7 @@ function bearerIssuedElsewhere(mixed $test): string
     $jwt = $config->builder()
         ->withHeader('typ', 'at+jwt')
         ->withHeader('kid', Jwk::fromPem(signingPublicKey())['kid'])
-        ->issuedBy('https://other-issuer.test/realms/default')
+        ->issuedBy('https://other-issuer.test')
         ->identifiedBy($jti)
         ->issuedAt($now)
         ->canOnlyBeUsedAfter($now)

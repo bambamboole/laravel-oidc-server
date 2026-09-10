@@ -39,7 +39,7 @@ function appleProvider(string $privatePem): AppleProvider
 it('requests form_post and name/email scopes without PKCE', function (): void {
     [$privatePem] = appleEcKeypair();
 
-    $request = Request::create('/realms/default/auth/social/apple');
+    $request = Request::create('/auth/social/apple');
     $request->setLaravelSession(app('session.store'));
 
     $response = appleProvider($privatePem)->redirect($request);
@@ -61,7 +61,7 @@ it('signs the client secret as an ES256 JWT with Apple claims', function (): voi
     });
 
     $pending = new PendingSocialRedirect('apple', 'login', 'state-1', null, 'nonce-1');
-    $request = Request::create('/realms/default/auth/social/apple/callback', 'GET', ['code' => 'code-1', 'state' => 'state-1']);
+    $request = Request::create('/auth/social/apple/callback', 'GET', ['code' => 'code-1', 'state' => 'state-1']);
     $request->setLaravelSession(app('session.store'));
 
     try {
@@ -103,7 +103,7 @@ it('uses the first-consent user payload for the name', function (): void {
     ]);
 
     $pending = new PendingSocialRedirect('apple', 'login', 'state-1', null, 'nonce-1');
-    $request = Request::create('/realms/default/auth/social/apple/callback', 'GET', [
+    $request = Request::create('/auth/social/apple/callback', 'GET', [
         'code' => 'code-1',
         'state' => 'state-1',
         'user' => json_encode(['name' => ['firstName' => 'Mona', 'lastName' => 'Lisa']]),

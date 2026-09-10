@@ -13,7 +13,7 @@ beforeEach(function (): void {
 });
 
 it('defaults to the realm issuer url', function (): void {
-    expect(app(RealmAudiences::class)->all())->toBe(['https://op.test/realms/default']);
+    expect(app(RealmAudiences::class)->all())->toBe(['https://op.test']);
 });
 
 it('replaces the issuer with the configured audiences', function (): void {
@@ -27,9 +27,9 @@ it('adds every advertised protected resource, without duplicates', function (): 
 
     $audiences = app(RealmAudiences::class);
 
-    expect($audiences->all())->toBe(['https://op.test/realms/default', 'https://op.test/realms/default/mcp'])
-        ->and($audiences->protectedResource('mcp'))->toBe('https://op.test/realms/default/mcp')
-        ->and($audiences->protectedResource(''))->toBe('https://op.test/realms/default');
+    expect($audiences->all())->toBe(['https://op.test', 'https://op.test/mcp'])
+        ->and($audiences->protectedResource('mcp'))->toBe('https://op.test/mcp')
+        ->and($audiences->protectedResource(''))->toBe('https://op.test');
 });
 
 it('accepts an audience naming one of them and rejects any other', function (): void {
@@ -38,7 +38,7 @@ it('accepts an audience naming one of them and rejects any other', function (): 
     $audiences = app(RealmAudiences::class);
 
     expect($audiences->accepts(['https://api.example/orders', 'https://elsewhere.example']))->toBeTrue()
-        ->and($audiences->accepts(['https://op.test/realms/default']))->toBeFalse()
+        ->and($audiences->accepts(['https://op.test']))->toBeFalse()
         ->and($audiences->accepts(['some-client-id']))->toBeFalse()
         ->and($audiences->accepts([]))->toBeFalse();
 });

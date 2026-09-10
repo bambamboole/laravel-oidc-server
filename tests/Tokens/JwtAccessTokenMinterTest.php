@@ -42,10 +42,10 @@ it('emits a signed RFC 9068 at+jwt access token with a persisted record', functi
 
     expect($parsed->headers()->get('typ'))->toBe('at+jwt')
         ->and($parsed->headers()->get('kid'))->toBe(Jwk::fromPem(signingPublicKey())['kid'])
-        ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
+        ->and($parsed->claims()->get('iss'))->toBe('https://op.test')
         ->and($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
         ->and($parsed->claims()->get('client_id'))->toBe($this->client->client_id)
-        ->and($parsed->claims()->get('aud'))->toBe(['https://op.test/realms/default'])
+        ->and($parsed->claims()->get('aud'))->toBe(['https://op.test'])
         ->and($parsed->claims()->get('scope'))->toBe('openid email')
         ->and($parsed->claims()->get('scopes'))->toBe(['openid', 'email'])
         ->and($parsed->claims()->get('jti'))->toBe($minted->jti)

@@ -30,7 +30,7 @@ function revoke(mixed $test, array $parameters, mixed $client = null): TestRespo
 {
     $client ??= $test->client;
 
-    return $test->postJson('/realms/default/oauth/revoke', [
+    return $test->postJson('/oauth/revoke', [
         'client_id' => $client->id,
         'client_secret' => $client->plainSecret,
         ...$parameters,
@@ -85,7 +85,7 @@ it('rejects a revocation request without a token parameter', function (): void {
 });
 
 it('rejects unauthenticated revocation', function (): void {
-    $this->postJson('/realms/default/oauth/revoke', ['token' => $this->jwt])
+    $this->postJson('/oauth/revoke', ['token' => $this->jwt])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
         ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
@@ -97,7 +97,7 @@ it('lets a public client revoke its own refresh token', function (): void {
     $public = app(ClientRepository::class)->createAuthorizationCodeGrantClient('SPA', ['https://spa.test/cb'], confidential: false);
     [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this, (string) $public->id);
 
-    $this->postJson('/realms/default/oauth/revoke', [
+    $this->postJson('/oauth/revoke', [
         'client_id' => $public->client_id,
         'token' => $refreshTokenValue,
         'token_type_hint' => 'refresh_token',

@@ -80,7 +80,7 @@ it('serves every retained kid from the jwks endpoint', function (): void {
     $first = databaseStoreRotate();
     $second = databaseStoreRotate();
 
-    $response = $this->getJson('/realms/default/.well-known/jwks.json')->assertOk();
+    $response = $this->getJson('/.well-known/jwks.json')->assertOk();
 
     expect(array_column($response->json('keys'), 'kid'))->toBe([$second->kid(), $first->kid()]);
 });
