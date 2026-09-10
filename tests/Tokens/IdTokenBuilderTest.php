@@ -7,7 +7,7 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
-use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;

@@ -6,11 +6,11 @@ namespace Bambamboole\LaravelOidc\Server\Brokering\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Actions\LinkSocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
-use Bambamboole\LaravelOidc\Server\Brokering\InvalidStateException;
+use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\InvalidStateException;
+use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\SocialAccountAlreadyLinkedException;
+use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountAlreadyLinkedException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;

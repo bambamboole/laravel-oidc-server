@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Authorize;
 
-use Bambamboole\LaravelOidc\Server\Protocol\InvalidConsentTokenException;
+use Bambamboole\LaravelOidc\Server\Protocol\Exceptions\InvalidConsentTokenException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use RuntimeException;

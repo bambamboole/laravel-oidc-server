@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Protocol\Clients;
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\Enums\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
-use Bambamboole\LaravelOidc\Server\Clients\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;

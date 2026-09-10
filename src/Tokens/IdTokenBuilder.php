@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
-use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
-use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Enums\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
-use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Tokens\Concerns\ResolvesTokenUser;
 use DateTimeImmutable;
 use RuntimeException;
 

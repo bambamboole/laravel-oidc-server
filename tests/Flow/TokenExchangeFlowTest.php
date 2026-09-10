@@ -8,8 +8,8 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
+use Bambamboole\LaravelOidc\Server\Tokens\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeGrantResult;
-use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeRequest;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;

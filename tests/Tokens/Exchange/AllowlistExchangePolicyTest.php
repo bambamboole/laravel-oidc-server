@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\AllowlistExchangePolicy;
-use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeGrantResult;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeRequest;
 

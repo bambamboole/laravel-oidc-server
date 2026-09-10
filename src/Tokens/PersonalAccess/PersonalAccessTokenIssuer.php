@@ -11,10 +11,10 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\TokenIssuanceDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\PersonalAccessTokenEvent;
-use Bambamboole\LaravelOidc\Server\Tokens\TokenIssuanceDeniedException;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**

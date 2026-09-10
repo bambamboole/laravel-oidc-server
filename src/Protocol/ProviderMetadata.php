@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
-use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\EndpointUrl;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;

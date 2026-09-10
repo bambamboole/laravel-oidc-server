@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers;
 
-use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
-use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Enums\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
-use Bambamboole\LaravelOidc\Server\Tokens\OAuthenticatable;
+use Bambamboole\LaravelOidc\Server\Tokens\Contracts\OAuthenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

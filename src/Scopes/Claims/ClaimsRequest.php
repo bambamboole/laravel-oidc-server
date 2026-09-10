@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Scopes\Claims;
 
+use Bambamboole\LaravelOidc\Server\Scopes\Enums\ClaimsAudience;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 final readonly class ClaimsRequest

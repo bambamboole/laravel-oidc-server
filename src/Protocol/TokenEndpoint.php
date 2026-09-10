@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Protocol;
 
 use Bambamboole\LaravelOidc\Server\Protocol\Clients\ClientAuthenticator;
-use Bambamboole\LaravelOidc\Server\Protocol\Grants\Grant;
+use Bambamboole\LaravelOidc\Server\Protocol\Contracts\Grant;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Illuminate\Http\Request;
 

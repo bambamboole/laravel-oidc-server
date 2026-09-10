@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Protocol\Contracts\Grant;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Pkce;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;

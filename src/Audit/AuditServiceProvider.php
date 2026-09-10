@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Audit;
 
 use Bambamboole\LaravelOidc\Server\Audit\Listeners\RecordLoginAudit;
 use Bambamboole\LaravelOidc\Server\Audit\Listeners\RecordLogoutAudit;
+use Bambamboole\LaravelOidc\Server\Audit\Sinks\LogAuditSink;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
 use Illuminate\Auth\Events\Login;

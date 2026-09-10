@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Installation\Commands;
 
+use Bambamboole\LaravelOidc\Server\Clients\Exceptions\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentWriteException;

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Clients\Exceptions\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;

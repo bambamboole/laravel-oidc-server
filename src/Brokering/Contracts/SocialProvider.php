@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Brokering\Contracts;
 
+use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;

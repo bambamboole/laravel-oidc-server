@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Scopes;
 
-use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\StandardClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Illuminate\Support\ServiceProvider;
 
 class ScopesServiceProvider extends ServiceProvider

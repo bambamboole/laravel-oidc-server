@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\TokenIssuanceDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\PersonalAccessTokenEvent;
-use Bambamboole\LaravelOidc\Server\Tokens\TokenIssuanceDeniedException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Workbench\App\Models\User;

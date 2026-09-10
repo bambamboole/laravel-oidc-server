@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering;
 
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
+use Bambamboole\LaravelOidc\Server\Brokering\Providers\AppleProvider;
+use Bambamboole\LaravelOidc\Server\Brokering\Providers\GenericOidcProvider;
+use Bambamboole\LaravelOidc\Server\Brokering\Providers\GitHubProvider;
+use Bambamboole\LaravelOidc\Server\Brokering\Providers\GoogleProvider;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Closure;
 

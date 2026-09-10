@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens\Http\Middleware;
 
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
-use Bambamboole\LaravelOidc\Server\Tokens\Guard\AccessTokenBearer;
+use Bambamboole\LaravelOidc\Server\Tokens\Contracts\AccessTokenBearer;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
 use Closure;
 use Illuminate\Http\Request;

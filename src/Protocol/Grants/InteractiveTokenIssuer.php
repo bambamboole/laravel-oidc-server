@@ -13,7 +13,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Tokens\Concerns\ResolvesTokenUser;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;

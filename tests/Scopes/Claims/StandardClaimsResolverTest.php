@@ -6,9 +6,9 @@ declare(strict_types=1);
  * OpenID Connect Core 1.0 §5.1 (standard claims), §5.1.1 (address), §5.4 (scope → claims mapping)
  */
 
-use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\StandardClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Enums\ClaimsAudience;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Workbench\App\Models\User;
 

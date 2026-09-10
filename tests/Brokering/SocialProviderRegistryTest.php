@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Brokering\Contracts\SocialProvider;
-use Bambamboole\LaravelOidc\Server\Brokering\GenericOidcProvider;
-use Bambamboole\LaravelOidc\Server\Brokering\GoogleProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
+use Bambamboole\LaravelOidc\Server\Brokering\Providers\GenericOidcProvider;
+use Bambamboole\LaravelOidc\Server\Brokering\Providers\GoogleProvider;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Http\RedirectResponse;

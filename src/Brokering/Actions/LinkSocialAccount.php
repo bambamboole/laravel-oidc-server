@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Brokering\Actions;
 
+use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\SocialAccountAlreadyLinkedException;
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountAlreadyLinkedException;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Contracts\Auth\Authenticatable;

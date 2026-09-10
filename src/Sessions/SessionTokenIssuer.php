@@ -6,8 +6,8 @@ namespace Bambamboole\LaravelOidc\Server\Sessions;
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
-use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Sessions\SessionTokenProvider;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;

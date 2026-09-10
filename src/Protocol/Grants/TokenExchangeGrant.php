@@ -6,11 +6,12 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Grants;
 
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Protocol\Contracts\Grant;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
-use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
+use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use Illuminate\Http\Request;
 

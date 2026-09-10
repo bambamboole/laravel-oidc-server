@@ -8,7 +8,7 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimSet;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
-use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Workbench\App\Models\User;
 

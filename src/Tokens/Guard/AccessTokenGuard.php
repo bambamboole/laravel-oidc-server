@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens\Guard;
 
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
+use Bambamboole\LaravelOidc\Server\Tokens\Concerns\ResolvesTokenUser;
+use Bambamboole\LaravelOidc\Server\Tokens\Contracts\AccessTokenBearer;
 use Bambamboole\LaravelOidc\Server\Tokens\Http\Middleware\CheckAudience;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;

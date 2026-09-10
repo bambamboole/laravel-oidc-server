@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Bambamboole\LaravelOidc\Server\Audit\LogAuditSink;
+use Bambamboole\LaravelOidc\Server\Audit\Sinks\LogAuditSink;
 use Bambamboole\LaravelOidc\Server\Credentials\RecoveryCodeProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\WebAuthnFactorProvider;

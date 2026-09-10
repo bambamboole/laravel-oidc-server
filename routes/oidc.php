@@ -29,8 +29,8 @@ use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\ProtectedResourceCo
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\RevocationController;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\TokenController;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\UserinfoController;
+use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Realms\Http\Middleware\ResolveRealm;
-use Bambamboole\LaravelOidc\Server\Realms\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Sessions\Http\Controllers\EndSessionController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;

@@ -15,7 +15,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Users\CreateUser;
 use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
 use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangeDeniedException;
+use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\ExchangeDeniedException;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Illuminate\Contracts\Auth\Authenticatable;

@@ -15,7 +15,7 @@ use Bambamboole\LaravelOidc\Server\Installation\InstallationServiceProvider;
 use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Keys\KeysServiceProvider;
 use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
-use Bambamboole\LaravelOidc\Server\Realms\RealmRouting;
+use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;

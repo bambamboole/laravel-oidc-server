@@ -5,6 +5,8 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Exchange;
 
 use Bambamboole\LaravelOidc\Server\Clients\AllowedAudiences;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Tokens\Contracts\ExchangePolicy;
+use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\ExchangeDeniedException;
 
 class AllowlistExchangePolicy implements ExchangePolicy
 {

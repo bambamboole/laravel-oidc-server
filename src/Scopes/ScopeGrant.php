@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Scopes;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 
 /**
  * Turns the scopes a request asked for into the scopes a token gets: the

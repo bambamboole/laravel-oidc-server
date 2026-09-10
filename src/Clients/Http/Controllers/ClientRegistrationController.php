@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Clients\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Clients\Actions\RegisterClient;
-use Bambamboole\LaravelOidc\Server\Clients\ClientRegistrationException;
+use Bambamboole\LaravelOidc\Server\Clients\Exceptions\ClientRegistrationException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

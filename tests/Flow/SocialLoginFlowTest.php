@@ -7,9 +7,9 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
-use Bambamboole\LaravelOidc\Server\Brokering\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
