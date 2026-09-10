@@ -20,7 +20,6 @@ use Bambamboole\LaravelOidc\Server\Consents\Http\Controllers\ApproveConsentContr
 use Bambamboole\LaravelOidc\Server\Consents\Http\Controllers\DenyConsentController;
 use Bambamboole\LaravelOidc\Server\Credentials\Http\Controllers\FactorEnrollmentController;
 use Bambamboole\LaravelOidc\Server\Credentials\Http\Controllers\TwoFactorChallengeController;
-use Bambamboole\LaravelOidc\Server\Keys\Http\Controllers\JwksController;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\AuthorizationServerMetadataController;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\AuthorizeController;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\DiscoveryController;
@@ -32,6 +31,7 @@ use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\UserinfoController;
 use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Realms\Http\Middleware\ResolveRealm;
 use Bambamboole\LaravelOidc\Server\Sessions\Http\Controllers\EndSessionController;
+use Bambamboole\LaravelOidc\Server\SigningKeys\Http\Controllers\JwksController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;

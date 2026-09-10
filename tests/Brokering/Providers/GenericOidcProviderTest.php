@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Brokering\Exceptions\SocialAuthenticationException;
 use Bambamboole\LaravelOidc\Server\Brokering\PendingSocialRedirect;
 use Bambamboole\LaravelOidc\Server\Brokering\Providers\GenericOidcProvider;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Lcobucci\JWT\Configuration;

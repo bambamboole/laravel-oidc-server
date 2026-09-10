@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Keys;
+namespace Bambamboole\LaravelOidc\Server\SigningKeys;
 
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyPair;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;

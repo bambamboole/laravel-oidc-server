@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Keys;
+namespace Bambamboole\LaravelOidc\Server\SigningKeys;
 
-use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\GeneratedSigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use phpseclib3\Crypt\RSA;
 use phpseclib3\Crypt\RSA\PrivateKey;
 use Throwable;

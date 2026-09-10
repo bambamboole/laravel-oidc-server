@@ -7,8 +7,8 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;

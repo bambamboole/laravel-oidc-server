@@ -5,9 +5,8 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Clients\Events\ClientProvisioned;
 use Bambamboole\LaravelOidc\Server\Clients\Events\ClientRegistered;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Server\Keys\Events\KeysRotated;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
-use Illuminate\Support\Facades\File;
+use Bambamboole\LaravelOidc\Server\SigningKeys\Events\KeysRotated;
 
 it('audits a dynamic client registration', function (): void {
     config(['oidc.clients.registration.enabled' => true]);
@@ -46,14 +45,10 @@ it('audits first party client provisioning and secret rotation', function (): vo
         && $record->context['created'] === false);
 });
 
-it('audits a key rotation but not a print run', function (): void {
-    $directory = temporaryTestDirectory('audit-rotate-keys');
-    File::put($directory.'/.env', "APP_NAME=Testing\n");
-    app()->useEnvironmentPath($directory);
-
+it('audits a key rotation but not a skipped one', function (): void {
     $sink = fakeAudit();
 
-    $this->artisan('oidc:rotate-keys', ['--print' => true])->assertSuccessful();
+    $this->artisan('oidc:rotate-keys', ['--if-missing' => true])->assertSuccessful();
 
     $sink->assertNotRecorded(KeysRotated::TYPE);
 

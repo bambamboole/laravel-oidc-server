@@ -7,8 +7,11 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\SigningKeys\Models\SigningKey;
+use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Workbench\App\Models\User;
 
@@ -29,18 +32,13 @@ function inspectorBase64Url(string $data): string
 
 it('validates tokens signed by a retained previous key and rejects keys that are neither current nor retained', function (): void {
     $jwt = mintInspectorToken();
-    $previousPublicKey = signingPublicKey();
+    $previousKid = app(SigningKeys::class)->signingKid();
 
-    $rotated = app(SigningKeyGenerator::class)->generate();
-    config([
-        'oidc.keys.private_key' => $rotated->privateKeyPem,
-        'oidc.keys.public_key' => $rotated->publicKeyPem,
-        'oidc.keys.additional_public_keys' => [$previousPublicKey],
-    ]);
+    app(SigningKeyStore::class)->rotate(app(SigningKeyGenerator::class)->generate());
 
     expect(app(TokenInspector::class)->parse($jwt))->not->toBeNull();
 
-    config(['oidc.keys.additional_public_keys' => []]);
+    SigningKey::query()->where('kid', $previousKid)->delete();
 
     expect(app(TokenInspector::class)->parse($jwt))->toBeNull();
 });

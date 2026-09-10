@@ -28,8 +28,7 @@ views and actions.
 - **RFC 9068** structured `at+jwt` access tokens.
 - **RFC 8693** token exchange, with a self-contained `CheckAudience` resource-server middleware.
 - Capability-scoped token triggers and a swappable `ClaimsResolver` / `ScopeRepository` / `ExchangePolicy`.
-- Env-based signing keys (`OIDC_PRIVATE_KEY` / `OIDC_PUBLIC_KEY`) with a built-in rotation
-  command.
+- Database-backed RS256 signing keys with a built-in rotation command and JWKS overlap.
 
 **Auth engine** (optional)
 
@@ -56,8 +55,8 @@ composer require bambamboole/laravel-oidc-server
 php artisan vendor:publish --tag=oidc-migrations
 php artisan migrate
 
-# Generate env-based, rotatable RSA signing keys (OIDC_PRIVATE_KEY / OIDC_PUBLIC_KEY)
-php artisan oidc:rotate-keys
+# Generate the first RSA signing key (stored in oidc_signing_keys)
+php artisan oidc:rotate-keys --if-missing
 
 # Optional: publish the config
 php artisan vendor:publish --tag=oidc-config

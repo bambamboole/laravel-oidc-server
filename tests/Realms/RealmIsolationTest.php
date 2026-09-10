@@ -6,17 +6,17 @@ use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Consents\ConsentRepository;
-use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
 use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyPair;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\SigningKeys\DatabaseSigningKeyStore;
+use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
+use Bambamboole\LaravelOidc\Server\SigningKeys\StoredSigningKeys;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\PresentedTokenResolver;
@@ -110,6 +110,7 @@ it('keeps signing keys per realm', function (): void {
 
 it('does not resolve a token through the inspector across realms', function (): void {
     enterRealm('acme');
+    generateRealmSigningKey();
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
@@ -118,6 +119,7 @@ it('does not resolve a token through the inspector across realms', function (): 
     expect(app(TokenInspector::class)->accessToken($jwt))->not->toBeNull();
 
     enterRealm('globex');
+    generateRealmSigningKey();
 
     expect(app(TokenInspector::class)->accessToken($jwt))->toBeNull();
 });

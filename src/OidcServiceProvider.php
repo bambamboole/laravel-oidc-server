@@ -12,8 +12,6 @@ use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Consents\ConsentsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\CredentialsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Installation\InstallationServiceProvider;
-use Bambamboole\LaravelOidc\Server\Keys\EnvSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Keys\KeysServiceProvider;
 use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
 use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
@@ -21,7 +19,9 @@ use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\SigningKeys\DatabaseSigningKeyStore;
+use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeysServiceProvider;
 use Bambamboole\LaravelOidc\Server\Tokens\TokensServiceProvider;
 use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -38,7 +38,7 @@ class OidcServiceProvider extends ServiceProvider
      */
     private const array DOMAIN_PROVIDERS = [
         RealmsServiceProvider::class,
-        KeysServiceProvider::class,
+        SigningKeysServiceProvider::class,
         ScopesServiceProvider::class,
         CredentialsServiceProvider::class,
         BrokeringServiceProvider::class,
@@ -86,7 +86,7 @@ class OidcServiceProvider extends ServiceProvider
             'Auth Guard' => config('oidc.auth.guard'),
             'Session Token Guard' => SessionTokenGuard::name() ?? 'not set',
             'Self-SSO Client' => FirstPartyClientConfig::fromConfig()->isConfigured() ? 'configured' : 'not configured',
-            'Signing Key Store' => class_basename((string) config('oidc.keys.store', EnvSigningKeyStore::class)),
+            'Signing Key Store' => class_basename((string) config('oidc.keys.store', DatabaseSigningKeyStore::class)),
             'Signing Key' => $this->activeSigningKid(),
         ]);
     }

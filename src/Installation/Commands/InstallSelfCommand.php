@@ -6,10 +6,10 @@ namespace Bambamboole\LaravelOidc\Server\Installation\Commands;
 
 use Bambamboole\LaravelOidc\Server\Clients\Exceptions\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentWriteException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
 use Illuminate\Console\Command;
 
 class InstallSelfCommand extends Command

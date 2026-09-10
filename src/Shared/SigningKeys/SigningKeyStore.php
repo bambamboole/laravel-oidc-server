@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Shared\Keys;
+namespace Bambamboole\LaravelOidc\Server\Shared\SigningKeys;
 
 /**
  * Bound as a singleton and held by singletons such as AccessTokenMinter, so an

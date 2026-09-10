@@ -6,42 +6,32 @@ declare(strict_types=1);
  * RFC 7517 §5 (JWK Set retained across rotation)
  */
 
-use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;
-use Bambamboole\LaravelOidc\Server\Keys\Models\SigningKey;
-use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
-use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyPair;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\SigningKeys\Models\SigningKey;
+use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Support\Facades\DB;
 
-/**
- * The store binding is a singleton read once at first resolution, so swapping it
- * mid-test has to replace the service that holds it as well.
- */
-function useDatabaseSigningKeys(): DatabaseSigningKeyStore
+function useDatabaseSigningKeys(): SigningKeyStore
 {
-    $store = new DatabaseSigningKeyStore;
-
-    app()->instance(SigningKeyStore::class, $store);
-    app()->instance(SigningKeys::class, new StoredSigningKeys($store));
-
-    return $store;
+    return app(SigningKeyStore::class);
 }
 
 function databaseStoreRotate(): SigningKeyPair
 {
     $store = useDatabaseSigningKeys();
-    $generated = new SigningKeyGenerator($store, app(RealmResolver::class))->generate();
+    $generated = app(SigningKeyGenerator::class)->generate();
     $store->rotate($generated);
 
     return new SigningKeyPair($generated->publicKeyPem, $generated->privateKeyPem, $generated->kid);
 }
 
 it('fails loud when no key has been generated yet', function (): void {
+    SigningKey::query()->delete();
+
     useDatabaseSigningKeys()->signingKey();
 })->throws(RuntimeException::class, 'oidc:rotate-keys');
 
@@ -56,6 +46,7 @@ it('signs with the key stored by the last rotation', function (): void {
 });
 
 it('retires the previous key but keeps it for verification', function (): void {
+    SigningKey::query()->delete();
     $first = databaseStoreRotate();
     $second = databaseStoreRotate();
 
@@ -77,6 +68,7 @@ it('stores the private key encrypted at rest', function (): void {
 });
 
 it('serves every retained kid from the jwks endpoint', function (): void {
+    SigningKey::query()->delete();
     $first = databaseStoreRotate();
     $second = databaseStoreRotate();
 

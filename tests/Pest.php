@@ -7,12 +7,14 @@ use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\CreateUserFromSocialAccount;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Users\CreateUser;
 use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
+use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Testing\FakeAuditSink;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Exceptions\ExchangeDeniedException;
@@ -326,4 +328,13 @@ function persistedIdTokenAsBearer(mixed $test): string
     ])->save();
 
     return $jwt;
+}
+
+/**
+ * Signing keys are stored per realm; a test that enters another realm has to
+ * give it a key before it can mint or verify there.
+ */
+function generateRealmSigningKey(): void
+{
+    app(SigningKeyStore::class)->rotate(app(SigningKeyGenerator::class)->generate());
 }

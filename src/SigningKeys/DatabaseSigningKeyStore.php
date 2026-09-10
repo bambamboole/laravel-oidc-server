@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Keys;
+namespace Bambamboole\LaravelOidc\Server\SigningKeys;
 
-use Bambamboole\LaravelOidc\Server\Keys\Models\SigningKey;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\GeneratedSigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyPair;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\SigningKeys\Models\SigningKey;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 

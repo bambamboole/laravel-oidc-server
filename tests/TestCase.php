@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tests;
 
 use Bambamboole\LaravelOidc\Server\OidcServiceProvider;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\GeneratedSigningKeys;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByPath;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -68,7 +71,22 @@ abstract class TestCase extends BaseTestCase
 
         Http::preventStrayRequests();
 
-        config(['oidc.keys.path' => __DIR__.'/fixtures']);
+        $this->installFixtureSigningKey();
+    }
+
+    /**
+     * The fixture keypair keeps kids stable across the suite, so tests may
+     * compare against the checked-in public key.
+     */
+    private function installFixtureSigningKey(): void
+    {
+        $publicKey = (string) file_get_contents(__DIR__.'/fixtures/oauth-public.key');
+
+        app(SigningKeyStore::class)->rotate(new GeneratedSigningKeys(
+            privateKeyPem: (string) file_get_contents(__DIR__.'/fixtures/oauth-private.key'),
+            publicKeyPem: $publicKey,
+            kid: Jwk::fromPem($publicKey)['kid'],
+        ));
     }
 
     protected function defineDatabaseMigrations(): void

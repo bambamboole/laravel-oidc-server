@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
-use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Lcobucci\JWT\Encoding\JoseEncoder;

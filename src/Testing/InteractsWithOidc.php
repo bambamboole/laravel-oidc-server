@@ -11,7 +11,9 @@ use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Tokens\Contracts\OAuthenticatable;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
@@ -27,6 +29,7 @@ use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 /**
  * Test helpers for consumers of the package. Add to your Pest suite with
@@ -146,6 +149,28 @@ trait InteractsWithOidc
         ]);
 
         return $client;
+    }
+
+    /**
+     * Store a signing key for the current test so tokens can be minted. The
+     * keypair is generated once per process and rotated into the key store
+     * when the store holds none.
+     */
+    public function installSigningKey(): void
+    {
+        static $generated = null;
+
+        $store = app(SigningKeyStore::class);
+
+        try {
+            $store->signingKey();
+
+            return;
+        } catch (Throwable) {
+        }
+
+        $generated ??= app(SigningKeyGenerator::class)->generate();
+        $store->rotate($generated);
     }
 
     public function pkce(): PkcePair

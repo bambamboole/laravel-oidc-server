@@ -6,7 +6,7 @@ declare(strict_types=1);
  * RFC 7517 (JWK), RFC 7518 §6.3 (RSA parameters), RFC 7638 (JWK thumbprint as kid)
  */
 
-use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
+use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
 
 it('derives a JWK from a PEM public key', function (): void {
     $jwk = Jwk::fromPem(file_get_contents(__DIR__.'/../fixtures/oauth-public.key'));

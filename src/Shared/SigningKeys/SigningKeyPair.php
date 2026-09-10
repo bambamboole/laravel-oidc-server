@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Bambamboole\LaravelOidc\Server\Shared\Keys;
+namespace Bambamboole\LaravelOidc\Server\Shared\SigningKeys;
 
 use RuntimeException;
 

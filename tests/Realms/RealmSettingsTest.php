@@ -116,6 +116,9 @@ it('issues tokens with the lifetime of the realm they are issued in', function (
 
     foreach (['default', 'short'] as $realm) {
         config(['oidc.realm' => $realm]);
+        if ($realm !== 'default') {
+            generateRealmSigningKey();
+        }
         $clients[$realm] = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
     }
 
