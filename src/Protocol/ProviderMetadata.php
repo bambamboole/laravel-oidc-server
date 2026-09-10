@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol;
 
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\EndpointUrl;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,7 @@ final readonly class ProviderMetadata
         private ScopeRepository $scopes,
         private IssuerResolver $issuer,
         private RealmResolver $realms,
+        private EndpointUrl $endpoints,
     ) {}
 
     /**
@@ -88,27 +90,6 @@ final readonly class ProviderMetadata
 
     public function endpoint(string $routeName): string
     {
-        $path = parse_url(route($routeName), PHP_URL_PATH);
-
-        return $this->origin().($path ?? '');
-    }
-
-    /**
-     * Endpoint paths already carry the realm, so they are hung off the issuer's
-     * origin rather than the issuer itself. Rebuilding from the issuer rather
-     * than the request keeps a forwarded host out of the document.
-     */
-    private function origin(): string
-    {
-        $issuer = rtrim($this->issuer->url(), '/');
-        $parts = parse_url($issuer);
-
-        if (! isset($parts['scheme'], $parts['host'])) {
-            return $issuer;
-        }
-
-        $port = isset($parts['port']) ? ':'.$parts['port'] : '';
-
-        return $parts['scheme'].'://'.$parts['host'].$port;
+        return $this->endpoints->of($routeName);
     }
 }

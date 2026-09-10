@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Illuminate\Support\Facades\DB;
@@ -88,7 +89,7 @@ it('keeps tokens signed before a rotation verifiable', function () {
 
     $jwt = $beforeRotation->builder()
         ->withHeader('kid', $kidBefore)
-        ->issuedBy('https://op.test')
+        ->issuedBy(app(IssuerResolver::class)->url())
         ->identifiedBy('token-id')
         ->getToken($beforeRotation->signer(), $beforeRotation->signingKey())
         ->toString();

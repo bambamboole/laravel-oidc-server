@@ -7,10 +7,13 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Controllers;
 use Bambamboole\LaravelOidc\Server\Clients\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Clients\ClientAuthenticator;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
-use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
+use Bambamboole\LaravelOidc\Server\Tokens\PresentedToken;
+use Bambamboole\LaravelOidc\Server\Tokens\PresentedTokenResolver;
 use Carbon\CarbonInterface;
+use DateTimeInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Lcobucci\JWT\Token\Plain;
@@ -19,10 +22,17 @@ use Lcobucci\JWT\Token\Plain;
  * RFC 7662. Besides the client a token was issued to, any client named in an
  * access token's audience may introspect it — that is how a resource server
  * validates an exchanged token whose client_id is the requesting client.
+ * Anything else — unknown, expired, revoked, or another client's token — is
+ * `active: false` (§2.2), never an error.
  */
 class IntrospectionController
 {
-    public function __invoke(Request $request, ClientAuthenticator $clients, TokenInspector $inspector): JsonResponse
+    public function __construct(
+        private readonly PresentedTokenResolver $tokens,
+        private readonly IssuerResolver $issuer,
+    ) {}
+
+    public function __invoke(Request $request, ClientAuthenticator $clients): JsonResponse
     {
         $client = $clients->authenticate($request);
 
@@ -30,71 +40,100 @@ class IntrospectionController
             throw OAuthServerException::invalidClient('Only confidential clients may introspect tokens.');
         }
 
-        $tokenValue = (string) $request->input('token');
+        $presented = $this->tokens->fromRequest($request);
 
-        if ($request->input('token_type_hint') === 'refresh_token') {
-            return $this->introspectRefreshToken($tokenValue, $client);
+        if ($presented === null) {
+            return $this->inactive();
         }
 
-        $parsed = $inspector->parse($tokenValue);
-        $token = $parsed !== null ? $inspector->tokenForParsed($parsed) : null;
+        return $presented->isRefreshToken()
+            ? $this->introspectRefreshToken($presented, $client)
+            : $this->introspectAccessToken($presented, $client);
+    }
 
-        if ($parsed === null || ! $token instanceof Token) {
-            return response()->json(['active' => false]);
-        }
-
+    /** RFC 7662 §2.2, with the JWT claims RFC 9068 §2.2 puts in the token. */
+    private function introspectAccessToken(PresentedToken $presented, Client $client): JsonResponse
+    {
+        $token = $presented->accessToken;
+        $jwt = $presented->jwt;
         $expiresAt = $token->expires_at;
 
-        if ($token->revoked
+        if ($jwt === null
+            || $token->revoked
             || ($expiresAt instanceof CarbonInterface && $expiresAt->isPast())
-            || (! $token->issuedTo($client) && ! $this->callerInAudience($client, $parsed))) {
-            return response()->json(['active' => false]);
+            || (! $token->issuedTo($client) && ! $this->callerInAudience($client, $jwt))) {
+            return $this->inactive();
         }
 
-        return response()->json(array_filter([
-            'active' => true,
+        $claims = $jwt->claims();
+
+        return $this->active([
             'token_type' => 'Bearer',
             'scope' => implode(' ', $token->scopes ?? []),
             'client_id' => $token->client?->client_id,
             'sub' => $this->subject($token->user_id),
             'exp' => $expiresAt?->getTimestamp(),
-        ], fn (mixed $value): bool => $value !== null));
+            'iat' => $this->timestamp($claims->get('iat')),
+            'nbf' => $this->timestamp($claims->get('nbf')),
+            'jti' => $token->id,
+            'iss' => $this->issuer->url(),
+            'aud' => $this->audience($jwt),
+        ]);
     }
 
-    private function introspectRefreshToken(string $tokenValue, Client $client): JsonResponse
+    private function introspectRefreshToken(PresentedToken $presented, Client $client): JsonResponse
     {
-        // A refresh token carries no realm of its own; it inherits the one of
-        // the access token it was issued alongside.
-        $refreshToken = RefreshToken::query()
-            ->with('accessToken.client')
-            ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
-            ->find($tokenValue);
-        $accessToken = $refreshToken?->accessToken;
+        $refreshToken = $presented->refreshToken;
+        $accessToken = $presented->accessToken;
 
         if (! $refreshToken instanceof RefreshToken
-            || ! $accessToken instanceof Token
             || ! $accessToken->issuedTo($client)
             || $refreshToken->revoked
             || ! $refreshToken->expires_at instanceof CarbonInterface
             || $refreshToken->expires_at->isPast()) {
-            return response()->json(['active' => false]);
+            return $this->inactive();
         }
 
-        return response()->json(array_filter([
-            'active' => true,
+        return $this->active([
             'scope' => implode(' ', $accessToken->scopes ?? []),
-            'client_id' => $client->client_id,
+            'client_id' => $accessToken->client?->client_id,
             'sub' => $this->subject($accessToken->user_id),
             'exp' => $refreshToken->expires_at->getTimestamp(),
-        ], fn (mixed $value): bool => $value !== null));
+            'iss' => $this->issuer->url(),
+        ]);
     }
 
-    private function callerInAudience(Client $client, Plain $parsed): bool
+    /** @param  array<string, mixed>  $members */
+    private function active(array $members): JsonResponse
     {
-        $aud = $parsed->claims()->get('aud');
-        $aud = is_array($aud) ? $aud : [$aud];
+        return response()->json(['active' => true, ...array_filter($members, fn (mixed $value): bool => $value !== null)]);
+    }
 
-        return in_array($client->client_id, array_map(strval(...), array_filter($aud, is_scalar(...))), true);
+    private function inactive(): JsonResponse
+    {
+        return response()->json(['active' => false]);
+    }
+
+    private function callerInAudience(Client $client, Plain $jwt): bool
+    {
+        return in_array($client->client_id, $this->audience($jwt), true);
+    }
+
+    /** @return list<string> */
+    private function audience(Plain $jwt): array
+    {
+        $aud = $jwt->claims()->get('aud');
+
+        return array_values(array_map(strval(...), array_filter(is_array($aud) ? $aud : [$aud], is_scalar(...))));
+    }
+
+    private function timestamp(mixed $claim): ?int
+    {
+        if ($claim instanceof DateTimeInterface) {
+            return $claim->getTimestamp();
+        }
+
+        return is_numeric($claim) ? (int) $claim : null;
     }
 
     private function subject(mixed $userId): ?string

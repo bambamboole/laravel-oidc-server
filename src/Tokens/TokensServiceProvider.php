@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens;
 
+use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
@@ -13,8 +14,13 @@ use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\OidcAccessTokenGuard;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Foundation\Exceptions\Handler;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\HttpFoundation\Response;
 
 class TokensServiceProvider extends ServiceProvider
 {
@@ -45,6 +51,12 @@ class TokensServiceProvider extends ServiceProvider
         $this->app->singleton(AccessTokenRevoker::class, TokenRevoker::class);
         $this->app->singleton(ExchangePolicy::class, DefaultExchangePolicy::class);
         $this->app->singleton(TokenExchanger::class);
+
+        $this->callAfterResolving(ExceptionHandler::class, function (ExceptionHandler $handler): void {
+            if ($handler instanceof Handler) {
+                $handler->renderable($this->renderBearerChallenge(...));
+            }
+        });
     }
 
     public function boot(): void
@@ -52,5 +64,36 @@ class TokensServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([PurgeTokensCommand::class]);
         }
+    }
+
+    /**
+     * RFC 6750 §3: a request a bearer-token guard turned away is answered
+     * with a Bearer challenge rather than Laravel's generic 401 — without an
+     * error code when no token was presented (§3.1), `invalid_token` when the
+     * presented one was rejected.
+     */
+    private function renderBearerChallenge(AuthenticationException $exception, Request $request): ?Response
+    {
+        if (! $this->challengesWithBearer($exception->guards())) {
+            return null;
+        }
+
+        return ($request->bearerToken() === null
+            ? OAuthServerException::bearerRequired()
+            : OAuthServerException::invalidToken())->getResponse();
+    }
+
+    /** @param  list<string>  $guards */
+    private function challengesWithBearer(array $guards): bool
+    {
+        $apiGuard = (string) config('oidc.api_guard', 'oidc');
+
+        foreach ($guards as $guard) {
+            if ($guard === $apiGuard || config("auth.guards.{$guard}.driver") === 'oidc') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

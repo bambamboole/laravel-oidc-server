@@ -172,6 +172,77 @@ it('inherits the subject token full scope set when the scope param is omitted', 
 });
 
 // RFC 8693 §2.2.2 (invalid_target)
+// RFC 8693 §2.1 — delegation through an actor_token is not offered
+it('rejects a request carrying an actor_token with invalid_request', function () {
+    $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
+
+    $this->post('/realms/default/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'subject_token' => $subject,
+        'subject_token_type' => ACCESS_TOKEN_URN,
+        'audience' => 'https://api.internal/orders',
+        'actor_token' => $subject,
+        'actor_token_type' => ACCESS_TOKEN_URN,
+    ])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
+});
+
+// RFC 8693 §2.1 — resource names the target as an absolute URI (RFC 8707 §2)
+it('accepts resource in place of audience', function () {
+    $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
+
+    $response = $this->post('/realms/default/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'subject_token' => $subject,
+        'subject_token_type' => ACCESS_TOKEN_URN,
+        'resource' => 'https://api.internal/orders',
+    ])->assertOk();
+
+    expect(parseAccessToken((string) $response->json('access_token'))->claims()->get('aud'))->toBe(['https://api.internal/orders']);
+});
+
+it('rejects a resource that is not an absolute URI with invalid_target', function () {
+    $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
+
+    $this->post('/realms/default/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'subject_token' => $subject,
+        'subject_token_type' => ACCESS_TOKEN_URN,
+        'resource' => 'api.internal/orders',
+    ])->assertStatus(400)->assertJsonPath('error', 'invalid_target');
+});
+
+it('rejects audience and resource naming different targets with invalid_target', function () {
+    $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
+
+    $this->post('/realms/default/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'subject_token' => $subject,
+        'subject_token_type' => ACCESS_TOKEN_URN,
+        'audience' => 'https://api.internal/orders',
+        'resource' => 'https://api.internal/invoices',
+    ])->assertStatus(400)->assertJsonPath('error', 'invalid_target');
+});
+
+it('rejects a request naming neither audience nor resource with invalid_request', function () {
+    $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid', 'orders:read']);
+
+    $this->post('/realms/default/oauth/token', [
+        'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'subject_token' => $subject,
+        'subject_token_type' => ACCESS_TOKEN_URN,
+    ])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
+});
+
 it('rejects an unlisted audience with invalid_target', function () {
     $subject = mintExchangeSubjectToken((string) $this->client->id, (string) $this->user->id, ['openid']);
     $this->post('/realms/default/oauth/token', [

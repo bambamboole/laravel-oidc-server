@@ -9,7 +9,9 @@ use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 
 /**
- * RFC 6749 §5.1 successful token response.
+ * RFC 6749 §5.1 successful token response. `scope` is sent whenever the
+ * token carries one: the granted set may have been narrowed from the request
+ * (§3.3), and §5.1 requires it whenever the two differ.
  */
 final readonly class TokenResponse implements Responsable
 {
@@ -28,6 +30,10 @@ final readonly class TokenResponse implements Responsable
             'expires_in' => max(0, $this->accessToken->expiresAt->getTimestamp() - time()),
             'access_token' => $this->accessToken->jwt,
         ];
+
+        if ($this->accessToken->scopes !== []) {
+            $body['scope'] = implode(' ', $this->accessToken->scopes);
+        }
 
         if ($this->refreshToken !== null) {
             $body['refresh_token'] = $this->refreshToken;

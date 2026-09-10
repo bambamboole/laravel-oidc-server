@@ -15,8 +15,9 @@ use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
 use Illuminate\Http\Request;
 
 /**
- * RFC 8693. Only access tokens are accepted and issued, and an exchange never
- * mints a refresh token.
+ * RFC 8693. Only access tokens are accepted and issued, an exchange never
+ * mints a refresh token, and delegation through an actor_token is not
+ * offered: the `act` claim always names the exchanging client (§4.1).
  */
 final readonly class TokenExchangeGrant implements Grant
 {
@@ -54,23 +55,21 @@ final readonly class TokenExchangeGrant implements Grant
             throw OAuthServerException::invalidRequest('Only access_token may be requested.');
         }
 
+        if ($request->has('actor_token') || $request->has('actor_token_type')) {
+            throw OAuthServerException::invalidRequest('Delegation with an actor_token is not supported.');
+        }
+
         $subjectToken = $request->input('subject_token');
 
         if (! is_string($subjectToken) || $subjectToken === '') {
             throw OAuthServerException::invalidRequest('The subject_token parameter is missing.');
         }
 
-        $audience = $request->input('audience');
-
-        if (! is_string($audience) || $audience === '') {
-            throw OAuthServerException::invalidRequest('The audience parameter is missing.');
-        }
-
         try {
             $token = $this->exchanger->exchange(
                 $subjectToken,
                 $client,
-                $audience,
+                $this->target($request),
                 ScopeParameter::parse($request->input('scope')),
                 $this->realms->current()->tokens()->accessToken(),
                 array_diff_key($request->request->all(), array_flip(self::RESERVED_PARAMETERS)),
@@ -79,10 +78,42 @@ final readonly class TokenExchangeGrant implements Grant
             throw $this->toOAuthError($denied);
         }
 
-        return new TokenResponse($token, extra: [
-            'issued_token_type' => self::ACCESS_TOKEN_URN,
-            'scope' => implode(' ', $token->scopes),
-        ]);
+        return new TokenResponse($token, extra: ['issued_token_type' => self::ACCESS_TOKEN_URN]);
+    }
+
+    /**
+     * RFC 8693 §2.1: `audience` and `resource` both name the target the token
+     * is requested for, `resource` as an absolute URI (RFC 8707 §2). Given
+     * together they must agree.
+     */
+    private function target(Request $request): string
+    {
+        $audience = $this->parameter($request, 'audience');
+        $resource = $this->parameter($request, 'resource');
+
+        if ($resource !== null && ! $this->isAbsoluteUri($resource)) {
+            throw OAuthServerException::invalidTarget('The resource parameter must be an absolute URI without a fragment.');
+        }
+
+        if ($audience !== null && $resource !== null && $audience !== $resource) {
+            throw OAuthServerException::invalidTarget('The audience and resource parameters name different targets.');
+        }
+
+        return $audience ?? $resource ?? throw OAuthServerException::invalidRequest('The audience or resource parameter is missing.');
+    }
+
+    private function parameter(Request $request, string $name): ?string
+    {
+        $value = $request->input($name);
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    private function isAbsoluteUri(string $uri): bool
+    {
+        $parts = parse_url($uri);
+
+        return is_array($parts) && isset($parts['scheme']) && ! isset($parts['fragment']);
     }
 
     private function toOAuthError(ExchangeDeniedException $denied): OAuthServerException

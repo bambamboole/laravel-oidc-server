@@ -45,6 +45,16 @@ it('rejects tokens signed by a key that is neither current nor retained', functi
     expect(app(TokenInspector::class)->parse($jwt))->toBeNull();
 });
 
+// RFC 9068 §4 — every path that accepts a token goes through parse(), so iss is checked once here
+it('rejects a token issued under another issuer even when signed with the realm key', function () {
+    config(['app.url' => 'https://op.test']);
+    $jwt = mintInspectorToken();
+
+    config(['app.url' => 'https://other-op.test']);
+
+    expect(app(TokenInspector::class)->parse($jwt))->toBeNull();
+});
+
 function tokenInspectorBase64Url(string $data): string
 {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');

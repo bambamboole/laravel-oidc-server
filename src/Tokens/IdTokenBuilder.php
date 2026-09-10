@@ -85,8 +85,12 @@ class IdTokenBuilder
             scopes: $request->scopes,
         ));
 
+        // OIDC Core §2: the protocol claims are the provider's; a resolver
+        // cannot rewrite sub, aud, nonce and the rest of the reserved set.
         foreach ($resolved as $name => $value) {
-            $builder = $builder->withClaim($name, $value);
+            if (! ProtocolClaims::isReserved((string) $name)) {
+                $builder = $builder->withClaim((string) $name, $value);
+            }
         }
 
         return $builder->getToken($config->signer(), $config->signingKey())->toString();

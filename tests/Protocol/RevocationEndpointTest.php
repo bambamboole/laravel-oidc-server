@@ -47,6 +47,63 @@ it('silently ignores tokens of other clients per rfc 7009', function () {
     expect($this->token->fresh()->revoked)->toBeFalse();
 });
 
+// RFC 7009 §2.2.1
+it('rejects a revocation request without a token parameter', function () {
+    $this->postJson('/realms/default/oauth/revoke', [
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+    ])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
+
+    expect($this->token->fresh()->revoked)->toBeFalse();
+});
+
+// RFC 7009 §2.1 — token_type_hint only orders the lookup
+it('revokes an access token presented with a refresh_token hint', function () {
+    $this->postJson('/realms/default/oauth/revoke', [
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'token' => $this->jwt,
+        'token_type_hint' => 'refresh_token',
+    ])->assertOk();
+
+    expect($this->token->fresh()->revoked)->toBeTrue();
+});
+
+it('revokes a refresh token presented with an access_token hint', function () {
+    [$refreshTokenValue, $refreshToken, $accessToken] = issueRefreshToken($this);
+
+    $this->postJson('/realms/default/oauth/revoke', [
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'token' => $refreshTokenValue,
+        'token_type_hint' => 'access_token',
+    ])->assertOk();
+
+    expect($refreshToken->refresh()->getAttribute('revoked'))->toBeTrue()
+        ->and($accessToken->refresh()->getAttribute('revoked'))->toBeTrue();
+});
+
+it('ignores a token_type_hint it does not know', function () {
+    [$refreshTokenValue, $refreshToken] = issueRefreshToken($this);
+
+    $this->postJson('/realms/default/oauth/revoke', [
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'token' => $refreshTokenValue,
+        'token_type_hint' => 'urn:example:unknown',
+    ])->assertOk();
+
+    expect($refreshToken->refresh()->getAttribute('revoked'))->toBeTrue();
+});
+
+it('answers 200 for a token it does not know', function () {
+    $this->postJson('/realms/default/oauth/revoke', [
+        'client_id' => $this->client->id,
+        'client_secret' => $this->secret,
+        'token' => 'not-a-token',
+    ])->assertOk();
+});
+
 it('rejects unauthenticated revocation', function () {
     $this->postJson('/realms/default/oauth/revoke', ['token' => $this->jwt])
         ->assertUnauthorized()

@@ -31,13 +31,14 @@ it('passes a resource-audience token accepted by both the guard and CheckAudienc
     $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])->assertOk();
 });
 
-it('rejects with insufficient_scope a token whose aud the guard accepts but CheckAudience does not', function () {
+// RFC 6750 §3.1 — a token for another resource is an invalid token, not one short of a scope
+it('rejects with invalid_token a token whose aud the guard accepts but CheckAudience does not', function () {
     $jwt = resourceServerBearer($this, ['https://other/api']);
 
     $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])
-        ->assertForbidden()
-        ->assertJsonPath('error', 'insufficient_scope')
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="insufficient_scope"');
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"');
 });
 
 it('rejects an id_token presented as a bearer (typ is not at+jwt)', function () {
@@ -47,12 +48,19 @@ it('rejects an id_token presented as a bearer (typ is not at+jwt)', function () 
     $this->getJson('/test/orders', ['Authorization' => "Bearer $jwt"])->assertUnauthorized();
 });
 
+// RFC 6750 §3.1 — no credentials, no error code
 it('rejects a request without a bearer token', function () {
-    $this->getJson('/test/orders')->assertUnauthorized();
+    $this->getJson('/test/orders')
+        ->assertUnauthorized()
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"')
+        ->assertNoContent(401);
 });
 
 it('rejects a garbage token that fails signature validation', function () {
-    $this->getJson('/test/orders', ['Authorization' => 'Bearer garbage'])->assertUnauthorized();
+    $this->getJson('/test/orders', ['Authorization' => 'Bearer garbage'])
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"');
 });
 
 it('rejects a revoked token', function () {
@@ -92,5 +100,5 @@ it('rejects with invalid_token when CheckAudience runs without a preceding guard
     $this->getJson('/test/orders-unguarded', ['Authorization' => "Bearer $jwt"])
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
-        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token"');
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", resource_metadata="http://localhost/.well-known/oauth-protected-resource/realms/default"');
 });

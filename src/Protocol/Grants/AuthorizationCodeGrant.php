@@ -49,16 +49,18 @@ final readonly class AuthorizationCodeGrant implements Grant
         $authCode = AuthCode::query()->inRealm()->find($code)
             ?? throw OAuthServerException::invalidGrant('The authorization code is invalid.');
 
+        // Ownership before replay detection: only the client the code was
+        // issued to can trigger the revocation of the chain it produced.
+        if (! $authCode->issuedTo($client)) {
+            throw OAuthServerException::invalidGrant('The authorization code was not issued to this client.');
+        }
+
         if ($authCode->revoked) {
             $this->replayed($authCode, $client);
         }
 
         if ($authCode->expires_at === null || $authCode->expires_at->isPast()) {
             throw OAuthServerException::invalidGrant('The authorization code has expired.');
-        }
-
-        if (! $authCode->issuedTo($client)) {
-            throw OAuthServerException::invalidGrant('The authorization code was not issued to this client.');
         }
 
         $this->verifyRedirectUri($authCode, $request);

@@ -9,6 +9,8 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Route;
 
 /**
  * An OAuth error, rendered as the HTTP response the protocol prescribes: a
@@ -19,27 +21,30 @@ use Illuminate\Http\RedirectResponse;
  */
 final class OAuthServerException extends HttpResponseException
 {
-    /** @param  array<string, string>  $headers */
+    /**
+     * @param  string|null  $error  null for the RFC 6750 §3.1 challenge to a request that presented no credentials, which carries no error code
+     * @param  array<string, string>  $headers
+     */
     private function __construct(
-        public readonly string $error,
+        public readonly ?string $error,
         public readonly string $description,
         public readonly int $status,
         ?string $redirectUri = null,
         ?string $state = null,
         array $headers = [],
     ) {
-        parent::__construct($redirectUri !== null
-            ? new RedirectResponse(self::appendQuery($redirectUri, array_filter([
+        $headers = ['Cache-Control' => 'no-store', 'Pragma' => 'no-cache', ...$headers];
+
+        parent::__construct(match (true) {
+            $redirectUri !== null => new RedirectResponse(self::appendQuery($redirectUri, array_filter([
                 'error' => $error,
                 'error_description' => $description,
                 'state' => $state,
                 'iss' => app(IssuerResolver::class)->url(),
-            ], fn (?string $value): bool => $value !== null)))
-            : new JsonResponse(['error' => $error, 'error_description' => $description], $status, [
-                'Cache-Control' => 'no-store',
-                'Pragma' => 'no-cache',
-                ...$headers,
-            ]));
+            ], fn (?string $value): bool => $value !== null))),
+            $error === null => new Response('', $status, $headers),
+            default => new JsonResponse(['error' => $error, 'error_description' => $description], $status, $headers),
+        });
 
         $this->message = $description;
     }
@@ -53,6 +58,15 @@ final class OAuthServerException extends HttpResponseException
     public static function invalidClient(string $description = 'Client authentication failed.'): self
     {
         return new self('invalid_client', $description, 401, headers: ['WWW-Authenticate' => 'Basic realm="'.self::realm().'"']);
+    }
+
+    /**
+     * RFC 6750 §3.1: a request without any bearer token is challenged without
+     * an error code, and without a body to describe one.
+     */
+    public static function bearerRequired(): self
+    {
+        return new self(null, 'A bearer token is required.', 401, headers: ['WWW-Authenticate' => self::bearerChallenge(null)]);
     }
 
     /** RFC 6750 §3.1. */
@@ -132,9 +146,23 @@ final class OAuthServerException extends HttpResponseException
         return new self('server_error', $description, 500);
     }
 
-    private static function bearerChallenge(string $error): string
+    /**
+     * RFC 6750 §3 challenge; RFC 9728 §5.1 points the client at the realm's
+     * protected resource metadata where that endpoint is registered.
+     */
+    private static function bearerChallenge(?string $error): string
     {
-        return 'Bearer realm="'.self::realm().'", error="'.$error.'"';
+        $parameters = array_filter([
+            'realm' => self::realm(),
+            'error' => $error,
+            'resource_metadata' => Route::has('oidc.protected-resource') ? app(EndpointUrl::class)->of('oidc.protected-resource') : null,
+        ], fn (?string $value): bool => $value !== null);
+
+        return 'Bearer '.implode(', ', array_map(
+            fn (string $name, string $value): string => $name.'="'.$value.'"',
+            array_keys($parameters),
+            $parameters,
+        ));
     }
 
     private static function realm(): string

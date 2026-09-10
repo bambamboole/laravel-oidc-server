@@ -17,6 +17,8 @@ use Symfony\Component\HttpFoundation\Response;
  * middleware performs no independent parsing, signature verification, or revocation check anymore,
  * that is {@see OidcAccessTokenGuard}'s job. It only reads the
  * verified audience the guard stashed on the request and narrows it to the audiences given here.
+ * A token meant for another resource is an invalid token here (RFC 6750 §3.1), not one short of
+ * a scope.
  */
 class CheckAudience
 {
@@ -36,7 +38,7 @@ class CheckAudience
         $tokenAudiences = (array) $request->attributes->get('oidc_token_audience', []);
 
         if (array_intersect($audiences, $tokenAudiences) === []) {
-            throw OAuthServerException::insufficientScope();
+            throw OAuthServerException::invalidToken('The access token is not addressed to this resource.');
         }
 
         return $next($request);

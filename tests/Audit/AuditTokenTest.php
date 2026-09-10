@@ -194,7 +194,7 @@ it('audits an access token revocation', function () {
     ])->assertOk();
 
     $sink->assertRecorded(AuditEventType::TokenRevoked, fn (AuditEvent $event): bool => $event->clientId === (string) $this->client->id
-        && $event->context['token_type_hint'] === 'access_token'
+        && $event->context['token_type'] === 'access_token'
         && $event->context['jti'] === (string) $token->getKey());
 });
 

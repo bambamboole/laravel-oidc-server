@@ -8,10 +8,16 @@ use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsAudience;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\ProtocolClaims;
 use Bambamboole\LaravelOidc\Server\Tokens\OAuthenticatable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+/**
+ * OpenID Connect Core §5.3. The `sub` is the provider's and must match the
+ * id_token's (§5.3.2), so a resolver cannot replace it or any other
+ * protocol claim.
+ */
 class UserinfoController
 {
     public function __invoke(Request $request, ClaimsResolver $claims): JsonResponse
@@ -19,7 +25,9 @@ class UserinfoController
         $user = $request->user(config('oidc.api_guard', 'oidc'));
 
         if (! $user instanceof OAuthenticatable) {
-            throw OAuthServerException::invalidToken();
+            throw $request->bearerToken() === null
+                ? OAuthServerException::bearerRequired()
+                : OAuthServerException::invalidToken();
         }
 
         $token = $user->currentAccessToken();
@@ -29,14 +37,16 @@ class UserinfoController
             throw OAuthServerException::insufficientScope();
         }
 
-        return response()->json(array_merge(
-            ['sub' => (string) $user->getAuthIdentifier()],
-            $claims->resolve(new ClaimsRequest(
-                user: $user,
-                audience: ClaimsAudience::Userinfo,
-                clientId: $token->clientId(),
-                scopes: $scopes,
-            )),
+        $resolved = $claims->resolve(new ClaimsRequest(
+            user: $user,
+            audience: ClaimsAudience::Userinfo,
+            clientId: $token->clientId(),
+            scopes: $scopes,
         ));
+
+        return response()->json([
+            'sub' => (string) $user->getAuthIdentifier(),
+            ...array_filter($resolved, fn (string $name): bool => ! ProtocolClaims::isReserved($name), ARRAY_FILTER_USE_KEY),
+        ]);
     }
 }

@@ -179,6 +179,35 @@ it('revokes the tokens a replayed authorization code produced', function () {
     ])->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 });
 
+// A used code presented by another client is that client's invalid_grant, not a replay
+it('leaves the legitimate chain alive when a foreign client presents a used code', function () {
+    $pkce = $this->pkce();
+    $code = obtainAuthorizationCode($this, $pkce);
+    $other = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Other', ['https://o.test/cb']);
+
+    $first = $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce))->assertOk();
+
+    $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce, [
+        'client_id' => $other->id,
+        'client_secret' => $other->plainSecret,
+    ]))->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
+
+    $accessToken = parseAccessToken((string) $first->json('access_token'));
+
+    expect(Token::query()->find($accessToken->claims()->get('jti'))->revoked)->toBeFalse()
+        ->and(RefreshToken::query()->find($first->json('refresh_token'))->revoked)->toBeFalse();
+});
+
+// RFC 6749 §5.1
+it('names the granted scope in the token response', function () {
+    $pkce = $this->pkce();
+    $code = obtainAuthorizationCode($this, $pkce);
+
+    $this->post('/realms/default/oauth/token', codeRedemption($this, $code, $pkce))
+        ->assertOk()
+        ->assertJsonPath('scope', 'openid email');
+});
+
 it('rejects an expired authorization code', function () {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
@@ -255,7 +284,9 @@ it('narrows scopes on refresh and refuses escalation', function () {
         'scope' => 'openid',
     ])->assertOk();
 
-    expect(parseAccessToken((string) $narrowed->json('access_token'))->claims()->get('scope'))->toBe('openid');
+    // RFC 6749 §5.1 — the granted scope differs from the request, so the response names it
+    expect(parseAccessToken((string) $narrowed->json('access_token'))->claims()->get('scope'))->toBe('openid')
+        ->and($narrowed->json('scope'))->toBe('openid');
 
     $this->post('/realms/default/oauth/token', [
         'grant_type' => 'refresh_token',

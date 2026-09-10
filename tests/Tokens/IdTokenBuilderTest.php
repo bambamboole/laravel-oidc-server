@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
+use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
@@ -68,6 +70,28 @@ it('builds a signed id_token with the required claims', function () {
         new Sha256, InMemory::plainText(signingPublicKey()),
     ));
     expect($valid)->toBeTrue();
+});
+
+// OIDC Core §2 — the protocol claims are the provider's
+it('drops protocol claims a claims resolver tries to emit', function () {
+    config(['app.url' => 'https://op.test']);
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+
+    app()->instance(ClaimsResolver::class, new class implements ClaimsResolver
+    {
+        public function resolve(ClaimsRequest $request): array
+        {
+            return ['sub' => 'someone-else', 'iss' => 'https://evil.test', 'aud' => ['other'], 'nonce' => 'forged', 'tenant' => 'acme'];
+        }
+    });
+
+    $parsed = parseUnencrypted(app(IdTokenBuilder::class)->build(makeIdTokenRequest($user, nonce: 'n0nce')));
+
+    expect($parsed->claims()->get('sub'))->toBe((string) $user->id)
+        ->and($parsed->claims()->get('iss'))->toBe('https://op.test/realms/default')
+        ->and($parsed->claims()->get('aud'))->toBe(['client-uuid'])
+        ->and($parsed->claims()->get('nonce'))->toBe('n0nce')
+        ->and($parsed->claims()->get('tenant'))->toBe('acme');
 });
 
 it('omits nonce and auth_time when not provided', function () {
