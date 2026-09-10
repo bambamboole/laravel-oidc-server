@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\Claims\ClaimsRequest;
 use Bambamboole\LaravelOidc\Server\Scopes\Claims\StandardClaimsResolver;
 use Bambamboole\LaravelOidc\Server\Scopes\Enums\ClaimsAudience;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 use Workbench\App\Models\User;
 
 /**
@@ -46,6 +47,19 @@ it('reports an unverified email and omits attributes the user does not carry', f
     expect(standardClaims($user, ['email']))->toBe(['email' => 'm@example.com', 'email_verified' => false])
         ->and(array_keys(standardClaims($user, ['profile'])))->not->toContain('locale', 'zoneinfo')
         ->and(standardClaims($user, ['phone', 'address']))->toBe([]);
+});
+
+it('never reads a column a strict model does not carry', function (): void {
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x'])->fresh();
+    Model::preventAccessingMissingAttributes();
+
+    try {
+        expect(standardClaims($user, ['profile', 'email', 'phone', 'address']))
+            ->toHaveKeys(['name', 'email'])
+            ->not->toHaveKeys(['phone_number', 'address', 'locale']);
+    } finally {
+        Model::preventAccessingMissingAttributes(false);
+    }
 });
 
 // OIDC Core §5.4 — phone scope

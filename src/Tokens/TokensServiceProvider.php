@@ -82,11 +82,19 @@ class TokensServiceProvider extends ServiceProvider
             : OAuthServerException::invalidToken())->getResponse();
     }
 
-    /** @param  list<string>  $guards */
+    /**
+     * The Authenticate middleware reports the default guard as null.
+     *
+     * @param  list<string|null>  $guards
+     */
     private function challengesWithBearer(array $guards): bool
     {
         $apiGuard = (string) config('oidc.auth.api_guard', 'oidc');
 
-        return array_any($guards, fn (string $guard): bool => $guard === $apiGuard || config("auth.guards.{$guard}.driver") === 'oidc');
+        return array_any($guards, function (?string $guard) use ($apiGuard): bool {
+            $guard ??= (string) config('auth.defaults.guard');
+
+            return $guard === $apiGuard || config("auth.guards.{$guard}.driver") === 'oidc';
+        });
     }
 }

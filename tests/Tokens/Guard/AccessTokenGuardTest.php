@@ -144,3 +144,21 @@ it('leaves other guards to Laravel', function (): void {
         ->assertHeaderMissing('WWW-Authenticate')
         ->assertJson(['message' => 'Unauthenticated.']);
 });
+
+it('challenges through the default guard when that guard is the oidc one', function (): void {
+    config(['auth.defaults.guard' => 'oidc']);
+    Route::middleware('auth')->get('/default-guarded', fn (): string => 'ok');
+
+    $this->getJson('/default-guarded')
+        ->assertUnauthorized()
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", '.GUARD_RESOURCE_METADATA);
+});
+
+it('leaves the default guard to Laravel when it is a session guard', function (): void {
+    Route::middleware('auth')->get('/default-guarded', fn (): string => 'ok');
+
+    $this->getJson('/default-guarded')
+        ->assertUnauthorized()
+        ->assertHeaderMissing('WWW-Authenticate')
+        ->assertJson(['message' => 'Unauthenticated.']);
+});

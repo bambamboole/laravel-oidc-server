@@ -33,20 +33,20 @@ class StandardClaimsResolver implements ClaimsResolver
             return new ClaimSet;
         }
 
-        $phoneNumber = $user->getAttribute('phone_number');
-        $phoneVerified = $user->getAttribute('phone_number_verified');
+        $phoneNumber = $this->attribute($user, 'phone_number');
+        $phoneVerified = $this->attribute($user, 'phone_number_verified');
 
         return new ClaimSet([
             'profile' => [
-                'name' => $user->getAttribute('name'),
-                'locale' => $user->getAttribute('locale'),
-                'zoneinfo' => $user->getAttribute('timezone'),
-                'updated_at' => $user->getAttribute('updated_at')?->getTimestamp(),
+                'name' => $this->attribute($user, 'name'),
+                'locale' => $this->attribute($user, 'locale'),
+                'zoneinfo' => $this->attribute($user, 'timezone'),
+                'updated_at' => $this->attribute($user, 'updated_at')?->getTimestamp(),
             ],
             'email' => [
-                'email' => $user->getAttribute('email'),
-                'email_verified' => $user->getAttribute('email') !== null
-                    ? $user->getAttribute('email_verified_at') !== null
+                'email' => $this->attribute($user, 'email'),
+                'email_verified' => $this->attribute($user, 'email') !== null
+                    ? $this->attribute($user, 'email_verified_at') !== null
                     : null,
             ],
             'phone' => [
@@ -54,9 +54,18 @@ class StandardClaimsResolver implements ClaimsResolver
                 'phone_number_verified' => $phoneNumber !== null && $phoneVerified !== null ? (bool) $phoneVerified : null,
             ],
             'address' => [
-                'address' => $this->address($user->getAttribute('address')),
+                'address' => $this->address($this->attribute($user, 'address')),
             ],
         ]);
+    }
+
+    /**
+     * Reads through the model so casts and accessors apply, but never a column
+     * the model does not carry: a strict model would throw on the lookup.
+     */
+    private function attribute(Model $user, string $key): mixed
+    {
+        return $user->hasAttribute($key) ? $user->getAttribute($key) : null;
     }
 
     /**
