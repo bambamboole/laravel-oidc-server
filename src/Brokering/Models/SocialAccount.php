@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Brokering\Models;
 
+use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -11,6 +12,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string $realm_id
  * @property string $provider
  * @property string $provider_user_id
  * @property string|null $email
@@ -25,7 +27,7 @@ use Illuminate\Support\Carbon;
  */
 class SocialAccount extends Model
 {
-    use HasUuids;
+    use BelongsToRealm, HasUuids;
 
     protected $table = 'oidc_social_accounts';
 

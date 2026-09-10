@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 
+use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
+ * @property string $realm_id
  * @property string $access_token_id
  * @property bool $revoked
  * @property ?Carbon $expires_at
  */
 class RefreshToken extends Model
 {
+    use BelongsToRealm;
+
     protected $table = 'oidc_refresh_tokens';
 
     protected $primaryKey = 'id';

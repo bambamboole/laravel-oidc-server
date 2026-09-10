@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentViewResponse;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
+use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
 use Illuminate\Support\ServiceProvider;
 
 class ConsentsServiceProvider extends ServiceProvider
@@ -15,6 +16,7 @@ class ConsentsServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(AuthorizationViewResponse::class, ConsentViewResponse::class);
+        $this->app->singleton(ConsentStore::class, ConsentRepository::class);
         $this->app->bind(ConsentView::class, fn (): never => throw MissingAuthViewException::forContract(ConsentView::class));
     }
 }

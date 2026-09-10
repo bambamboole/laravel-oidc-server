@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('oidc_auth_codes', function (Blueprint $table): void {
             $table->char('id', 80)->primary();
+            $table->string('realm_id')->default((string) config('oidc.realm', 'default'))->index();
             $table->foreignUuid('user_id')->index();
             $table->foreignUuid('client_id')->index();
             $table->json('scopes')->nullable();

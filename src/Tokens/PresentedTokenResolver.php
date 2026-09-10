@@ -61,15 +61,11 @@ final readonly class PresentedTokenResolver
         return $jwt !== null && $token !== null ? PresentedToken::accessToken($jwt, $token) : null;
     }
 
-    /**
-     * A refresh token carries no realm of its own; it inherits the one of the
-     * access token it was issued alongside.
-     */
     private function refreshToken(string $value): ?PresentedToken
     {
         $refreshToken = RefreshToken::query()
+            ->inRealm()
             ->with('accessToken.client')
-            ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
             ->find($value);
         $accessToken = $refreshToken?->accessToken;
 

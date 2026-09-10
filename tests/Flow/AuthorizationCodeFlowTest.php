@@ -15,7 +15,6 @@ use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
-use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContext;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
@@ -316,8 +315,8 @@ it('emits postLogin access-token claims onto the access token and links it', fun
     expect($accessToken->claims()->get('tier'))->toBe('gold')
         ->and($accessToken->claims()->has('amr'))->toBeFalse(); // reserved name skipped
 
-    // the issued access token is linked to a context
-    expect(AccessTokenContext::query()->count())->toBe(1);
+    // the issued access token carries the context it was issued under
+    expect(Token::query()->sole()->context_id)->toBe(AuthenticationContext::query()->sole()->id);
 });
 
 // Octane safety: state left behind by a *failed* token exchange must never leak
@@ -354,10 +353,11 @@ it('does not leak state from a failed token request into a later one', function 
         'code_verifier' => str_repeat('x', 64), // wrong verifier -> PKCE failure
     ])->assertStatus(400);
 
-    // Second, clean flow: no access_token_claims in session at all.
+    // Second, clean flow: no access_token_claims in session at all. The first
+    // approval is remembered as a consent, so this one goes straight to the code.
     $pkce2 = $this->pkce();
 
-    $view2 = $this->actingAsIdentity($this->user, authTime: time() - 60)
+    $approve2 = $this->actingAsIdentity($this->user, authTime: time() - 60)
         ->get('/realms/default/oauth/authorize?'.http_build_query([
             'client_id' => $this->client->id,
             'redirect_uri' => 'https://rp.test/callback',
@@ -368,9 +368,6 @@ it('does not leak state from a failed token request into a later one', function 
             'code_challenge' => $pkce2->challenge,
             'code_challenge_method' => 'S256',
         ]))
-        ->assertOk();
-
-    $approve2 = $this->post('/realms/default/oauth/authorize/consent', ['auth_token' => $view2->json('authToken')])
         ->assertRedirect();
     parse_str(parse_url($approve2->headers->get('Location'), PHP_URL_QUERY), $params2);
 

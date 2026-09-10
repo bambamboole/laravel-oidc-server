@@ -2,18 +2,24 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
+use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Consents\ConsentRepository;
 use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Keys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Keys\StoredSigningKeys;
 use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
+use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKey;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
+use Bambamboole\LaravelOidc\Server\Tokens\PresentedTokenResolver;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;
 use Workbench\App\Models\User;
 
@@ -114,4 +120,66 @@ it('does not resolve a token through the inspector across realms', function () {
     enterRealm('globex');
 
     expect(app(TokenInspector::class)->accessToken($jwt))->toBeNull();
+});
+
+it('does not resolve a refresh token from another realm', function () {
+    enterRealm('acme');
+    $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+    $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
+
+    [$value] = issueRefreshToken($this);
+
+    expect(RefreshToken::query()->inRealm()->whereKey($value)->exists())->toBeTrue()
+        ->and(app(PresentedTokenResolver::class)->resolve($value, 'refresh_token'))->not->toBeNull();
+
+    enterRealm('globex');
+
+    expect(RefreshToken::query()->inRealm()->whereKey($value)->exists())->toBeFalse()
+        ->and(app(PresentedTokenResolver::class)->resolve($value, 'refresh_token'))->toBeNull();
+});
+
+it('keeps social accounts per realm', function () {
+    $socialUser = new SocialUser(
+        id: 'g-123',
+        email: 'm@example.com',
+        emailVerified: true,
+        name: 'M',
+        nickname: null,
+        avatar: null,
+        raw: ['sub' => 'g-123'],
+        accessToken: 'at-1',
+        refreshToken: null,
+        expiresIn: null,
+    );
+
+    enterRealm('acme');
+    $acmeUser = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+    app(SocialAccountManager::class)->link($acmeUser, 'google', $socialUser);
+
+    expect(app(SocialAccountManager::class)->findAccount('google', 'g-123')?->authenticatable->is($acmeUser))->toBeTrue();
+
+    enterRealm('globex');
+
+    expect(app(SocialAccountManager::class)->findAccount('google', 'g-123'))->toBeNull();
+
+    // The same upstream identity may be linked to a different user in another realm.
+    $globexUser = User::create(['name' => 'G', 'email' => 'g@example.com', 'password' => 'x']);
+    app(SocialAccountManager::class)->link($globexUser, 'google', $socialUser);
+
+    expect(app(SocialAccountManager::class)->findAccount('google', 'g-123')?->authenticatable->is($globexUser))->toBeTrue()
+        ->and(SocialAccount::query()->count())->toBe(2);
+});
+
+it('keeps consents per realm', function () {
+    enterRealm('acme');
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
+
+    app(ConsentRepository::class)->grant((string) $user->id, (string) $client->getKey(), ['openid']);
+
+    expect(app(ConsentRepository::class)->covers((string) $user->id, (string) $client->getKey(), ['openid']))->toBeTrue();
+
+    enterRealm('globex');
+
+    expect(app(ConsentRepository::class)->covers((string) $user->id, (string) $client->getKey(), ['openid']))->toBeFalse();
 });

@@ -1,9 +1,11 @@
 <?php
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
 use Bambamboole\LaravelOidc\Server\Scopes\DefaultScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Scopes\ScopeCatalog;
 use Illuminate\Support\Facades\Exceptions;
@@ -25,6 +27,28 @@ class RepositoryThrowingCatalog implements ScopeCatalog
     public function scopes(): array
     {
         throw new RuntimeException('database is away');
+    }
+}
+
+/** A catalog whose scopes differ per realm, as one backed by realm-scoped rows would. */
+class RepositoryRealmCatalog implements ScopeCatalog
+{
+    public function scopes(): array
+    {
+        $realm = app(RealmResolver::class)->current()->id();
+
+        return ["{$realm}:read" => "Read {$realm} things"];
+    }
+}
+
+/** One resolver instance whose realm can be switched, as a host-derived resolver does between requests. */
+class RepositorySwitchableRealmResolver implements RealmResolver
+{
+    public function __construct(public string $realm) {}
+
+    public function current(): Realm
+    {
+        return new ConfiguredRealm($this->realm);
     }
 }
 
@@ -86,6 +110,24 @@ it('resolves the catalog once per repository instance', function () {
     $repository->find('catalog:read');
 
     expect(RepositoryCountingCatalog::$calls)->toBe(1);
+});
+
+it('caches the catalog per realm on one instance', function () {
+    config()->set('oidc.scopes.catalog', RepositoryRealmCatalog::class);
+    $resolver = new RepositorySwitchableRealmResolver('acme');
+    app()->instance(RealmResolver::class, $resolver);
+    $repository = new DefaultScopeRepository(app(), $resolver);
+
+    expect($repository->find('acme:read'))->not->toBeNull();
+
+    $resolver->realm = 'globex';
+
+    expect($repository->find('globex:read'))->not->toBeNull()
+        ->and($repository->find('acme:read'))->toBeNull();
+
+    $resolver->realm = 'acme';
+
+    expect($repository->find('acme:read'))->not->toBeNull();
 });
 
 it('does not consult the catalog until scopes are enumerated', function () {

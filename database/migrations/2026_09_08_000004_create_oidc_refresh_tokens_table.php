@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('oidc_refresh_tokens', function (Blueprint $table): void {
             $table->char('id', 80)->primary();
+            $table->string('realm_id')->default((string) config('oidc.realm', 'default'))->index();
             $table->char('access_token_id', 80)->index();
             $table->boolean('revoked')->default(false);
             $table->dateTime('expires_at')->nullable()->index();

@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('oidc_signing_keys', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->string('realm_id')->default((string) config('oidc.realm', 'default'))->index();
             $table->string('kid')->unique();
             $table->text('public_key');
             $table->text('private_key')->nullable();

@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
-use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\DefaultExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
@@ -45,7 +44,6 @@ class TokensServiceProvider extends ServiceProvider
         )));
 
         $this->app->singleton(AccessTokenPipeline::class);
-        $this->app->singleton(AccessTokenContextLink::class);
         $this->app->bind(SignedJwtParser::class, TokenInspector::class);
         $this->app->singleton(AccessTokenMinter::class, JwtAccessTokenMinter::class);
         $this->app->singleton(AccessTokenRevoker::class, TokenRevoker::class);

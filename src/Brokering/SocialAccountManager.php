@@ -24,6 +24,7 @@ class SocialAccountManager
     public function findAccount(string $provider, string $providerUserId): ?SocialAccount
     {
         return SocialAccount::query()
+            ->inRealm()
             ->where('provider', $provider)
             ->where('provider_user_id', $providerUserId)
             ->first();
@@ -74,7 +75,8 @@ class SocialAccountManager
             throw new RuntimeException('Social accounts require an Eloquent user model.');
         }
 
-        $account = $this->findAccount($provider, $socialUser->id) ?? new SocialAccount([
+        $account = $this->findAccount($provider, $socialUser->id) ?? (new SocialAccount)->forceFill([
+            'realm_id' => $this->realms->current()->id(),
             'provider' => $provider,
             'provider_user_id' => $socialUser->id,
         ]);

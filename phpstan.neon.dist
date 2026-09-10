@@ -12,7 +12,7 @@ parameters:
         # InteractsWithOidc ships for consumers to `use` in their own test suites; it is never
         # composed via a literal `use TraitName;` statement inside this repo (only via Pest's dynamic
         # uses() in tests/Testing/InteractsWithOidcTest.php and the tests/Flow, tests/Protocol,
-        # tests/Audit and tests/Clients files), so PHPStan's static trait-usage scanner cannot see it
+        # tests/Audit, tests/Clients and tests/Consents files), so PHPStan's static trait-usage scanner cannot see it
         # being applied. It is exercised by the tests in tests/Testing/InteractsWithOidcTest.php.
         -
             identifier: trait.unused
@@ -33,7 +33,7 @@ parameters:
             identifier: class.notFound
             message: '#on an unknown class Bambamboole\\LaravelOidc\\Server\\Testing\\InteractsWithOidc#'
             path: tests/*
-        # The plugin only types `$this`. The `TestCase $test` helper parameters in these two files
+        # The plugin only types `$this`. The `TestCase $test` helper parameters in these files
         # receive the trait-composed test case at runtime, which PHPStan cannot see; a
         # `TestCase&InteractsWithOidc` PHPDoc is rejected as an unresolvable type because traits
         # are not types.
@@ -41,5 +41,6 @@ parameters:
             identifier: method.notFound
             message: '#Call to an undefined method Bambamboole\\LaravelOidc\\Server\\Tests\\TestCase::(actingAsIdentity|authorizeAndApprove)\(\)#'
             paths:
+                - tests/Consents/ConsentPersistenceTest.php
                 - tests/Flow/AuthorizationCodeFlowTest.php
                 - tests/Protocol/TokenEndpointTest.php

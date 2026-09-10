@@ -13,7 +13,6 @@ use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\MintedAccessToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\ResolvesTokenUser;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenBuilder;
 use Bambamboole\LaravelOidc\Server\Tokens\IdTokenRequest;
@@ -40,7 +39,6 @@ final readonly class InteractiveTokenIssuer
     public function __construct(
         private AccessTokenMinter $minter,
         private AccessTokenPipeline $pipeline,
-        private AccessTokenContextLink $contextLink,
         private IdTokenBuilder $idTokens,
         private Auditor $auditor,
         private RealmResolver $realms,
@@ -83,12 +81,11 @@ final readonly class InteractiveTokenIssuer
             extraClaims: [...($context !== null ? $context->access_token_claims : []), ...($api?->accessTokenClaims() ?? [])],
         );
 
-        if ($context !== null) {
-            $this->contextLink->link($accessToken->jti, $context->id);
-        }
-
-        if ($authCodeId !== null) {
-            Token::query()->whereKey($accessToken->jti)->update(['auth_code_id' => $authCodeId]);
+        if ($context !== null || $authCodeId !== null) {
+            Token::query()->whereKey($accessToken->jti)->update([
+                'auth_code_id' => $authCodeId,
+                'context_id' => $context?->id,
+            ]);
         }
 
         $refreshToken = $withRefreshToken ? $this->issueRefreshToken($accessToken) : null;
@@ -144,6 +141,7 @@ final readonly class InteractiveTokenIssuer
         $id = bin2hex(random_bytes(40));
 
         RefreshToken::query()->forceCreate([
+            'realm_id' => $this->realms->current()->id(),
             'id' => $id,
             'access_token_id' => $accessToken->jti,
             'revoked' => false,

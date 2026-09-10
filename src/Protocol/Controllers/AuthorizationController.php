@@ -16,6 +16,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
+use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
 use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Illuminate\Auth\AuthenticationException;
@@ -23,7 +24,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\StatefulGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Date;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -50,6 +50,7 @@ class AuthorizationController
         private readonly LoginDestination $loginDestination,
         private readonly FirstPartyClientConfig $firstPartyClient,
         private readonly AuthSessionState $sessionState,
+        private readonly ConsentStore $consents,
     ) {}
 
     public function authorize(Request $request, AuthorizationViewResponse $viewResponse): Response|AuthorizationViewResponse
@@ -130,26 +131,23 @@ class AuthorizationController
             ->all();
     }
 
-    /** @param  list<Scope>  $scopes */
+    /**
+     * A trusted first-party client is consented to implicitly; anyone else
+     * needs a stored consent covering every requested scope.
+     *
+     * @param  list<Scope>  $scopes
+     */
     protected function hasGrantedScopes(Authenticatable $user, Client $client, array $scopes): bool
     {
         if ($this->firstPartyClient->isTrusted($client->client_id)) {
             return true;
         }
 
-        $activeTokens = $client->tokens()->where([
-            ['user_id', '=', $user->getAuthIdentifier()],
-            ['revoked', '=', false],
-            ['expires_at', '>', Date::now()],
-        ]);
-
-        if ($scopes === []) {
-            return $activeTokens->exists();
-        }
-
-        return collect($scopes)->pluck('id')->diff(
-            $activeTokens->pluck('scopes')->flatten()
-        )->isEmpty();
+        return $this->consents->covers(
+            (string) $user->getAuthIdentifier(),
+            (string) $client->getKey(),
+            array_map(fn (Scope $scope): string => $scope->id, $scopes),
+        );
     }
 
     protected function promptForLogin(Request $request): never

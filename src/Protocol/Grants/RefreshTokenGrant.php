@@ -14,7 +14,6 @@ use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
-use Bambamboole\LaravelOidc\Server\Tokens\Context\AccessTokenContextLink;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\Token;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
@@ -34,7 +33,6 @@ final readonly class RefreshTokenGrant implements Grant
         private InteractiveTokenIssuer $issuer,
         private ScopeGrant $scopes,
         private AuthenticationContextStore $contexts,
-        private AccessTokenContextLink $contextLink,
         private OidcSessionRepository $sessions,
         private TokenRevoker $revoker,
         private Auditor $auditor,
@@ -54,8 +52,8 @@ final readonly class RefreshTokenGrant implements Grant
         }
 
         $refreshToken = RefreshToken::query()
+            ->inRealm()
             ->with('accessToken')
-            ->whereIn('access_token_id', Token::query()->inRealm()->select('id'))
             ->find($value);
         $accessToken = $refreshToken?->accessToken;
 
@@ -130,7 +128,7 @@ final readonly class RefreshTokenGrant implements Grant
      */
     private function activeContext(Token $accessToken): ?AuthenticationContext
     {
-        $contextId = $this->contextLink->contextIdFor($accessToken->id);
+        $contextId = $accessToken->context_id;
 
         if ($contextId === null) {
             return null;

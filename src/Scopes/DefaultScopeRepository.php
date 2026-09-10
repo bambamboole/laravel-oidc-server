@@ -21,8 +21,8 @@ class DefaultScopeRepository implements ScopeRepository
         'phone' => 'Access your phone number',
     ];
 
-    /** @var array<string, string>|null */
-    private ?array $catalog = null;
+    /** @var array<string, array<string, string>> keyed by realm id */
+    private array $catalogs = [];
 
     public function __construct(
         private readonly Application $app,
@@ -38,20 +38,24 @@ class DefaultScopeRepository implements ScopeRepository
     }
 
     /**
-     * The configured catalog. A catalog class is resolved once per instance
-     * because it may query the database; its failures fall back to an empty
-     * catalog (fail-closed: unknown scopes are stripped at issuance) instead
-     * of breaking the flow. An inline array is read fresh each time.
+     * The current realm's configured catalog. A catalog class is resolved once
+     * per realm and instance because it may query the database — and per
+     * realm, not per instance, because under Octane one instance serves every
+     * realm. Its failures fall back to an empty catalog (fail-closed: unknown
+     * scopes are stripped at issuance) instead of breaking the flow. An inline
+     * array is read fresh each time.
      *
      * @return array<string, string>
      */
     private function catalog(): array
     {
-        if ($this->catalog !== null) {
-            return $this->catalog;
+        $realm = $this->realms->current();
+
+        if (isset($this->catalogs[$realm->id()])) {
+            return $this->catalogs[$realm->id()];
         }
 
-        $configured = $this->realms->current()->scopes()->catalog;
+        $configured = $realm->scopes()->catalog;
 
         if (! is_string($configured)) {
             return $configured;
@@ -63,7 +67,7 @@ class DefaultScopeRepository implements ScopeRepository
             throw new LogicException("The configured scope catalog [{$configured}] must implement ScopeCatalog.");
         }
 
-        return $this->catalog = rescue(fn (): array => $catalog->scopes(), [], report: ! $this->app->runningInConsole());
+        return $this->catalogs[$realm->id()] = rescue(fn (): array => $catalog->scopes(), [], report: ! $this->app->runningInConsole());
     }
 
     public function find(string $identifier): ?Scope

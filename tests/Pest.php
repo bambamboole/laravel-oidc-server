@@ -191,6 +191,7 @@ function issueRefreshToken(mixed $test, ?string $clientId = null, bool $expired 
 
     $refreshToken = new RefreshToken;
     $refreshToken->forceFill([
+        'realm_id' => RefreshToken::currentRealm(),
         'id' => $refreshTokenId,
         'access_token_id' => $accessTokenId,
         'revoked' => false,
