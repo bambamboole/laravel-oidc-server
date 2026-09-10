@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinal
 use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -27,6 +28,7 @@ class AuthenticatedSessionController
         private readonly AuthenticateWithPassword $authenticate,
         private readonly InteractiveLoginFinalizer $finalizer,
         private readonly RealmResolver $realms,
+        private readonly PendingActions $actions,
     ) {}
 
     /**
@@ -40,6 +42,7 @@ class AuthenticatedSessionController
 
         return app(LoginView::class)->respond(new LoginPrompt(
             status: is_string($status) ? $status : null,
+            methods: $this->realms->current()->authentication()->methods,
         ), $request);
     }
 
@@ -68,6 +71,9 @@ class AuthenticatedSessionController
             LoginOutcome::MfaChallenge => $request->wantsJson()
                 ? new JsonResponse(['two_factor' => true])
                 : redirect()->route('identity.two-factor.login'),
+            LoginOutcome::RequiredAction => $request->wantsJson()
+                ? new JsonResponse(['required_actions' => $this->actions->for($user)])
+                : redirect()->to($this->actions->url($user) ?? $this->homeUrl()),
             LoginOutcome::LoggedIn => $request->wantsJson()
                 ? new JsonResponse('', 200)
                 : redirect()->intended($this->homeUrl()),

@@ -15,9 +15,24 @@ class LoginApi extends AccessTokenApi
     /** @var array<string, mixed> */
     private array $idTokenClaims = [];
 
+    /** @var list<string> */
+    private array $requiredActions = [];
+
     public function requireMfa(): void
     {
         $this->mfaRequired = true;
+    }
+
+    /**
+     * Holds the login until the user completes this action. The demand lasts
+     * for this login only — an action that should outlive it belongs in a
+     * RequiredAction implementation that derives it from state. An unregistered
+     * key is refused rather than silently stranding the user on a screen that
+     * does not exist.
+     */
+    public function requireAction(string $key): void
+    {
+        $this->requiredActions[] = $key;
     }
 
     public function setIdTokenClaim(string $name, mixed $value): void
@@ -40,5 +55,11 @@ class LoginApi extends AccessTokenApi
     public function idTokenClaims(): array
     {
         return $this->idTokenClaims;
+    }
+
+    /** @return list<string> */
+    public function requiredActions(): array
+    {
+        return array_values(array_unique($this->requiredActions));
     }
 }

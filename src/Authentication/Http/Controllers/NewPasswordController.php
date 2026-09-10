@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinal
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Responsable;
@@ -25,6 +26,7 @@ class NewPasswordController
     public function __construct(
         private readonly ResetPassword $reset,
         private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly PendingActions $actions,
     ) {}
 
     /**
@@ -67,6 +69,12 @@ class NewPasswordController
                 return $request->wantsJson()
                     ? new JsonResponse(['two_factor' => true])
                     : redirect()->route('identity.two-factor.login');
+            }
+
+            if ($outcome === LoginOutcome::RequiredAction) {
+                return $request->wantsJson()
+                    ? new JsonResponse(['required_actions' => $this->actions->for($result->user)])
+                    : redirect()->to($this->actions->url($result->user) ?? route('identity.login'));
             }
 
             return $request->wantsJson()

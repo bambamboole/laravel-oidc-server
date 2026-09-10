@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Realms\Http\Middleware\ResolveRealm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\AuthenticationSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\BrokeringSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\CredentialSettings;
@@ -58,6 +59,11 @@ function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSet
         public function login(): LoginSettings
         {
             return $this->configured->login();
+        }
+
+        public function authentication(): AuthenticationSettings
+        {
+            return $this->configured->authentication();
         }
 
         public function credentials(): CredentialSettings

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Shared\Realms;
 
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\AuthenticationSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\BrokeringSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\CredentialSettings;
@@ -32,6 +33,8 @@ interface Realm
     public function sessions(): SessionSettings;
 
     public function login(): LoginSettings;
+
+    public function authentication(): AuthenticationSettings;
 
     public function credentials(): CredentialSettings;
 

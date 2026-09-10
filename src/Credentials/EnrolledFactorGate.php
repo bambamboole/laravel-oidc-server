@@ -17,6 +17,11 @@ final readonly class EnrolledFactorGate implements SecondFactorGate
         return $this->factors->configuredChallengeableEnrollments($user) !== [];
     }
 
+    public function canEnrollFactor(Authenticatable $user): bool
+    {
+        return $this->factors->enrollmentOptions() !== [];
+    }
+
     public function beginChallenge(Authenticatable $user, bool $remember): void
     {
         $enrollments = $this->factors->configuredChallengeableEnrollments($user);

@@ -42,7 +42,17 @@ it('buffers postLogin access_token claims into the session', function (): void {
     expect(session()->get('oidc.access_token_claims'))->toBe(['tier' => 'gold']);
 });
 
-it('denies when requireMfa is requested but the user has no factor', function (): void {
+it('enrolls a factor when requireMfa is requested and the user has none', function (): void {
+    app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
+
+    $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])
+        ->assertRedirect(route('identity.two-factor.setup'));
+
+    $this->assertGuest('identity');
+});
+
+it('denies when requireMfa is requested and nothing can satisfy it', function (): void {
+    config(['oidc.auth.factors' => []]);
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'secret-password'])

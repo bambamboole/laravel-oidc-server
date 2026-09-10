@@ -30,9 +30,17 @@ interface LoginFinalizer
     ): LoginOutcome;
 
     /**
-     * The tail of finalize() for a flow that finished its own verification
-     * afterwards, such as a second-factor challenge: guard login, session
-     * regeneration and the LoginSucceeded event.
+     * The tail of the ceremony for a flow that finished its own verification
+     * afterwards — a second-factor challenge, a required-action screen. It
+     * checks what the realm still requires of the user and either parks the
+     * login on the next action or completes it.
+     */
+    public function finish(Request $request, Authenticatable $user, bool $remember = false): LoginOutcome;
+
+    /**
+     * The last step: guard login, session regeneration and the LoginSucceeded
+     * event. Call finish() instead unless the required actions have already
+     * been settled — this one asks the realm nothing.
      */
     public function complete(Request $request, Authenticatable $user, bool $remember = false): void;
 }

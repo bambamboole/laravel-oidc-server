@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Actions\RegisterUser;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,7 @@ class RegisteredUserController
     public function __construct(
         private readonly RegisterUser $register,
         private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly PendingActions $actions,
     ) {}
 
     /**
@@ -51,6 +53,9 @@ class RegisteredUserController
             LoginOutcome::MfaChallenge => $request->wantsJson()
                 ? new JsonResponse(['two_factor' => true])
                 : redirect()->route('identity.two-factor.login'),
+            LoginOutcome::RequiredAction => $request->wantsJson()
+                ? new JsonResponse(['required_actions' => $this->actions->for($user)], 201)
+                : redirect()->to($this->actions->url($user) ?? $this->homeUrl()),
             LoginOutcome::LoggedIn => $request->wantsJson()
                 ? new JsonResponse('', 201)
                 : redirect()->intended($this->homeUrl()),

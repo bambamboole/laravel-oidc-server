@@ -23,6 +23,8 @@ final class AuthSessionState
 
     private const string REQUESTED_ACR_VALUES_KEY = 'oidc.requested_acr_values';
 
+    private const string REQUESTED_ACTIONS_KEY = 'oidc.requested_actions';
+
     public function start(string $method): void
     {
         session()->put(self::AMR_KEY, $this->dedupe([$method]));
@@ -103,6 +105,35 @@ final class AuthSessionState
         return is_array($values) ? array_values(array_filter($values, is_string(...))) : [];
     }
 
+    /**
+     * The actions the post-login pipeline asked for during this login. They
+     * are not derivable from any state, so they stay here until the screen
+     * that settles one reports it done.
+     *
+     * @param  list<string>  $keys
+     */
+    public function putRequestedActions(array $keys): void
+    {
+        $keys === []
+            ? session()->forget(self::REQUESTED_ACTIONS_KEY)
+            : session()->put(self::REQUESTED_ACTIONS_KEY, array_values(array_unique($keys)));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function requestedActions(): array
+    {
+        $keys = session()->get(self::REQUESTED_ACTIONS_KEY, []);
+
+        return is_array($keys) ? array_values(array_filter($keys, is_string(...))) : [];
+    }
+
+    public function completeRequestedAction(string $key): void
+    {
+        $this->putRequestedActions(array_values(array_diff($this->requestedActions(), [$key])));
+    }
+
     public function startOidcSession(string $sid): void
     {
         session()->put([
@@ -137,7 +168,7 @@ final class AuthSessionState
      */
     public function forget(): void
     {
-        session()->forget([self::AMR_KEY, self::ID_TOKEN_CLAIMS_KEY, self::ACCESS_TOKEN_CLAIMS_KEY]);
+        session()->forget([self::AMR_KEY, self::ID_TOKEN_CLAIMS_KEY, self::ACCESS_TOKEN_CLAIMS_KEY, self::REQUESTED_ACTIONS_KEY]);
     }
 
     /**

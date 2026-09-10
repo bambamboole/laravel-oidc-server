@@ -123,6 +123,12 @@ final class OAuthServerException extends HttpResponseException
         return new self('login_required', 'The authorization server requires end-user authentication.', 401, $redirectUri, $state);
     }
 
+    /** OpenID Connect Core §3.1.2.6: the end user must do something the request forbade prompting for. */
+    public static function interactionRequired(string $redirectUri, ?string $state): self
+    {
+        return new self('interaction_required', 'The authorization server requires end-user interaction.', 401, $redirectUri, $state);
+    }
+
     /** OpenID Connect Core §3.1.2.6. */
     public static function consentRequired(string $redirectUri, ?string $state): self
     {

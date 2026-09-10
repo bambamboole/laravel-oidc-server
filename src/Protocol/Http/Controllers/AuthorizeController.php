@@ -15,6 +15,7 @@ use Bambamboole\LaravelOidc\Server\Protocol\Authorize\AuthorizeRequestValidator;
 use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
 use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
@@ -51,6 +52,7 @@ class AuthorizeController
         private readonly FirstPartyClientConfig $firstPartyClient,
         private readonly AuthSessionState $sessionState,
         private readonly ConsentStore $consents,
+        private readonly PendingActions $actions,
     ) {}
 
     public function __invoke(Request $request, AuthorizationViewResponse $viewResponse): Response|AuthorizationViewResponse
@@ -79,6 +81,21 @@ class AuthorizeController
         }
 
         $request->session()->forget('oidc.prompted_for_login');
+
+        // The login sequence parks on a required action before a session
+        // exists, but a session that already exists can drift into one — a
+        // password expires, a realm turns a rule on. Re-checking here is what
+        // makes the requirement hold for every code this endpoint issues,
+        // however the session was established.
+        if ($this->actions->for($user) !== []) {
+            if ($prompt->contains('none')) {
+                throw OAuthServerException::interactionRequired($authRequest->redirectUri, $authRequest->state);
+            }
+
+            $request->session()->put('url.intended', $request->fullUrl());
+
+            return redirect()->to($this->actions->url($user) ?? $this->loginDestination->url());
+        }
 
         $authRequest->userId = (string) $user->getAuthIdentifier();
 

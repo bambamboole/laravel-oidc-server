@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
+use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\AuthenticationSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\BrokeringSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\ClientSettings;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\CredentialSettings;
@@ -48,6 +49,11 @@ final readonly class ConfiguredRealm implements Realm
     public function login(): LoginSettings
     {
         return LoginSettings::fromConfig();
+    }
+
+    public function authentication(): AuthenticationSettings
+    {
+        return AuthenticationSettings::fromConfig();
     }
 
     public function credentials(): CredentialSettings

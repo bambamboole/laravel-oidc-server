@@ -13,9 +13,13 @@ use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordUpdatePrompt;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordUpdateView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\FactorSetupPrompt;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\FactorSetupView;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengePrompt;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
 use Bambamboole\LaravelOidc\Server\Sessions\Views\LogoutConfirmationView;
@@ -39,6 +43,29 @@ trait FakesAuthViews
             public function respond(LoginPrompt $prompt, Request $request): JsonResponse
             {
                 return response()->json(['view' => 'login', 'prompt' => get_object_vars($prompt)]);
+            }
+        });
+
+        app()->bind(PasswordUpdateView::class, fn (): PasswordUpdateView => new class implements PasswordUpdateView
+        {
+            public function respond(PasswordUpdatePrompt $prompt, Request $request): JsonResponse
+            {
+                return response()->json(['view' => 'update-password', 'prompt' => get_object_vars($prompt)]);
+            }
+        });
+
+        app()->bind(FactorSetupView::class, fn (): FactorSetupView => new class implements FactorSetupView
+        {
+            public function respond(FactorSetupPrompt $prompt, Request $request): JsonResponse
+            {
+                return response()->json([
+                    'view' => 'two-factor-setup',
+                    'prompt' => [
+                        'required' => $prompt->required,
+                        'enrolled' => $prompt->enrolled,
+                        'options' => array_column($prompt->options, 'id'),
+                    ],
+                ]);
             }
         });
 

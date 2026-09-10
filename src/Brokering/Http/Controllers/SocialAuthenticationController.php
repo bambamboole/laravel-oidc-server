@@ -15,6 +15,7 @@ use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialProviderRegistry;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -34,6 +35,7 @@ class SocialAuthenticationController
         private readonly SocialAccountManager $accounts,
         private readonly LinkSocialAccount $linkAccount,
         private readonly LoginFinalizer $finalizer,
+        private readonly PendingActions $actions,
     ) {}
 
     public function redirect(Request $request, string $provider): Response
@@ -102,6 +104,7 @@ class SocialAuthenticationController
         return match ($this->finalizer->finalize($request, $user, $providerKey)) {
             LoginOutcome::Denied => $this->failed(__('We could not sign you in with this account.')),
             LoginOutcome::MfaChallenge => redirect()->route('identity.two-factor.login'),
+            LoginOutcome::RequiredAction => redirect()->to($this->actions->url($user) ?? $this->homeUrl()),
             LoginOutcome::LoggedIn => redirect()->intended($this->homeUrl()),
         };
     }

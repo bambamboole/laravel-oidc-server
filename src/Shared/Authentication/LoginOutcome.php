@@ -8,5 +8,6 @@ enum LoginOutcome
 {
     case Denied;
     case MfaChallenge;
+    case RequiredAction;
     case LoggedIn;
 }

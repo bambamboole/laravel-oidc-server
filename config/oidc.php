@@ -208,6 +208,18 @@ return [
         'login_route' => env('OIDC_LOGIN_ROUTE', 'login'),
         // Where end-session lands without a post_logout_redirect_uri.
         'logout_redirect' => '/',
+        // The interactive login methods this realm accepts. Registration and
+        // password reset hang off `password`: both end in a password the realm
+        // would not otherwise accept. A method that is not listed is refused
+        // server-side, not merely hidden.
+        'methods' => ['password', 'passkey', 'social'],
+        // How hard the realm insists on a second factor: `never`, `if_enrolled`
+        // (challenge whatever the user has enrolled) or `always` (a user without
+        // a factor is sent to enrollment before the login completes).
+        'mfa' => env('OIDC_AUTH_MFA', 'if_enrolled'),
+        // Whether an unconfirmed email address blocks the login. With this on
+        // the user gets no session at all until the address is verified.
+        'email_verification_required' => env('OIDC_AUTH_EMAIL_VERIFICATION_REQUIRED', false),
         // The `acr` claim (OIDC Core §2) an authentication earns: one method
         // in `amr` reports single_factor, two or more report multi_factor.
         // Substitute URIs or RFC 6711 names your relying parties expect; both
@@ -220,8 +232,8 @@ return [
         // before the app's CreateUser / ResetUserPassword action runs. `history`
         // counts previous passwords (the current one included) a new password
         // may not repeat; `max_age_days` marks a password as expired after that
-        // many days (PasswordCredential::isExpired()) — enforcing a change is
-        // left to a post-login hook.
+        // many days, which raises the `update_password` required action and
+        // holds the login until the user picks a new one.
         'password' => [
             'min_length' => 8,
             'mixed_case' => false,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Credentials;
 
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\FactorProvider;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\FactorSetupView;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
@@ -42,6 +43,7 @@ class CredentialsServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(TwoFactorChallengeView::class, fn (): never => throw MissingAuthViewException::forContract(TwoFactorChallengeView::class));
+        $this->app->bind(FactorSetupView::class, fn (): never => throw MissingAuthViewException::forContract(FactorSetupView::class));
 
         $this->configurePasskeys();
     }

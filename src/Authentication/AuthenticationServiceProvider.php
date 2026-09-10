@@ -10,16 +10,19 @@ use Bambamboole\LaravelOidc\Server\Authentication\Listeners\DispatchLoggedOut;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\NullDeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
+use Bambamboole\LaravelOidc\Server\Authentication\RequiredActions\DerivedPendingActions;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordConfirmationView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetRequestView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordResetView;
+use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordUpdateView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\DeviceRecognizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
@@ -46,6 +49,7 @@ class AuthenticationServiceProvider extends ServiceProvider
         $this->app->singleton(DeviceRecognizer::class, NullDeviceRecognizer::class);
         $this->app->bind(AcrResolver::class, LevelOfAssuranceAcrResolver::class);
         $this->app->singleton(AuthenticationContextStore::class);
+        $this->app->singleton(PendingActions::class, DerivedPendingActions::class);
 
         // Without a ui package or app binding, a view contract throws so the
         // missing page is caught at development time instead of rendering nothing.
@@ -56,6 +60,7 @@ class AuthenticationServiceProvider extends ServiceProvider
             PasswordResetView::class,
             EmailVerificationView::class,
             PasswordConfirmationView::class,
+            PasswordUpdateView::class,
         ] as $contract) {
             $this->app->bind($contract, fn (): never => throw MissingAuthViewException::forContract($contract));
         }

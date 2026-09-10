@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Http\Controllers;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Laravel\Passkeys\Actions\VerifyPasskey;
@@ -24,6 +25,7 @@ class PasskeyAuthenticatedSessionController
 {
     public function __construct(
         private readonly InteractiveLoginFinalizer $finalizer,
+        private readonly PendingActions $actions,
     ) {}
 
     public function store(
@@ -49,6 +51,9 @@ class PasskeyAuthenticatedSessionController
             LoginOutcome::MfaChallenge => $request->wantsJson()
                 ? new JsonResponse(['two_factor' => true])
                 : redirect()->route('identity.two-factor.login'),
+            LoginOutcome::RequiredAction => $request->wantsJson()
+                ? new JsonResponse(['required_actions' => $this->actions->for($passkey->user)])
+                : redirect()->to($this->actions->url($passkey->user) ?? '/'),
             LoginOutcome::LoggedIn => app(PasskeyLoginResponse::class),
         };
     }

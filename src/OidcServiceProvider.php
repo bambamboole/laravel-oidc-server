@@ -6,10 +6,13 @@ namespace Bambamboole\LaravelOidc\Server;
 
 use Bambamboole\LaravelOidc\Server\Audit\AuditServiceProvider;
 use Bambamboole\LaravelOidc\Server\Authentication\AuthenticationServiceProvider;
+use Bambamboole\LaravelOidc\Server\Authentication\RequiredActions\UpdatePasswordAction;
+use Bambamboole\LaravelOidc\Server\Authentication\RequiredActions\VerifyEmailAction;
 use Bambamboole\LaravelOidc\Server\Brokering\BrokeringServiceProvider;
 use Bambamboole\LaravelOidc\Server\Clients\ClientsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientConfig;
 use Bambamboole\LaravelOidc\Server\Consents\ConsentsServiceProvider;
+use Bambamboole\LaravelOidc\Server\Credentials\ConfigureMfaAction;
 use Bambamboole\LaravelOidc\Server\Credentials\CredentialsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Installation\InstallationServiceProvider;
 use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
@@ -18,11 +21,13 @@ use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenGuard;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\RequiredActionRegistry;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\SigningKeys\DatabaseSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeysServiceProvider;
 use Bambamboole\LaravelOidc\Server\Tokens\TokensServiceProvider;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\ServiceProvider;
@@ -59,6 +64,21 @@ class OidcServiceProvider extends ServiceProvider
         // Written by the Keys, Clients and Installation commands alike, so it
         // is bound where all of them are wired.
         $this->app->singleton(EnvironmentFile::class);
+
+        // The built-in required actions come from two domains and the order a
+        // user is walked through them is a decision above both, so the
+        // registry is wired here rather than by either. An application
+        // appends its own to it.
+        $this->app->singleton(RequiredActionRegistry::class, function (Application $app): RequiredActionRegistry {
+            $registry = new RequiredActionRegistry;
+            $registry->register(
+                $app->make(VerifyEmailAction::class),
+                $app->make(UpdatePasswordAction::class),
+                $app->make(ConfigureMfaAction::class),
+            );
+
+            return $registry;
+        });
 
         foreach (self::DOMAIN_PROVIDERS as $provider) {
             $this->app->register($provider);

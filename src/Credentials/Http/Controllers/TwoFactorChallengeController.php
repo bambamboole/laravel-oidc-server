@@ -13,6 +13,8 @@ use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengePrompt;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginOutcome;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Support\Responsable;
@@ -31,6 +33,7 @@ class TwoFactorChallengeController
         private readonly AuthSessionState $sessionState,
         private readonly VerifyFactorChallenge $verifyChallenge,
         private readonly LoginFinalizer $finalizer,
+        private readonly PendingActions $actions,
     ) {}
 
     /**
@@ -138,7 +141,14 @@ class TwoFactorChallengeController
         $this->sessionState->add(...$verification->amr);
 
         PendingMfaChallenge::forget();
-        $this->finalizer->complete($request, $user, $pending->remember);
+
+        if ($this->finalizer->finish($request, $user, $pending->remember) === LoginOutcome::RequiredAction) {
+            $target = $this->actions->url($user) ?? $this->homeUrl();
+
+            return $request->wantsJson()
+                ? new JsonResponse(['required_actions' => $this->actions->for($user), 'redirect' => $target])
+                : redirect()->to($target);
+        }
 
         if ($request->wantsJson()) {
             // A WebAuthn submit comes from the passkey ceremony script, which

@@ -11,11 +11,20 @@ use Bambamboole\LaravelOidc\Server\Credentials\Contracts\EnrollableFactorProvide
 use Bambamboole\LaravelOidc\Server\Credentials\Data\EnrollmentOption;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorRegistry;
-use Bambamboole\LaravelOidc\Server\Shared\Authentication\ResolvesIdentityGuard;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\FactorSetupPrompt;
+use Bambamboole\LaravelOidc\Server\Credentials\Views\FactorSetupView;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\ContinuesLogin;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingRequiredActions;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\RequiredActionSubject;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * The provider-keyed enrollment surface: any registered
@@ -26,14 +35,35 @@ use Illuminate\Validation\ValidationException;
  */
 class FactorEnrollmentController
 {
-    use ResolvesIdentityGuard;
+    use ContinuesLogin;
 
     public function __construct(
         private readonly FactorRegistry $factors,
         private readonly EnrollFactor $enroll,
         private readonly ConfirmFactorEnrollment $confirmEnrollment,
         private readonly RevokeFactor $revoke,
+        private readonly RequiredActionSubject $subject,
+        private readonly LoginFinalizer $finalizer,
+        private readonly PendingActions $actions,
     ) {}
+
+    /**
+     * The enrollment page. It is where a realm that insists on a second
+     * factor sends a user without one, so it is reachable mid-login as well
+     * as from the account screen; the view is resolved here so the JSON
+     * endpoints that share this class never resolve one.
+     */
+    public function setup(Request $request): Responsable|Response
+    {
+        $status = $request->session()->get('status');
+
+        return app(FactorSetupView::class)->respond(new FactorSetupPrompt(
+            options: $this->factors->enrollmentOptions(),
+            required: PendingRequiredActions::find() instanceof PendingRequiredActions,
+            enrolled: $this->factors->configuredChallengeableEnrollments($this->requireUser($request)) !== [],
+            status: is_string($status) ? $status : null,
+        ), $request);
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -75,6 +105,21 @@ class FactorEnrollmentController
         return new JsonResponse('', 200);
     }
 
+    /**
+     * Continues a login the realm was holding for a second factor. It is a
+     * step of its own rather than a tail on confirm(), because a first factor
+     * mints recovery codes that are shown once — redirecting off the page
+     * that displays them would lose them.
+     */
+    public function resume(Request $request): RedirectResponse
+    {
+        $user = $this->requireUser($request);
+
+        abort_unless($this->factors->configuredChallengeableEnrollments($user) !== [], 409);
+
+        return $this->continueAfterAction($request, $user, 'configure_mfa');
+    }
+
     public function destroy(Request $request, string $provider, string $enrollment): JsonResponse
     {
         $user = $this->requireUser($request);
@@ -114,7 +159,17 @@ class FactorEnrollmentController
 
     private function requireUser(Request $request): Authenticatable
     {
-        return $this->currentUser($request) ?? abort(401);
+        return $this->subject->current($request) ?? abort(401);
+    }
+
+    private function loginFinalizer(): LoginFinalizer
+    {
+        return $this->finalizer;
+    }
+
+    private function pendingActions(): PendingActions
+    {
+        return $this->actions;
     }
 
     /**
