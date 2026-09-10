@@ -46,10 +46,10 @@ class NewPasswordController
 
     public function store(Request $request): JsonResponse|RedirectResponse
     {
-        // `confirmed` is the one password rule the package owns: the shipped
-        // reset page renders a confirmation field, and without the rule a typo
-        // would silently commit the first value. Every other rule (length,
-        // strength, history) stays with the reset action.
+        // `confirmed` is checked here, before the broker validates the token:
+        // the shipped reset page renders a confirmation field, and without
+        // the rule a typo would silently commit the first value. The realm's
+        // password policy is applied by the reset action once the token holds.
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],

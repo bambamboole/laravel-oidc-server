@@ -222,6 +222,21 @@ return [
             'single_factor' => '1',
             'multi_factor' => '2',
         ],
+        // What a new password must satisfy, checked at registration and reset
+        // before the app's CreateUser / ResetUserPassword action runs. `history`
+        // counts previous passwords (the current one included) a new password
+        // may not repeat; `max_age_days` marks a password as expired after that
+        // many days (PasswordCredential::isExpired()) — enforcing a change is
+        // left to a post-login hook.
+        'password' => [
+            'min_length' => 8,
+            'mixed_case' => false,
+            'numbers' => false,
+            'symbols' => false,
+            'uncompromised' => false,
+            'history' => 0,
+            'max_age_days' => null,
+        ],
         'two_factor' => [
             'challenge_providers' => ['totp', 'webauthn'],
             'secret_length' => 16,

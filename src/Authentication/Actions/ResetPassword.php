@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 use Bambamboole\LaravelOidc\Server\Authentication\PasswordResetResult;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -17,15 +18,17 @@ use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Validates the reset token through the password broker and hands the user
- * to the app's ResetUserPassword binding, which owns the password rules and
- * persistence. Signing the user in afterwards is the caller's job.
+ * Validates the reset token through the password broker, checks the new
+ * password against the realm's policy, and hands the user to the app's
+ * ResetUserPassword binding, which owns persistence. Signing the user in
+ * afterwards is the caller's job.
  */
 final readonly class ResetPassword
 {
     public function __construct(
         private Container $container,
         private Auditor $auditor,
+        private PasswordCredential $passwords,
     ) {}
 
     /**
@@ -38,6 +41,12 @@ final readonly class ResetPassword
         $status = Password::broker((string) config('auth.defaults.passwords', 'users'))->reset(
             array_intersect_key($input, array_flip(['email', 'password', 'password_confirmation', 'token'])),
             function (CanResetPassword $user) use ($input, &$resetUser): void {
+                if (! $user instanceof Authenticatable) {
+                    throw new RuntimeException('The reset password user must be authenticatable.');
+                }
+
+                $this->passwords->validate($user, is_string($input['password'] ?? null) ? $input['password'] : '');
+
                 $this->container->make(ResetUserPassword::class)($user, $input);
 
                 if (method_exists($user, 'setRememberToken')) {
@@ -48,9 +57,7 @@ final readonly class ResetPassword
                     $user->save();
                 }
 
-                if (! $user instanceof Authenticatable) {
-                    throw new RuntimeException('The reset password user must be authenticatable.');
-                }
+                $this->passwords->record($user);
 
                 event(new PasswordReset($user));
 

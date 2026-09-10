@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
 use Bambamboole\LaravelOidc\Server\Authentication\PasswordConfirmation;
+use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Session\Session;
-use Illuminate\Support\Facades\Hash;
 use SensitiveParameter;
 
-final class ConfirmPassword
+final readonly class ConfirmPassword
 {
+    public function __construct(private PasswordCredential $passwords) {}
+
     public function __invoke(Authenticatable $user, #[SensitiveParameter] string $password, Session $session): bool
     {
-        if (! Hash::check($password, (string) $user->getAuthPassword())) {
+        if (! $this->passwords->verify($user, $password)) {
             return false;
         }
 

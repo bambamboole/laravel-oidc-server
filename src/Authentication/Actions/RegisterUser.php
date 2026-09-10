@@ -6,19 +6,24 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
+use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Bambamboole\LaravelOidc\Server\Shared\Users\CreateUser;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Container\Container;
 
 /**
- * Signing the new user in is the caller's job (InteractiveLoginFinalizer).
+ * A password in the input is checked against the realm's policy before the
+ * app's CreateUser action runs; the rest of the input is the action's to
+ * validate. Signing the new user in is the caller's job
+ * (InteractiveLoginFinalizer).
  */
 final readonly class RegisterUser
 {
     public function __construct(
         private Container $container,
         private Auditor $auditor,
+        private PasswordCredential $passwords,
     ) {}
 
     public function enabled(): bool
@@ -35,7 +40,13 @@ final readonly class RegisterUser
             $input['email'] = strtolower($input['email']);
         }
 
+        if (is_string($input['password'] ?? null) && $input['password'] !== '') {
+            $this->passwords->validate(null, $input['password']);
+        }
+
         $user = $this->container->make(CreateUser::class)($input);
+
+        $this->passwords->record($user);
 
         event(new Registered($user));
 
