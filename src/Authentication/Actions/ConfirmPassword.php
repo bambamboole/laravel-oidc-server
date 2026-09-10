@@ -10,10 +10,6 @@ use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Facades\Hash;
 use SensitiveParameter;
 
-/**
- * Re-checks the user's password and stamps the confirmation on the
- * session so password-confirmed routes open for the configured window.
- */
 final class ConfirmPassword
 {
     public function __invoke(Authenticatable $user, #[SensitiveParameter] string $password, Session $session): bool

@@ -170,12 +170,7 @@ final class OAuthServerException extends HttpResponseException
         return app(RealmResolver::class)->current()->id();
     }
 
-    /**
-     * Appends response parameters to a client's redirect URI, keeping any
-     * query the registered URI already carries.
-     *
-     * @param  array<string, string>  $parameters
-     */
+    /** @param  array<string, string>  $parameters */
     private function appendQuery(string $uri, array $parameters): string
     {
         return $uri.(str_contains($uri, '?') ? '&' : '?').http_build_query($parameters, '', '&', PHP_QUERY_RFC3986);

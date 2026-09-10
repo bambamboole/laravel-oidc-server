@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Auditor contract: sink + event dispatch, request enrichment, sid resolution, disabled switch, fail-open on sink errors
- */
-
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;

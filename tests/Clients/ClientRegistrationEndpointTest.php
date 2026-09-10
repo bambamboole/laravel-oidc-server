@@ -94,6 +94,8 @@ it('rejects client metadata this endpoint does not provision', function (array $
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => ['https://rp.test/cb'], ...$metadata])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_client_metadata');
+
+    expect(Client::query()->count())->toBe(0);
 })->with([
     'unsupported auth method' => [['token_endpoint_auth_method' => 'private_key_jwt']],
     'foreign grant' => [['grant_types' => ['authorization_code', 'implicit']]],
@@ -151,6 +153,8 @@ it('rejects a missing or empty redirect uri list', function (): void {
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => []])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_client_metadata');
+
+    expect(Client::query()->count())->toBe(0);
 });
 
 it('rejects malformed redirect uris', function (string $uri): void {
@@ -159,6 +163,8 @@ it('rejects malformed redirect uris', function (string $uri): void {
     $this->postJson('/realms/default/oauth/register', ['redirect_uris' => [$uri]])
         ->assertBadRequest()
         ->assertJsonPath('error', 'invalid_redirect_uri');
+
+    expect(Client::query()->count())->toBe(0);
 })->with([
     'fragment' => 'https://rp.test/cb#fragment',
     'userinfo' => 'https://user:pass@rp.test/cb',

@@ -11,11 +11,6 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-/**
- * Starts an enrollment ceremony with the given provider. Multi-step
- * ceremonies (webauthn) return their public options in the enrollment
- * metadata and complete through ConfirmFactorEnrollment.
- */
 final readonly class EnrollFactor
 {
     public function __construct(private Auditor $auditor) {}

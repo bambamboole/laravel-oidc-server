@@ -102,7 +102,7 @@ it('does not let extra claims override protected access-token claims', function 
         ->and($parsed->claims()->get('tier'))->toBe('gold');
 });
 
-it('emits the actor claim', function (): void {
+it('emits the given actor as the act claim', function (): void {
     $minted = mintAccessToken($this->client, $this->user, actor: ['client_id' => 'trusted']);
 
     expect(parseAccessToken($minted->jwt)->claims()->get('act'))->toBe(['client_id' => 'trusted']);

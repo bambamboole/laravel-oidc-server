@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 /**
- * Multi-factor login: password → deferred second-factor challenge (TOTP, recovery code, WebAuthn) → session;
  * RFC 8176 (amr values pwd, otp, webauthn)
  */
 

@@ -39,8 +39,6 @@ beforeEach(function (): void {
 });
 
 /**
- * Posts a token-exchange request for a subject token minted to the test client.
- *
  * @param  list<string>  $subjectScopes
  * @param  array<string, mixed>  $parameters
  * @return TestResponse<Response>

@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * postLogin hook pipeline contract: ordering, fail-closed, protected id_token and access-token claim names
- */
-
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\NullDeviceRecognizer;
@@ -25,7 +21,7 @@ function makeLoginEvent(array $amr = ['pwd']): LoginEvent
     );
 }
 
-it('runs registered hooks in order and returns the api', function (): void {
+it('accumulates the decisions of every registered hook on one api', function (): void {
     $pipeline = new PostLoginPipeline;
     $pipeline->register(fn (LoginEvent $e, LoginApi $api) => $api->setIdTokenClaim('a', 1));
     $pipeline->register(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
@@ -37,7 +33,7 @@ it('runs registered hooks in order and returns the api', function (): void {
         ->and($api->isDenied())->toBeFalse();
 });
 
-it('fails closed when a hook throws', function (): void {
+it('fails closed and skips the remaining hooks when a hook throws', function (): void {
     $pipeline = new PostLoginPipeline;
     $pipeline->register(function (): void {
         throw new RuntimeException('boom');
@@ -48,7 +44,7 @@ it('fails closed when a hook throws', function (): void {
 
     expect($api->isDenied())->toBeTrue()
         ->and($api->denyReason())->toBe('post_login_error')
-        ->and($api->idTokenClaims())->toBe([]); // later hook skipped
+        ->and($api->idTokenClaims())->toBe([]);
 });
 
 it('refuses protected id_token and access-token claim names from hooks', function (): void {

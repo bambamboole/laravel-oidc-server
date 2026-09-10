@@ -138,7 +138,7 @@ it('does not resolve a refresh token from another realm', function (): void {
         ->and(app(PresentedTokenResolver::class)->resolve($value, 'refresh_token'))->toBeNull();
 });
 
-it('keeps social accounts per realm', function (): void {
+it('keeps social accounts per realm, so one upstream identity may link to a different user in each', function (): void {
     $socialUser = new SocialUser(
         id: 'g-123',
         email: 'm@example.com',
@@ -160,7 +160,6 @@ it('keeps social accounts per realm', function (): void {
 
     expect(app(SocialAccountManager::class)->findAccount('google', 'g-123'))->toBeNull();
 
-    // The same upstream identity may be linked to a different user in another realm.
     $globexUser = User::create(['name' => 'G', 'email' => 'g@example.com', 'password' => 'x']);
     app(SocialAccountManager::class)->link($globexUser, 'google', $socialUser);
 

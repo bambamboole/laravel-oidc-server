@@ -94,9 +94,8 @@ class AccessTokenGuard implements Guard
     }
 
     /**
-     * Full RFC 9068 validation, then the audience gate described in the class docblock. Named apart
-     * from GuardHelpers::authenticate() (which the Guard/Auth facade contract expects to take no
-     * arguments and return a non-nullable Authenticatable) to avoid silently overriding it.
+     * Named apart from GuardHelpers::authenticate(), which the Guard contract expects to take no
+     * arguments and return a non-nullable Authenticatable, so it is not silently overridden.
      */
     private function verifyBearerToken(string $jwt): ?AccessToken
     {

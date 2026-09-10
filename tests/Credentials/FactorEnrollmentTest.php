@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Provider-keyed factor enrollment endpoints: any registered EnrollableFactorProvider gets list/enroll/confirm/revoke;
- * password-confirmation gate, recovery-code backfill, secrets encrypted at rest, WebAuthn ceremony
- */
-
 use Bambamboole\LaravelOidc\Server\Credentials\Models\TotpFactor;
 use CBOR\ByteStringObject;
 use CBOR\MapObject;
@@ -33,9 +28,6 @@ function enrolling(mixed $test): mixed
     return $test->actingAs($test->user, 'identity')->withSession(['auth.password_confirmed_at' => time()]);
 }
 
-/**
- * Enrolls and confirms a TOTP factor through the endpoints; returns the enrollment id.
- */
 function enrollConfirmedTotp(mixed $test): string
 {
     $enrollment = enrolling($test)->postJson(route('identity.two-factor.enroll', ['provider' => 'totp']))->assertCreated()->json();

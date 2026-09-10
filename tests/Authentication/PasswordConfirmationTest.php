@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Password confirmation gate for sensitive account actions: confirm, status endpoint, timeout
- */
-
 use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
 

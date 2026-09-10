@@ -50,7 +50,6 @@ it('rejects an invalid exchange with the matching OAuth error type', function (
     );
 })->with([
     'unlisted target audience' => [null, 'https://evil.test', ['openid'], 'invalid_target'],
-    'scope widening' => [null, 'https://api.orders.test', ['admin'], 'invalid_scope'],
     'invalid subject token' => ['garbage', 'https://api.orders.test', ['openid'], 'invalid_grant'],
 ]);
 

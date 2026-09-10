@@ -13,13 +13,10 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Enforces that the current bearer token is addressed to one of the given resource audiences.
- * Depends on `auth:oidc` (or any guard that populates `currentAccessToken()`) running first — this
- * middleware performs no independent parsing, signature verification, or revocation check anymore,
- * that is {@see AccessTokenGuard}'s job. It only reads the
- * verified audience the guard stashed on the request and narrows it to the audiences given here.
- * A token meant for another resource is an invalid token here (RFC 6750 §3.1), not one short of
- * a scope.
+ * Narrows the audience {@see AccessTokenGuard} verified and stashed on the request to the given
+ * resource audiences; it parses and verifies nothing itself, so a guard that populates
+ * `currentAccessToken()` (`auth:oidc`) must run first. A token meant for another resource is an
+ * invalid token here (RFC 6750 §3.1), not one short of a scope.
  */
 class CheckAudience
 {

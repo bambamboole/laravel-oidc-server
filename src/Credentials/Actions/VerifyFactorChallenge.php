@@ -14,11 +14,9 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
 /**
- * Verifies the second factor for a pending challenge. A recovery code
- * answers any pending factor; otherwise the proof is checked against the
- * enrollment the challenge was issued for. Returns null when the proof is
- * rejected; every outcome is audited here. Establishing the session
- * afterwards is the caller's job.
+ * A recovery code answers any pending factor; otherwise the proof is checked
+ * against the enrollment the challenge was issued for. Every outcome is
+ * audited here; establishing the session afterwards is the caller's job.
  */
 final readonly class VerifyFactorChallenge
 {

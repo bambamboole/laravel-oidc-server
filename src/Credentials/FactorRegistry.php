@@ -35,11 +35,6 @@ class FactorRegistry
             ?? throw new LogicException("No factor provider is registered for [{$key}].");
     }
 
-    /**
-     * The provider for $key when it supports enrollment through the generic
-     * endpoints, null for an unknown key or a provider that cannot be enrolled
-     * in at all.
-     */
     public function enrollable(string $key): ?EnrollableFactorProvider
     {
         $provider = $this->providers[$key] ?? null;
@@ -56,8 +51,7 @@ class FactorRegistry
     }
 
     /**
-     * Every way a user could add a factor, ordered for display. Backup
-     * providers stay out: recovery codes are backfilled, never picked.
+     * Backup providers stay out: recovery codes are backfilled, never picked.
      *
      * @return list<EnrollmentOption>
      */
@@ -104,9 +98,8 @@ class FactorRegistry
     }
 
     /**
-     * One of the user's enrollments — pending or confirmed — by provider and id.
-     * The single lookup every revoke/confirm surface should use, so ownership is
-     * proven the same way everywhere.
+     * The single lookup every revoke/confirm surface should use, so ownership
+     * is proven the same way everywhere.
      */
     public function findEnrollment(Authenticatable $user, string $providerKey, string $id): ?FactorEnrollment
     {
@@ -126,8 +119,8 @@ class FactorRegistry
     }
 
     /**
-     * The enrollments a login challenge may be satisfied with, limited to the
-     * providers the host opted into via `oidc.auth.two_factor.challenge_providers`.
+     * Limited to the providers the host opted into via
+     * `oidc.auth.two_factor.challenge_providers`.
      *
      * @return list<FactorEnrollment>
      */
@@ -136,10 +129,6 @@ class FactorRegistry
         return $this->challengeableEnrollments($user, $this->realms->current()->credentials()->challengeProviders);
     }
 
-    /**
-     * Whether the user has at least one confirmed, challengeable enrollment —
-     * the "does this user have 2FA?" check.
-     */
     public function hasChallengeableFactors(Authenticatable $user): bool
     {
         return $this->challengeableEnrollments($user) !== [];

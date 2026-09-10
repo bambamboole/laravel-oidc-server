@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Social (brokered) login through an upstream OIDC provider: verified-email linking, just-in-time provisioning,
- * postLogin policy, MFA hand-off; RFC 8176 amr value per provider
+ * RFC 8176 (amr value per provider)
  */
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
@@ -77,8 +76,6 @@ function corpIdToken(array $claims, string $nonce): string
 }
 
 /**
- * Runs redirect + callback and returns the callback response.
- *
  * @param  array<string, mixed>  $claims
  * @return TestResponse<RedirectResponse>
  */

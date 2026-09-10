@@ -18,7 +18,7 @@ it('dispatches logout for expired un-notified sessions exactly once', function (
     app(OidcSessionRepository::class)->recordParticipant($sid, (string) $client->id);
 
     $this->artisan('oidc:dispatch-expired-session-logouts')->assertExitCode(0);
-    $this->artisan('oidc:dispatch-expired-session-logouts')->assertExitCode(0); // idempotent
+    $this->artisan('oidc:dispatch-expired-session-logouts')->assertExitCode(0);
 
     Bus::assertDispatchedTimes(SendBackChannelLogout::class, 1);
     expect(OidcSession::query()->find($sid)->logout_notified_at)->not->toBeNull();

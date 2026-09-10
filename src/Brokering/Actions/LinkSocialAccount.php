@@ -12,8 +12,8 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Attaches an upstream identity to the signed-in user. An identity that is
- * already linked to a different local user is refused rather than moved.
+ * An identity already linked to a different local user is refused rather
+ * than moved.
  */
 final readonly class LinkSocialAccount
 {

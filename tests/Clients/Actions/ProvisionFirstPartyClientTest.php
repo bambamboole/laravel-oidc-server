@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * The first-party provisioning action keeps the presented client secret out of exception traces
- */
-
 use Bambamboole\LaravelOidc\Server\Clients\Actions\ProvisionFirstPartyClient;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
 

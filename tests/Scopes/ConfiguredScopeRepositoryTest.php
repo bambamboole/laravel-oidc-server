@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Scope catalog contract: OIDC standard scopes plus the configured catalog (inline map or ScopeCatalog class),
- * per-realm catalogs, fail-open on catalog errors
- */
-
 use Bambamboole\LaravelOidc\Server\Realms\ConfiguredRealm;
 use Bambamboole\LaravelOidc\Server\Scopes\ConfiguredScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;

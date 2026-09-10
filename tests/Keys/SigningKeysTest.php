@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Signing key resolution: env-provided PEM (escaped newlines) over key files, failing loud when neither exists
- */
 function escapedFixtureKey(string $file): string
 {
     return str_replace("\n", '\n', trim((string) file_get_contents(__DIR__.'/../fixtures/'.$file)));

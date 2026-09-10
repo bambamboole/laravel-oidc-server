@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Default audit sink: failures log as warnings, successes as info, on the configured channel with the event context
- */
-
 use Bambamboole\LaravelOidc\Server\Audit\LogAuditSink;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;

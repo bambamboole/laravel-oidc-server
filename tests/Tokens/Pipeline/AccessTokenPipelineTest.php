@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Access-token trigger pipeline contract: per-grant registration, ordering, deny short-circuit, fail-closed,
- * fresh api per run, protected claim names
- */
-
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;

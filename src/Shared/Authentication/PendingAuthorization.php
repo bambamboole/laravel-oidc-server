@@ -13,7 +13,6 @@ use Illuminate\Http\Request;
  */
 interface PendingAuthorization
 {
-    /** The `client_id` of the pending authorization request. */
     public function clientId(Request $request): ?string;
 
     /** @return list<string> */

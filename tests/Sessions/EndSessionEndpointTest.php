@@ -65,6 +65,8 @@ it('falls back to the configured redirect for unregistered uris', function (): v
         'id_token_hint' => issueIdToken($this),
         'post_logout_redirect_uri' => 'https://evil.test/phish',
     ]))->assertRedirect('/');
+
+    expect(auth('identity')->guest())->toBeTrue();
 });
 
 it('does not log out on a GET without a valid id_token_hint', function (): void {

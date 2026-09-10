@@ -63,8 +63,6 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
     }
 
     /**
-     * The user's unused recovery codes.
-     *
      * @return list<string>
      */
     public function codes(Authenticatable $user): array
@@ -76,9 +74,8 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
     }
 
     /**
-     * How many of the current set are still usable, and how big the set was when
-     * it was generated. Counting rows rather than reading the configured size
-     * keeps the answer true for a set generated under an older setting.
+     * Counted from rows rather than the configured size so a set generated
+     * under an older setting still reports correctly.
      */
     public function remaining(Authenticatable $user): int
     {

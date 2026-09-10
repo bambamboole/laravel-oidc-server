@@ -11,10 +11,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * An authorization code as handed to the client, with everything the token
- * endpoint needs to redeem it: the PKCE challenge, the redirect URI it was
- * bound to, and the login-time facts the id_token repeats.
- *
  * @property string $id
  * @property string $realm_id
  * @property string $user_id

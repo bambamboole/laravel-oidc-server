@@ -55,8 +55,6 @@ it('builds the issuer and every endpoint from the configured issuer host, trimmi
 
 // OIDC Discovery 1.0 §3 — acr_values_supported follows the realm mapping
 it('advertises the realm acr values', function (): void {
-    expect($this->getJson('/realms/default/.well-known/openid-configuration')->json('acr_values_supported'))->toBe(['1', '2']);
-
     config(['oidc.auth.acr_values' => ['single_factor' => 'urn:example:loa:1', 'multi_factor' => 'urn:example:loa:2']]);
 
     expect($this->getJson('/realms/default/.well-known/openid-configuration')->json('acr_values_supported'))

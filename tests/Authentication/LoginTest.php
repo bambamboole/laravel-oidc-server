@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Credential login on the identity guard: canonicalized credentials, remember cookie, throttling, RFC 8176 amr pwd,
- * isolation from the application web guard
+ * RFC 8176 (amr value pwd)
  */
 
 use Illuminate\Support\Facades\Hash;
@@ -67,6 +66,8 @@ it('throttles repeated login attempts', function (): void {
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'wrong-password'])
         ->assertStatus(429);
+
+    $this->assertGuest('identity');
 });
 
 it('records the pwd method on a successful password login', function (): void {

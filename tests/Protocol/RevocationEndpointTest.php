@@ -89,6 +89,8 @@ it('rejects unauthenticated revocation', function (): void {
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_client')
         ->assertHeader('WWW-Authenticate', 'Basic realm="default"');
+
+    expect($this->token->fresh()->revoked)->toBeFalse();
 });
 
 it('lets a public client revoke its own refresh token', function (): void {

@@ -30,11 +30,6 @@ class SocialAccountManager
             ->first();
     }
 
-    /**
-     * Resolve the local user for an upstream identity: an existing link wins,
-     * then (when enabled) a verified-email match, then (when enabled) JIT
-     * provisioning. Null means the identity cannot be signed in.
-     */
     public function resolveUser(string $provider, SocialUser $socialUser, UserProvider $users): ?Authenticatable
     {
         $account = $this->findAccount($provider, $socialUser->id);

@@ -93,7 +93,6 @@ class Client extends Model
         );
     }
 
-    /** A client nobody owns is first party. */
     public function firstParty(): bool
     {
         return $this->owner_id === null;
@@ -104,7 +103,6 @@ class Client extends Model
         return ! empty($this->getAttributes()['secret'] ?? null);
     }
 
-    /** A client may be configured to bypass the consent screen entirely. */
     public function skipsConsent(): bool
     {
         return ! $this->consent_required;

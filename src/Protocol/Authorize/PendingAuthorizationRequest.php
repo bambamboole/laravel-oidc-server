@@ -7,10 +7,6 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Authorize;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingAuthorization;
 use Illuminate\Http\Request;
 
-/**
- * Reads the authorization request the authorize endpoint stashed in the
- * session back out for the post-login pipeline.
- */
 final readonly class PendingAuthorizationRequest implements PendingAuthorization
 {
     public function __construct(private AuthorizeRequestSession $session) {}

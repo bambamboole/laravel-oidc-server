@@ -16,10 +16,6 @@ final readonly class FirstPartyClientProvisioningResult
         public bool $secretRotated,
     ) {}
 
-    /**
-     * Delete the client when it was freshly created by this provisioning call.
-     * Adopted or reconciled clients are left untouched.
-     */
     public function rollback(): bool
     {
         if (! $this->wasCreated) {

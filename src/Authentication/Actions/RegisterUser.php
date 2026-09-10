@@ -12,9 +12,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Container\Container;
 
 /**
- * Creates the account through the app's CreateUser binding, then dispatches
- * Registered and records the audit event. Signing the new user in is the
- * caller's job (InteractiveLoginFinalizer).
+ * Signing the new user in is the caller's job (InteractiveLoginFinalizer).
  */
 final readonly class RegisterUser
 {

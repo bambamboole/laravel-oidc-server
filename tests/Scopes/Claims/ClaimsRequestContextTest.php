@@ -14,7 +14,6 @@ use Lcobucci\JWT\Token\Parser;
 use Lcobucci\JWT\UnencryptedToken;
 use Workbench\App\Models\User;
 
-/** Captures the request the package hands the resolver, and echoes it back as claims. */
 final class ClaimsContextRecorder implements ClaimsResolver
 {
     /** @var list<ClaimsRequest> */

@@ -17,7 +17,7 @@ it('creates a session, records participants idempotently, revokes and notifies',
         ->and($session->revoked_at)->toBeNull();
 
     $registry->recordParticipant($sid, 'client-a');
-    $registry->recordParticipant($sid, 'client-a'); // idempotent
+    $registry->recordParticipant($sid, 'client-a');
     $registry->recordParticipant($sid, 'client-b');
     expect($registry->participantClientIds($sid))->toEqualCanonicalizing(['client-a', 'client-b']);
 

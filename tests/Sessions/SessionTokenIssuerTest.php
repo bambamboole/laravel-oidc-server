@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 /**
- * RFC 9068 (access token) + RFC 7009 (revocation) — the first-party session root token: established on login,
- * re-established per user, revoked on logout and on supersession
+ * RFC 9068 (the session root token is an at+jwt)
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;

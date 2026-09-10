@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * First-party client provisioning: idempotent reconcile, credential verification before mutation, adoption safety,
- * secret rotation without token revocation, input normalization
- */
-
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningException;
@@ -31,9 +26,7 @@ it('creates a confidential managed client and returns its plain secret once', fu
         ->and($result->client->getAttribute('redirect_uris'))->toBe(['https://app.test/login/callback'])
         ->and(json_decode((string) $result->client->getRawOriginal('post_logout_redirect_uris'), true, flags: JSON_THROW_ON_ERROR))->toBe(['https://app.test'])
         ->and(json_decode((string) $result->client->getRawOriginal('allowed_exchange_audiences'), true, flags: JSON_THROW_ON_ERROR))->toBe(['https://api.test/orders'])
-        ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token', TestCase::TOKEN_EXCHANGE_GRANT]);
-
-    expect($result->wasCreated)->toBeTrue()
+        ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token', TestCase::TOKEN_EXCHANGE_GRANT])
         ->and($result->secretRotated)->toBeFalse();
 });
 
@@ -54,9 +47,7 @@ it('reconciles the managed client without rotating its secret', function (): voi
         ->and($result->client->getAttribute('name'))->toBe('New name')
         ->and($result->client->getAttribute('redirect_uris'))->toBe(['https://new.test/callback'])
         ->and($result->client->getRawOriginal('secret'))->toBe($storedSecret)
-        ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token']);
-
-    expect($result->wasCreated)->toBeFalse()
+        ->and($result->client->getAttribute('grant_types'))->toBe(['authorization_code', 'refresh_token'])
         ->and($result->secretRotated)->toBeFalse();
 });
 

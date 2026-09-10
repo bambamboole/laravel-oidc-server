@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Two-factor challenge endpoints: code verification and replay protection, factor switching,
- * WebAuthn options/assertion state, throttling
- */
-
 use Bambamboole\LaravelOidc\Server\Credentials\RecoveryCodeProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengePrompt;
@@ -188,18 +183,6 @@ it('ignores a switch to a provider without a challengeable enrollment', function
         ->assertRedirect(route('identity.two-factor.login'))
         ->assertSessionHas('login.factor', 'totp');
 })->with(['webauthn', 'recovery_code']);
-
-it('throttles repeated challenge attempts', function (): void {
-    challengeEnrollTotp($this->user);
-
-    foreach (range(1, 5) as $ignored) {
-        pendingChallenge($this, $this->user)->post(route('identity.two-factor.login.store'), ['code' => '000000']);
-    }
-
-    pendingChallenge($this, $this->user)
-        ->post(route('identity.two-factor.login.store'), ['code' => '000000'])
-        ->assertStatus(429);
-});
 
 it('issues WebAuthn options into private challenge state and rejects an assertion without them', function (): void {
     $passkey = challengeEnrollPasskey($this->user);

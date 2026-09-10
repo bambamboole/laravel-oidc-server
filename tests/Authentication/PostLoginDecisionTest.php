@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * postLogin policy at the credential login: deny, claim buffering, MFA requirement; OIDC Core §3.1.2.1 (acr_values)
+ * OpenID Connect Core 1.0 §3.1.2.1 (acr_values)
  */
 
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginApi;

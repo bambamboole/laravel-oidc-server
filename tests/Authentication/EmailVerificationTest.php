@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Email verification: signed verification URL, notice redirect for verified users, resend notification under the realm prefix
- */
-
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationView;
 use Illuminate\Auth\Events\Verified;

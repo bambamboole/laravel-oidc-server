@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * oidc:rotate-keys — env-backed key rotation keeps the previous public key for verification
- */
-
 use Bambamboole\LaravelOidc\Server\Shared\Keys\GeneratedSigningKeys;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\Jwk;
 use Bambamboole\LaravelOidc\Server\Shared\Keys\SigningKeyPair;
@@ -100,7 +96,8 @@ it('generates without confirmation with --if-missing when no keys exist', functi
 });
 
 it('fails with the store error when rotation cannot persist', function (): void {
-    rotateKeysEnv();
+    $env = rotateKeysEnv();
+    $before = (string) file_get_contents($env);
     app()->instance(SigningKeyStore::class, new class implements SigningKeyStore
     {
         public function signingKey(): SigningKeyPair
@@ -122,4 +119,6 @@ it('fails with the store error when rotation cannot persist', function (): void 
     $this->artisan('oidc:rotate-keys', ['--force' => true])
         ->expectsOutputToContain('cannot persist')
         ->assertFailed();
+
+    expect((string) file_get_contents($env))->toBe($before);
 });

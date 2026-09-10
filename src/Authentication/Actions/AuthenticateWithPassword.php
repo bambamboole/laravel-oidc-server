@@ -11,9 +11,8 @@ use Illuminate\Contracts\Auth\UserProvider;
 use SensitiveParameter;
 
 /**
- * The primary password check. Returns the user on success and null on
- * failure; the failure is audited here so every caller reports it the
- * same way. Establishing the session is the caller's job.
+ * A failure is audited here so every caller reports it the same way;
+ * establishing the session is the caller's job.
  */
 final readonly class AuthenticateWithPassword
 {

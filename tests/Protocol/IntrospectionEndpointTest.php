@@ -20,8 +20,6 @@ beforeEach(function (): void {
 });
 
 /**
- * Mints an access token for the given (or the test) client and returns the JWT with its persisted row.
- *
  * @return array{0: string, 1: AccessToken}
  */
 function issueIntrospectableToken(mixed $test, ?string $clientId = null): array

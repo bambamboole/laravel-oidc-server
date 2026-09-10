@@ -40,7 +40,6 @@ final readonly class InteractiveLoginFinalizer implements LoginFinalizer
         private ClientRepository $clients,
     ) {}
 
-    /** The active client behind the pending authorization request, if any. */
     private function pendingClient(Request $request): ?Client
     {
         $clientId = $this->pending->clientId($request);

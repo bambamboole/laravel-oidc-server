@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Factor provider registry: provider-keyed registration, enrollment aggregation, configured challenge providers, options
- */
-
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorChallenge;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
@@ -70,7 +66,7 @@ it('limits configured challengeable enrollments to the challenge providers confi
         ->toBe(['totp']);
 });
 
-it('reports whether a user has challengeable factors', function (): void {
+it('reports challengeable factors only once a confirmed factor exists', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
     $registry = app(FactorRegistry::class);
 

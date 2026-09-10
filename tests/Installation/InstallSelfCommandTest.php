@@ -115,6 +115,7 @@ it('fails instead of rotating when the configured secret no longer matches', fun
     config(['oidc-client' => [], 'app.url' => 'https://app.test']);
 
     $this->artisan('oidc:install-self', ['--force' => true])->assertSuccessful();
+    $storedSecret = Client::query()->sole()->getRawOriginal('secret');
 
     File::put($env, (string) preg_replace(
         '/^OIDC_RP_CLIENT_SECRET=.+$/m',
@@ -123,6 +124,8 @@ it('fails instead of rotating when the configured secret no longer matches', fun
     ));
 
     $this->artisan('oidc:install-self', ['--force' => true])->assertFailed();
+
+    expect(Client::query()->sole()->getRawOriginal('secret'))->toBe($storedSecret);
 });
 
 it('fails when the relying-party package is not installed', function (): void {

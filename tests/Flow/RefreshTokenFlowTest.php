@@ -33,8 +33,6 @@ beforeEach(function (): void {
 });
 
 /**
- * Authorizes with the given login context and returns the refresh token of the first token response.
- *
  * @param  list<string>  $amr
  * @param  array<string, mixed>  $idTokenClaims
  * @param  array<string, mixed>  $accessTokenClaims

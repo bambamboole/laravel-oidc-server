@@ -33,8 +33,9 @@ class OidcSessionRepository
      * createOrFirst (not updateOrInsert) so the model's creating hook runs —
      * it generates the uuid key — while the unique (sid, client_id) index
      * still absorbs concurrent inserts.
+     *
+     * @param  string  $clientKey  the client's primary key
      */
-    /** @param  string  $clientKey  the client's primary key */
     public function recordParticipant(string $sid, string $clientKey): void
     {
         SessionParticipant::query()->createOrFirst(

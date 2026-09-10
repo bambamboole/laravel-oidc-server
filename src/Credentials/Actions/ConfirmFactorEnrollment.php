@@ -11,10 +11,6 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\Auditor;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-/**
- * Completes a pending enrollment with the provider-specific proof (a TOTP
- * code, a WebAuthn attestation). Returns false when the proof is rejected.
- */
 final readonly class ConfirmFactorEnrollment
 {
     public function __construct(

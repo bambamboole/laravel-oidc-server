@@ -7,11 +7,8 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tokens\Actions\IssueScopedToken;
-use Lcobucci\JWT\Encoding\JoseEncoder;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
-use Lcobucci\JWT\Token\Parser;
-use Lcobucci\JWT\UnencryptedToken;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\Validator;
 use Workbench\App\Models\User;
@@ -34,18 +31,14 @@ it('issues an audience-scoped token for the session user', function (): void {
         ->and($issued->scopes)->toBe(['openid'])
         ->and($issued->tokenType)->toBe('Bearer');
 
-    $parsed = new Parser(new JoseEncoder)->parse($issued->accessToken);
-
-    if (! $parsed instanceof UnencryptedToken) {
-        throw new RuntimeException('Expected an unencrypted token.');
-    }
+    $parsed = parseAccessToken($issued->accessToken);
 
     expect($parsed->headers()->get('typ'))->toBe('at+jwt')
         ->and($parsed->claims()->get('aud'))->toBe(['https://api.orders.test'])
-        ->and($parsed->claims()->get('sub'))->toBe((string) $this->user->id);
-    expect((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
+        ->and($parsed->claims()->get('sub'))->toBe((string) $this->user->id)
+        ->and((new Validator)->validate($parsed, new SignedWith(new Sha256, InMemory::plainText(signingPublicKey()))))->toBeTrue();
 });
 
-it('throws when there is no session token (unauthenticated)', function (): void {
+it('refuses to issue a token without an authenticated session', function (): void {
     app(IssueScopedToken::class)('https://api.orders.test', ['openid']);
 })->throws(RuntimeException::class);

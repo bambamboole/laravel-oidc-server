@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * OpenID Connect Core 1.0 §2 (auth_time) + Back-Channel Logout 1.0 §2.1 (sid) — recorded on identity-guard logins only
+ * OpenID Connect Core 1.0 §2 (auth_time) + Back-Channel Logout 1.0 §2.1 (sid)
  */
 
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;

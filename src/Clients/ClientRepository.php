@@ -34,8 +34,6 @@ class ClientRepository
     }
 
     /**
-     * The confidential client this application uses for itself.
-     *
      * @throws RuntimeException when none is configured, or the configured one is unknown or revoked
      */
     public function firstParty(FirstPartyClientConfig $config): Client

@@ -8,10 +8,7 @@ final readonly class EnvironmentFile
 {
     public function __construct(private ?string $path = null) {}
 
-    /**
-     * Encode a value as a double-quoted, `\n`-escaped single-line env value,
-     * normalizing CRLF and bare-CR line endings so no raw `\r` reaches the file.
-     */
+    /** CRLF and bare CR are normalized too, so no raw `\r` reaches the file. */
     public static function encode(string $value): string
     {
         return '"'.str_replace(["\r\n", "\r", "\n"], '\n', trim($value)).'"';
@@ -56,10 +53,6 @@ final readonly class EnvironmentFile
         }
     }
 
-    /**
-     * Read the current value of a variable from the environment file, or null
-     * when the variable (or the file itself) is absent or empty.
-     */
     public function value(string $key): ?string
     {
         $path = $this->path ?? app()->environmentFilePath();

@@ -106,9 +106,6 @@ trait InteractsWithOidc
     }
 
     /**
-     * @param  string[]  $redirectUris
-     */
-    /**
      * Authenticate a user on the token guard with a token that grants the
      * listed scopes, without persisting anything.
      *
@@ -127,6 +124,7 @@ trait InteractsWithOidc
         return $user;
     }
 
+    /** @param  list<string>  $redirectUris */
     public function createOidcClient(
         string $name = 'Test Client',
         array $redirectUris = ['https://rp.test/callback'],

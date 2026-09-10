@@ -38,8 +38,6 @@ beforeEach(function (): void {
 });
 
 /**
- * Drives authorize → consent → token for the identity-guard user with the given login context.
- *
  * @param  list<string>  $amr
  * @param  array<string, mixed>  $idTokenClaims
  * @param  array<string, mixed>  $accessTokenClaims

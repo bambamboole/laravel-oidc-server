@@ -53,12 +53,9 @@ class TwoFactorChallengeController
     }
 
     /**
-     * Switches the pending challenge to another of the user's challengeable
-     * factors — the provider's first enrollment, or a specific one when an
-     * enrollment id is given. Matching against
-     * configuredChallengeableEnrollments() validates ownership, confirmation,
-     * and the challenge-provider allow-list in one step; an unknown or
-     * unenrolled provider or enrollment is silently ignored.
+     * Matching against configuredChallengeableEnrollments() validates
+     * ownership, confirmation, and the challenge-provider allow-list in one
+     * step; an unknown or unenrolled provider or enrollment is silently ignored.
      */
     public function selectFactor(Request $request, string $provider, ?string $enrollment = null): RedirectResponse
     {
@@ -86,11 +83,9 @@ class TwoFactorChallengeController
     }
 
     /**
-     * Issues the pending factor's challenge: the private half is persisted in
-     * the session for store() to verify against, the public half (e.g. the
-     * WebAuthn request options) goes to the browser. Challenge issuance and
-     * verification are separate requests by design — options generated in the
-     * same request as the verification can never match a real assertion.
+     * Challenge issuance and verification are separate requests by design —
+     * options generated in the same request as the verification can never
+     * match a real assertion.
      */
     public function options(Request $request): JsonResponse
     {

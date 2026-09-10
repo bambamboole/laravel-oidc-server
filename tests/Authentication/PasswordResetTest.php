@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Password reset through the Laravel broker and the ResetUserPassword action seam, finalizing as a login
- */
-
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Passwords\PasswordBroker;
@@ -70,7 +66,6 @@ it('resets a password through the package action seam and logs the user in', fun
     Event::assertDispatched(PasswordReset::class);
 });
 
-// `confirmed` is enforced by the request itself, ahead of the broker and the app's reset action.
 it('rejects a mismatched or missing password confirmation before reaching the reset action', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);
@@ -103,7 +98,6 @@ it('rejects a mismatched or missing password confirmation before reaching the re
         ->and(Hash::check('old-password', (string) User::query()->findOrFail($user->getKey())->getAttribute('password')))->toBeTrue();
 });
 
-// Rules beyond `confirmed` belong to the app's reset action; its ValidationException must surface, not 500.
 it('surfaces a validation error the reset action raises for its own password rules', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
     $token = resolvePasswordBroker()->createToken($user);
@@ -144,4 +138,7 @@ it('returns validation errors for an invalid reset token', function (): void {
         ])
         ->assertRedirect('/realms/default/auth/reset-password/invalid-token')
         ->assertSessionHasErrors('email');
+
+    $this->assertGuest('identity');
+    expect(Hash::check('old-password', (string) User::query()->findOrFail($user->getKey())->getAttribute('password')))->toBeTrue();
 });

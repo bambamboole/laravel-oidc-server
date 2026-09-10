@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Registration through the CreateUser action seam: disabled until bound, canonicalized email, finalizes as a login
- */
-
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Event;
@@ -42,6 +38,9 @@ it('returns 404 from the register endpoint when no create user action is registe
         'password' => 'password',
         'password_confirmation' => 'password',
     ])->assertNotFound();
+
+    $this->assertGuest('identity');
+    expect(User::query()->count())->toBe(0);
 });
 
 it('returns the JSON success response after registration', function (): void {

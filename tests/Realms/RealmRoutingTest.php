@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Realm-scoped routing: one issuer and endpoint set per realm segment (OIDC Discovery 1.0 §3), realm-scoped session cookie,
- * configured fallback realm outside a matched route
+ * OpenID Connect Discovery 1.0 §3 (one issuer per realm)
  */
 
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;

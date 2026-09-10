@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 /**
- * The provider as its own relying party: credential login returns to the pending authorization request
- * on the identity guard only; trusted and first-party clients skip consent (OIDC Core §3.1.2.1 prompt=none / consent)
+ * OpenID Connect Core 1.0 §3.1.2.1 (prompt=none, prompt=consent)
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;

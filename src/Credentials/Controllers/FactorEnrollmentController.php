@@ -92,9 +92,8 @@ class FactorEnrollmentController
     }
 
     /**
-     * The enrollment option the caller picked. Optional — omitting it keeps the
-     * provider's default — but an option that belongs to a different provider is
-     * a client bug, not a fallback.
+     * Omitting the option keeps the provider's default, but an option that
+     * belongs to a different provider is a client bug, not a fallback.
      */
     private function requestedOption(Request $request, string $provider): ?EnrollmentOption
     {

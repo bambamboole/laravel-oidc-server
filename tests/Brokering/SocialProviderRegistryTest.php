@@ -34,7 +34,7 @@ it('resolves the generic oidc driver from config', function (): void {
     expect(app(SocialProviderRegistry::class)->get('corp'))->toBeInstanceOf(GenericOidcProvider::class);
 });
 
-it('supports custom drivers via extend', function (): void {
+it('resolves a custom driver registered through extend', function (): void {
     config()->set('oidc.social.providers.custom', ['driver' => 'my-driver', 'client_id' => 'x']);
 
     app(SocialProviderRegistry::class)->extend('my-driver', fn (string $key, array $config): SocialProvider => new readonly class($key) implements SocialProvider

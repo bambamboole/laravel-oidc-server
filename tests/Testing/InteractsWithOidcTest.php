@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * The consumer test kit (InteractsWithOidc): identity seeding, client/first-party set-up, PKCE, token minting,
- * the authorize → approve → token drive and its scoped CSRF exemption
- */
-
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenInspector;

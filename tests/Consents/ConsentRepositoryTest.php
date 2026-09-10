@@ -27,9 +27,6 @@ beforeEach(function (): void {
 });
 
 /**
- * A bare authorize request: the consent view (200) when consent is needed,
- * the code redirect when it is not.
- *
  * @return TestResponse<Response>
  */
 function authorizeExpectingDecision(TestCase $test, string $scopes = 'openid'): TestResponse

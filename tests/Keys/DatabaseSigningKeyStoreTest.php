@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Database-backed signing keys: rotation retains the previous key for verification (RFC 7517 §5 key set), private keys encrypted at rest
+ * RFC 7517 §5 (JWK Set retained across rotation)
  */
 
 use Bambamboole\LaravelOidc\Server\Keys\DatabaseSigningKeyStore;

@@ -3,8 +3,7 @@
 declare(strict_types=1);
 
 /**
- * OpenID Connect Discovery 1.0 §3 (issuer) — the realm issuer derives from the configured issuer or app url,
- * and the bound IssuerResolver port drives discovery, resource metadata and the id_token iss
+ * OpenID Connect Discovery 1.0 §3 (issuer)
  */
 
 use Bambamboole\LaravelOidc\Server\Realms\RealmIssuerResolver;

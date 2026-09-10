@@ -14,9 +14,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Lets the authorization server complete the pending authorization request
- * with the user's decision, and on approval remembers the consent so the
- * next request for the same client and scopes skips the screen.
+ * An approval is remembered so the next request for the same client and
+ * scopes skips the consent screen.
  */
 final readonly class CompleteAuthorization
 {

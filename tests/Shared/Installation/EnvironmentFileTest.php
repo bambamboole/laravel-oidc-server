@@ -2,11 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * .env reader/writer used by the install and rotate commands: upsert, atomic replace preserving permissions,
- * quoted and multi-line values round-trip
- */
-
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentWriteException;
 

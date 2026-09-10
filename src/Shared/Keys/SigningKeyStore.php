@@ -11,11 +11,7 @@ namespace Bambamboole\LaravelOidc\Server\Shared\Keys;
  */
 interface SigningKeyStore
 {
-    /**
-     * The key new tokens are signed with.
-     *
-     * @throws \RuntimeException when the backend holds no usable signing key
-     */
+    /** @throws \RuntimeException when the backend holds no usable signing key */
     public function signingKey(): SigningKeyPair;
 
     /**

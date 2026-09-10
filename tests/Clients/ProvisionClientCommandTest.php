@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * oidc:client --first-party: prints credentials once, reconciles idempotently, writes env only on request
- */
-
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Illuminate\Support\Facades\Artisan;
@@ -152,6 +148,8 @@ it('requires explicit rotation before printing a replacement secret', function (
 
 it('rejects invalid invocations with a usage exit code', function (array $arguments): void {
     $this->artisan('oidc:client', ['--no-interaction' => true, ...$arguments])->assertExitCode(2);
+
+    expect(Client::query()->count())->toBe(0);
 })->with([
     'without first-party mode' => [['--name' => 'First-party app', '--redirect-uri' => ['https://app.test/login/callback']]],
     'missing name' => [['--first-party' => true, '--redirect-uri' => ['https://app.test/login/callback']]],

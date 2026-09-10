@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Personal access tokens: RFC 9068 access token minted through the token pipeline for the personal_access grant
- */
-
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenApi;

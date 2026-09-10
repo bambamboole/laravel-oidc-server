@@ -151,10 +151,6 @@ function parseIdToken(string $jwt): UnencryptedToken
     return parseAccessToken($jwt);
 }
 
-/**
- * The domain-level counterpart: the closure must throw an
- * ExchangeDeniedException carrying the given RFC 6749 / 8693 error code.
- */
 function expectExchangeDenied(Closure $callback, string $error): void
 {
     $thrown = null;
@@ -169,9 +165,6 @@ function expectExchangeDenied(Closure $callback, string $error): void
 }
 
 /**
- * Persists a refresh token with its linked access token and returns the value
- * a client would present at the token, introspection or revocation endpoint.
- *
  * @return array{0: string, 1: RefreshToken, 2: AccessToken}
  */
 function issueRefreshToken(mixed $test, ?string $clientId = null, bool $expired = false): array
@@ -266,10 +259,6 @@ function ttlUntil(DateTimeImmutable $expiresAt): DateInterval
     return (new DateTimeImmutable)->diff($expiresAt);
 }
 
-/**
- * Binds the consent view to a closure receiving the same parameter bag the
- * authorize controller hands the view seam.
- */
 function fakeConsentViewUsing(Closure $callback): void
 {
     app()->instance(ConsentView::class, new readonly class($callback) implements ConsentView

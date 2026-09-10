@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Every auth page renders through a bindable view contract, so a consumer supplies its own UI without touching routes
- */
-
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationPrompt;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\EmailVerificationView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\LoginPrompt;

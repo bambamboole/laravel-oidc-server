@@ -8,8 +8,6 @@ use Laravel\Passkeys\Actions\GenerateRegistrationOptions;
 use Webauthn\AuthenticatorSelectionCriteria;
 
 /**
- * Registration options that ask for a specific authenticator attachment.
- *
  * The shipped action hardcodes `no preference`, which leaves the browser to
  * offer its own "Touch ID / security key / phone" chooser. Naming the
  * attachment sends the user straight to the one they picked. Only the

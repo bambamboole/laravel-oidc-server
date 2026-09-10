@@ -44,10 +44,6 @@ final readonly class PendingMfaChallenge
         ]);
     }
 
-    /**
-     * A pending challenge requires both the user id and the selected factor —
-     * a session without a recorded factor is not a valid challenge.
-     */
     public static function find(): ?self
     {
         $userId = session()->get(self::USER_ID_KEY);

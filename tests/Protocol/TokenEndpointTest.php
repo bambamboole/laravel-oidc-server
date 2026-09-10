@@ -29,9 +29,6 @@ beforeEach(function (): void {
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
 });
 
-/**
- * Drives authorize + approve and returns the code from the redirect.
- */
 function obtainAuthorizationCode(TestCase $test, PkcePair $pkce): string
 {
     $view = $test->actingAsIdentity($test->user, authTime: time() - 60)

@@ -6,10 +6,6 @@ namespace Bambamboole\LaravelOidc\Server\Brokering;
 
 use Illuminate\Http\Request;
 
-/**
- * The state/PKCE/nonce material remembered in the session between the
- * authorize redirect and the provider callback.
- */
 final readonly class PendingSocialRedirect
 {
     public const string SESSION_KEY = 'oidc.social.pending';

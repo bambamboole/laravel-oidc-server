@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-/**
- * Social account resolution: existing link, verified-email linking, just-in-time provisioning, token storage
- */
-
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Shared\Brokering\SocialUser;
