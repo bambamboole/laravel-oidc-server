@@ -74,11 +74,10 @@ class AuthenticationServiceProvider extends ServiceProvider
             $this->commands([PruneAuthenticationContextsCommand::class]);
         }
 
-        ResetPassword::createUrlUsing(fn (mixed $notifiable, string $token): string => url(route(
+        ResetPassword::createUrlUsing(fn (mixed $notifiable, string $token): string => route(
             'identity.password.reset',
             ['token' => $token, 'email' => $notifiable->getEmailForPasswordReset()],
-            false,
-        )));
+        ));
         VerifyEmail::createUrlUsing(fn (mixed $notifiable): string => URL::temporarySignedRoute(
             'identity.verification.verify',
             Carbon::now()->addMinutes((int) config('auth.verification.expire', 60)),

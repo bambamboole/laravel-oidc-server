@@ -22,7 +22,7 @@ final readonly class IssuedToken
         return new self(
             accessToken: $token->jwt,
             tokenType: 'Bearer',
-            expiresIn: max(0, $token->expiresAt->getTimestamp() - time()),
+            expiresIn: $token->lifetime(),
             audience: $audience,
             scopes: $token->scopes,
         );

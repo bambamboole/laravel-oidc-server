@@ -12,15 +12,19 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tests\Realms\RecordResolvedRealm;
 use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByDomain;
+use Illuminate\Http\Request;
 
 uses(RoutesRealmsByDomain::class);
 
 beforeEach(function (): void {
-    config(['oidc.routes.domains' => [
-        'localhost' => 'default',
-        'acme.id.test' => 'acme',
-        'globex.id.test' => 'globex',
-    ]]);
+    config([
+        'oidc.issuer' => 'https://localhost',
+        'oidc.routes.domains' => [
+            'localhost' => 'default',
+            'acme.id.test' => 'acme',
+            'globex.id.test' => 'globex',
+        ],
+    ]);
 });
 
 it('serves every endpoint at its canonical path, with the well-known segment in front', function (): void {
@@ -93,4 +97,27 @@ it('resolves the realm a job was dispatched from when there is no host', functio
 
     expect(RecordResolvedRealm::$seen['realm'])->toBe('acme')
         ->and(RecordResolvedRealm::$seen['issuer'])->toBe('https://acme.id.test');
+});
+
+it('takes the scheme and port of the configured issuer, not of the request', function (): void {
+    config(['oidc.issuer' => 'https://id.example.com:8443']);
+
+    $this->getJson('http://acme.id.test/.well-known/openid-configuration')
+        ->assertOk()
+        ->assertJsonPath('issuer', 'https://acme.id.test:8443')
+        ->assertJsonPath('token_endpoint', 'https://acme.id.test:8443/oauth/token');
+});
+
+it('links to the realm host from a host that serves another realm', function (): void {
+    config(['queue.default' => 'database']);
+    RecordResolvedRealm::forget();
+
+    $this->get('https://acme.id.test/.well-known/openid-configuration')->assertOk();
+    RecordResolvedRealm::dispatch();
+
+    app()->instance('request', Request::create('https://globex.id.test/'));
+    workQueue();
+
+    expect(RecordResolvedRealm::$seen['login_url'])->toBe('https://acme.id.test/auth/login')
+        ->and(RecordResolvedRealm::$seen['reset_url'])->toStartWith('https://acme.id.test/auth/reset-password/reset-token');
 });

@@ -27,7 +27,7 @@ final readonly class TokenResponse implements Responsable
     {
         $body = [
             'token_type' => 'Bearer',
-            'expires_in' => max(0, $this->accessToken->expiresAt->getTimestamp() - time()),
+            'expires_in' => $this->accessToken->lifetime(),
             'access_token' => $this->accessToken->jwt,
         ];
 

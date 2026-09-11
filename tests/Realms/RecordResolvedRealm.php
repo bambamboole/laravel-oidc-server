@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Tests\Realms;
 use Bambamboole\LaravelOidc\Server\Shared\Context\OidcContext;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -37,6 +38,14 @@ class RecordResolvedRealm implements ShouldQueue
             'issuer' => $issuer->url(),
             'client' => OidcContext::client(),
             'authorize_path' => route('oidc.authorize', absolute: false),
+            'login_url' => route('identity.login'),
+            'reset_url' => (ResetPassword::$createUrlCallback)(new class
+            {
+                public function getEmailForPasswordReset(): string
+                {
+                    return 'ada@example.com';
+                }
+            }, 'reset-token'),
         ];
     }
 }

@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
 use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
+use Bambamboole\LaravelOidc\Server\Realms\Http\Middleware\ResolveRealm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Routing\Route;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -35,6 +37,15 @@ class RealmsServiceProvider extends ServiceProvider
         // notifications — has no realm to fall back on; ResolveRealm overrides
         // this per request.
         URL::defaults(['realm' => (string) config('oidc.realm', 'default')]);
+
+        // A link to a realm's pages belongs on that realm's host whichever host
+        // mints it: a password reset sent from an admin console, a verification
+        // mail rendered by a queue worker.
+        if (RealmRouting::configured() === RealmRouting::Domain) {
+            URL::formatHostUsing(fn (string $root, mixed $route): string => $route instanceof Route && ResolveRealm::appliesTo($route)
+                ? app(IssuerResolver::class)->url()
+                : $root);
+        }
 
         Queue::before(fn () => $this->app->make(ResolveRealmForJob::class)());
     }

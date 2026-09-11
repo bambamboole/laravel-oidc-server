@@ -31,6 +31,13 @@ final readonly class ConfiguredRealm implements Realm
         return $this->id;
     }
 
+    public function host(): ?string
+    {
+        $host = array_search($this->id, (array) config('oidc.routes.domains', []), true);
+
+        return is_string($host) ? $host : null;
+    }
+
     public function tokens(): TokenSettings
     {
         return TokenSettings::fromConfig();

@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Context\OidcContext;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Illuminate\Session\Store;
 use Illuminate\Support\Facades\URL;
 use LogicException;
@@ -29,6 +30,12 @@ final readonly class ResolveRealm
     public const string ATTRIBUTE = 'oidc.realm';
 
     public function __construct(private RealmResolver $realms, private Store $session) {}
+
+    /** Whether the route serves a realm's pages — the package's own and any an application puts behind this middleware. */
+    public static function appliesTo(Route $route): bool
+    {
+        return in_array(self::class, $route->middleware(), true);
+    }
 
     public function handle(Request $request, Closure $next): Response
     {

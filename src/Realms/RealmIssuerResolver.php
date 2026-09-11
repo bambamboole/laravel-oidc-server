@@ -6,15 +6,15 @@ namespace Bambamboole\LaravelOidc\Server\Realms;
 
 use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
-use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 
 /**
  * The configured issuer supplies the origin. Below `/realms/{realm}` every
  * realm is its own OpenID Provider with its own issuer; a single-realm
- * deployment is the origin itself. In `domain` routing the realm's own host
- * is the origin, taken from the current request and, outside one, from the
- * host mapped to the realm in `oidc.routes.domains`.
+ * deployment is the origin itself. In `domain` routing the realm's host
+ * replaces the configured one, which keeps its scheme and port — the issuer
+ * is the same whichever host a request, a queued job or a console command
+ * happens to run on.
  *
  * `oidc.issuer` is an origin without a path. Routes are registered at the
  * application root, so a path in the issuer would only be carried into the
@@ -22,44 +22,27 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
  */
 final readonly class RealmIssuerResolver implements IssuerResolver
 {
-    public function __construct(
-        private RealmResolver $realms,
-        private RealmRepository $repository,
-    ) {}
+    public function __construct(private RealmResolver $realms) {}
 
     public function url(): string
     {
         $routing = RealmRouting::configured();
-        $realm = $this->realms->current()->id();
+        $realm = $this->realms->current();
+        $host = $realm->host();
 
-        if ($routing === RealmRouting::Domain) {
-            return $this->realmOrigin($realm);
+        if ($routing === RealmRouting::Domain && $host !== null) {
+            return $this->originOf($host);
         }
 
-        return $this->configuredOrigin().$routing->issuerPath($realm);
+        return $this->configuredOrigin().$routing->issuerPath($realm->id());
     }
 
-    /**
-     * The request supplies the origin only when it actually arrived on this
-     * realm's host. A queued job's request is built from `app.url`, so its
-     * host belongs to another realm or to none, and the origin has to come
-     * from the map instead — with the scheme from the configured issuer,
-     * which is all it contributes in this mode.
-     */
-    private function realmOrigin(string $realm): string
+    private function originOf(string $host): string
     {
-        $request = request();
-        $host = $request->getHost();
+        $configured = $this->configuredOrigin();
+        $port = parse_url($configured, PHP_URL_PORT);
 
-        if ($host !== '' && $this->repository->findByDomain($host)?->id() === $realm) {
-            return rtrim($request->getSchemeAndHttpHost(), '/');
-        }
-
-        $domain = array_search($realm, (array) config('oidc.routes.domains', []), true);
-
-        return is_string($domain)
-            ? (parse_url($this->configuredOrigin(), PHP_URL_SCHEME) ?: 'https').'://'.$domain
-            : $this->configuredOrigin();
+        return (parse_url($configured, PHP_URL_SCHEME) ?: 'https').'://'.$host.($port !== null ? ':'.$port : '');
     }
 
     private function configuredOrigin(): string

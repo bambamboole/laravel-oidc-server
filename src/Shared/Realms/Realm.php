@@ -26,6 +26,13 @@ interface Realm
 {
     public function id(): string;
 
+    /**
+     * The host the realm is served from in `domain` routing, without scheme or
+     * port — the issuer's host, and where every URL to its pages points. Null
+     * where realms share the application's host.
+     */
+    public function host(): ?string;
+
     public function tokens(): TokenSettings;
 
     public function resources(): ResourceSettings;

@@ -96,6 +96,7 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
             clientId: $client->client_id,
             scopes: $scopeIds,
             audience: $audience,
+            issuedAt: $now,
             expiresAt: $expiresAt,
         );
     }

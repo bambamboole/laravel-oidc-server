@@ -41,6 +41,11 @@ function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSet
             return $this->configured->id();
         }
 
+        public function host(): ?string
+        {
+            return $this->configured->host();
+        }
+
         public function tokens(): TokenSettings
         {
             return $this->tokenSettings ?? $this->configured->tokens();
