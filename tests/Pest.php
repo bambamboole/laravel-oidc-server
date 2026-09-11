@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
@@ -245,6 +246,34 @@ function resourceServerBearer(
         (string) $test->client->client_id,
         ['openid'],
         ttlUntil($expired ? new DateTimeImmutable('-1 hour') : new DateTimeImmutable('+1 hour')),
+        $audience,
+    );
+
+    if ($revoked) {
+        AccessToken::query()->whereKey($minted->jti)->update(['revoked' => true]);
+    }
+
+    return $minted->jwt;
+}
+
+/**
+ * Mints the userless at+jwt the client_credentials grant issues — no subject, addressed to the
+ * given resource audiences (the realm's own when none are given) — and persists a matching row.
+ *
+ * @param  string[]  $scopes
+ * @param  string[]  $audience
+ */
+function clientCredentialsBearer(
+    Client $client,
+    array $scopes = ['orders.read'],
+    array $audience = [],
+    bool $revoked = false,
+): string {
+    $minted = app(AccessTokenMinter::class)->mint(
+        null,
+        $client->client_id,
+        $scopes,
+        ttlUntil(new DateTimeImmutable('+1 hour')),
         $audience,
     );
 

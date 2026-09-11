@@ -32,3 +32,18 @@ it('passes a token that carries the required scope and forbids one that lacks it
 
     $this->getJson('/probe/admin', ['Authorization' => "Bearer $jwt"])->assertForbidden();
 });
+
+it('checks the scopes of a machine token the same way', function (): void {
+    $machine = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+    $jwt = clientCredentialsBearer($machine, ['openid']);
+
+    $this->getJson('/probe/openid', ['Authorization' => "Bearer $jwt"])
+        ->assertOk()
+        ->assertJson(['id' => $machine->client_id]);
+
+    Auth::forgetGuards();
+
+    $this->getJson('/probe/admin', ['Authorization' => "Bearer $jwt"])
+        ->assertForbidden()
+        ->assertJsonPath('error', 'insufficient_scope');
+});

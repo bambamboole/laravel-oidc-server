@@ -9,7 +9,9 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
+use Bambamboole\LaravelOidc\Server\Tokens\Guard\ClientPrincipal;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
@@ -103,6 +105,42 @@ it('accepts only tokens addressed to the issuer or a registered resource', funct
         ->assertJsonPath('error', 'invalid_token');
 });
 
+it('authenticates a userless token as the client it was issued to', function (): void {
+    $machine = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+    $jwt = clientCredentialsBearer($machine, ['orders.read']);
+
+    Route::middleware('auth:oidc')->get('/machine', function (Request $request): array {
+        $principal = $request->user();
+
+        return [
+            'principal' => $principal === null ? null : $principal::class,
+            'id' => $principal?->getAuthIdentifier(),
+            'scopes' => $principal?->currentAccessToken()?->scopes(),
+        ];
+    });
+
+    $this->getJson('/machine', ['Authorization' => "Bearer $jwt"])
+        ->assertOk()
+        ->assertExactJson([
+            'principal' => ClientPrincipal::class,
+            'id' => $machine->client_id,
+            'scopes' => ['orders.read'],
+        ]);
+});
+
+it('rejects a userless token whose client is revoked or gone', function (string $case): void {
+    $machine = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+    $jwt = clientCredentialsBearer($machine);
+
+    $case === 'revoked'
+        ? $machine->forceFill(['revoked' => true])->save()
+        : $machine->delete();
+
+    $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
+})->with(['revoked', 'deleted']);
+
 // RFC 6750 §3.1 — no credentials presented: a challenge without an error code
 it('challenges a request without a bearer token and names no error', function (): void {
     $this->getJson('/guarded')
@@ -127,6 +165,8 @@ it('answers a rejected bearer token with invalid_token', function (string $case)
         'foreign issuer' => bearerIssuedElsewhere($this),
         'unknown subject' => resourceServerBearer($this, subjectId: '999999'),
         'id_token as bearer' => persistedIdTokenAsBearer($this),
+        'revoked machine token' => clientCredentialsBearer(app(ClientRepository::class)->createClientCredentialsGrantClient('M2M'), revoked: true),
+        'machine token for another resource' => clientCredentialsBearer(app(ClientRepository::class)->createClientCredentialsGrantClient('M2M'), audience: ['https://other.example/api']),
         default => throw new LogicException('Unknown case.'),
     };
 
@@ -134,7 +174,16 @@ it('answers a rejected bearer token with invalid_token', function (string $case)
         ->assertUnauthorized()
         ->assertJsonPath('error', 'invalid_token')
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", '.GUARD_RESOURCE_METADATA);
-})->with(['garbage', 'revoked', 'expired', 'foreign issuer', 'unknown subject', 'id_token as bearer']);
+})->with([
+    'garbage',
+    'revoked',
+    'expired',
+    'foreign issuer',
+    'unknown subject',
+    'id_token as bearer',
+    'revoked machine token',
+    'machine token for another resource',
+]);
 
 it('leaves other guards to Laravel', function (): void {
     Route::middleware('auth:web')->get('/session-guarded', fn (): string => 'ok');

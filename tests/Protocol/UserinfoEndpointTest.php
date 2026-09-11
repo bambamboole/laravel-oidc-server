@@ -34,6 +34,15 @@ it('returns invalid_token for a bearer token the guard rejects', function (): vo
         ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", '.USERINFO_RESOURCE_METADATA);
 });
 
+it('returns invalid_token for a machine token, which stands for no user', function (): void {
+    $machine = $this->createOidcMachineClient();
+
+    $this->getJson('/oauth/userinfo', ['Authorization' => 'Bearer '.$this->issueClientToken($machine, ['openid'])])
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', 'Bearer realm="default", error="invalid_token", '.USERINFO_RESOURCE_METADATA);
+});
+
 it('returns insufficient_scope when the token lacks openid', function (): void {
     $this->actingAsOidcUser($this->user, ['email'], 'oidc');
 

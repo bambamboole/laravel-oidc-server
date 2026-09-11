@@ -15,6 +15,7 @@ use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeyGenerator;
 use Bambamboole\LaravelOidc\Server\Tokens\Contracts\OAuthenticatable;
+use Bambamboole\LaravelOidc\Server\Tokens\Guard\ClientPrincipal;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\CurrentAccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use DateInterval;
@@ -127,6 +128,25 @@ trait InteractsWithOidc
         return $user;
     }
 
+    /**
+     * Authenticate a client on the token guard with a token that grants the
+     * listed scopes, without persisting anything — the machine counterpart to
+     * {@see actingAsOidcUser()}.
+     *
+     * @param  list<string>  $scopes
+     */
+    public function actingAsOidcClient(Client $client, array $scopes = [], string $guard = 'oidc'): ClientPrincipal
+    {
+        $principal = new ClientPrincipal($client)
+            ->withAccessToken(new CurrentAccessToken(new AccessToken(['client_id' => $client->getKey(), 'scopes' => $scopes])));
+
+        $auth = app('auth');
+        $auth->guard($guard)->setUser($principal);
+        $auth->shouldUse($guard);
+
+        return $principal;
+    }
+
     /** @param  list<string>  $redirectUris */
     public function createOidcClient(
         string $name = 'Test Client',
@@ -134,6 +154,12 @@ trait InteractsWithOidc
         bool $confidential = true,
     ): Client {
         return app(ClientRepository::class)->createAuthorizationCodeGrantClient($name, $redirectUris, $confidential);
+    }
+
+    /** A confidential `client_credentials` client — the machine counterpart to {@see createOidcClient()}. */
+    public function createOidcMachineClient(string $name = 'Machine Client'): Client
+    {
+        return app(ClientRepository::class)->createClientCredentialsGrantClient($name);
     }
 
     /**
@@ -197,6 +223,28 @@ trait InteractsWithOidc
 
         return app(AccessTokenMinter::class)->mint(
             (string) $user->getAuthIdentifier(),
+            $client->client_id,
+            $scopes,
+            $ttl ?? new DateInterval('PT1H'),
+            $audience,
+        )->toString();
+    }
+
+    /**
+     * Mint a real signed userless access token — what `client_credentials`
+     * issues — with a persisted token record, ready for a `Bearer` header.
+     *
+     * @param  string[]  $scopes
+     * @param  string[]  $audience
+     */
+    public function issueClientToken(
+        Client $client,
+        array $scopes = [],
+        array $audience = [],
+        ?DateInterval $ttl = null,
+    ): string {
+        return app(AccessTokenMinter::class)->mint(
+            null,
             $client->client_id,
             $scopes,
             $ttl ?? new DateInterval('PT1H'),

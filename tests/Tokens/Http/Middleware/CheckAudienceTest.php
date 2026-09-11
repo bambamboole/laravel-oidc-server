@@ -55,3 +55,20 @@ it('rejects with invalid_token when no preceding guard populated the user', func
         ->assertJsonPath('error', 'invalid_token')
         ->assertHeader('WWW-Authenticate', CHECK_AUDIENCE_CHALLENGE);
 });
+
+it('narrows a machine token to the route audience the same way', function (): void {
+    $machine = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
+    $orders = clientCredentialsBearer($machine, audience: ['https://api.internal/orders']);
+    $other = clientCredentialsBearer($machine, audience: ['https://other/api']);
+
+    $this->getJson('/test/orders', ['Authorization' => "Bearer $orders"])
+        ->assertOk()
+        ->assertJson(['user' => $machine->client_id]);
+
+    Auth::forgetGuards();
+
+    $this->getJson('/test/orders', ['Authorization' => "Bearer $other"])
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token')
+        ->assertHeader('WWW-Authenticate', CHECK_AUDIENCE_CHALLENGE);
+});

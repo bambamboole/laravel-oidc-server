@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Guard;
 
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Bambamboole\LaravelOidc\Server\Tokens\Concerns\ResolvesTokenUser;
 use Bambamboole\LaravelOidc\Server\Tokens\Contracts\AccessTokenBearer;
@@ -26,6 +27,8 @@ use Lcobucci\JWT\Token\Plain;
  * addressed elsewhere — another resource, or a client id — is rejected regardless of which client
  * it was issued to. The verified audience is stashed on the request for {@see CheckAudience} to
  * narrow further without re-parsing the token.
+ *
+ * The principal is the token's user, or a {@see ClientPrincipal} when the token carries no subject.
  *
  * The user provider comes from this guard's own `auth.guards.{name}.provider` config entry (handed
  * in by `Auth::extend()`), not from {@see ResolvesTokenUser} — that trait resolves via
@@ -62,16 +65,15 @@ class AccessTokenGuard implements Guard
             return null;
         }
 
-        $userId = $token->getAttribute('user_id');
-        $user = is_string($userId) ? $this->provider->retrieveById($userId) : null;
+        $principal = $this->principalFor($token);
 
-        if ($user === null) {
+        if (! $principal instanceof Authenticatable) {
             return null;
         }
 
-        return $this->user = $user instanceof AccessTokenBearer
-            ? $user->withAccessToken(new CurrentAccessToken($token))
-            : $user;
+        return $this->user = $principal instanceof AccessTokenBearer
+            ? $principal->withAccessToken(new CurrentAccessToken($token))
+            : $principal;
     }
 
     /**
@@ -93,6 +95,24 @@ class AccessTokenGuard implements Guard
         $this->request = $request;
 
         return $this;
+    }
+
+    /**
+     * A token carrying a subject authenticates that user and nobody else, so an unresolvable one is
+     * rejected rather than falling back to the client. A userless token — `client_credentials`, or
+     * an exchange without a subject — authenticates its client instead.
+     */
+    private function principalFor(AccessToken $token): ?Authenticatable
+    {
+        $userId = $token->getAttribute('user_id');
+
+        if (is_string($userId)) {
+            return $this->provider->retrieveById($userId);
+        }
+
+        $client = $token->client;
+
+        return $client instanceof Client && ! $client->revoked ? new ClientPrincipal($client) : null;
     }
 
     /**

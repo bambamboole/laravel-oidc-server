@@ -81,6 +81,22 @@ it('mints a real signed access token with a persisted row', function (): void {
         ->assertJsonPath('sub', (string) $this->user->id);
 });
 
+it('authenticates a client principal on the token guard and mints a userless token', function (): void {
+    $client = $this->createOidcMachineClient();
+
+    $principal = $this->actingAsOidcClient($client, ['orders.read']);
+
+    expect(auth('oidc')->user())->toBe($principal)
+        ->and($principal->clientId())->toBe($client->client_id)
+        ->and($principal->tokenCan('orders.read'))->toBeTrue()
+        ->and($principal->tokenCan('orders.write'))->toBeFalse();
+
+    $token = app(TokenInspector::class)->accessToken($this->issueClientToken($client, ['orders.read']));
+
+    expect($token?->getAttribute('user_id'))->toBeNull()
+        ->and($token?->getAttribute('scopes'))->toBe(['orders.read']);
+});
+
 it('drives the full authorize-approve-token dance, honoring parameter overrides and prior consent', function (): void {
     $client = $this->createOidcClient();
 
