@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Protocol\Authorize;
 
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\AuthorizationCompleter;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\CompletedAuthorization;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Illuminate\Http\Request;
 
 final readonly class CompleteAuthorizeRequest implements AuthorizationCompleter
@@ -13,6 +14,7 @@ final readonly class CompleteAuthorizeRequest implements AuthorizationCompleter
     public function __construct(
         private AuthorizeRequestSession $session,
         private AuthorizationCodeIssuer $codes,
+        private RealmAudiences $audiences,
     ) {}
 
     public function complete(Request $request, bool $approved): CompletedAuthorization
@@ -24,6 +26,7 @@ final readonly class CompleteAuthorizeRequest implements AuthorizationCompleter
             userId: $authorizeRequest->userId,
             clientId: $authorizeRequest->clientId,
             scopes: $authorizeRequest->scopes,
+            resources: $this->audiences->resolve($authorizeRequest->resources),
         );
     }
 }

@@ -14,8 +14,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * An approval is remembered so the next request for the same client and
- * scopes skips the consent screen.
+ * An approval is remembered so the next request for the same client, scopes
+ * and resources skips the consent screen.
  */
 final readonly class CompleteAuthorization
 {
@@ -33,13 +33,13 @@ final readonly class CompleteAuthorization
             $client = $this->clients->find($completed->clientId);
 
             if ($client instanceof Client) {
-                $this->consents->grant($completed->userId, (string) $client->getKey(), $completed->scopes);
+                $this->consents->grant($completed->userId, (string) $client->getKey(), $completed->scopes, $completed->resources);
             }
         }
 
         event($approved
-            ? new ConsentApproved($completed->scopes, $completed->userId, $completed->clientId)
-            : new ConsentDenied($completed->scopes, $completed->userId, $completed->clientId));
+            ? new ConsentApproved($completed->scopes, $completed->resources, $completed->userId, $completed->clientId)
+            : new ConsentDenied($completed->scopes, $completed->resources, $completed->userId, $completed->clientId));
 
         return $completed->response;
     }

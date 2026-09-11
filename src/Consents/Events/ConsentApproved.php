@@ -13,9 +13,11 @@ final readonly class ConsentApproved implements AuditEvent
 
     /**
      * @param  list<string>  $scopes
+     * @param  list<string>  $resources  the resource identifiers the decision was made for
      */
     public function __construct(
         public array $scopes,
+        public array $resources,
         public ?string $userId = null,
         public ?string $clientId = null,
     ) {}
@@ -28,6 +30,7 @@ final readonly class ConsentApproved implements AuditEvent
             clientId: $this->clientId,
             context: [
                 'scopes' => $this->scopes,
+                'resources' => $this->resources,
             ],
         );
     }

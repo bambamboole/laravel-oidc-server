@@ -174,11 +174,13 @@ it('keeps consents per realm', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
-    app(ConsentRepository::class)->grant((string) $user->id, (string) $client->getKey(), ['openid']);
+    $resource = ['https://api.internal/orders'];
 
-    expect(app(ConsentRepository::class)->covers((string) $user->id, (string) $client->getKey(), ['openid']))->toBeTrue();
+    app(ConsentRepository::class)->grant((string) $user->id, (string) $client->getKey(), ['openid'], $resource);
+
+    expect(app(ConsentRepository::class)->covers((string) $user->id, (string) $client->getKey(), ['openid'], $resource))->toBeTrue();
 
     enterRealm('globex');
 
-    expect(app(ConsentRepository::class)->covers((string) $user->id, (string) $client->getKey(), ['openid']))->toBeFalse();
+    expect(app(ConsentRepository::class)->covers((string) $user->id, (string) $client->getKey(), ['openid'], $resource))->toBeFalse();
 });

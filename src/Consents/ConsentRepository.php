@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Consents;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Consents\Models\Consent;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Date;
 
 /**
@@ -16,48 +17,74 @@ use Illuminate\Support\Facades\Date;
  */
 class ConsentRepository implements ConsentStore
 {
-    public function find(string $userId, Client $client): ?Consent
+    public function find(string $userId, Client $client, string $resource): ?Consent
     {
-        return $this->findByKey($userId, (string) $client->getKey());
+        return $this->findByKey($userId, (string) $client->getKey(), $resource);
     }
 
-    public function covers(string $userId, string $clientKey, array $scopes): bool
+    /**
+     * Every resource the user has a consent for with this client, withdrawn
+     * ones included — what an account screen lists.
+     *
+     * @return Collection<int, Consent>
+     */
+    public function forClient(string $userId, Client $client): Collection
     {
-        return $this->findByKey($userId, $clientKey)?->covers($scopes) ?? false;
+        return Consent::query()
+            ->inRealm()
+            ->where('user_id', $userId)
+            ->where('client_id', $client->getKey())
+            ->orderBy('resource')
+            ->get();
     }
 
-    public function grant(string $userId, string $clientKey, array $scopes): void
+    public function covers(string $userId, string $clientKey, array $scopes, array $resources): bool
     {
-        $consent = $this->findByKey($userId, $clientKey) ?? new Consent([
-            'realm_id' => Consent::currentRealm(),
-            'user_id' => $userId,
-            'client_id' => $clientKey,
-            'scopes' => [],
-        ]);
+        if ($resources === []) {
+            return false;
+        }
 
-        $consent->forceFill([
-            'scopes' => array_values(array_unique([...$consent->scopes, ...$scopes])),
-            'granted_at' => Date::now(),
-            'revoked_at' => null,
-        ])->save();
+        return array_all($resources, fn (string $resource): bool => $this->findByKey($userId, $clientKey, $resource)?->covers($scopes) ?? false);
     }
 
-    public function revoke(string $userId, Client $client): void
+    public function grant(string $userId, string $clientKey, array $scopes, array $resources): void
+    {
+        foreach ($resources as $resource) {
+            $consent = $this->findByKey($userId, $clientKey, $resource) ?? new Consent([
+                'realm_id' => Consent::currentRealm(),
+                'user_id' => $userId,
+                'client_id' => $clientKey,
+                'resource' => $resource,
+                'scopes' => [],
+            ]);
+
+            $consent->forceFill([
+                'scopes' => array_values(array_unique([...$consent->scopes, ...$scopes])),
+                'granted_at' => Date::now(),
+                'revoked_at' => null,
+            ])->save();
+        }
+    }
+
+    /** Withdraws the client's consent at every resource, or at one of them. */
+    public function revoke(string $userId, Client $client, ?string $resource = null): void
     {
         Consent::query()
             ->inRealm()
             ->where('user_id', $userId)
             ->where('client_id', $client->getKey())
+            ->when($resource !== null, fn ($query) => $query->where('resource', $resource))
             ->whereNull('revoked_at')
             ->update(['revoked_at' => Date::now()]);
     }
 
-    private function findByKey(string $userId, string $clientKey): ?Consent
+    private function findByKey(string $userId, string $clientKey, string $resource): ?Consent
     {
         return Consent::query()
             ->inRealm()
             ->where('user_id', $userId)
             ->where('client_id', $clientKey)
+            ->where('resource', $resource)
             ->first();
     }
 }

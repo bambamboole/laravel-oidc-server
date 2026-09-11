@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Bambamboole\LaravelOidc\Server\Testing\InteractsWithOidc;
 use Bambamboole\LaravelOidc\Server\Testing\PkcePair;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
@@ -47,9 +48,15 @@ function authorizeExpectingDecision(TestCase $test, string $scopes = 'openid'): 
         ]));
 }
 
+/** No `resource` was requested, so the consent belongs to the realm itself. */
+function realmResource(): string
+{
+    return app(RealmAudiences::class)->default()[0];
+}
+
 function storedConsent(TestCase $test): ?Consent
 {
-    return app(ConsentRepository::class)->find((string) $test->user->id, $test->client);
+    return app(ConsentRepository::class)->find((string) $test->user->id, $test->client, realmResource());
 }
 
 it('records the approved scopes as a consent', function (): void {
@@ -148,14 +155,18 @@ it('grants through the store idempotently', function (): void {
     $userId = (string) $this->user->id;
     $clientKey = (string) $this->client->getKey();
 
-    $store->grant($userId, $clientKey, ['openid']);
-    $store->grant($userId, $clientKey, ['openid', 'profile']);
+    $realm = [realmResource()];
+
+    $store->grant($userId, $clientKey, ['openid'], $realm);
+    $store->grant($userId, $clientKey, ['openid', 'profile'], $realm);
 
     expect(Consent::query()->count())->toBe(1)
-        ->and($store->covers($userId, $clientKey, ['profile', 'openid']))->toBeTrue()
-        ->and($store->covers($userId, $clientKey, ['email']))->toBeFalse()
-        ->and($store->covers($userId, $clientKey, []))->toBeTrue()
-        ->and($store->covers($userId, 'unknown-client', []))->toBeFalse();
+        ->and($store->covers($userId, $clientKey, ['profile', 'openid'], $realm))->toBeTrue()
+        ->and($store->covers($userId, $clientKey, ['email'], $realm))->toBeFalse()
+        ->and($store->covers($userId, $clientKey, [], $realm))->toBeTrue()
+        ->and($store->covers($userId, $clientKey, [], ['https://other.test']))->toBeFalse()
+        ->and($store->covers($userId, $clientKey, [], []))->toBeFalse()
+        ->and($store->covers($userId, 'unknown-client', [], $realm))->toBeFalse();
 });
 
 function fakeConsentViewListingScopes(): void

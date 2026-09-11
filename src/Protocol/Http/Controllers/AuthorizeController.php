@@ -101,12 +101,13 @@ class AuthorizeController
 
         $authRequest->userId = (string) $user->getAuthIdentifier();
 
-        $scopes = $this->parseScopes($authRequest);
+        $resources = $this->audiences->resolve($authRequest->resources);
+        $scopes = $this->parseScopes($authRequest, $resources);
         $client = $this->clients->find($authRequest->clientId);
 
         if ($prompt->doesntContain('consent')
             && $client instanceof Client
-            && ($client->skipsConsent() || $this->hasGrantedScopes($user, $client, $scopes))) {
+            && ($client->skipsConsent() || $this->hasGrantedScopes($user, $client, $scopes, $resources))) {
             return $this->respondToInertia($request, $this->codes->approve($authRequest));
         }
 
@@ -120,6 +121,7 @@ class AuthorizeController
             'client' => $client,
             'user' => $user,
             'scopes' => $scopes,
+            'resources' => $resources,
             'request' => $request,
             'authToken' => $authToken,
         ]);
@@ -144,14 +146,13 @@ class AuthorizeController
      * A hidden scope is granted but never shown, so it neither appears on the
      * consent screen nor keeps a stored consent from covering the request.
      *
+     * @param  list<string>  $resources
      * @return list<Scope>
      */
-    protected function parseScopes(AuthorizeRequest $authRequest): array
+    protected function parseScopes(AuthorizeRequest $authRequest, array $resources): array
     {
-        $audiences = $this->audiences->resolve($authRequest->resources);
-
         return collect($authRequest->scopes)
-            ->map(fn (string $id): ?Scope => $this->scopeRepository->find($id, $audiences))
+            ->map(fn (string $id): ?Scope => $this->scopeRepository->find($id, $resources))
             ->filter(fn (?Scope $scope): bool => $scope instanceof Scope && ! $scope->hidden)
             ->values()
             ->all();
@@ -159,11 +160,13 @@ class AuthorizeController
 
     /**
      * A trusted first-party client is consented to implicitly; anyone else
-     * needs a stored consent covering every requested scope.
+     * needs a stored consent covering every requested scope at every resource
+     * the request is addressed to.
      *
      * @param  list<Scope>  $scopes
+     * @param  list<string>  $resources
      */
-    protected function hasGrantedScopes(Authenticatable $user, Client $client, array $scopes): bool
+    protected function hasGrantedScopes(Authenticatable $user, Client $client, array $scopes, array $resources): bool
     {
         if ($this->firstPartyClient->isTrusted($client->client_id)) {
             return true;
@@ -173,6 +176,7 @@ class AuthorizeController
             (string) $user->getAuthIdentifier(),
             (string) $client->getKey(),
             array_map(fn (Scope $scope): string => $scope->id, $scopes),
+            $resources,
         );
     }
 

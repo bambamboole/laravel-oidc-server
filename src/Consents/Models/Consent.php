@@ -12,13 +12,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * What a user has approved for a client: the union of every scope set they
- * consented to, kept until it is withdrawn.
+ * What a user has approved for a client at one resource: the union of every
+ * scope set they consented to there, kept until it is withdrawn.
+ *
+ * The resource is part of the identity of a consent. A scope name only means
+ * something at the resource that declares it, so an approval of `read` at one
+ * resource server says nothing about `read` at another.
  *
  * @property string $id
  * @property string $realm_id
  * @property string $user_id
  * @property string $client_id The client's primary key.
+ * @property string $resource The resource identifier the scopes were approved for.
  * @property list<string> $scopes
  * @property CarbonInterface $granted_at
  * @property ?CarbonInterface $revoked_at

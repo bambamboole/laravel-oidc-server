@@ -34,6 +34,7 @@ class ConsentViewResponse implements AuthorizationViewResponse
                 user: $this->parameters['user'],
                 scopes: $this->parameters['scopes'],
                 authToken: $this->parameters['authToken'],
+                resources: $this->parameters['resources'],
             ),
             $request,
         );
