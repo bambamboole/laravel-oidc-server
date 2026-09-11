@@ -16,6 +16,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
 use Illuminate\Http\Request;
 use Lcobucci\JWT\Token\Plain;
@@ -43,6 +44,7 @@ final readonly class AuthorizeRequestValidator
         private ScopeRepository $scopes,
         private SignedJwtParser $jwts,
         private IssuerResolver $issuer,
+        private RealmAudiences $audiences,
     ) {}
 
     public function validate(Request $request): AuthorizeRequest
@@ -90,21 +92,22 @@ final readonly class AuthorizeRequestValidator
             throw OAuthServerException::requestUriNotSupported($redirectUri, $state);
         }
 
-        $scopes = ScopeParameter::parse($this->parameter($request, 'scope')) ?? [];
-
-        foreach ($scopes as $scope) {
-            if ($scope !== '*' && (! $this->scopes->find($scope) instanceof Scope || ! $client->allowsScope($scope))) {
-                throw OAuthServerException::invalidScope($scope, $redirectUri, $state);
-            }
-        }
-
-        $scopes = array_values(array_unique([...$scopes, ...$client->default_scopes]));
-
         $resources = ResourceParameter::parse($request->input('resource'), $redirectUri, $state);
 
         if (array_diff($resources, AllowedAudiences::of($client)) !== []) {
             throw OAuthServerException::invalidTarget('The requested resource is not permitted for this client.', $redirectUri, $state);
         }
+
+        $audiences = $this->audiences->resolve($resources);
+        $scopes = ScopeParameter::parse($this->parameter($request, 'scope')) ?? [];
+
+        foreach ($scopes as $scope) {
+            if ($scope !== '*' && (! $this->scopes->find($scope, $audiences) instanceof Scope || ! $client->allowsScope($scope, $audiences))) {
+                throw OAuthServerException::invalidScope($scope, $redirectUri, $state);
+            }
+        }
+
+        $scopes = array_values(array_unique([...$scopes, ...$client->defaultScopes($audiences)]));
 
         $codeChallenge = $this->parameter($request, 'code_challenge')
             ?? throw OAuthServerException::invalidRequest('The code_challenge parameter is required.', $redirectUri, $state);

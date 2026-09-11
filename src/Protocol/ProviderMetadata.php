@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\EndpointUrl;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Illuminate\Support\Facades\Route;
 
 /**
@@ -25,6 +26,7 @@ final readonly class ProviderMetadata
         private RealmResolver $realms,
         private EndpointUrl $endpoints,
         private AcrResolver $acr,
+        private RealmAudiences $audiences,
     ) {}
 
     /**
@@ -49,7 +51,7 @@ final readonly class ProviderMetadata
             'grant_types_supported' => $grantTypes,
             'subject_types_supported' => ['public'],
             'id_token_signing_alg_values_supported' => ['RS256'],
-            'scopes_supported' => $this->scopes->all()
+            'scopes_supported' => $this->scopes->all($this->audiences->all())
                 ->reject(fn (Scope $scope): bool => $scope->hidden)
                 ->map(fn (Scope $scope): string => $scope->id)
                 ->values()

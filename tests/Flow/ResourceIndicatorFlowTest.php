@@ -41,28 +41,48 @@ beforeEach(function (): void {
 
 /**
  * @param  list<string>  $resources
+ * @return TestResponse<Response>
  */
-function authorizationCodeFor(mixed $test, PkcePair $pkce, array $resources): string
+function authorizeFor(mixed $test, PkcePair $pkce, array $resources, string $scope = 'openid'): TestResponse
 {
-    $authorize = $test->actingAsIdentity($test->user, authTime: time() - 60)
+    return $test->actingAsIdentity($test->user, authTime: time() - 60)
         ->get('/oauth/authorize?'.http_build_query([
             'client_id' => $test->client->client_id,
             'redirect_uri' => 'https://rp.test/callback',
             'response_type' => 'code',
-            'scope' => 'openid',
+            'scope' => $scope,
             'state' => 'st4te',
             'code_challenge' => $pkce->challenge,
             'code_challenge_method' => 'S256',
             'resource' => $resources,
         ]));
+}
+
+/**
+ * @param  TestResponse<Response>  $response
+ * @return array<string, string>
+ */
+function redirectedTo(TestResponse $response): array
+{
+    parse_str((string) parse_url((string) $response->headers->get('Location'), PHP_URL_QUERY), $params);
+
+    /** @var array<string, string> $params */
+    return $params;
+}
+
+/**
+ * @param  list<string>  $resources
+ */
+function authorizationCodeFor(mixed $test, PkcePair $pkce, array $resources, string $scope = 'openid'): string
+{
+    $authorize = authorizeFor($test, $pkce, $resources, $scope);
 
     // A consent already granted in this test skips the consent view.
     $approve = $authorize->isRedirect()
         ? $authorize
         : $test->post('/oauth/authorize/consent', ['auth_token' => $authorize->assertOk()->json('authToken')])->assertRedirect();
-    parse_str((string) parse_url((string) $approve->headers->get('Location'), PHP_URL_QUERY), $params);
 
-    return $params['code'];
+    return redirectedTo($approve)['code'];
 }
 
 /**
@@ -142,4 +162,60 @@ it('refuses a login token at a resource route and accepts one requested for that
     $this->getJson('/test/orders', ['Authorization' => 'Bearer '.$forOrders->json('access_token')])
         ->assertOk()
         ->assertJson(['user' => $this->user->id]);
+});
+
+it('keeps a scope its resource owns out of a request that does not name that resource, wildcard assignment or not', function (): void {
+    config([
+        'oidc.scopes.catalog' => ['orders:read' => 'Read orders'],
+        'oidc.resources' => [ORDERS_API => ['scopes' => ['orders:read']], BILLING_API => []],
+    ]);
+    $pkce = $this->pkce();
+
+    expect($this->client->optional_scopes)->toBe(['*'])
+        ->and(redirectedTo(authorizeFor($this, $pkce, [], 'openid orders:read'))['error'])->toBe('invalid_scope')
+        ->and(redirectedTo(authorizeFor($this, $pkce, [BILLING_API], 'openid orders:read'))['error'])->toBe('invalid_scope');
+
+    $granted = redeem($this, authorizationCodeFor($this, $pkce, [ORDERS_API], 'openid orders:read'), $pkce)->assertOk();
+
+    expect($granted->json('scope'))->toBe('openid orders:read');
+});
+
+it('reads the same scope value under two resources as two different scopes', function (): void {
+    config([
+        'oidc.scopes.catalog' => ['read' => 'Read things'],
+        'oidc.resources' => [ORDERS_API => ['scopes' => ['read']], BILLING_API => ['scopes' => ['read']]],
+    ]);
+    $pkce = $this->pkce();
+
+    foreach ([ORDERS_API, BILLING_API] as $resource) {
+        expect(redeem($this, authorizationCodeFor($this, $pkce, [$resource], 'openid read'), $pkce)->assertOk()->json('scope'))
+            ->toBe('openid read');
+    }
+
+    expect(redirectedTo(authorizeFor($this, $pkce, [], 'openid read'))['error'])->toBe('invalid_scope');
+});
+
+it('drops a scope the narrowed resource does not own when the token endpoint narrows the audience', function (): void {
+    config([
+        'oidc.scopes.catalog' => ['orders:read' => 'Read orders', 'billing:pay' => 'Pay bills'],
+        'oidc.resources' => [ORDERS_API => ['scopes' => ['orders:read']], BILLING_API => ['scopes' => ['billing:pay']]],
+    ]);
+    $pkce = $this->pkce();
+    $code = authorizationCodeFor($this, $pkce, [ORDERS_API, BILLING_API], 'openid orders:read billing:pay');
+
+    expect(redeem($this, $code, $pkce, ['resource' => ORDERS_API])->assertOk()->json('scope'))
+        ->toBe('openid orders:read');
+});
+
+it('limits a resource-qualified client assignment to requests for that resource', function (): void {
+    config([
+        'oidc.scopes.catalog' => ['read' => 'Read things'],
+        'oidc.resources' => [ORDERS_API => ['scopes' => ['read']], BILLING_API => ['scopes' => ['read']]],
+    ]);
+    $this->client->forceFill(['optional_scopes' => ['openid', ORDERS_API.' read']])->save();
+    $pkce = $this->pkce();
+
+    expect(redirectedTo(authorizeFor($this, $pkce, [BILLING_API], 'openid read'))['error'])->toBe('invalid_scope')
+        ->and(redeem($this, authorizationCodeFor($this, $pkce, [ORDERS_API], 'openid read'), $pkce)->assertOk()->json('scope'))
+        ->toBe('openid read');
 });

@@ -85,10 +85,14 @@ return [
         // API scope catalog consulted by the scope repository at enumeration
         // time (consent, discovery, issuance): an inline [scope => description]
         // map, or the class-string of a ScopeCatalog implementation resolved
-        // from the container. A catalog's scopes() may hit the database —
-        // failures fall back to an empty catalog so key- and db-less artisan
-        // runs never break; an invalid class-string fails loudly at first
-        // enumeration.
+        // from the container. Every scope belongs to one resource: an entry
+        // listed under a resource in `resources` below is requestable only
+        // when that resource is, the rest belong to the realm itself and are
+        // requestable only without a `resource` (or with the issuer URL). A
+        // catalog class is asked for the resources of the request instead and
+        // owns that split itself. Its scopes() may hit the database — failures
+        // fall back to an empty catalog so key- and db-less artisan runs never
+        // break; an invalid class-string fails loudly at first enumeration.
         'catalog' => [],
     ],
 
@@ -119,7 +123,10 @@ return [
     | realm creates (ClientRepository, `oidc:client`, dynamic registration).
     | Default scopes are granted without being requested, optional scopes on
     | request; a scope outside the assignment is `invalid_scope`. `*` among
-    | the optional scopes stands for every catalog scope.
+    | the optional scopes stands for every scope the requested resources own.
+    | An entry may name the resource that owns the scope
+    | ('https://api.internal/orders orders:read'), which limits it to requests
+    | for that resource; a bare entry holds under every resource.
     |
     | `token_exchange` enables the RFC 8693 grant.
     |
@@ -183,9 +190,13 @@ return [
     | servers listed here are further audiences a client may request through
     | `resource` (authorization code, client credentials) or `audience` (token
     | exchange), and the oidc guard accepts a bearer token addressed to any of
-    | them; pair the route with CheckAudience to demand a specific one. A key
-    | that is a path relative to the issuer is identified as `<issuer>/<path>`
-    | and advertised through RFC 9728 metadata at
+    | them; pair the route with CheckAudience to demand a specific one.
+    |
+    | The scopes a resource lists are the scopes it owns: they are requestable
+    | only when the resource is, and the same value under two resources is two
+    | different scopes. A scope no resource lists belongs to the realm itself.
+    | A key that is a path relative to the issuer is identified as
+    | `<issuer>/<path>` and advertised through RFC 9728 metadata at
     | `/.well-known/oauth-protected-resource/<path>`, where MCP clients resolve
     | their authorization server; an absolute URI names an external resource
     | server that validates tokens itself.

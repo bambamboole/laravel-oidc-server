@@ -32,3 +32,19 @@ it('lets the personal access client override the realm assignment', function ():
     expect($client->default_scopes)->toBe([])
         ->and($client->optional_scopes)->toBe(['*']);
 });
+
+it('honours a resource-qualified scope assignment only for that resource', function (): void {
+    $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
+    $client->forceFill([
+        'default_scopes' => ['openid', 'https://api.internal/orders orders:read'],
+        'optional_scopes' => ['https://api.internal/billing *'],
+    ])->save();
+
+    expect($client->defaultScopes())->toBe(['openid'])
+        ->and($client->defaultScopes(['https://api.internal/orders']))->toBe(['openid', 'orders:read'])
+        ->and($client->assignedScopes(['https://api.internal/billing']))->toBe(['openid', '*'])
+        ->and($client->allowsScope('orders:read'))->toBeFalse()
+        ->and($client->allowsScope('orders:read', ['https://api.internal/orders']))->toBeTrue()
+        ->and($client->allowsScope('anything', ['https://api.internal/billing']))->toBeTrue()
+        ->and($client->allowsScope('anything', ['https://api.internal/orders']))->toBeFalse();
+});

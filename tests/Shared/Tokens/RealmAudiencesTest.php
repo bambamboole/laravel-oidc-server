@@ -50,3 +50,26 @@ it('advertises scopes for path-relative resources only', function (): void {
         ->and($audiences->advertisedScopes('orders'))->toBeNull()
         ->and($audiences->advertisedScopes(''))->toBeNull();
 });
+
+it('reads an absent resource parameter as the realm itself', function (): void {
+    config(['oidc.resources' => ['mcp' => ['scopes' => []]]]);
+
+    $audiences = app(RealmAudiences::class);
+
+    expect($audiences->resolve([]))->toBe(['https://op.test'])
+        ->and($audiences->resolve(['https://op.test/mcp']))->toBe(['https://op.test/mcp']);
+});
+
+it('reports the scopes the given resources own, and every scope some resource claims', function (): void {
+    config(['oidc.resources' => [
+        'mcp' => ['scopes' => ['mcp:use', 'read']],
+        'https://api.example/orders' => ['scopes' => ['read']],
+    ]]);
+
+    $audiences = app(RealmAudiences::class);
+
+    expect($audiences->declaredScopes(['https://op.test/mcp']))->toBe(['mcp:use', 'read'])
+        ->and($audiences->declaredScopes(['https://api.example/orders']))->toBe(['read'])
+        ->and($audiences->declaredScopes(['https://op.test']))->toBe([])
+        ->and($audiences->claimedScopes())->toBe(['mcp:use', 'read']);
+});

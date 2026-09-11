@@ -44,6 +44,49 @@ final readonly class RealmAudiences
     }
 
     /**
+     * The resources a request is addressed to: an RFC 8707 `resource` names
+     * them, its absence means the realm itself.
+     *
+     * @param  list<string>  $requested
+     * @return list<string>
+     */
+    public function resolve(array $requested): array
+    {
+        return $requested === [] ? $this->default() : $requested;
+    }
+
+    /**
+     * The scopes the given resources declare, the same set each publishes as
+     * RFC 9728 `scopes_supported`.
+     *
+     * @param  list<string>  $audiences
+     * @return list<string>
+     */
+    public function declaredScopes(array $audiences): array
+    {
+        $scopes = [];
+
+        foreach ($this->realms->current()->resources()->resources as $resource => $declared) {
+            if (in_array($this->identifier($resource), $audiences, true)) {
+                $scopes = [...$scopes, ...$declared];
+            }
+        }
+
+        return array_values(array_unique($scopes));
+    }
+
+    /**
+     * Every scope a registered resource claims. What no resource claims
+     * belongs to the realm itself.
+     *
+     * @return list<string>
+     */
+    public function claimedScopes(): array
+    {
+        return $this->declaredScopes($this->all());
+    }
+
+    /**
      * The scopes a path-relative resource advertises; null when no such
      * resource is registered under the path.
      *

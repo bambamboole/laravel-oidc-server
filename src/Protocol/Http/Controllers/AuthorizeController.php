@@ -20,6 +20,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
 use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\StatefulGuard;
@@ -53,6 +54,7 @@ class AuthorizeController
         private readonly AuthSessionState $sessionState,
         private readonly ConsentStore $consents,
         private readonly PendingActions $actions,
+        private readonly RealmAudiences $audiences,
     ) {}
 
     public function __invoke(Request $request, AuthorizationViewResponse $viewResponse): Response|AuthorizationViewResponse
@@ -146,8 +148,10 @@ class AuthorizeController
      */
     protected function parseScopes(AuthorizeRequest $authRequest): array
     {
+        $audiences = $this->audiences->resolve($authRequest->resources);
+
         return collect($authRequest->scopes)
-            ->map(fn (string $id): ?Scope => $this->scopeRepository->find($id))
+            ->map(fn (string $id): ?Scope => $this->scopeRepository->find($id, $audiences))
             ->filter(fn (?Scope $scope): bool => $scope instanceof Scope && ! $scope->hidden)
             ->values()
             ->all();

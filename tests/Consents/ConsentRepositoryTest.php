@@ -191,19 +191,19 @@ it('never shows a hidden scope on the consent screen while still granting it', f
     {
         public function __construct(private ScopeRepository $inner, private Scope $hidden) {}
 
-        public function all(): Collection
+        public function all(array $audiences = []): Collection
         {
-            return $this->inner->all()->push($this->hidden);
+            return $this->inner->all($audiences)->push($this->hidden);
         }
 
-        public function find(string $identifier): ?Scope
+        public function find(string $identifier, array $audiences = []): ?Scope
         {
-            return $identifier === $this->hidden->id ? $this->hidden : $this->inner->find($identifier);
+            return $identifier === $this->hidden->id ? $this->hidden : $this->inner->find($identifier, $audiences);
         }
 
-        public function finalize(array $requested, string $grantType, ?Client $client, ?string $userIdentifier = null): array
+        public function finalize(array $requested, string $grantType, ?Client $client, ?string $userIdentifier = null, array $audiences = []): array
         {
-            return array_values(array_filter($requested, fn (Scope $scope): bool => $this->find($scope->id) instanceof Scope));
+            return array_values(array_filter($requested, fn (Scope $scope): bool => $this->find($scope->id, $audiences) instanceof Scope));
         }
     });
 

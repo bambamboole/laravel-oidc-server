@@ -115,17 +115,68 @@ class Client extends Model
         return in_array($grantType, $this->grant_types, true);
     }
 
-    /** Default scopes are granted unasked, optional ones on request; `*` among the optional scopes stands for every catalog scope. */
-    public function allowsScope(string $scope): bool
+    /**
+     * Default scopes are granted unasked, optional ones on request; `*` among
+     * the optional scopes stands for every scope the requested resources own.
+     *
+     * @param  list<string>  $audiences  the resources the request is for
+     */
+    public function allowsScope(string $scope, array $audiences = []): bool
     {
-        return in_array($scope, $this->default_scopes, true)
-            || in_array($scope, $this->optional_scopes, true)
-            || in_array('*', $this->optional_scopes, true);
+        return in_array($scope, $this->assignedScopes($audiences), true)
+            || in_array('*', $this->optionalScopes($audiences), true);
     }
 
-    /** @return list<string> */
-    public function assignedScopes(): array
+    /**
+     * @param  list<string>  $audiences
+     * @return list<string>
+     */
+    public function defaultScopes(array $audiences = []): array
     {
-        return array_values(array_unique([...$this->default_scopes, ...$this->optional_scopes]));
+        return $this->scopesFor($this->default_scopes, $audiences);
+    }
+
+    /**
+     * @param  list<string>  $audiences
+     * @return list<string>
+     */
+    public function optionalScopes(array $audiences = []): array
+    {
+        return $this->scopesFor($this->optional_scopes, $audiences);
+    }
+
+    /**
+     * @param  list<string>  $audiences
+     * @return list<string>
+     */
+    public function assignedScopes(array $audiences = []): array
+    {
+        return array_values(array_unique([...$this->defaultScopes($audiences), ...$this->optionalScopes($audiences)]));
+    }
+
+    /**
+     * An assignment entry may name the resource that owns the scope
+     * (`<resource> <scope>`, the RFC 8707 identifier first), which limits it to
+     * requests for that resource; a bare entry holds under every resource. A
+     * space cannot occur in a scope token (RFC 6749 §3.3), so the two forms
+     * never collide.
+     *
+     * @param  array<int, string>  $assigned
+     * @param  list<string>  $audiences
+     * @return list<string>
+     */
+    private function scopesFor(array $assigned, array $audiences): array
+    {
+        $scopes = [];
+
+        foreach ($assigned as $entry) {
+            [$resource, $scope] = str_contains($entry, ' ') ? explode(' ', $entry, 2) : [null, $entry];
+
+            if ($resource === null || in_array($resource, $audiences, true)) {
+                $scopes[] = $scope;
+            }
+        }
+
+        return array_values(array_unique($scopes));
     }
 }

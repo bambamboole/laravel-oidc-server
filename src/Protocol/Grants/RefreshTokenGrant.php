@@ -16,6 +16,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
@@ -38,6 +39,7 @@ final readonly class RefreshTokenGrant implements Grant
         private AuthenticationContextStore $contexts,
         private OidcSessionRepository $sessions,
         private TokenRevoker $revoker,
+        private RealmAudiences $audiences,
     ) {}
 
     public function type(): string
@@ -104,9 +106,9 @@ final readonly class RefreshTokenGrant implements Grant
             }
         }
 
-        $scopes = $this->scopes->finalize($requested, self::TYPE, $client, (string) $userId);
-        $context = $this->activeContext($accessToken);
         $audiences = $this->requestedAudiences($request, $accessToken->audience ?? []);
+        $scopes = $this->scopes->finalize($requested, self::TYPE, $client, (string) $userId, $this->audiences->resolve($audiences));
+        $context = $this->activeContext($accessToken);
 
         $this->revoker->revoke($accessToken->id);
 

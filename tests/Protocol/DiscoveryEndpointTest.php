@@ -75,3 +75,13 @@ it('advertises token exchange and dynamic registration only while enabled', func
     expect($doc->json('grant_types_supported'))->not->toContain(TestCase::TOKEN_EXCHANGE_GRANT)
         ->and($doc->json('registration_endpoint'))->toContain('/oauth/register');
 });
+
+it('advertises the union of the realm scopes and every registered resource scope', function (): void {
+    config([
+        'oidc.scopes.catalog' => ['realm:admin' => 'Administer the realm', 'orders:read' => 'Read orders'],
+        'oidc.resources' => ['mcp' => ['scopes' => ['mcp:use']], 'https://api.internal/orders' => ['scopes' => ['orders:read']]],
+    ]);
+
+    expect($this->getJson('/.well-known/openid-configuration')->assertOk()->json('scopes_supported'))
+        ->toContain('openid', 'profile', 'email', 'realm:admin', 'orders:read', 'mcp:use');
+});

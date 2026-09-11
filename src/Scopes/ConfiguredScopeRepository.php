@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Scopes\ScopeCatalog;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Collection;
 use LogicException;
@@ -20,44 +21,78 @@ class ConfiguredScopeRepository implements ScopeRepository
         'email' => 'Access your email address',
     ];
 
-    /** @var array<string, array<string, string>> keyed by realm id */
+    /** @var array<string, array<string, string>> keyed by realm id and audience set */
     private array $catalogs = [];
 
     public function __construct(
         private readonly Application $app,
         private readonly RealmResolver $realms,
+        private readonly RealmAudiences $audiences,
     ) {}
 
-    public function all(): Collection
+    public function all(array $audiences = []): Collection
     {
-        return collect($this->catalog())
+        return collect($this->catalog($this->audiences->resolve($audiences)))
             ->union(self::OIDC_SCOPES)
             ->map(fn (string $description, string $id): Scope => new Scope($id, $description))
             ->values();
     }
 
+    public function find(string $identifier, array $audiences = []): ?Scope
+    {
+        return $this->all($audiences)->first(fn (Scope $scope): bool => $scope->id === $identifier);
+    }
+
+    public function finalize(array $requested, string $grantType, ?Client $client, ?string $userIdentifier = null, array $audiences = []): array
+    {
+        return array_values(array_filter(
+            $requested,
+            fn (Scope $scope): bool => $this->find($scope->id, $audiences) instanceof Scope,
+        ));
+    }
+
     /**
-     * The current realm's configured catalog. A catalog class is resolved once
-     * per realm and instance because it may query the database — and per
-     * realm, not per instance, because under Octane one instance serves every
-     * realm. Its failures fall back to an empty catalog (fail-closed: unknown
-     * scopes are stripped at issuance) instead of breaking the flow. An inline
-     * array is read fresh each time.
+     * The scopes the requested resources own: what each of them declares in
+     * the realm's resource settings, plus the realm's own catalog when the
+     * realm itself is among them. A catalog class is asked for the audiences
+     * directly and owns that split itself.
      *
+     * @param  list<string>  $audiences
      * @return array<string, string>
      */
-    private function catalog(): array
+    private function catalog(array $audiences): array
     {
-        $realm = $this->realms->current();
+        $configured = $this->realms->current()->scopes()->catalog;
+        $declared = $this->audiences->declaredScopes($audiences);
 
-        if (isset($this->catalogs[$realm->id()])) {
-            return $this->catalogs[$realm->id()];
+        if (is_string($configured)) {
+            return $this->fromClass($configured, $audiences) + array_fill_keys($declared, '');
         }
 
-        $configured = $realm->scopes()->catalog;
+        $realmOwned = in_array($this->audiences->default()[0], $audiences, true)
+            ? array_diff_key($configured, array_flip($this->audiences->claimedScopes()))
+            : [];
 
-        if (! is_string($configured)) {
-            return $configured;
+        return $realmOwned + array_intersect_key($configured, array_flip($declared)) + array_fill_keys($declared, '');
+    }
+
+    /**
+     * A catalog class is resolved once per realm, audience set and instance
+     * because it may query the database — and per realm, not per instance,
+     * because under Octane one instance serves every realm. Its failures fall
+     * back to an empty catalog (fail-closed: unknown scopes are stripped at
+     * issuance) instead of breaking the flow.
+     *
+     * @param  list<string>  $audiences
+     * @return array<string, string>
+     */
+    private function fromClass(string $configured, array $audiences): array
+    {
+        sort($audiences);
+        $key = $this->realms->current()->id()."\n".implode("\n", $audiences);
+
+        if (isset($this->catalogs[$key])) {
+            return $this->catalogs[$key];
         }
 
         $catalog = $this->app->make($configured);
@@ -66,19 +101,6 @@ class ConfiguredScopeRepository implements ScopeRepository
             throw new LogicException("The configured scope catalog [{$configured}] must implement ScopeCatalog.");
         }
 
-        return $this->catalogs[$realm->id()] = rescue(fn (): array => $catalog->scopes(), [], report: ! $this->app->runningInConsole());
-    }
-
-    public function find(string $identifier): ?Scope
-    {
-        return $this->all()->first(fn (Scope $scope): bool => $scope->id === $identifier);
-    }
-
-    public function finalize(array $requested, string $grantType, ?Client $client, ?string $userIdentifier = null): array
-    {
-        return array_values(array_filter(
-            $requested,
-            fn (Scope $scope): bool => $this->find($scope->id) instanceof Scope,
-        ));
+        return $this->catalogs[$key] = rescue(fn (): array => $catalog->scopes($audiences), [], report: ! $this->app->runningInConsole());
     }
 }

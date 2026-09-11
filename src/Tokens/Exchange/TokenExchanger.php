@@ -83,7 +83,7 @@ class TokenExchanger
             parameters: $parameters,
         ));
 
-        $scopeIds = $this->scopes->finalize($result->scopes, self::GRANT_URN, $requestingClient, $result->userId);
+        $scopeIds = $this->scopes->finalize($result->scopes, self::GRANT_URN, $requestingClient, $result->userId, $result->audience);
 
         $user = $this->resolveUser($result->userId);
 

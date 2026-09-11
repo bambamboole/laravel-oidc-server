@@ -12,6 +12,7 @@ use Bambamboole\LaravelOidc\Server\Protocol\Http\ResourceParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\TokenResponse;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
@@ -31,6 +32,7 @@ final readonly class AuthorizationCodeGrant implements Grant
         private ScopeGrant $scopes,
         private AuthenticationContextStore $contexts,
         private TokenRevoker $revoker,
+        private RealmAudiences $audiences,
     ) {}
 
     public function type(): string
@@ -75,9 +77,9 @@ final readonly class AuthorizationCodeGrant implements Grant
         }
 
         $userId = (string) $authCode->user_id;
-        $scopes = $this->scopes->finalize($authCode->scopes ?? [], self::TYPE, $client, $userId);
-        $context = $authCode->context_id !== null ? $this->contexts->find($authCode->context_id) : null;
         $audiences = $this->requestedAudiences($request, $authCode->audience ?? []);
+        $scopes = $this->scopes->finalize($authCode->scopes ?? [], self::TYPE, $client, $userId, $this->audiences->resolve($audiences));
+        $context = $authCode->context_id !== null ? $this->contexts->find($authCode->context_id) : null;
 
         return $this->issuer->issue(
             client: $client,

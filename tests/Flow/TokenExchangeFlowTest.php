@@ -23,11 +23,14 @@ use Workbench\App\Models\User;
 const ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
 
 beforeEach(function (): void {
-    config(['oidc.scopes.catalog' => [
-        'openid' => 'Authenticate',
-        'orders:read' => 'Read orders',
-        'orders:write' => 'Write orders',
-    ]]);
+    config([
+        'oidc.scopes.catalog' => [
+            'openid' => 'Authenticate',
+            'orders:read' => 'Read orders',
+            'orders:write' => 'Write orders',
+        ],
+        'oidc.resources' => ['https://api.internal/orders' => ['scopes' => ['orders:read', 'orders:write']]],
+    ]);
 
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
 

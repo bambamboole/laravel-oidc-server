@@ -16,6 +16,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
+use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
 use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
 use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
 use Bambamboole\LaravelOidc\Server\Tokens\Pipeline\AccessTokenPipeline;
@@ -35,6 +36,7 @@ final readonly class ClientCredentialsGrant implements Grant
         private ScopeRepository $scopes,
         private ScopeGrant $scopeGrant,
         private RealmResolver $realms,
+        private RealmAudiences $audiences,
     ) {}
 
     public function type(): string
@@ -44,23 +46,24 @@ final readonly class ClientCredentialsGrant implements Grant
 
     public function handle(Client $client, Request $request): TokenResponse
     {
-        $audiences = ResourceParameter::parse($request->input('resource'));
-        $this->assertAudiencesAllowed($client, $audiences);
+        $resources = ResourceParameter::parse($request->input('resource'));
+        $this->assertAudiencesAllowed($client, $resources);
 
+        $audiences = $this->audiences->resolve($resources);
         $requested = ScopeParameter::parse($request->input('scope')) ?? [];
 
         foreach ($requested as $scope) {
-            if ($scope !== '*' && (! $this->scopes->find($scope) instanceof Scope || ! $client->allowsScope($scope))) {
+            if ($scope !== '*' && (! $this->scopes->find($scope, $audiences) instanceof Scope || ! $client->allowsScope($scope, $audiences))) {
                 throw OAuthServerException::invalidScope($scope);
             }
         }
 
-        $scopes = $this->scopeGrant->finalize($requested, self::TYPE, $client);
+        $scopes = $this->scopeGrant->finalize($requested, self::TYPE, $client, audiences: $audiences);
 
         $api = $this->pipeline->run(self::TYPE, new ClientCredentialsEvent(
             client: $client,
             scopes: $scopes,
-            audiences: $audiences,
+            audiences: $resources,
         ));
 
         if ($api->isDenied()) {
@@ -79,7 +82,7 @@ final readonly class ClientCredentialsGrant implements Grant
             $client->client_id,
             $scopes,
             $this->realms->current()->tokens()->clientCredentials(),
-            $audiences,
+            $resources,
             $api->accessTokenClaims(),
         );
 
@@ -88,7 +91,7 @@ final readonly class ClientCredentialsGrant implements Grant
             jti: $token->jti,
             scopes: $scopes,
             clientId: $client->client_id,
-            audiences: $audiences,
+            audiences: $resources,
         ));
 
         return new TokenResponse($token);
