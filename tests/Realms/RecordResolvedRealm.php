@@ -34,7 +34,7 @@ class RecordResolvedRealm implements ShouldQueue
     public function handle(RealmResolver $realms, IssuerResolver $issuer): void
     {
         self::$seen = [
-            'realm' => $realms->current()->id(),
+            'realm' => $realms->current()->identifier(),
             'issuer' => $issuer->url(),
             'client' => OidcContext::client(),
             'authorize_path' => route('oidc.authorize', absolute: false),

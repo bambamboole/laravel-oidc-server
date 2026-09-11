@@ -24,7 +24,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\TokenSettings;
  */
 interface Realm
 {
-    public function id(): string;
+    public function identifier(): string;
 
     /**
      * The host the realm is served from in `domain` routing, without scheme or

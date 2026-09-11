@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication;
 
+use Bambamboole\LaravelOidc\Server\Authentication\Actions\ResetPassword as ResetPasswordAction;
+use Bambamboole\LaravelOidc\Server\Authentication\Actions\SendPasswordResetLink;
 use Bambamboole\LaravelOidc\Server\Authentication\Commands\PruneAuthenticationContextsCommand;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Authentication\Listeners\DispatchLoggedOut;
@@ -26,6 +28,11 @@ use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Auth\Passwords\PasswordBroker;
+use Illuminate\Contracts\Auth\Factory as AuthFactory;
+use Illuminate\Contracts\Auth\PasswordBroker as PasswordBrokerContract;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
@@ -49,6 +56,13 @@ class AuthenticationServiceProvider extends ServiceProvider
         $this->app->singleton(DeviceRecognizer::class, NullDeviceRecognizer::class);
         $this->app->bind(AcrResolver::class, LevelOfAssuranceAcrResolver::class);
         $this->app->singleton(AuthenticationContextStore::class);
+        $this->app->when([SendPasswordResetLink::class, ResetPasswordAction::class])
+            ->needs(PasswordBrokerContract::class)
+            ->give(fn (Application $app): PasswordBroker => new PasswordBroker(
+                $app->make(PasswordResetTokens::class),
+                $app->make(AuthFactory::class)->createUserProvider((string) config('oidc.auth.provider', 'users')),
+                $app->make(Dispatcher::class),
+            ));
         $this->app->singleton(PendingActions::class, DerivedPendingActions::class);
 
         // Without a ui package or app binding, a view contract throws so the

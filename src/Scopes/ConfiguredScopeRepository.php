@@ -89,7 +89,7 @@ class ConfiguredScopeRepository implements ScopeRepository
     private function fromClass(string $configured, array $audiences): array
     {
         sort($audiences);
-        $key = $this->realms->current()->id()."\n".implode("\n", $audiences);
+        $key = $this->realms->current()->identifier()."\n".implode("\n", $audiences);
 
         if (isset($this->catalogs[$key])) {
             return $this->catalogs[$key];

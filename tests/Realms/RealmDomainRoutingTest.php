@@ -8,11 +8,16 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
+use Bambamboole\LaravelOidc\Server\Realms\CurrentRealm;
+use Bambamboole\LaravelOidc\Server\Shared\Context\OidcContext;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Tests\Realms\RecordResolvedRealm;
 use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByDomain;
+use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Workbench\App\Models\User;
 
 uses(RoutesRealmsByDomain::class);
 
@@ -65,7 +70,7 @@ it('serves the realm key set from the realm host', function (): void {
 it('resolves the realm from the host', function (): void {
     $this->get('https://acme.id.test/.well-known/openid-configuration');
 
-    expect(app(RealmResolver::class)->current()->id())->toBe('acme')
+    expect(app(RealmResolver::class)->current()->identifier())->toBe('acme')
         ->and(app(IssuerResolver::class)->url())->toBe('https://acme.id.test');
 });
 
@@ -120,4 +125,68 @@ it('links to the realm host from a host that serves another realm', function ():
 
     expect(RecordResolvedRealm::$seen['login_url'])->toBe('https://acme.id.test/auth/login')
         ->and(RecordResolvedRealm::$seen['reset_url'])->toStartWith('https://acme.id.test/auth/reset-password/reset-token');
+});
+
+it('serves code run in another realm from that realm, whatever host the request came in on', function (): void {
+    $this->get('https://acme.id.test/.well-known/openid-configuration')->assertOk();
+
+    $inGlobex = CurrentRealm::runAs('globex', fn (): array => [
+        'realm' => app(RealmResolver::class)->current()->identifier(),
+        'issuer' => app(IssuerResolver::class)->url(),
+        'login_url' => route('identity.login'),
+        'client_realm' => app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb'])->realm_id,
+    ]);
+
+    expect($inGlobex)->toBe([
+        'realm' => 'globex',
+        'issuer' => 'https://globex.id.test',
+        'login_url' => 'https://globex.id.test/auth/login',
+        'client_realm' => 'globex',
+    ])->and(app(RealmResolver::class)->current()->identifier())->toBe('acme');
+});
+
+it('restores the realm it interrupted, so runs nest', function (): void {
+    app()->instance('request', Request::create('https://localhost/'));
+
+    $seen = CurrentRealm::runAs('acme', fn (): array => [
+        CurrentRealm::runAs('globex', fn (): string => app(RealmResolver::class)->current()->identifier()),
+        app(RealmResolver::class)->current()->identifier(),
+    ]);
+
+    expect($seen)->toBe(['globex', 'acme'])
+        ->and(app(RealmResolver::class)->current()->identifier())->toBe('default')
+        ->and(OidcContext::realm())->toBeNull();
+});
+
+it('hands the realm it runs in to the jobs dispatched inside', function (): void {
+    config(['queue.default' => 'database', 'oidc.issuer' => 'https://id.example.com']);
+    RecordResolvedRealm::forget();
+    app()->instance('request', Request::create('https://localhost/'));
+
+    CurrentRealm::runAs('acme', function (): void {
+        RecordResolvedRealm::dispatch();
+    });
+
+    forgetRequest();
+    workQueue();
+
+    expect(RecordResolvedRealm::$seen['realm'])->toBe('acme')
+        ->and(RecordResolvedRealm::$seen['issuer'])->toBe('https://acme.id.test');
+});
+
+it('honours a reset link only in the realm that sent it', function (): void {
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
+    $token = CurrentRealm::runAs('acme', fn (): string => passwordResetToken($user));
+    resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
+        $user->forceFill(['password' => Hash::make($input['password'])])->save();
+    });
+    $reset = [
+        'token' => $token,
+        'email' => 'm@example.com',
+        'password' => 'new-password',
+        'password_confirmation' => 'new-password',
+    ];
+
+    $this->postJson('https://globex.id.test/auth/reset-password', $reset)->assertJsonValidationErrors('email');
+    $this->postJson('https://acme.id.test/auth/reset-password', $reset)->assertOk();
 });

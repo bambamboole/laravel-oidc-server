@@ -193,13 +193,7 @@ it('rejects exchange audiences when token exchange is disabled', function (): vo
 it('does not revoke existing tokens when rotating the client secret', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('First-party app', ['https://app.test/login/callback']);
-    $token = AccessToken::query()->create([
-        'id' => 'existing-token',
-        'client_id' => $created->clientId,
-        'scopes' => [],
-        'revoked' => false,
-        'expires_at' => now()->addHour(),
-    ]);
+    $token = AccessToken::factory()->create(['client_id' => $created->clientId, 'user_id' => null]);
 
     $provisioner->provision(
         'First-party app',

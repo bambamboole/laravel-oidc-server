@@ -40,7 +40,7 @@ class RepositoryRealmCatalog implements ScopeCatalog
 {
     public function scopes(array $audiences): array
     {
-        $realm = app(RealmResolver::class)->current()->id();
+        $realm = app(RealmResolver::class)->current()->identifier();
 
         return ["{$realm}:read" => "Read {$realm} things"];
     }

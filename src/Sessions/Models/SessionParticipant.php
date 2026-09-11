@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions\Models;
 
+use Bambamboole\LaravelOidc\Server\Database\Factories\SessionParticipantFactory;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -16,6 +18,9 @@ use Illuminate\Database\Eloquent\Model;
  */
 class SessionParticipant extends Model
 {
+    /** @use HasFactory<SessionParticipantFactory> */
+    use HasFactory;
+
     use HasUuids;
 
     public $timestamps = false;
@@ -23,6 +28,11 @@ class SessionParticipant extends Model
     protected $table = 'oidc_session_participants';
 
     protected $guarded = [];
+
+    protected static function newFactory(): SessionParticipantFactory
+    {
+        return SessionParticipantFactory::new();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

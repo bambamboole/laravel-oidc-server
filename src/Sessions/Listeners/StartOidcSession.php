@@ -21,9 +21,14 @@ class StartOidcSession
             return;
         }
 
-        $sid = $this->registry->start((string) $event->user->getAuthIdentifier());
+        $browserSession = app()->bound('session.store') ? app('session.store') : null;
 
-        if (app()->bound('session.store')) {
+        $sid = $this->registry->start(
+            (string) $event->user->getAuthIdentifier(),
+            $browserSession?->isStarted() ? $browserSession->getId() : null,
+        );
+
+        if ($browserSession !== null) {
             $this->sessionState->startOidcSession($sid);
         }
     }

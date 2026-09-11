@@ -61,6 +61,8 @@ return [
         // Idle cap on an interactive session: a refresh token unused for this long is dead.
         // The absolute cap is oidc.session.absolute_lifetime and always wins.
         'refresh_token' => (int) env('OIDC_REFRESH_TOKEN_TTL', 1209600),
+        // How long a password reset link stays valid.
+        'password_reset' => (int) env('OIDC_PASSWORD_RESET_TTL', 3600),
     ],
 
     'session' => [

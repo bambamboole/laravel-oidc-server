@@ -150,7 +150,7 @@ final readonly class InteractiveTokenIssuer
         $id = bin2hex(random_bytes(40));
 
         RefreshToken::query()->forceCreate([
-            'realm_id' => $this->realms->current()->id(),
+            'realm_id' => $this->realms->current()->identifier(),
             'id' => $id,
             'access_token_id' => $accessToken->jti,
             'revoked' => false,

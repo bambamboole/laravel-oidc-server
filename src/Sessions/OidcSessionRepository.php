@@ -12,11 +12,12 @@ class OidcSessionRepository
 {
     public function __construct(private readonly RealmResolver $realms) {}
 
-    public function start(string $userId): string
+    public function start(string $userId, ?string $browserSessionId = null): string
     {
         $session = new OidcSession;
         $session->realm_id = OidcSession::currentRealm();
         $session->user_id = $userId;
+        $session->session_id = $browserSessionId;
         $session->created_at = now();
         $session->expires_at = now()->add($this->realms->current()->sessions()->absolute());
         $session->save();
@@ -27,6 +28,11 @@ class OidcSessionRepository
     public function find(string $sid): ?OidcSession
     {
         return OidcSession::query()->inRealm()->find($sid);
+    }
+
+    public function findByBrowserSession(string $browserSessionId): ?OidcSession
+    {
+        return OidcSession::query()->inRealm()->where('session_id', $browserSessionId)->first();
     }
 
     /**

@@ -35,7 +35,7 @@ it('serves the configured realm from the application root with the origin as iss
         ->assertOk()
         ->assertJsonPath('issuer', 'https://id.example.com');
 
-    expect(app(RealmResolver::class)->current()->id())->toBe('acme');
+    expect(app(RealmResolver::class)->current()->identifier())->toBe('acme');
 });
 
 it('does not route the realm path form', function (): void {

@@ -39,7 +39,7 @@ final readonly class ResolveRealm
 
     public function handle(Request $request, Closure $next): Response
     {
-        $realm = $this->realms->current()->id();
+        $realm = $this->realms->current()->identifier();
 
         $request->attributes->set(self::ATTRIBUTE, $realm);
         $request->route()?->forgetParameter('realm');

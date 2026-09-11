@@ -135,5 +135,5 @@ it('falls back to the configured realm outside a matched route', function (): vo
 
     app()->instance('request', new Request);
 
-    expect(app(RealmResolver::class)->current()->id())->toBe('fallback');
+    expect(app(RealmResolver::class)->current()->identifier())->toBe('fallback');
 });

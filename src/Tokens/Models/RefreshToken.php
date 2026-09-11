@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 
+use Bambamboole\LaravelOidc\Server\Database\Factories\RefreshTokenFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,6 +22,9 @@ class RefreshToken extends Model
 {
     use BelongsToRealm;
 
+    /** @use HasFactory<RefreshTokenFactory> */
+    use HasFactory;
+
     protected $table = 'oidc_refresh_tokens';
 
     protected $primaryKey = 'id';
@@ -31,6 +36,11 @@ class RefreshToken extends Model
     public $timestamps = false;
 
     protected $guarded = [];
+
+    protected static function newFactory(): RefreshTokenFactory
+    {
+        return RefreshTokenFactory::new();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

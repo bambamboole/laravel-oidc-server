@@ -35,6 +35,7 @@
     },
     "autoload": {
         "psr-4": {
+            "Bambamboole\\LaravelOidc\\Server\\Database\\Factories\\": "database/factories/",
             "Bambamboole\\LaravelOidc\\Server\\": "src/"
         }
     },

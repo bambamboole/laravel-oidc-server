@@ -70,15 +70,7 @@ it('does not resolve an access token from another realm', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
-    (new AccessToken)->forceFill([
-        'realm_id' => 'acme',
-        'id' => 'token-in-acme',
-        'user_id' => $user->id,
-        'client_id' => $client->id,
-        'scopes' => ['openid'],
-        'revoked' => false,
-        'expires_at' => now()->addHour(),
-    ])->save();
+    AccessToken::factory()->forClient($client)->forUser($user)->create(['id' => 'token-in-acme']);
 
     expect(AccessToken::query()->inRealm()->whereKey('token-in-acme')->exists())->toBeTrue();
 

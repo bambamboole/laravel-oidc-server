@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Database\Factories\AccessTokenFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -29,6 +31,9 @@ class AccessToken extends Model
 {
     use BelongsToRealm;
 
+    /** @use HasFactory<AccessTokenFactory> */
+    use HasFactory;
+
     protected $table = 'oidc_access_tokens';
 
     protected $primaryKey = 'id';
@@ -38,6 +43,11 @@ class AccessToken extends Model
     public $incrementing = false;
 
     protected $guarded = [];
+
+    protected static function newFactory(): AccessTokenFactory
+    {
+        return AccessTokenFactory::new();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

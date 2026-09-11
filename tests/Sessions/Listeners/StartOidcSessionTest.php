@@ -7,7 +7,9 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
+use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
 
 it('records auth_time and a sid without starting the session store on an identity-guard login', function (): void {
@@ -34,4 +36,12 @@ it('records nothing for one-off authentication or logins on another guard', func
     expect($session->has('oidc.auth_time'))->toBeFalse()
         ->and($session->has('oidc.sid'))->toBeFalse()
         ->and(OidcSession::query()->count())->toBe(0);
+});
+
+it('ties the OIDC session to the browser session the login ended in', function (): void {
+    User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
+
+    $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])->assertRedirect();
+
+    expect(app(OidcSessionRepository::class)->findByBrowserSession(session()->getId())?->sid)->toBe(session('oidc.sid'));
 });

@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Database\Factories\AuthorizationCodeFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -30,6 +32,9 @@ class AuthorizationCode extends Model
 {
     use BelongsToRealm;
 
+    /** @use HasFactory<AuthorizationCodeFactory> */
+    use HasFactory;
+
     protected $table = 'oidc_auth_codes';
 
     protected $primaryKey = 'id';
@@ -41,6 +46,11 @@ class AuthorizationCode extends Model
     public $timestamps = false;
 
     protected $guarded = [];
+
+    protected static function newFactory(): AuthorizationCodeFactory
+    {
+        return AuthorizationCodeFactory::new();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

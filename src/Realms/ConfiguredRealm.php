@@ -26,7 +26,7 @@ final readonly class ConfiguredRealm implements Realm
 {
     public function __construct(private string $id) {}
 
-    public function id(): string
+    public function identifier(): string
     {
         return $this->id;
     }

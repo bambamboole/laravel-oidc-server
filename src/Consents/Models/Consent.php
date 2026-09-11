@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Consents\Models;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
+use Bambamboole\LaravelOidc\Server\Database\Factories\ConsentFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -32,11 +34,19 @@ class Consent extends Model
 {
     use BelongsToRealm, HasUuids;
 
+    /** @use HasFactory<ConsentFactory> */
+    use HasFactory;
+
     protected $table = 'oidc_consents';
 
     public $timestamps = false;
 
     protected $guarded = [];
+
+    protected static function newFactory(): ConsentFactory
+    {
+        return ConsentFactory::new();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

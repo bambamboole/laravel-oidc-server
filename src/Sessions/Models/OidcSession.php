@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions\Models;
 
+use Bambamboole\LaravelOidc\Server\Database\Factories\OidcSessionFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property string $sid
  * @property string $realm_id
  * @property string $user_id
+ * @property ?string $session_id The id of the browser session the login happened in.
  * @property ?CarbonInterface $created_at
  * @property ?CarbonInterface $expires_at
  * @property ?CarbonInterface $revoked_at
@@ -21,6 +24,9 @@ use Illuminate\Database\Eloquent\Model;
 class OidcSession extends Model
 {
     use BelongsToRealm, HasUuids;
+
+    /** @use HasFactory<OidcSessionFactory> */
+    use HasFactory;
 
     public $timestamps = false;
 
@@ -33,6 +39,11 @@ class OidcSession extends Model
     public $incrementing = false;
 
     protected $guarded = [];
+
+    protected static function newFactory(): OidcSessionFactory
+    {
+        return OidcSessionFactory::new();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

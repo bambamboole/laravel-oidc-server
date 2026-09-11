@@ -131,7 +131,7 @@ final readonly class FirstPartyClientProvisioner
                 ->where('provisioning_key', self::ProvisioningKey)
                 ->lockForUpdate()
                 ->first();
-            if ($client !== null && $client->realm_id !== $this->realms->current()->id()) {
+            if ($client !== null && $client->realm_id !== $this->realms->current()->identifier()) {
                 throw new FirstPartyClientProvisioningException('Self-SSO is already provisioned for another realm. Its client cannot be reassigned.');
             }
 

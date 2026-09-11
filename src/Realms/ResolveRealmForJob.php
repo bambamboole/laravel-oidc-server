@@ -33,6 +33,6 @@ final readonly class ResolveRealmForJob
             ? $attributes->remove(ResolveRealm::ATTRIBUTE)
             : $attributes->set(ResolveRealm::ATTRIBUTE, $realm);
 
-        URL::defaults(['realm' => $this->realms->current()->id()]);
+        URL::defaults(['realm' => $this->realms->current()->identifier()]);
     }
 }

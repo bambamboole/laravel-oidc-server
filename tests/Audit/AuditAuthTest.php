@@ -19,7 +19,6 @@ use Bambamboole\LaravelOidc\Server\Credentials\Events\RecoveryCodeUsed;
 use Bambamboole\LaravelOidc\Server\Credentials\RecoveryCodeProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
-use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Support\Facades\Hash;
@@ -167,13 +166,7 @@ it('audits a registration', function (): void {
 it('audits a password reset', function (): void {
     $sink = fakeAudit();
     $user = auditTestUser();
-    $broker = app('auth.password.broker');
-
-    if (! $broker instanceof PasswordBroker) {
-        throw new RuntimeException('The configured password broker is not a concrete password broker.');
-    }
-
-    $token = $broker->createToken($user);
+    $token = passwordResetToken($user);
     resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
     });

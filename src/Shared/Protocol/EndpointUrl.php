@@ -23,7 +23,7 @@ final readonly class EndpointUrl
 
     public function of(string $routeName): string
     {
-        $path = parse_url(route($routeName, ['realm' => $this->realms->current()->id()]), PHP_URL_PATH);
+        $path = parse_url(route($routeName, ['realm' => $this->realms->current()->identifier()]), PHP_URL_PATH);
 
         return $this->origin().($path ?? '');
     }

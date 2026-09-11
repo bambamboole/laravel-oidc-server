@@ -34,7 +34,7 @@ final readonly class RealmIssuerResolver implements IssuerResolver
             return $this->originOf($host);
         }
 
-        return $this->configuredOrigin().$routing->issuerPath($realm->id());
+        return $this->configuredOrigin().$routing->issuerPath($realm->identifier());
     }
 
     private function originOf(string $host): string

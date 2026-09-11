@@ -9,7 +9,7 @@ $server = 'Bambamboole\LaravelOidc\Server';
  * cross-domain contracts live in Shared, so a new entry means a new coupling
  * that Shared could not express. Realms is the foundation Shared builds on,
  * Protocol is the OAuth/OIDC endpoint layer that composes everything below, and
- * Installation and Consents sit on top as orchestration. Testing is the
+ * Installation, Consents and Purge sit on top as orchestration. Testing is the
  * consumer-facing test kit and the root service provider wires all domains,
  * so neither is constrained.
  */
@@ -28,6 +28,7 @@ $dependencies = [
     'Protocol' => ['Authentication', 'Clients', 'Scopes', 'Sessions', 'Tokens'],
     'Consents' => ['Clients', 'Scopes'],
     'Installation' => ['Clients', 'Keys'],
+    'Purge' => ['Authentication', 'Brokering', 'Clients', 'Consents', 'Credentials', 'Sessions', 'Tokens'],
 ];
 
 $domains = array_keys($dependencies);

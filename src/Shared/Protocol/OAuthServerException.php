@@ -173,7 +173,7 @@ final class OAuthServerException extends HttpResponseException
 
     private static function realm(): string
     {
-        return app(RealmResolver::class)->current()->id();
+        return app(RealmResolver::class)->current()->identifier();
     }
 
     /** @param  array<string, string>  $parameters */

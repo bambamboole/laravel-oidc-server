@@ -40,7 +40,7 @@ it('gives each realm its own issuer and realm-scoped endpoints', function (): vo
 it('falls back to the configured realm outside a matched route', function (): void {
     config(['oidc.realm' => 'fallback']);
 
-    expect(app(RealmResolver::class)->current()->id())->toBe('fallback')
+    expect(app(RealmResolver::class)->current()->identifier())->toBe('fallback')
         ->and(app(IssuerResolver::class)->url())->toBe('https://id.example.com/realms/fallback');
 });
 

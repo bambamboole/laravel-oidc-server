@@ -13,7 +13,6 @@ use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\LoginEvent;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\PostLoginPipeline;
 use Bambamboole\LaravelOidc\Server\Credentials\TotpFactorProvider;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
-use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Support\Facades\Hash;
@@ -26,17 +25,6 @@ use Symfony\Component\HttpFoundation\Response;
 use Webauthn\PublicKeyCredential;
 use Webauthn\PublicKeyCredentialRequestOptions;
 use Workbench\App\Models\User;
-
-function finalizationPasswordToken(User $user): string
-{
-    $broker = app('auth.password.broker');
-
-    if (! $broker instanceof PasswordBroker) {
-        throw new RuntimeException('The configured password broker is not a concrete password broker.');
-    }
-
-    return $broker->createToken($user);
-}
 
 function finalizationRegisterUsers(): void
 {
@@ -124,7 +112,7 @@ it('records amr for registration logins', function (): void {
 
 it('applies the postLogin policy to password resets', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
-    $token = finalizationPasswordToken($user);
+    $token = passwordResetToken($user);
 
     resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();
@@ -144,7 +132,7 @@ it('applies the postLogin policy to password resets', function (): void {
 
 it('records amr for password-reset logins', function (): void {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('old-password')]);
-    $token = finalizationPasswordToken($user);
+    $token = passwordResetToken($user);
 
     resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])])->save();

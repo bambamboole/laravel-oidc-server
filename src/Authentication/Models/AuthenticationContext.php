@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Models;
 
+use Bambamboole\LaravelOidc\Server\Database\Factories\AuthenticationContextFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -26,11 +28,19 @@ class AuthenticationContext extends Model
 {
     use BelongsToRealm, HasUuids;
 
+    /** @use HasFactory<AuthenticationContextFactory> */
+    use HasFactory;
+
     public $timestamps = false;
 
     protected $table = 'oidc_authentication_contexts';
 
     protected $guarded = [];
+
+    protected static function newFactory(): AuthenticationContextFactory
+    {
+        return AuthenticationContextFactory::new();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

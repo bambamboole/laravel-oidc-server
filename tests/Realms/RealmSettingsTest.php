@@ -36,9 +36,9 @@ function realmWithSettings(string $id, ?TokenSettings $tokens = null, ?ClientSet
             $this->configured = new ConfiguredRealm($id);
         }
 
-        public function id(): string
+        public function identifier(): string
         {
-            return $this->configured->id();
+            return $this->configured->identifier();
         }
 
         public function host(): ?string
@@ -108,7 +108,7 @@ function bindRealms(Realm ...$realms): void
         public function find(string $id): ?Realm
         {
             foreach ($this->realms as $realm) {
-                if ($realm->id() === $id) {
+                if ($realm->identifier() === $id) {
                     return $realm;
                 }
             }

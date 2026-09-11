@@ -11,22 +11,24 @@ use Bambamboole\LaravelOidc\Server\Shared\Users\ResetUserPassword;
 use Illuminate\Auth\Events\PasswordReset as PasswordWasReset;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Contracts\Auth\PasswordBroker;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Validates the reset token through the password broker, checks the new
- * password against the realm's policy, and hands the user to the app's
- * ResetUserPassword binding, which owns persistence. Signing the user in
- * afterwards is the caller's job.
+ * Validates the reset token against the realm's PasswordResetTokens, checks
+ * the new password against the realm's policy, and hands the user to the
+ * app's ResetUserPassword binding, which owns persistence. Signing the user
+ * in afterwards is the caller's job.
  */
 final readonly class ResetPassword
 {
     public function __construct(
         private Container $container,
         private PasswordCredential $passwords,
+        private PasswordBroker $broker,
     ) {}
 
     /**
@@ -36,7 +38,7 @@ final readonly class ResetPassword
     {
         $resetUser = null;
 
-        $status = Password::broker((string) config('auth.defaults.passwords', 'users'))->reset(
+        $status = $this->broker->reset(
             array_intersect_key($input, array_flip(['email', 'password', 'password_confirmation', 'token'])),
             function (CanResetPassword $user) use ($input, &$resetUser): void {
                 if (! $user instanceof Authenticatable) {

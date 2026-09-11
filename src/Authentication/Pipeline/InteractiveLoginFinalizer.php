@@ -170,11 +170,9 @@ final readonly class InteractiveLoginFinalizer implements LoginFinalizer
 
     public function complete(Request $request, Authenticatable $user, bool $remember = false): void
     {
+        // The guard already regenerated the session on login; doing it again
+        // would detach the OIDC session from the browser session it recorded.
         $this->sessionGuard()->login($user, $remember);
-
-        if ($request->hasSession()) {
-            $request->session()->regenerate();
-        }
 
         event(new LoginSucceeded((string) $user->getAuthIdentifier(), $this->sessionState->amr(), $remember));
     }

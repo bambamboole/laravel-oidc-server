@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
-use Illuminate\Support\Facades\Password;
+use Illuminate\Contracts\Auth\PasswordBroker;
 
-final class SendPasswordResetLink
+/**
+ * Sends the reset link of the realm it runs in; wrap the call in
+ * CurrentRealm::runAs() to send one for another realm's user.
+ */
+final readonly class SendPasswordResetLink
 {
+    public function __construct(private PasswordBroker $broker) {}
+
     public function __invoke(string $email): string
     {
-        return Password::broker((string) config('auth.defaults.passwords', 'users'))
-            ->sendResetLink(['email' => strtolower($email)]);
+        return $this->broker->sendResetLink(['email' => strtolower($email)]);
     }
 }

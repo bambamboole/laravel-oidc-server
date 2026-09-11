@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Credentials\Models\PasswordHistory;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Support\Carbon;
@@ -16,17 +15,6 @@ use Workbench\App\Models\User;
 afterEach(function (): void {
     Date::use(testDateClass());
 });
-
-function passwordResetToken(User $user): string
-{
-    $broker = app('auth.password.broker');
-
-    if (! $broker instanceof PasswordBroker) {
-        throw new RuntimeException('The configured password broker is not a concrete password broker.');
-    }
-
-    return $broker->createToken($user);
-}
 
 function persistResetPasswords(): void
 {
