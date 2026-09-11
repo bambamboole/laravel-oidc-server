@@ -7,12 +7,15 @@ namespace Bambamboole\LaravelOidc\Server\Shared\Audit;
 use DateTimeImmutable;
 
 /**
- * The payload an AuditSink receives. The type is a dotted string whose first
- * segment is the category (auth, oauth, admin). Null context values are
- * dropped so sinks only see keys that carry a value.
+ * The payload an AuditSink receives. The type is the dispatching event's type,
+ * a dotted string whose first segment is the category (auth, oauth, admin); a
+ * backed enum is stored as its value so sinks and filters stay string-based.
+ * Null context values are dropped so sinks only see keys that carry a value.
  */
 final readonly class AuditRecord
 {
+    public string $type;
+
     /** @var array<string, mixed> */
     public array $context;
 
@@ -20,7 +23,7 @@ final readonly class AuditRecord
      * @param  array<string, mixed>  $context
      */
     public function __construct(
-        public string $type,
+        string|\BackedEnum $type,
         public ?string $userId = null,
         public ?string $clientId = null,
         public ?string $sid = null,
@@ -30,6 +33,7 @@ final readonly class AuditRecord
         public ?string $userAgent = null,
         public DateTimeImmutable $occurredAt = new DateTimeImmutable,
     ) {
+        $this->type = $type instanceof \BackedEnum ? (string) $type->value : $type;
         $this->context = array_filter($context, static fn (mixed $value): bool => $value !== null);
     }
 

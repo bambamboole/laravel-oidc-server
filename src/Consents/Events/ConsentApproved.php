@@ -5,27 +5,28 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Consents\Events;
 
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 
-final readonly class ConsentApproved implements AuditEvent
+final class ConsentApproved implements AuditEvent
 {
-    public const string TYPE = 'oauth.consent.approved';
+    public AuditEventType $type { get => AuditEventType::ConsentApproved; }
 
     /**
      * @param  list<string>  $scopes
      * @param  list<string>  $resources  the resource identifiers the decision was made for
      */
     public function __construct(
-        public array $scopes,
-        public array $resources,
-        public ?string $userId = null,
-        public ?string $clientId = null,
+        public readonly array $scopes,
+        public readonly array $resources,
+        public readonly ?string $userId = null,
+        public readonly ?string $clientId = null,
     ) {}
 
     public function auditRecord(): AuditRecord
     {
         return new AuditRecord(
-            type: self::TYPE,
+            type: $this->type,
             userId: $this->userId,
             clientId: $this->clientId,
             context: [

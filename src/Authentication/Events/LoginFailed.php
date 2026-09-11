@@ -5,24 +5,25 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Authentication\Events;
 
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 
-final readonly class LoginFailed implements AuditEvent
+final class LoginFailed implements AuditEvent
 {
-    public const string TYPE = 'auth.login.failed';
+    public AuditEventType $type { get => AuditEventType::LoginFailed; }
 
     public function __construct(
-        public string $method,
-        public string $reason,
-        public ?string $userId = null,
-        public ?string $username = null,
-        public ?string $denyReason = null,
+        public readonly string $method,
+        public readonly string $reason,
+        public readonly ?string $userId = null,
+        public readonly ?string $username = null,
+        public readonly ?string $denyReason = null,
     ) {}
 
     public function auditRecord(): AuditRecord
     {
         return new AuditRecord(
-            type: self::TYPE,
+            type: $this->type,
             userId: $this->userId,
             context: [
                 'method' => $this->method,

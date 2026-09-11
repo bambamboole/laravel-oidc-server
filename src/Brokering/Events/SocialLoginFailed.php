@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering\Events;
 
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 
 /**
@@ -12,19 +13,19 @@ use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
  * LoginFailed so sinks see one failed-login stream; the provider is the
  * method, as it is in amr for a successful social login.
  */
-final readonly class SocialLoginFailed implements AuditEvent
+final class SocialLoginFailed implements AuditEvent
 {
-    public const string TYPE = 'auth.login.failed';
+    public AuditEventType $type { get => AuditEventType::LoginFailed; }
 
     public function __construct(
-        public string $provider,
-        public string $reason,
+        public readonly string $provider,
+        public readonly string $reason,
     ) {}
 
     public function auditRecord(): AuditRecord
     {
         return new AuditRecord(
-            type: self::TYPE,
+            type: $this->type,
             context: [
                 'method' => 'social:'.$this->provider,
                 'reason' => $this->reason,

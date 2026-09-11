@@ -5,18 +5,19 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Authentication\Events;
 
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 
-final readonly class LoggedOut implements AuditEvent
+final class LoggedOut implements AuditEvent
 {
-    public const string TYPE = 'auth.logout';
+    public AuditEventType $type { get => AuditEventType::LoggedOut; }
 
-    public function __construct(public string $userId) {}
+    public function __construct(public readonly string $userId) {}
 
     public function auditRecord(): AuditRecord
     {
         return new AuditRecord(
-            type: self::TYPE,
+            type: $this->type,
             userId: $this->userId,
         );
     }

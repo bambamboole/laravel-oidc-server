@@ -12,5 +12,7 @@ namespace Bambamboole\LaravelOidc\Server\Shared\Audit;
  */
 interface AuditEvent
 {
+    public string|\BackedEnum $type { get; }
+
     public function auditRecord(): AuditRecord;
 }

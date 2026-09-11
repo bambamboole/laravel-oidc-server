@@ -6,18 +6,24 @@ use Bambamboole\LaravelOidc\Server\Authentication\Events\LoggedOut;
 use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginFailed;
 use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginSucceeded;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditSink;
 use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Exceptions;
 
+enum HostAuditType: string
+{
+    case ExportDownloaded = 'app.export.downloaded';
+}
+
 it('records a dispatched audit event through the configured sink', function (): void {
     $sink = fakeAudit();
 
     event(new LoginSucceeded('42', ['pwd']));
 
-    $record = $sink->assertRecorded(LoginSucceeded::TYPE);
+    $record = $sink->assertRecorded(AuditEventType::LoginSucceeded);
 
     expect($record->userId)->toBe('42')
         ->and($record->context)->toBe(['amr' => ['pwd']])
@@ -30,13 +36,34 @@ it('records any event implementing the audit contract, including host-defined on
 
     event(new class implements AuditEvent
     {
+        public string|BackedEnum $type { get => 'app.export.downloaded'; }
+
         public function auditRecord(): AuditRecord
         {
-            return new AuditRecord('app.export.downloaded', userId: '7', context: ['file' => 'report.csv']);
+            return new AuditRecord($this->type, userId: '7', context: ['file' => 'report.csv']);
         }
     });
 
     expect($sink->assertRecorded('app.export.downloaded')->context)->toBe(['file' => 'report.csv']);
+});
+
+it('stores a backed enum type as its value', function (): void {
+    $sink = fakeAudit();
+
+    event(new class implements AuditEvent
+    {
+        public string|BackedEnum $type { get => HostAuditType::ExportDownloaded; }
+
+        public function auditRecord(): AuditRecord
+        {
+            return new AuditRecord($this->type, userId: '7');
+        }
+    });
+
+    $record = $sink->assertRecorded(HostAuditType::ExportDownloaded);
+
+    expect($record->type)->toBe('app.export.downloaded')
+        ->and($record->category())->toBe('app');
 });
 
 it('stops recording when audit logging is disabled', function (): void {
@@ -57,7 +84,7 @@ it('enriches records with request ip and truncated user agent', function (): voi
 
     event(new LoginFailed('pwd', 'invalid_credentials'));
 
-    $record = $sink->assertRecorded(LoginFailed::TYPE);
+    $record = $sink->assertRecorded(AuditEventType::LoginFailed);
 
     expect($record->ip)->toBe('10.0.0.1')
         ->and($record->userAgent)->toBe(str_repeat('a', 255))
@@ -71,8 +98,8 @@ it('falls back to the session sid unless the event carries one', function (): vo
     event(new LoggedOut('42'));
     event(new TokenIssued('refresh_token', 'jti-1', [], sid: 'sid-456'));
 
-    expect($sink->assertRecorded(LoggedOut::TYPE)->sid)->toBe('sid-123')
-        ->and($sink->assertRecorded(TokenIssued::TYPE)->sid)->toBe('sid-456');
+    expect($sink->assertRecorded(AuditEventType::LoggedOut)->sid)->toBe('sid-123')
+        ->and($sink->assertRecorded(AuditEventType::TokenIssued)->sid)->toBe('sid-456');
 });
 
 it('reports and swallows sink failures', function (): void {

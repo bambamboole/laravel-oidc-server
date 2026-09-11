@@ -5,21 +5,22 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Credentials\Events;
 
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEvent;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
 
-final readonly class MfaChallengeSucceeded implements AuditEvent
+final class MfaChallengeSucceeded implements AuditEvent
 {
-    public const string TYPE = 'auth.mfa.challenge_succeeded';
+    public AuditEventType $type { get => AuditEventType::MfaChallengeSucceeded; }
 
     public function __construct(
-        public string $userId,
-        public string $factor,
+        public readonly string $userId,
+        public readonly string $factor,
     ) {}
 
     public function auditRecord(): AuditRecord
     {
         return new AuditRecord(
-            type: self::TYPE,
+            type: $this->type,
             userId: $this->userId,
             context: [
                 'factor' => $this->factor,

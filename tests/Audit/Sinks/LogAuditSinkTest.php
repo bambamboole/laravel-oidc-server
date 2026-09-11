@@ -3,16 +3,15 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Audit\Sinks\LogAuditSink;
-use Bambamboole\LaravelOidc\Server\Authentication\Events\LoginFailed;
+use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditEventType;
 use Bambamboole\LaravelOidc\Server\Shared\Audit\AuditRecord;
-use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssued;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
 
 /**
  * @param  array<string, mixed>  $context
  */
-function auditRecord(string $type, array $context = [], bool $failure = false): AuditRecord
+function auditRecord(AuditEventType $type, array $context = [], bool $failure = false): AuditRecord
 {
     return new AuditRecord(
         type: $type,
@@ -37,7 +36,7 @@ it('logs failure records as warnings on the default channel', function (): void 
     );
     Log::shouldReceive('channel')->once()->with(null)->andReturn($logger);
 
-    (new LogAuditSink)->record(auditRecord(LoginFailed::TYPE, ['reason' => 'invalid_credentials'], failure: true));
+    (new LogAuditSink)->record(auditRecord(AuditEventType::LoginFailed, ['reason' => 'invalid_credentials'], failure: true));
 });
 
 it('logs success records as info on the configured channel', function (): void {
@@ -50,5 +49,5 @@ it('logs success records as info on the configured channel', function (): void {
     );
     Log::shouldReceive('channel')->once()->with('audit')->andReturn($logger);
 
-    (new LogAuditSink)->record(auditRecord(TokenIssued::TYPE));
+    (new LogAuditSink)->record(auditRecord(AuditEventType::TokenIssued));
 });

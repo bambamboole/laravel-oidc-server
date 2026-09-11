@@ -22,8 +22,10 @@ final class FakeAuditSink implements AuditSink
     /**
      * @return list<AuditRecord>
      */
-    public function records(?string $type = null): array
+    public function records(string|\BackedEnum|null $type = null): array
     {
+        $type = $this->value($type);
+
         return array_values(array_filter(
             $this->records,
             static fn (AuditRecord $record): bool => $type === null || $record->type === $type,
@@ -33,9 +35,10 @@ final class FakeAuditSink implements AuditSink
     /**
      * @param  (Closure(AuditRecord): bool)|null  $filter
      */
-    public function assertRecorded(string $type, ?Closure $filter = null): AuditRecord
+    public function assertRecorded(string|\BackedEnum $type, ?Closure $filter = null): AuditRecord
     {
         $records = $this->records($type);
+        $type = $this->value($type);
 
         Assert::assertNotEmpty($records, "Expected audit record [{$type}] was not recorded.");
 
@@ -50,13 +53,21 @@ final class FakeAuditSink implements AuditSink
         return $matching[0];
     }
 
-    public function assertNotRecorded(string $type): void
+    public function assertNotRecorded(string|\BackedEnum $type): void
     {
-        Assert::assertSame([], $this->records($type), "Unexpected audit record [{$type}] was recorded.");
+        $records = $this->records($type);
+        $type = $this->value($type);
+
+        Assert::assertSame([], $records, "Unexpected audit record [{$type}] was recorded.");
     }
 
     public function assertNothingRecorded(): void
     {
         Assert::assertSame([], $this->records, 'Expected no audit records, but some were recorded.');
+    }
+
+    private function value(string|\BackedEnum|null $type): ?string
+    {
+        return $type instanceof \BackedEnum ? (string) $type->value : $type;
     }
 }
