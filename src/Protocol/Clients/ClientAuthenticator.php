@@ -8,6 +8,7 @@ use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Enums\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Events\ClientAuthenticationFailed;
+use Bambamboole\LaravelOidc\Server\Shared\Context\OidcContext;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Http\Request;
@@ -47,6 +48,8 @@ final readonly class ClientAuthenticator
         if ($grantType !== null && ! $client->hasGrantType($grantType)) {
             throw OAuthServerException::unauthorizedClient('The client is not authorized to use this grant type.');
         }
+
+        OidcContext::rememberClient($client->client_id);
 
         return $client;
     }

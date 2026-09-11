@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Realms;
 
+use Bambamboole\LaravelOidc\Server\Shared\Context\OidcContext;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Realm;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 
 /**
- * Single-realm default: every request belongs to the configured realm.
+ * Single-realm default, and what the routed resolvers fall back to when there
+ * is no request to read a realm from. The context comes first: a queued job
+ * carries the realm it was dispatched from, and honouring it here is what
+ * keeps realm-scoped queries, issuers and signing keys correct on the worker.
  */
 final readonly class ConfiguredRealmResolver implements RealmResolver
 {
@@ -17,8 +21,12 @@ final readonly class ConfiguredRealmResolver implements RealmResolver
 
     public function current(): Realm
     {
-        $id = (string) config('oidc.realm', 'default');
+        $id = OidcContext::realm() ?? (string) config('oidc.realm', 'default');
 
-        return $this->realms->find($id !== '' ? $id : 'default') ?? new ConfiguredRealm($id !== '' ? $id : 'default');
+        if ($id === '') {
+            $id = 'default';
+        }
+
+        return $this->realms->find($id) ?? new ConfiguredRealm($id);
     }
 }

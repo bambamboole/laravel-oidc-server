@@ -22,6 +22,11 @@ return [
     // deployment. Bind a RealmRepository to serve realms from your own model.
     'realm' => env('OIDC_REALM', 'default'),
 
+    // The origin the provider is served from, without a path: routes live at
+    // the application root, so an issuer like https://example.com/idp would
+    // name URLs that do not exist. Serve the provider from its own host or
+    // subdomain instead. In `domain` routing each realm's own host is the
+    // origin and this value supplies only the scheme.
     'issuer' => env('OIDC_ISSUER'),
 
     /*

@@ -14,6 +14,7 @@ use Bambamboole\LaravelOidc\Server\Protocol\Http\ResourceParameter;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\ScopeParameter;
 use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
+use Bambamboole\LaravelOidc\Server\Shared\Context\OidcContext;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\RealmAudiences;
@@ -62,6 +63,8 @@ final readonly class AuthorizeRequestValidator
 
         $client = $this->clients->findActive($clientId)
             ?? throw OAuthServerException::invalidRequest('The client is unknown.');
+
+        OidcContext::rememberClient($client->client_id);
 
         [$redirectUri, $redirectUriRequested] = $this->redirectUri($request, $client);
         $state = $this->parameter($request, 'state');

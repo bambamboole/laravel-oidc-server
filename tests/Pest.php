@@ -26,7 +26,13 @@ use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
+use Illuminate\Queue\Events\JobFailed;
+use Illuminate\Queue\WorkerOptions;
+use Illuminate\Support\Facades\Context;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Str;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Encoding\JoseEncoder;
@@ -366,4 +372,43 @@ function persistedIdTokenAsBearer(mixed $test): string
 function generateRealmSigningKey(): void
 {
     app(SigningKeyStore::class)->rotate(app(SigningKeyGenerator::class)->generate());
+}
+
+/**
+ * Works the database queue off in process, the way a worker would: the payload
+ * is serialized and read back, and JobProcessing fires, which is what restores
+ * the context a job was dispatched with. A job that fails rethrows here rather
+ * than disappearing into `failed_jobs`.
+ */
+function workQueue(int $limit = 10): void
+{
+    $failure = null;
+    Event::listen(JobFailed::class, function (JobFailed $event) use (&$failure): void {
+        $failure ??= $event->exception;
+    });
+
+    $worker = app('queue.worker');
+
+    while ($limit-- > 0 && DB::table('jobs')->count() > 0) {
+        $worker->runNextJob('database', 'default', new WorkerOptions(maxTries: 1));
+    }
+
+    if ($failure instanceof Throwable) {
+        throw $failure;
+    }
+}
+
+/**
+ * Drops the request and the per-request state a worker process would never
+ * have seen, so a queued job is worked the way a real worker works it: with
+ * nothing to go on but its own payload. Without this a test passes on the
+ * request the harness is still holding rather than on what the job carried.
+ *
+ * The replacement request is the one SetRequestForConsole gives a worker.
+ */
+function forgetRequest(): void
+{
+    Context::flush();
+    app()->instance('request', Request::create((string) config('app.url', 'http://localhost')));
+    URL::defaults(['realm' => (string) config('oidc.realm', 'default')]);
 }

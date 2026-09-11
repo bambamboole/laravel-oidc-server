@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Realms\Http\Middleware;
 
 use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
+use Bambamboole\LaravelOidc\Server\Shared\Context\OidcContext;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Closure;
 use Illuminate\Http\Request;
@@ -19,6 +20,9 @@ use Symfony\Component\HttpFoundation\Response;
  * party's session; at the application root (`single`) provider and application
  * deliberately share one session, the way one host would. Removing the realm
  * parameter preserves controller arguments.
+ *
+ * The resolved realm is also published to the context, which is what carries
+ * it into jobs queued while serving the request.
  */
 final readonly class ResolveRealm
 {
@@ -34,6 +38,7 @@ final readonly class ResolveRealm
         $request->route()?->forgetParameter('realm');
 
         URL::defaults(['realm' => $realm]);
+        OidcContext::rememberRealm($realm);
 
         $routing = RealmRouting::configured();
 

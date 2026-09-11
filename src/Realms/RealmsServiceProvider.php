@@ -9,6 +9,7 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
@@ -34,5 +35,7 @@ class RealmsServiceProvider extends ServiceProvider
         // notifications — has no realm to fall back on; ResolveRealm overrides
         // this per request.
         URL::defaults(['realm' => (string) config('oidc.realm', 'default')]);
+
+        Queue::before(fn () => $this->app->make(ResolveRealmForJob::class)());
     }
 }

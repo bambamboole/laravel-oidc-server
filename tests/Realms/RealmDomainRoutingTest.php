@@ -10,6 +10,7 @@ declare(strict_types=1);
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
+use Bambamboole\LaravelOidc\Server\Tests\Realms\RecordResolvedRealm;
 use Bambamboole\LaravelOidc\Server\Tests\Realms\RoutesRealmsByDomain;
 
 uses(RoutesRealmsByDomain::class);
@@ -77,4 +78,19 @@ it('scopes rows to the realm the host names', function (): void {
     $this->get('https://globex.id.test/.well-known/openid-configuration');
 
     expect(app(ClientRepository::class)->find($client->client_id))->toBeNull();
+});
+
+// A worker has no host to resolve from, so the realm has to come from the job.
+it('resolves the realm a job was dispatched from when there is no host', function (): void {
+    config(['queue.default' => 'database', 'oidc.issuer' => 'https://id.example.com']);
+    RecordResolvedRealm::forget();
+
+    $this->get('https://acme.id.test/.well-known/openid-configuration')->assertOk();
+    RecordResolvedRealm::dispatch();
+
+    forgetRequest();
+    workQueue();
+
+    expect(RecordResolvedRealm::$seen['realm'])->toBe('acme')
+        ->and(RecordResolvedRealm::$seen['issuer'])->toBe('https://acme.id.test');
 });
