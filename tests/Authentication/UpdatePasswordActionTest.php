@@ -17,7 +17,7 @@ uses(FakesAuthViews::class);
 
 beforeEach(function (): void {
     $this->fakeAuthViews();
-    config(['oidc.auth.password.max_age_days' => 30]);
+    config(['oidc.password_policy.max_age_days' => 30]);
 
     resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])]);
@@ -47,7 +47,7 @@ it('lets a password inside the rotation window through', function (): void {
     $user = userWithPasswordChangedAt('5 days');
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])
-        ->assertRedirect(config('oidc.auth.home'));
+        ->assertRedirect(config('oidc.login.home'));
 
     $this->assertAuthenticatedAs($user, 'identity');
 });
@@ -76,7 +76,7 @@ it('completes the login once a fresh password is set', function (): void {
     $this->post(route('identity.password.change.store'), [
         'password' => 'a-brand-new-password',
         'password_confirmation' => 'a-brand-new-password',
-    ])->assertRedirect(config('oidc.auth.home'));
+    ])->assertRedirect(config('oidc.login.home'));
 
     $this->assertAuthenticatedAs($user->fresh(), 'identity');
     expect(Hash::check('a-brand-new-password', $user->fresh()->getAuthPassword()))->toBeTrue()
@@ -85,7 +85,7 @@ it('completes the login once a fresh password is set', function (): void {
 });
 
 it('applies the realm password policy to the new password', function (): void {
-    config(['oidc.auth.password.min_length' => 12]);
+    config(['oidc.password_policy.min_length' => 12]);
     userWithPasswordChangedAt('60 days');
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password']);
 
@@ -96,7 +96,7 @@ it('applies the realm password policy to the new password', function (): void {
 });
 
 it('refuses to reuse a password the history still remembers', function (): void {
-    config(['oidc.auth.password.history' => 2]);
+    config(['oidc.password_policy.history' => 2]);
     userWithPasswordChangedAt('60 days');
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password']);
 
@@ -105,7 +105,7 @@ it('refuses to reuse a password the history still remembers', function (): void 
 });
 
 it('asks a live session for the current password', function (): void {
-    config(['oidc.auth.password.max_age_days' => null]);
+    config(['oidc.password_policy.max_age_days' => null]);
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
     $this->actingAs($user, 'identity');
 
@@ -128,7 +128,7 @@ it('asks a live session for the current password', function (): void {
 });
 
 it('closes the screen without a bound ResetUserPassword action', function (): void {
-    config(['oidc.auth.password.max_age_days' => null]);
+    config(['oidc.password_policy.max_age_days' => null]);
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
     unset(app()[ResetUserPassword::class]);
     $this->actingAs($user, 'identity');

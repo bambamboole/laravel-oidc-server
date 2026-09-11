@@ -82,7 +82,7 @@ it('issues, introspects and revokes under the wire client_id while storing the k
 });
 
 it('exchanges a token issued under the wire client_id and names it in the act claim', function (): void {
-    config(['oidc.scopes.catalog' => ['openid' => 'Authenticate', 'orders:read' => 'Read orders']]);
+    config(['oidc.scopes' => ['openid' => 'Authenticate', 'orders:read' => 'Read orders']]);
     $subject = mintExchangeSubjectToken('my-app', (string) $this->user->id, ['openid', 'orders:read']);
 
     $response = $this->post('/oauth/token', [

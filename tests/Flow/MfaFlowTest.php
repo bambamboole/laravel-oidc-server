@@ -120,7 +120,7 @@ it('completes the challenge with a recovery code, consuming it', function (): vo
 });
 
 it('completes a WebAuthn second-factor challenge through the options and assertion legs', function (): void {
-    config(['oidc.auth.two_factor.challenge_providers' => ['webauthn']]);
+    config(['oidc.credentials.challenge_providers' => ['webauthn']]);
     mfaEnrollPasskey($this->user);
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])
@@ -166,7 +166,7 @@ it('challenges a password login with an enrolled passkey only while webauthn is 
     expect(session('login.factor'))->toBe('webauthn');
     $this->assertGuest('identity');
 
-    config(['oidc.auth.two_factor.challenge_providers' => ['totp']]);
+    config(['oidc.credentials.challenge_providers' => ['totp']]);
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])
         ->assertRedirect('/dashboard');

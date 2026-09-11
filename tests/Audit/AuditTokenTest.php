@@ -132,7 +132,7 @@ it('audits a client credentials token issuance', function (): void {
 });
 
 it('audits a token exchange and its failure paths', function (): void {
-    config(['oidc.scopes.catalog' => ['openid' => 'Authenticate', 'orders:read' => 'Read orders']]);
+    config(['oidc.scopes' => ['openid' => 'Authenticate', 'orders:read' => 'Read orders']]);
     $this->client->forceFill([
         'grant_types' => [...(array) $this->client->getAttribute('grant_types'), TestCase::TOKEN_EXCHANGE_GRANT],
         'allowed_exchange_audiences' => ['https://api.internal/orders'],

@@ -31,15 +31,15 @@ final readonly class PasswordPolicy
 
     public static function fromConfig(): self
     {
-        $maxAgeDays = config('oidc.auth.password.max_age_days');
+        $maxAgeDays = config('oidc.password_policy.max_age_days');
 
         return new self(
-            minLength: (int) config('oidc.auth.password.min_length', 8),
-            mixedCase: (bool) config('oidc.auth.password.mixed_case', false),
-            numbers: (bool) config('oidc.auth.password.numbers', false),
-            symbols: (bool) config('oidc.auth.password.symbols', false),
-            uncompromised: (bool) config('oidc.auth.password.uncompromised', false),
-            history: max(0, (int) config('oidc.auth.password.history', 0)),
+            minLength: (int) config('oidc.password_policy.min_length', 8),
+            mixedCase: (bool) config('oidc.password_policy.mixed_case', false),
+            numbers: (bool) config('oidc.password_policy.numbers', false),
+            symbols: (bool) config('oidc.password_policy.symbols', false),
+            uncompromised: (bool) config('oidc.password_policy.uncompromised', false),
+            history: max(0, (int) config('oidc.password_policy.history', 0)),
             maxAgeDays: is_numeric($maxAgeDays) && (int) $maxAgeDays > 0 ? (int) $maxAgeDays : null,
         );
     }

@@ -50,7 +50,7 @@ function authorizeQuery(string $clientId, string $redirectUri, array $extra = []
 }
 
 it('refuses an authorization code while an action is open on a live session', function (): void {
-    config(['oidc.auth.password.max_age_days' => 30]);
+    config(['oidc.password_policy.max_age_days' => 30]);
     $this->fakeAuthViews();
     sessionWithExpiredPassword();
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
@@ -60,7 +60,7 @@ it('refuses an authorization code while an action is open on a live session', fu
 });
 
 it('reports interaction_required rather than prompting when the client forbade it', function (): void {
-    config(['oidc.auth.password.max_age_days' => 30]);
+    config(['oidc.password_policy.max_age_days' => 30]);
     sessionWithExpiredPassword();
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
 
@@ -71,7 +71,7 @@ it('reports interaction_required rather than prompting when the client forbade i
 });
 
 it('returns to the authorization request once the action is settled', function (): void {
-    config(['oidc.auth.password.max_age_days' => 30]);
+    config(['oidc.password_policy.max_age_days' => 30]);
     $this->fakeAuthViews();
     resetUserPasswordsUsing(function (CanResetPassword $user, array $input): void {
         $user->forceFill(['password' => Hash::make($input['password'])]);
@@ -97,7 +97,7 @@ it('returns to the authorization request once the action is settled', function (
 });
 
 it('issues a code as usual when nothing is open', function (): void {
-    config(['oidc.auth.password.max_age_days' => 30]);
+    config(['oidc.password_policy.max_age_days' => 30]);
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
 

@@ -40,7 +40,7 @@ function passwordLogin(): TestResponse
 }
 
 it('sends a user without a factor to enrollment when the realm always requires mfa', function (): void {
-    config(['oidc.auth.mfa' => 'always']);
+    config(['oidc.authentication.mfa' => 'always']);
     mfaUser();
 
     passwordLogin()->assertRedirect(route('identity.two-factor.setup'));
@@ -49,7 +49,7 @@ it('sends a user without a factor to enrollment when the realm always requires m
 });
 
 it('challenges instead of enrolling once a factor exists', function (): void {
-    config(['oidc.auth.mfa' => 'always']);
+    config(['oidc.authentication.mfa' => 'always']);
     withConfirmedTotp(mfaUser());
 
     passwordLogin()->assertRedirect(route('identity.two-factor.login'));
@@ -66,7 +66,7 @@ it('enrolls rather than denying when the pipeline demands mfa without a factor',
 });
 
 it('denies when the realm requires a factor that nothing can provide', function (): void {
-    config(['oidc.auth.mfa' => 'always', 'oidc.auth.factors' => []]);
+    config(['oidc.authentication.mfa' => 'always', 'oidc.credentials.factors' => []]);
     mfaUser();
 
     passwordLogin()->assertSessionHasErrors('email');
@@ -75,7 +75,7 @@ it('denies when the realm requires a factor that nothing can provide', function 
 });
 
 it('denies a pipeline mfa demand in a realm with second factors switched off', function (): void {
-    config(['oidc.auth.mfa' => 'never']);
+    config(['oidc.authentication.mfa' => 'never']);
     withConfirmedTotp(mfaUser());
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->requireMfa());
 
@@ -83,16 +83,16 @@ it('denies a pipeline mfa demand in a realm with second factors switched off', f
 });
 
 it('never challenges in a realm with second factors switched off', function (): void {
-    config(['oidc.auth.mfa' => 'never']);
+    config(['oidc.authentication.mfa' => 'never']);
     $user = withConfirmedTotp(mfaUser());
 
-    passwordLogin()->assertRedirect(config('oidc.auth.home'));
+    passwordLogin()->assertRedirect(config('oidc.login.home'));
 
     $this->assertAuthenticatedAs($user, 'identity');
 });
 
 it('reaches the enrollment screen mid-login without a confirmed password', function (): void {
-    config(['oidc.auth.mfa' => 'always']);
+    config(['oidc.authentication.mfa' => 'always']);
     mfaUser();
     passwordLogin();
 
@@ -103,7 +103,7 @@ it('reaches the enrollment screen mid-login without a confirmed password', funct
 });
 
 it('continues the held login once a factor is confirmed', function (): void {
-    config(['oidc.auth.mfa' => 'always']);
+    config(['oidc.authentication.mfa' => 'always']);
     $user = mfaUser();
     passwordLogin();
 
@@ -112,7 +112,7 @@ it('continues the held login once a factor is confirmed', function (): void {
     withConfirmedTotp($user);
 
     $this->get(route('identity.two-factor.setup'))->assertJsonPath('prompt.enrolled', true);
-    $this->post(route('identity.two-factor.setup.continue'))->assertRedirect(config('oidc.auth.home'));
+    $this->post(route('identity.two-factor.setup.continue'))->assertRedirect(config('oidc.login.home'));
 
     $this->assertAuthenticatedAs($user->fresh(), 'identity');
 });

@@ -27,9 +27,12 @@ use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\SigningKeys\DatabaseSigningKeyStore;
 use Bambamboole\LaravelOidc\Server\SigningKeys\SigningKeysServiceProvider;
 use Bambamboole\LaravelOidc\Server\Tokens\TokensServiceProvider;
+use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Contracts\Foundation\CachesConfiguration;
 use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Support\Arr;
 use Illuminate\Support\ServiceProvider;
 use Throwable;
 
@@ -57,9 +60,34 @@ class OidcServiceProvider extends ServiceProvider
         InstallationServiceProvider::class,
     ];
 
+    /**
+     * Config keys holding a registry: a map of named entries the package ships
+     * defaults for. `mergeConfigFrom` merges only the first level, so a
+     * published `config/oidc.php` would freeze these maps at the shape they had
+     * when it was published and never see an entry a later release adds. This
+     * is what Laravel's own loader does for `database.connections` and its
+     * siblings (`LoadConfiguration::mergeableOptions`): merge the map by name,
+     * so the application's entry always wins whole and is never patched into.
+     *
+     * Merging runs at every segment of the path, so a registry nested under a
+     * group keeps that group's other keys too — without it, an application that
+     * defines `social.providers` would lose `social.link_by_verified_email`.
+     * Only the declared paths are descended into; nothing else is.
+     *
+     * `resources` and `routes.domains` ship empty today; they are listed
+     * because they are registries, not because they currently merge anything.
+     *
+     * @var list<string>
+     */
+    private const array MERGEABLE_REGISTRIES = [
+        'resources',
+        'social.providers',
+        'routes.domains',
+    ];
+
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/oidc.php', 'oidc');
+        $this->mergeConfig();
 
         // Written by the Keys, Clients and Installation commands alike, so it
         // is bound where all of them are wired.
@@ -103,12 +131,42 @@ class OidcServiceProvider extends ServiceProvider
 
         AboutCommand::add('OIDC', fn (): array => [
             'Issuer' => config('oidc.issuer') ?? 'not set',
-            'Auth Guard' => config('oidc.auth.guard'),
+            'Auth Guard' => config('oidc.auth.guard', 'identity'),
             'Session Token Guard' => SessionTokenGuard::name() ?? 'not set',
             'Self-SSO Client' => FirstPartyClientConfig::fromConfig()->isConfigured() ? 'configured' : 'not configured',
             'Signing Key Store' => class_basename((string) config('oidc.keys.store', DatabaseSigningKeyStore::class)),
             'Signing Key' => $this->activeSigningKid(),
         ]);
+    }
+
+    private function mergeConfig(): void
+    {
+        $path = __DIR__.'/../config/oidc.php';
+
+        $this->mergeConfigFrom($path, 'oidc');
+
+        if ($this->app instanceof CachesConfiguration && $this->app->configurationIsCached()) {
+            return;
+        }
+
+        $shipped = require $path;
+        $config = $this->app->make(ConfigRepository::class);
+
+        foreach (self::MERGEABLE_REGISTRIES as $registry) {
+            $walked = [];
+
+            foreach (explode('.', $registry) as $segment) {
+                $walked[] = $segment;
+                $key = implode('.', $walked);
+
+                $defaults = Arr::get($shipped, $key);
+                $configured = $config->get("oidc.{$key}");
+
+                if (is_array($defaults) && is_array($configured)) {
+                    $config->set("oidc.{$key}", array_merge($defaults, $configured));
+                }
+            }
+        }
     }
 
     private function activeSigningKid(): string

@@ -166,7 +166,7 @@ it('refuses a login token at a resource route and accepts one requested for that
 
 it('keeps a scope its resource owns out of a request that does not name that resource, wildcard assignment or not', function (): void {
     config([
-        'oidc.scopes.catalog' => ['orders:read' => 'Read orders'],
+        'oidc.scopes' => ['orders:read' => 'Read orders'],
         'oidc.resources' => [ORDERS_API => ['scopes' => ['orders:read']], BILLING_API => []],
     ]);
     $pkce = $this->pkce();
@@ -182,7 +182,7 @@ it('keeps a scope its resource owns out of a request that does not name that res
 
 it('reads the same scope value under two resources as two different scopes', function (): void {
     config([
-        'oidc.scopes.catalog' => ['read' => 'Read things'],
+        'oidc.scopes' => ['read' => 'Read things'],
         'oidc.resources' => [ORDERS_API => ['scopes' => ['read']], BILLING_API => ['scopes' => ['read']]],
     ]);
     $pkce = $this->pkce();
@@ -197,7 +197,7 @@ it('reads the same scope value under two resources as two different scopes', fun
 
 it('drops a scope the narrowed resource does not own when the token endpoint narrows the audience', function (): void {
     config([
-        'oidc.scopes.catalog' => ['orders:read' => 'Read orders', 'billing:pay' => 'Pay bills'],
+        'oidc.scopes' => ['orders:read' => 'Read orders', 'billing:pay' => 'Pay bills'],
         'oidc.resources' => [ORDERS_API => ['scopes' => ['orders:read']], BILLING_API => ['scopes' => ['billing:pay']]],
     ]);
     $pkce = $this->pkce();
@@ -209,7 +209,7 @@ it('drops a scope the narrowed resource does not own when the token endpoint nar
 
 it('limits a resource-qualified client assignment to requests for that resource', function (): void {
     config([
-        'oidc.scopes.catalog' => ['read' => 'Read things'],
+        'oidc.scopes' => ['read' => 'Read things'],
         'oidc.resources' => [ORDERS_API => ['scopes' => ['read']], BILLING_API => ['scopes' => ['read']]],
     ]);
     $this->client->forceFill(['optional_scopes' => ['openid', ORDERS_API.' read']])->save();

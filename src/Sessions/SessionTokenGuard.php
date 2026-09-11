@@ -15,7 +15,7 @@ final class SessionTokenGuard
     public static function name(): ?string
     {
         $guard = config('oidc.session.token.guard')
-            ?? config('oidc.auth.guard')
+            ?? config('oidc.auth.guard', 'identity')
             ?? config('auth.defaults.guard');
 
         return is_string($guard) && $guard !== '' ? $guard : null;

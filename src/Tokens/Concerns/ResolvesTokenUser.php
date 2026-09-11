@@ -15,7 +15,7 @@ trait ResolvesTokenUser
             return null;
         }
 
-        $guard = config('oidc.auth.guard');
+        $guard = config('oidc.auth.guard', 'identity');
         $provider = Auth::createUserProvider(config("auth.guards.{$guard}.provider"));
 
         return $provider?->retrieveById($userIdentifier);

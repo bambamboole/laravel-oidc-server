@@ -41,7 +41,7 @@ it('forwards configured provisioning options to the first-party client', functio
     config([
         'oidc-client' => [],
         'app.url' => 'https://app.test',
-        'oidc.clients.first_party.provision' => [
+        'oidc.install_self' => [
             'redirect_uris' => ['https://app.test/other/callback'],
             'post_logout_redirect_uris' => ['https://app.test/goodbye'],
             'allowed_exchange_audiences' => ['https://api.test'],

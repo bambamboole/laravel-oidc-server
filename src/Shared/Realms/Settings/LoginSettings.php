@@ -23,16 +23,14 @@ final readonly class LoginSettings
 
     public static function fromConfig(): self
     {
-        $acrValues = (array) config('oidc.auth.acr_values', []);
-
         return new self(
-            usernameField: (string) config('oidc.auth.username', 'email'),
-            home: (string) config('oidc.auth.home', '/dashboard'),
-            loginRoute: (string) config('oidc.auth.login_route', 'login'),
-            logoutRedirect: (string) config('oidc.auth.logout_redirect', '/'),
+            usernameField: (string) config('oidc.login.username', 'email'),
+            home: (string) config('oidc.login.home', '/dashboard'),
+            loginRoute: (string) config('oidc.login.route', 'login'),
+            logoutRedirect: (string) config('oidc.login.logout_redirect', '/'),
             acrValues: [
-                'single_factor' => (string) ($acrValues['single_factor'] ?? '1'),
-                'multi_factor' => (string) ($acrValues['multi_factor'] ?? '2'),
+                'single_factor' => (string) config('oidc.login.acr_single_factor', '1'),
+                'multi_factor' => (string) config('oidc.login.acr_multi_factor', '2'),
             ],
         );
     }

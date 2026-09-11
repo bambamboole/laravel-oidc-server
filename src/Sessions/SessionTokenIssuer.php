@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\Auth;
  */
 class SessionTokenIssuer implements SessionTokenProvider
 {
+    private const string SESSION_KEY = 'oidc.session_token';
+
     public function __construct(
         private readonly ClientRepository $clients,
         private readonly AccessTokenMinter $minter,
@@ -35,7 +37,7 @@ class SessionTokenIssuer implements SessionTokenProvider
 
     public function currentToken(): ?string
     {
-        $stored = $this->session()->get($this->key());
+        $stored = $this->session()->get(self::SESSION_KEY);
         $currentUserId = $this->guard()->id();
 
         if (is_array($stored)
@@ -53,14 +55,14 @@ class SessionTokenIssuer implements SessionTokenProvider
 
         $this->establish($user);
 
-        return $this->session()->get($this->key())['jwt'] ?? null;
+        return $this->session()->get(self::SESSION_KEY)['jwt'] ?? null;
     }
 
     public function establish(Authenticatable $user): void
     {
         $client = $this->clients->firstParty(app(FirstPartyClientConfig::class));
 
-        $prior = $this->session()->get($this->key());
+        $prior = $this->session()->get(self::SESSION_KEY);
 
         if (is_array($prior) && is_string($prior['jti'] ?? null)) {
             $this->revoker->revoke($prior['jti']);
@@ -73,7 +75,7 @@ class SessionTokenIssuer implements SessionTokenProvider
             $this->realms->current()->sessions()->token(),
         );
 
-        $this->session()->put($this->key(), [
+        $this->session()->put(self::SESSION_KEY, [
             'jwt' => $token->jwt,
             'jti' => $token->jti,
             'user_id' => (string) $user->getAuthIdentifier(),
@@ -83,13 +85,13 @@ class SessionTokenIssuer implements SessionTokenProvider
 
     public function forget(): void
     {
-        $stored = $this->session()->get($this->key());
+        $stored = $this->session()->get(self::SESSION_KEY);
 
         if (is_array($stored) && is_string($stored['jti'] ?? null)) {
             $this->revoker->revoke($stored['jti']);
         }
 
-        $this->session()->forget($this->key());
+        $this->session()->forget(self::SESSION_KEY);
     }
 
     private function session(): Session
@@ -112,11 +114,6 @@ class SessionTokenIssuer implements SessionTokenProvider
         }
 
         return $this->scopes->all()->reject(fn (Scope $scope): bool => $scope->hidden)->map(fn (Scope $scope): string => $scope->id)->values()->all();
-    }
-
-    private function key(): string
-    {
-        return (string) config('oidc.session.token.session_key', 'oidc.session_token');
     }
 
     private function skew(): int

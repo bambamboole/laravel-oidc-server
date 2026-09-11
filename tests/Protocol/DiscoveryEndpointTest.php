@@ -55,7 +55,7 @@ it('builds the issuer and every endpoint from the configured issuer host, trimmi
 
 // OIDC Discovery 1.0 §3 — acr_values_supported follows the realm mapping
 it('advertises the realm acr values', function (): void {
-    config(['oidc.auth.acr_values' => ['single_factor' => 'urn:example:loa:1', 'multi_factor' => 'urn:example:loa:2']]);
+    config(['oidc.login.acr_single_factor' => 'urn:example:loa:1', 'oidc.login.acr_multi_factor' => 'urn:example:loa:2']);
 
     expect($this->getJson('/.well-known/openid-configuration')->json('acr_values_supported'))
         ->toBe(['urn:example:loa:1', 'urn:example:loa:2']);
@@ -78,7 +78,7 @@ it('advertises token exchange and dynamic registration only while enabled', func
 
 it('advertises the union of the realm scopes and every registered resource scope', function (): void {
     config([
-        'oidc.scopes.catalog' => ['realm:admin' => 'Administer the realm', 'orders:read' => 'Read orders'],
+        'oidc.scopes' => ['realm:admin' => 'Administer the realm', 'orders:read' => 'Read orders'],
         'oidc.resources' => ['mcp' => ['scopes' => ['mcp:use']], 'https://api.internal/orders' => ['scopes' => ['orders:read']]],
     ]);
 

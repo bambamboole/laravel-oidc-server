@@ -99,14 +99,14 @@ it('denies issuance before persisting when a trigger denies', function (): void 
 });
 
 it('grants the client default scopes when none are requested', function (): void {
-    config(['oidc.scopes.catalog' => ['orders:read' => 'Read orders']]);
+    config(['oidc.scopes' => ['orders:read' => 'Read orders']]);
     $this->client->forceFill(['default_scopes' => ['orders:read']])->save();
 
     requestClientCredentials($this)->assertOk()->assertJsonPath('scope', 'orders:read');
 });
 
 it('rejects a known scope the client is not assigned with invalid_scope', function (): void {
-    config(['oidc.scopes.catalog' => ['orders:read' => 'Read orders']]);
+    config(['oidc.scopes' => ['orders:read' => 'Read orders']]);
     $this->client->forceFill(['optional_scopes' => []])->save();
 
     requestClientCredentials($this, ['scope' => 'orders:read'])
@@ -118,7 +118,7 @@ it('rejects a known scope the client is not assigned with invalid_scope', functi
 
 it('refuses a scope another resource owns and issues it once that resource is asked for', function (): void {
     config([
-        'oidc.scopes.catalog' => ['orders:read' => 'Read orders'],
+        'oidc.scopes' => ['orders:read' => 'Read orders'],
         'oidc.resources' => ['https://api.internal/orders' => ['scopes' => ['orders:read']]],
     ]);
     $this->client->forceFill(['allowed_exchange_audiences' => ['https://api.internal/orders']])->save();

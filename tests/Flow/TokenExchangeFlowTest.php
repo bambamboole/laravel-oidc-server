@@ -24,7 +24,7 @@ const ACCESS_TOKEN_URN = 'urn:ietf:params:oauth:token-type:access_token';
 
 beforeEach(function (): void {
     config([
-        'oidc.scopes.catalog' => [
+        'oidc.scopes' => [
             'openid' => 'Authenticate',
             'orders:read' => 'Read orders',
             'orders:write' => 'Write orders',

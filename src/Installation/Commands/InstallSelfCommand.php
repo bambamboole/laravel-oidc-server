@@ -130,7 +130,7 @@ class InstallSelfCommand extends Command
     private function configuredProvisionList(string $key): array
     {
         return array_values(array_filter(
-            (array) config("oidc.clients.first_party.provision.{$key}", []),
+            (array) config("oidc.install_self.{$key}", []),
             fn (mixed $value): bool => is_string($value) && trim($value) !== '',
         ));
     }

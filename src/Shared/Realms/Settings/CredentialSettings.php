@@ -24,12 +24,12 @@ final readonly class CredentialSettings
     {
         return new self(
             challengeProviders: array_values(array_filter(
-                (array) config('oidc.auth.two_factor.challenge_providers', ['totp', 'webauthn']),
+                (array) config('oidc.credentials.challenge_providers', ['totp', 'webauthn']),
                 is_string(...),
             )),
-            totpSecretLength: (int) config('oidc.auth.two_factor.secret_length', 16),
-            totpWindow: (int) config('oidc.auth.two_factor.window', 1),
-            recoveryCodes: (int) config('oidc.auth.two_factor.recovery_codes', 8),
+            totpSecretLength: (int) config('oidc.credentials.totp_secret_length', 16),
+            totpWindow: (int) config('oidc.credentials.totp_window', 1),
+            recoveryCodes: (int) config('oidc.credentials.recovery_codes', 8),
             password: PasswordPolicy::fromConfig(),
         );
     }

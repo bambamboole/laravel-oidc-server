@@ -50,7 +50,7 @@ function logIn(string $email = 'm@example.com'): TestResponse
 }
 
 it('holds the login on the verify-email screen when the realm requires it', function (): void {
-    config(['oidc.auth.email_verification_required' => true]);
+    config(['oidc.authentication.email_verification_required' => true]);
     unverifiedUser();
 
     logIn()->assertRedirect(route('identity.verification.notice'));
@@ -60,26 +60,26 @@ it('holds the login on the verify-email screen when the realm requires it', func
 });
 
 it('lets a verified user straight through', function (): void {
-    config(['oidc.auth.email_verification_required' => true]);
+    config(['oidc.authentication.email_verification_required' => true]);
     $user = unverifiedUser();
     $user->forceFill(['email_verified_at' => now()])->save();
 
-    logIn()->assertRedirect(config('oidc.auth.home'));
+    logIn()->assertRedirect(config('oidc.login.home'));
 
     $this->assertAuthenticatedAs($user, 'identity');
 });
 
 it('does not require verification when the realm does not ask for it', function (): void {
-    config(['oidc.auth.email_verification_required' => false]);
+    config(['oidc.authentication.email_verification_required' => false]);
     $user = unverifiedUser();
 
-    logIn()->assertRedirect(config('oidc.auth.home'));
+    logIn()->assertRedirect(config('oidc.login.home'));
 
     $this->assertAuthenticatedAs($user, 'identity');
 });
 
 it('reports the open actions to a json client instead of redirecting', function (): void {
-    config(['oidc.auth.email_verification_required' => true]);
+    config(['oidc.authentication.email_verification_required' => true]);
     unverifiedUser();
 
     $this->postJson(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])
@@ -88,7 +88,7 @@ it('reports the open actions to a json client instead of redirecting', function 
 });
 
 it('reaches the verify-email screen and its resend without a session', function (): void {
-    config(['oidc.auth.email_verification_required' => true]);
+    config(['oidc.authentication.email_verification_required' => true]);
     Notification::fake();
     unverifiedUser();
     logIn();
@@ -104,11 +104,11 @@ it('sends the user to login when no session and no pending login name a subject'
 });
 
 it('completes the login once the signed link confirms the address', function (): void {
-    config(['oidc.auth.email_verification_required' => true]);
+    config(['oidc.authentication.email_verification_required' => true]);
     $user = unverifiedUser();
     logIn();
 
-    $this->get(verificationUrl($user))->assertRedirect(config('oidc.auth.home').'?verified=1');
+    $this->get(verificationUrl($user))->assertRedirect(config('oidc.login.home').'?verified=1');
 
     $this->assertAuthenticatedAs($user->fresh(), 'identity');
     expect($user->fresh()->hasVerifiedEmail())->toBeTrue()
@@ -116,7 +116,7 @@ it('completes the login once the signed link confirms the address', function ():
 });
 
 it('refuses a link that names a different user', function (): void {
-    config(['oidc.auth.email_verification_required' => true]);
+    config(['oidc.authentication.email_verification_required' => true]);
     unverifiedUser();
     $other = unverifiedUser('other@example.com');
     logIn();
@@ -127,7 +127,7 @@ it('refuses a link that names a different user', function (): void {
 });
 
 it('runs the post-login pipeline before the actions, so a denial still wins', function (): void {
-    config(['oidc.auth.email_verification_required' => true]);
+    config(['oidc.authentication.email_verification_required' => true]);
     unverifiedUser();
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->deny('blocked'));
 
@@ -150,7 +150,7 @@ it('drops an action nobody registered rather than stranding the login', function
     $user = unverifiedUser();
     app(PostLoginPipeline::class)->register(fn (LoginEvent $e, LoginApi $api) => $api->requireAction('dance'));
 
-    logIn()->assertRedirect(config('oidc.auth.home'));
+    logIn()->assertRedirect(config('oidc.login.home'));
 
     $this->assertAuthenticatedAs($user, 'identity');
 });
@@ -165,14 +165,14 @@ it('clears a pipeline action once its screen reports it done', function (): void
 
     // The address is already confirmed, so the screen settles the action it
     // was asked for and the login finishes.
-    $this->get(route('identity.verification.notice'))->assertRedirect(config('oidc.auth.home'));
+    $this->get(route('identity.verification.notice'))->assertRedirect(config('oidc.login.home'));
 
     $this->assertAuthenticatedAs($user->fresh(), 'identity');
     Event::assertDispatched(RequiredActionCompleted::class);
 });
 
 it('walks the user through several open actions in registration order', function (): void {
-    config(['oidc.auth.email_verification_required' => true]);
+    config(['oidc.authentication.email_verification_required' => true]);
     $user = unverifiedUser();
 
     app(RequiredActionRegistry::class)->register(new class implements RequiredAction

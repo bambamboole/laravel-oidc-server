@@ -30,9 +30,9 @@ final readonly class AuthenticationSettings
     public static function fromConfig(): self
     {
         return new self(
-            methods: LoginMethod::listFromConfig((array) config('oidc.auth.methods', ['password', 'passkey', 'social'])),
-            mfa: MfaRequirement::fromConfig(config('oidc.auth.mfa')),
-            emailVerificationRequired: (bool) config('oidc.auth.email_verification_required', false),
+            methods: LoginMethod::listFromConfig((array) config('oidc.authentication.methods', ['password', 'passkey', 'social'])),
+            mfa: MfaRequirement::fromConfig(config('oidc.authentication.mfa')),
+            emailVerificationRequired: (bool) config('oidc.authentication.email_verification_required', false),
         );
     }
 

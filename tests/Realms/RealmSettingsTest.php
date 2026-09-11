@@ -125,7 +125,7 @@ function bindRealms(Realm ...$realms): void
 }
 
 it('issues tokens with the lifetime of the realm they are issued in', function (): void {
-    config(['oidc.tokens.lifetimes.client_credentials' => 3600]);
+    config(['oidc.tokens.client_credentials' => 3600]);
     bindRealms(realmWithSettings('default'), realmWithSettings('short', new TokenSettings(clientCredentialsLifetime: 60)));
 
     $clients = [];

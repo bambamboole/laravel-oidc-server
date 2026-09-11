@@ -19,10 +19,10 @@ it('reports one level for a single method and another for several', function ():
 });
 
 it('uses the realm acr_values mapping', function (): void {
-    config(['oidc.auth.acr_values' => [
-        'single_factor' => 'urn:example:loa:1',
-        'multi_factor' => 'urn:example:loa:2',
-    ]]);
+    config([
+        'oidc.login.acr_single_factor' => 'urn:example:loa:1',
+        'oidc.login.acr_multi_factor' => 'urn:example:loa:2',
+    ]);
 
     $resolver = app(AcrResolver::class);
 
@@ -32,7 +32,7 @@ it('uses the realm acr_values mapping', function (): void {
 });
 
 it('advertises a shared value once', function (): void {
-    config(['oidc.auth.acr_values' => ['single_factor' => 'urn:mace:incommon:iap:silver', 'multi_factor' => 'urn:mace:incommon:iap:silver']]);
+    config(['oidc.login.acr_single_factor' => 'urn:mace:incommon:iap:silver', 'oidc.login.acr_multi_factor' => 'urn:mace:incommon:iap:silver']);
 
     expect(app(AcrResolver::class)->supported())->toBe(['urn:mace:incommon:iap:silver']);
 });

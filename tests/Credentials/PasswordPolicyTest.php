@@ -59,7 +59,7 @@ function userWithPassword(string $password = 'old-password'): User
 }
 
 it('rejects a reset password below the realm minimum length before the app action runs', function (): void {
-    config(['oidc.auth.password.min_length' => 12]);
+    config(['oidc.password_policy.min_length' => 12]);
     $user = userWithPassword();
     $actionRan = false;
 
@@ -76,7 +76,7 @@ it('rejects a reset password below the realm minimum length before the app actio
 });
 
 it('applies the composition rules of the realm policy', function (): void {
-    config(['oidc.auth.password.mixed_case' => true, 'oidc.auth.password.numbers' => true, 'oidc.auth.password.symbols' => true]);
+    config(['oidc.password_policy.mixed_case' => true, 'oidc.password_policy.numbers' => true, 'oidc.password_policy.symbols' => true]);
     $user = userWithPassword();
     persistResetPasswords();
 
@@ -89,7 +89,7 @@ it('applies the composition rules of the realm policy', function (): void {
 });
 
 it('refuses a password from the history window and records every change', function (): void {
-    config(['oidc.auth.password.history' => 2]);
+    config(['oidc.password_policy.history' => 2]);
     $user = userWithPassword('first-password');
     persistResetPasswords();
 
@@ -112,7 +112,7 @@ it('refuses a password from the history window and records every change', functi
 });
 
 it('keeps the current password out of reach even before the package has tracked it', function (): void {
-    config(['oidc.auth.password.history' => 1]);
+    config(['oidc.password_policy.history' => 1]);
     $user = userWithPassword('current-password');
     persistResetPasswords();
 
@@ -122,7 +122,7 @@ it('keeps the current password out of reach even before the package has tracked 
 });
 
 it('validates a registration password against the realm policy before creating the user', function (): void {
-    config(['oidc.auth.password.min_length' => 12]);
+    config(['oidc.password_policy.min_length' => 12]);
 
     createUsersUsing(fn (array $input): Authenticatable => User::create([
         'name' => $input['name'],
@@ -150,7 +150,7 @@ it('validates a registration password against the realm policy before creating t
 });
 
 it('starts tracking a password on the first login and reports rotation against max_age_days', function (): void {
-    config(['oidc.auth.password.max_age_days' => 30]);
+    config(['oidc.password_policy.max_age_days' => 30]);
     $user = userWithPassword('password');
     $passwords = app(PasswordCredential::class);
 
@@ -175,7 +175,7 @@ it('starts tracking a password on the first login and reports rotation against m
 
 it('expires a password past max_age_days whichever date class the app installs', function (string $dateClass): void {
     Date::use($dateClass);
-    config(['oidc.auth.password.max_age_days' => 30]);
+    config(['oidc.password_policy.max_age_days' => 30]);
     $user = userWithPassword('password');
     $passwords = app(PasswordCredential::class);
     $passwords->track($user);

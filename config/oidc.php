@@ -10,12 +10,11 @@ use Bambamboole\LaravelOidc\Server\SigningKeys\DatabaseSigningKeyStore;
 
 // Two kinds of values live here. Per-realm defaults are what ConfiguredRealm
 // reads; an application with a realm model overrides them per realm through
-// the Realm contract: tokens.{audiences,lifetimes}, session, scopes,
-// claims_supported, keys.size, clients.{first_party,trusted,registration,
-// token_exchange}, auth.{username,home,login_route,logout_redirect,
-// acr_values,two_factor} and social.
-// Everything else is deployment-wide: issuer, guards, key store, audit sink,
-// routes.
+// the Realm contract: tokens, session, scopes, claims_supported, keys.size,
+// clients.{first_party,trusted,registration,token_exchange}, login,
+// authentication, credentials, password_policy and social.
+// Everything else is deployment-wide: issuer, auth, key store, audit sink,
+// routes, install_self.
 return [
     // Identifier of the realm requests belong to outside a matched route —
     // console commands, queued jobs — and of the only realm in a single-realm
@@ -52,17 +51,16 @@ return [
         'size' => (int) env('OIDC_KEY_SIZE', 2048),
     ],
 
+    // Token lifetimes in seconds.
     'tokens' => [
-        'lifetimes' => [
-            // Interactive access token (authorization_code) + refreshed access tokens. Short, per industry.
-            'access_token' => (int) env('OIDC_ACCESS_TOKEN_TTL', 900),
-            'id_token' => (int) env('OIDC_ID_TOKEN_TTL', 3600),
-            // Machine-to-machine (client_credentials): no refresh, no session; client re-requests. Own TTL.
-            'client_credentials' => (int) env('OIDC_M2M_ACCESS_TOKEN_TTL', 3600),
-            // Idle cap on an interactive session: a refresh token unused for this long is dead.
-            // The absolute cap is oidc.session.absolute_lifetime and always wins.
-            'refresh_token' => (int) env('OIDC_REFRESH_TOKEN_TTL', 1209600),
-        ],
+        // Interactive access token (authorization_code) + refreshed access tokens. Short, per industry.
+        'access_token' => (int) env('OIDC_ACCESS_TOKEN_TTL', 900),
+        'id_token' => (int) env('OIDC_ID_TOKEN_TTL', 3600),
+        // Machine-to-machine (client_credentials): no refresh, no session; client re-requests. Own TTL.
+        'client_credentials' => (int) env('OIDC_M2M_ACCESS_TOKEN_TTL', 3600),
+        // Idle cap on an interactive session: a refresh token unused for this long is dead.
+        // The absolute cap is oidc.session.absolute_lifetime and always wins.
+        'refresh_token' => (int) env('OIDC_REFRESH_TOKEN_TTL', 1209600),
     ],
 
     'session' => [
@@ -70,13 +68,12 @@ return [
 
         // Absolute cap on an interactive session, from login. Refresh is denied past this and the user
         // must re-authenticate; refresh-token rotation cannot extend it. Drives context.expires_at,
-        // the refresh deny-check, and context pruning. The idle cap is tokens.lifetimes.refresh_token.
+        // the refresh deny-check, and context pruning. The idle cap is tokens.refresh_token.
         'absolute_lifetime' => (int) env('OIDC_SESSION_ABSOLUTE_LIFETIME', 2592000),
 
         // The first-party session root token minted on login for browser-fetch.
         'token' => [
             'ttl' => (int) env('OIDC_SESSION_TOKEN_TTL', 3600),
-            'session_key' => 'oidc.session_token',
             'refresh_skew' => 60,
             'scopes' => null,
             // Guard whose login/logout owns the session token. Null falls back to
@@ -86,20 +83,18 @@ return [
         ],
     ],
 
-    'scopes' => [
-        // API scope catalog consulted by the scope repository at enumeration
-        // time (consent, discovery, issuance): an inline [scope => description]
-        // map, or the class-string of a ScopeCatalog implementation resolved
-        // from the container. Every scope belongs to one resource: an entry
-        // listed under a resource in `resources` below is requestable only
-        // when that resource is, the rest belong to the realm itself and are
-        // requestable only without a `resource` (or with the issuer URL). A
-        // catalog class is asked for the resources of the request instead and
-        // owns that split itself. Its scopes() may hit the database — failures
-        // fall back to an empty catalog so key- and db-less artisan runs never
-        // break; an invalid class-string fails loudly at first enumeration.
-        'catalog' => [],
-    ],
+    // API scope catalog consulted by the scope repository at enumeration time
+    // (consent, discovery, issuance): an inline [scope => description] map, or
+    // the class-string of a ScopeCatalog implementation resolved from the
+    // container. Every scope belongs to one resource: an entry listed under a
+    // resource in `resources` below is requestable only when that resource is,
+    // the rest belong to the realm itself and are requestable only without a
+    // `resource` (or with the issuer URL). A catalog class is asked for the
+    // resources of the request instead and owns that split itself. Its scopes()
+    // may hit the database — failures fall back to an empty catalog so key- and
+    // db-less artisan runs never break; an invalid class-string fails loudly at
+    // first enumeration.
+    'scopes' => [],
 
     'claims_supported' => [
         'iss', 'sub', 'aud', 'exp', 'iat', 'auth_time', 'nonce', 'at_hash', 'azp', 'acr', 'amr', 'sid',
@@ -113,7 +108,8 @@ return [
     |
     | `first_party` names the confidential client this application uses for
     | itself: it mints the session root token and, with `trusted`, skips the
-    | consent screen. `trusted` lists further client ids that skip consent.
+    | consent screen. `oidc:install-self` provisions it from `install_self`
+    | below. `trusted` lists further client ids that skip consent.
     |
     | `registration` is RFC 7591 dynamic client registration. When enabled,
     | `POST /oauth/register` lets clients (e.g. MCP clients such as Claude or
@@ -140,15 +136,6 @@ return [
         'first_party' => [
             'client_id' => env('OIDC_FIRST_PARTY_CLIENT') ?: null,
             'trusted' => env('OIDC_FIRST_PARTY_TRUSTED', false),
-
-            // Extra provisioning metadata applied by `oidc:install-self` on top of
-            // the APP_URL-derived defaults. Token exchange is only enabled on the
-            // client when at least one audience is listed.
-            'provision' => [
-                'redirect_uris' => [],
-                'post_logout_redirect_uris' => [],
-                'allowed_exchange_audiences' => [],
-            ],
         ],
 
         'trusted' => [],
@@ -163,6 +150,25 @@ return [
         ],
 
         'token_exchange' => env('OIDC_TOKEN_EXCHANGE_ENABLED', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Self-SSO installation
+    |--------------------------------------------------------------------------
+    |
+    | Input to the one-shot `oidc:install-self` command, which provisions the
+    | first-party client named by `clients.first_party.client_id` and writes
+    | the resulting credentials to the environment file. These lists are added
+    | on top of the APP_URL-derived defaults; token exchange is enabled on the
+    | client only when at least one audience is listed. Nothing here is read at
+    | runtime — the provisioned client carries the values from then on.
+    |
+    */
+    'install_self' => [
+        'redirect_uris' => [],
+        'post_logout_redirect_uris' => [],
+        'allowed_exchange_audiences' => [],
     ],
 
     /*
@@ -212,18 +218,34 @@ return [
     */
     'resources' => [],
 
+    // The guards the package authenticates against. Deployment-wide: a realm
+    // cannot override them.
     'auth' => [
         'guard' => env('OIDC_AUTH_GUARD', 'identity'),
         'provider' => env('OIDC_AUTH_PROVIDER', 'users'),
         // Guard the userinfo endpoint and resource-server routes authenticate
         // bearer tokens against. Registered with the package's driver if absent.
         'api_guard' => env('OIDC_API_GUARD', 'oidc'),
-        'home' => env('OIDC_AUTH_HOME', '/dashboard'),
+    ],
+
+    // Where the interactive login lives and what an authentication reports.
+    'login' => [
         'username' => env('OIDC_AUTH_USERNAME', 'email'),
         // Route name or path the authorize endpoint sends anonymous users to.
-        'login_route' => env('OIDC_LOGIN_ROUTE', 'login'),
+        'route' => env('OIDC_LOGIN_ROUTE', 'login'),
+        'home' => env('OIDC_AUTH_HOME', '/dashboard'),
         // Where end-session lands without a post_logout_redirect_uri.
         'logout_redirect' => '/',
+        // The `acr` claim (OIDC Core §2) an authentication earns: one method in
+        // `amr` reports the single-factor value, two or more the multi-factor
+        // one. Substitute URIs or RFC 6711 names your relying parties expect;
+        // both are advertised as acr_values_supported.
+        'acr_single_factor' => '1',
+        'acr_multi_factor' => '2',
+    ],
+
+    // What the realm demands before it hands out a session.
+    'authentication' => [
         // The interactive login methods this realm accepts. Registration and
         // password reset hang off `password`: both end in a password the realm
         // would not otherwise accept. A method that is not listed is refused
@@ -236,40 +258,35 @@ return [
         // Whether an unconfirmed email address blocks the login. With this on
         // the user gets no session at all until the address is verified.
         'email_verification_required' => env('OIDC_AUTH_EMAIL_VERIFICATION_REQUIRED', false),
-        // The `acr` claim (OIDC Core §2) an authentication earns: one method
-        // in `amr` reports single_factor, two or more report multi_factor.
-        // Substitute URIs or RFC 6711 names your relying parties expect; both
-        // are advertised as acr_values_supported.
-        'acr_values' => [
-            'single_factor' => '1',
-            'multi_factor' => '2',
-        ],
-        // What a new password must satisfy, checked at registration and reset
-        // before the app's CreateUser / ResetUserPassword action runs. `history`
-        // counts previous passwords (the current one included) a new password
-        // may not repeat; `max_age_days` marks a password as expired after that
-        // many days, which raises the `update_password` required action and
-        // holds the login until the user picks a new one.
-        'password' => [
-            'min_length' => 8,
-            'mixed_case' => false,
-            'numbers' => false,
-            'symbols' => false,
-            'uncompromised' => false,
-            'history' => 0,
-            'max_age_days' => null,
-        ],
-        'two_factor' => [
-            'challenge_providers' => ['totp', 'webauthn'],
-            'secret_length' => 16,
-            'window' => 1,
-            'recovery_codes' => 8,
-        ],
+    ],
+
+    // The second factors a user can enroll and be challenged with.
+    'credentials' => [
         'factors' => [
             TotpFactorProvider::class,
             RecoveryCodeProvider::class,
             WebAuthnFactorProvider::class,
         ],
+        'challenge_providers' => ['totp', 'webauthn'],
+        'totp_secret_length' => 16,
+        'totp_window' => 1,
+        'recovery_codes' => 8,
+    ],
+
+    // What a new password must satisfy, checked at registration and reset before
+    // the app's CreateUser / ResetUserPassword action runs. `history` counts
+    // previous passwords (the current one included) a new password may not
+    // repeat; `max_age_days` marks a password as expired after that many days,
+    // which raises the `update_password` required action and holds the login
+    // until the user picks a new one.
+    'password_policy' => [
+        'min_length' => 8,
+        'mixed_case' => false,
+        'numbers' => false,
+        'symbols' => false,
+        'uncompromised' => false,
+        'history' => 0,
+        'max_age_days' => null,
     ],
 
     /*

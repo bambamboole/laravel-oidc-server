@@ -11,7 +11,7 @@ final readonly class DispatchLoggedOut
 {
     public function handle(Logout $event): void
     {
-        if ($event->guard !== config('oidc.auth.guard') || $event->user === null) {
+        if ($event->guard !== config('oidc.auth.guard', 'identity') || $event->user === null) {
             return;
         }
 

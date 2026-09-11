@@ -76,7 +76,7 @@ function scopeIds(array $audiences = []): array
 }
 
 it('exposes the configured catalog plus the oidc standard scopes, preferring the catalog description', function (): void {
-    config(['oidc.scopes.catalog' => ['project:update' => 'Update projects', 'openid' => 'Custom openid description']]);
+    config(['oidc.scopes' => ['project:update' => 'Update projects', 'openid' => 'Custom openid description']]);
 
     $repository = freshScopeRepository();
 
@@ -88,7 +88,7 @@ it('exposes the configured catalog plus the oidc standard scopes, preferring the
 
 it('hands a scope a resource owns to that resource alone, never to the realm default audience', function (): void {
     config([
-        'oidc.scopes.catalog' => ['project:update' => 'Update projects', 'mcp:use' => 'Use the MCP server'],
+        'oidc.scopes' => ['project:update' => 'Update projects', 'mcp:use' => 'Use the MCP server'],
         'oidc.resources' => ['mcp' => ['scopes' => ['mcp:use']]],
     ]);
 
@@ -102,7 +102,7 @@ it('hands a scope a resource owns to that resource alone, never to the realm def
 
 it('reads the same scope value under two resources as two different scopes', function (): void {
     config([
-        'oidc.scopes.catalog' => ['read' => 'Read things'],
+        'oidc.scopes' => ['read' => 'Read things'],
         'oidc.resources' => [
             'mcp' => ['scopes' => ['read']],
             'https://api.example/orders' => ['scopes' => ['read']],
@@ -130,19 +130,19 @@ it('offers a scope a resource declares even when the catalog does not describe i
 });
 
 it('resolves a class-string catalog from the container, asking it for the requested resources', function (): void {
-    config()->set('oidc.scopes.catalog', RepositoryClassCatalog::class);
+    config()->set('oidc.scopes', RepositoryClassCatalog::class);
 
     expect(scopeIds())->toContain('https://op.test/read')
         ->and(scopeIds(['https://api.example/orders']))->toContain('https://api.example/orders/read')
         ->not->toContain('https://op.test/read');
 
-    config()->set('oidc.scopes.catalog', stdClass::class);
+    config()->set('oidc.scopes', stdClass::class);
 
     expect(fn (): Collection => freshScopeRepository()->all())->toThrow(LogicException::class);
 });
 
 it('caches the catalog per realm on one instance', function (): void {
-    config()->set('oidc.scopes.catalog', RepositoryRealmCatalog::class);
+    config()->set('oidc.scopes', RepositoryRealmCatalog::class);
     $resolver = new RepositorySwitchableRealmResolver('acme');
     app()->instance(RealmResolver::class, $resolver);
     $repository = new ConfiguredScopeRepository(app(), $resolver, app(RealmAudiences::class));
@@ -160,7 +160,7 @@ it('caches the catalog per realm on one instance', function (): void {
 });
 
 it('falls back to the standard scopes when the catalog throws', function (): void {
-    config()->set('oidc.scopes.catalog', RepositoryThrowingCatalog::class);
+    config()->set('oidc.scopes', RepositoryThrowingCatalog::class);
 
     expect(scopeIds())->toContain('openid')->not->toContain('catalog:read');
 });

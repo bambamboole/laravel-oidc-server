@@ -29,7 +29,7 @@ class CredentialsServiceProvider extends ServiceProvider
         $this->app->singleton(FactorRegistry::class, function (Application $app): FactorRegistry {
             $registry = new FactorRegistry($app->make(RealmResolver::class));
 
-            foreach ((array) config('oidc.auth.factors', []) as $provider) {
+            foreach ((array) config('oidc.credentials.factors', []) as $provider) {
                 $resolved = $app->make($provider);
 
                 if (! $resolved instanceof FactorProvider) {
@@ -58,7 +58,7 @@ class CredentialsServiceProvider extends ServiceProvider
         Passkeys::ignoreRoutes();
 
         config()->set('passkeys.guard', (string) config('oidc.auth.guard', 'identity'));
-        config()->set('passkeys.redirect', config('oidc.auth.home', '/dashboard'));
+        config()->set('passkeys.redirect', config('oidc.login.home', '/dashboard'));
         config()->set('passkeys.middleware', ['web']);
         config()->set('passkeys.management_middleware', []);
         config()->set('passkeys.throttle', 'throttle:5,1');

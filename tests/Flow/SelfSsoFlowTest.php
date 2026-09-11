@@ -44,7 +44,7 @@ function selfSsoAuthorize(mixed $test, array $overrides = []): TestResponse
 }
 
 it('returns a credential login to the pending authorization request without creating a web session', function (): void {
-    config(['oidc.auth.login_route' => 'identity.login']);
+    config(['oidc.login.route' => 'identity.login']);
 
     selfSsoAuthorize($this)->assertRedirect('/auth/login');
 

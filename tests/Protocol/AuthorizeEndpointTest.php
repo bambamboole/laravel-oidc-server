@@ -244,7 +244,7 @@ it('answers prompt=none without interaction', function (bool $authenticated, arr
 ]);
 
 it('forces re-authentication for prompt=login and prompt=select_account', function (string $prompt): void {
-    config(['oidc.auth.login_route' => 'identity.login']);
+    config(['oidc.login.route' => 'identity.login']);
 
     authorizeWith($this, ['prompt' => $prompt])->assertRedirect(route('identity.login'));
 
@@ -253,7 +253,7 @@ it('forces re-authentication for prompt=login and prompt=select_account', functi
 })->with(['login', 'select_account']);
 
 it('redirects a guest to the configured login route name or path', function (string $loginRoute, string $destination): void {
-    config(['oidc.auth.login_route' => $loginRoute]);
+    config(['oidc.login.route' => $loginRoute]);
 
     authorizeAsGuest($this)->assertRedirect($destination);
 

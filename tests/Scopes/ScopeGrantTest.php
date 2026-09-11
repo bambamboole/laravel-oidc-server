@@ -7,7 +7,7 @@ use Bambamboole\LaravelOidc\Server\Scopes\ScopeGrant;
 use Workbench\App\Models\User;
 
 it('drops unknown scopes and keeps known ones', function (): void {
-    config(['oidc.scopes.catalog' => ['project:update' => 'Update projects']]);
+    config(['oidc.scopes' => ['project:update' => 'Update projects']]);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Test', ['https://rp.test/callback']);
 
     expect(app(ScopeGrant::class)->finalize(['openid', 'project:update', 'nope'], 'authorization_code', $client, '1'))
@@ -34,7 +34,7 @@ it('issues a personal access token with the wildcard scope', function (): void {
 });
 
 it('adds the client default scopes for the grants no earlier artifact bounds', function (string $grantType): void {
-    config(['oidc.scopes.catalog' => ['orders:read' => 'Read orders']]);
+    config(['oidc.scopes' => ['orders:read' => 'Read orders']]);
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
     $client->forceFill(['default_scopes' => ['orders:read']])->save();
 
@@ -42,7 +42,7 @@ it('adds the client default scopes for the grants no earlier artifact bounds', f
 })->with(['client_credentials', 'personal_access']);
 
 it('does not add default scopes for grants bounded by an earlier artifact', function (string $grantType): void {
-    config(['oidc.scopes.catalog' => ['orders:read' => 'Read orders']]);
+    config(['oidc.scopes' => ['orders:read' => 'Read orders']]);
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('Test', ['https://rp.test/callback']);
     $client->forceFill(['default_scopes' => ['orders:read']])->save();
 

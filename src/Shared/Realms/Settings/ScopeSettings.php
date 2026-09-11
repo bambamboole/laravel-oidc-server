@@ -17,7 +17,7 @@ final readonly class ScopeSettings
 
     public static function fromConfig(): self
     {
-        $catalog = config('oidc.scopes.catalog', []);
+        $catalog = config('oidc.scopes', []);
 
         return new self(
             catalog: is_string($catalog) || is_array($catalog) ? $catalog : [],

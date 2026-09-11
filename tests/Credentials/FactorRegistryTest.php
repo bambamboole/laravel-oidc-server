@@ -57,11 +57,11 @@ it('limits configured challengeable enrollments to the challenge providers confi
     $factor->forceFill(['confirmed_at' => now()])->save();
     $user->passkeys()->create(['name' => 'Key', 'credential_id' => 'credential-id', 'credential' => []]);
 
-    config(['oidc.auth.two_factor.challenge_providers' => ['totp', 'webauthn']]);
+    config(['oidc.credentials.challenge_providers' => ['totp', 'webauthn']]);
     expect(array_column($registry->configuredChallengeableEnrollments($user), 'providerKey'))
         ->toBe(['totp', 'webauthn']);
 
-    config(['oidc.auth.two_factor.challenge_providers' => ['totp']]);
+    config(['oidc.credentials.challenge_providers' => ['totp']]);
     expect(array_column($registry->configuredChallengeableEnrollments($user), 'providerKey'))
         ->toBe(['totp']);
 });

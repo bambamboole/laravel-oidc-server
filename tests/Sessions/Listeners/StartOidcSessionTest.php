@@ -16,7 +16,7 @@ it('records auth_time and a sid without starting the session store on an identit
 
     expect($session->isStarted())->toBeFalse();
 
-    Auth::guard((string) config('oidc.auth.guard'))->login($user);
+    Auth::guard((string) config('oidc.auth.guard', 'identity'))->login($user);
 
     expect($session->get('oidc.auth_time'))->toBeInt()
         ->and($session->get('oidc.sid'))->toBeString()
@@ -28,7 +28,7 @@ it('records nothing for one-off authentication or logins on another guard', func
     $session = app('session.store');
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'email_verified_at' => now(), 'password' => 'x']);
 
-    Auth::guard((string) config('oidc.auth.guard'))->onceUsingId($user->id);
+    Auth::guard((string) config('oidc.auth.guard', 'identity'))->onceUsingId($user->id);
     Auth::guard('web')->login($user);
 
     expect($session->has('oidc.auth_time'))->toBeFalse()

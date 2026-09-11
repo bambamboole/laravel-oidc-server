@@ -24,10 +24,10 @@ final readonly class TokenSettings
     public static function fromConfig(): self
     {
         return new self(
-            accessTokenLifetime: (int) config('oidc.tokens.lifetimes.access_token', 900),
-            idTokenLifetime: (int) config('oidc.tokens.lifetimes.id_token', 3600),
-            clientCredentialsLifetime: (int) config('oidc.tokens.lifetimes.client_credentials', 3600),
-            refreshTokenLifetime: (int) config('oidc.tokens.lifetimes.refresh_token', 1209600),
+            accessTokenLifetime: (int) config('oidc.tokens.access_token', 900),
+            idTokenLifetime: (int) config('oidc.tokens.id_token', 3600),
+            clientCredentialsLifetime: (int) config('oidc.tokens.client_credentials', 3600),
+            refreshTokenLifetime: (int) config('oidc.tokens.refresh_token', 1209600),
         );
     }
 

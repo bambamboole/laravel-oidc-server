@@ -83,7 +83,7 @@ it('records the pwd method on a successful password login', function (): void {
 });
 
 it('redirects identity-protected routes to the identity login even for a web-guard session', function (): void {
-    config(['oidc.auth.login_route' => 'identity.login']);
+    config(['oidc.login.route' => 'identity.login']);
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'secret']);
 
     $this->actingAs($user, 'web')

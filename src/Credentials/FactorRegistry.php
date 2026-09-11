@@ -120,7 +120,7 @@ class FactorRegistry
 
     /**
      * Limited to the providers the host opted into via
-     * `oidc.auth.two_factor.challenge_providers`.
+     * `oidc.credentials.challenge_providers`.
      *
      * @return list<FactorEnrollment>
      */
