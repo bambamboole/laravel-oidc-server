@@ -6,9 +6,9 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -24,7 +24,7 @@ use Illuminate\Support\Carbon;
  * @property ?int $auth_time
  * @property ?string $context_id
  * @property bool $revoked
- * @property ?Carbon $expires_at
+ * @property ?CarbonInterface $expires_at
  */
 class AuthorizationCode extends Model
 {

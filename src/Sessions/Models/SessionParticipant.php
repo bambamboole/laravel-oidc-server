@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Sessions\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $sid
  * @property string $client_id The client's primary key.
- * @property ?Carbon $created_at
+ * @property ?CarbonInterface $created_at
  */
 class SessionParticipant extends Model
 {

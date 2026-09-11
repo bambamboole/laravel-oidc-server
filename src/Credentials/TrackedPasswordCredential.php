@@ -8,11 +8,11 @@ use Bambamboole\LaravelOidc\Server\Credentials\Models\PasswordHistory;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\PasswordPolicy;
+use Carbon\CarbonInterface;
 use Closure;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use SensitiveParameter;
 
@@ -65,7 +65,7 @@ final readonly class TrackedPasswordCredential implements PasswordCredential
 
         $user->morphMany(PasswordHistory::class, 'authenticatable')->create([
             'hash' => $hash,
-            'created_at' => Carbon::now(),
+            'created_at' => now(),
         ]);
 
         $this->prune($user);
@@ -78,7 +78,7 @@ final readonly class TrackedPasswordCredential implements PasswordCredential
         }
     }
 
-    public function changedAt(Authenticatable $user): ?Carbon
+    public function changedAt(Authenticatable $user): ?CarbonInterface
     {
         return $user instanceof Model ? $this->latest($user)?->created_at : null;
     }
@@ -89,7 +89,7 @@ final readonly class TrackedPasswordCredential implements PasswordCredential
         $changedAt = $this->changedAt($user);
 
         return $policy->maxAgeDays !== null
-            && $changedAt instanceof Carbon
+            && $changedAt instanceof CarbonInterface
             && $changedAt->copy()->addDays($policy->maxAgeDays)->isPast();
     }
 

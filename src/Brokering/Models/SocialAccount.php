@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Brokering\Models;
 
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -21,7 +21,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $avatar
  * @property string|null $access_token
  * @property string|null $refresh_token
- * @property Carbon|null $token_expires_at
+ * @property CarbonInterface|null $token_expires_at
  * @property array<string, mixed>|null $raw
  * @property-read Model $authenticatable
  */

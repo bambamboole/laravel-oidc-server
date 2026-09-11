@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Authentication\Models;
 
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -19,8 +19,8 @@ use Illuminate\Support\Carbon;
  * @property ?int $auth_time
  * @property array<string, mixed> $id_token_claims
  * @property array<string, mixed> $access_token_claims
- * @property ?Carbon $created_at
- * @property ?Carbon $expires_at
+ * @property ?CarbonInterface $created_at
+ * @property ?CarbonInterface $expires_at
  */
 class AuthenticationContext extends Model
 {

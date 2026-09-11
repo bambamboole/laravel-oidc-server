@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Shared\Credentials;
 
 use Bambamboole\LaravelOidc\Server\Shared\Realms\Settings\PasswordPolicy;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use SensitiveParameter;
 
@@ -37,7 +37,7 @@ interface PasswordCredential
      */
     public function track(Authenticatable $user): void;
 
-    public function changedAt(Authenticatable $user): ?Carbon;
+    public function changedAt(Authenticatable $user): ?CarbonInterface;
 
     public function isExpired(Authenticatable $user): bool;
 

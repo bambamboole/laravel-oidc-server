@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Sessions\Models;
 
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $sid
  * @property string $realm_id
  * @property string $user_id
- * @property ?Carbon $created_at
- * @property ?Carbon $expires_at
- * @property ?Carbon $revoked_at
- * @property ?Carbon $logout_notified_at
+ * @property ?CarbonInterface $created_at
+ * @property ?CarbonInterface $expires_at
+ * @property ?CarbonInterface $revoked_at
+ * @property ?CarbonInterface $logout_notified_at
  */
 class OidcSession extends Model
 {

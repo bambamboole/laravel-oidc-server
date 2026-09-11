@@ -6,10 +6,10 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id The token's jti.
@@ -23,7 +23,7 @@ use Illuminate\Support\Carbon;
  * @property ?string $auth_code_id The authorization code this token, or the refresh chain it sits in, descends from.
  * @property ?string $context_id The authentication context the token was issued under; null for a non-interactive grant.
  * @property bool $revoked
- * @property ?Carbon $expires_at
+ * @property ?CarbonInterface $expires_at
  */
 class AccessToken extends Model
 {

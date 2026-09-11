@@ -6,10 +6,10 @@ namespace Bambamboole\LaravelOidc\Server\Consents\Models;
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * What a user has approved for a client: the union of every scope set they
@@ -20,8 +20,8 @@ use Illuminate\Support\Carbon;
  * @property string $user_id
  * @property string $client_id The client's primary key.
  * @property list<string> $scopes
- * @property Carbon $granted_at
- * @property ?Carbon $revoked_at
+ * @property CarbonInterface $granted_at
+ * @property ?CarbonInterface $revoked_at
  */
 class Consent extends Model
 {

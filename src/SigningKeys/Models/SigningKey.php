@@ -6,10 +6,10 @@ namespace Bambamboole\LaravelOidc\Server\SigningKeys\Models;
 
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyPair;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -17,8 +17,8 @@ use Illuminate\Support\Carbon;
  * @property string $kid
  * @property string $public_key
  * @property ?string $private_key
- * @property ?Carbon $retired_at
- * @property ?Carbon $created_at
+ * @property ?CarbonInterface $retired_at
+ * @property ?CarbonInterface $created_at
  *
  * @method static Builder<static> query()
  */

@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Credentials\Models\PasswordHistory;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Passwords\PasswordBroker;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\CanResetPassword;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
+
+afterEach(function (): void {
+    Date::use(testDateClass());
+});
 
 function passwordResetToken(User $user): string
 {
@@ -165,6 +172,27 @@ it('starts tracking a password on the first login and reports rotation against m
 
     expect(PasswordHistory::query()->count())->toBe(1);
 });
+
+it('expires a password past max_age_days whichever date class the app installs', function (string $dateClass): void {
+    Date::use($dateClass);
+    config(['oidc.auth.password.max_age_days' => 30]);
+    $user = userWithPassword('password');
+    $passwords = app(PasswordCredential::class);
+    $passwords->track($user);
+
+    expect($passwords->changedAt($user))->toBeInstanceOf($dateClass)
+        ->and($passwords->isExpired($user))->toBeFalse();
+
+    $this->travel(31)->days();
+
+    expect($passwords->isExpired($user))->toBeTrue();
+})->with([
+    // Keys are load-bearing: an unkeyed [Carbon::class, CarbonImmutable::class] is a valid
+    // [class, method] callable, because Carbon answers any static call through __callStatic.
+    // Pest calls a dataset it finds callable instead of iterating it.
+    'mutable dates' => Carbon::class,
+    'immutable dates' => CarbonImmutable::class,
+]);
 
 it('does not expire a password when the realm sets no maximum age', function (): void {
     $user = userWithPassword('password');

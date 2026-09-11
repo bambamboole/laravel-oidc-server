@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Credentials\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $name
  * @property string $secret
  * @property int|null $last_used_timestep
- * @property Carbon|null $confirmed_at
- * @property Carbon|null $last_used_at
+ * @property CarbonInterface|null $confirmed_at
+ * @property CarbonInterface|null $last_used_at
  * @property-read Model $authenticatable
  */
 class TotpFactor extends Model

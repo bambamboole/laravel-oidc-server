@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Authentication\Context;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Date;
 
 class AuthenticationContextStore
 {
@@ -23,7 +23,7 @@ class AuthenticationContextStore
         $context->auth_time = $attributes['auth_time'];
         $context->id_token_claims = $attributes['id_token_claims'];
         $context->access_token_claims = $attributes['access_token_claims'];
-        $context->expires_at = Carbon::instance($attributes['expires_at']);
+        $context->expires_at = Date::instance($attributes['expires_at']);
         $context->created_at = now();
         $context->save();
 

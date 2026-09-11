@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonInterface;
 
-function pruneTestContext(string $userId, Carbon $expiresAt): AuthenticationContext
+function pruneTestContext(string $userId, CarbonInterface $expiresAt): AuthenticationContext
 {
     $context = new AuthenticationContext;
     $context->user_id = $userId;
