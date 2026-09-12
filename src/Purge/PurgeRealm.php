@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\DB;
  * sessions, tokens and consents. Password history and second factors belong
  * to a user rather than a realm — purge the realm's users first.
  *
- * A deployment that gave `realm_id` a foreign key through `oidc.migrations`
+ * A deployment that gave `realm` a foreign key through `oidc.migrations`
  * does not need this: deleting its own realm row cascades the same rows.
  */
 final readonly class PurgeRealm
@@ -37,11 +37,11 @@ final readonly class PurgeRealm
     public function __invoke(string $realm): void
     {
         DB::transaction(function () use ($realm): void {
-            OidcSession::query()->where('realm_id', $realm)->delete();
-            Client::query()->where('realm_id', $realm)->delete();
+            OidcSession::query()->where('realm', $realm)->delete();
+            Client::query()->where('realm', $realm)->delete();
 
             foreach (self::REALM_SCOPED as $model) {
-                $model::query()->where('realm_id', $realm)->delete();
+                $model::query()->where('realm', $realm)->delete();
             }
         });
     }

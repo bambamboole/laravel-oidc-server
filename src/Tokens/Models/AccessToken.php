@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property string $id The token's jti.
- * @property string $realm_id
+ * @property string $realm
  * @property ?string $user_id
  * @property string $client_id
  * @property ?string $name

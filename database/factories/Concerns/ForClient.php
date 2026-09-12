@@ -14,6 +14,6 @@ trait ForClient
      */
     public function forClient(Client $client): static
     {
-        return $this->state(['client_id' => $client->getKey(), 'realm_id' => $client->realm_id]);
+        return $this->state(['client_id' => $client->getKey(), 'realm' => $client->realm]);
     }
 }

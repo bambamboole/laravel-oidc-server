@@ -45,8 +45,8 @@ it('issues a row to a client inside the client\'s realm', function (): void {
 
     $token = AccessToken::factory()->forClient($client)->forUser($user)->create();
 
-    expect($token->only('realm_id', 'client_id', 'user_id'))->toBe([
-        'realm_id' => 'acme',
+    expect($token->only('realm', 'client_id', 'user_id'))->toBe([
+        'realm' => 'acme',
         'client_id' => $client->getKey(),
         'user_id' => $user->getKey(),
     ]);

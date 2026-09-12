@@ -15,7 +15,7 @@ class AuthenticationContextStore
     public function create(array $attributes): string
     {
         $context = new AuthenticationContext;
-        $context->realm_id = AuthenticationContext::currentRealm();
+        $context->realm = AuthenticationContext::currentRealm();
         $context->user_id = $attributes['user_id'];
         $context->session_id = $attributes['sid'];
         $context->amr = $attributes['amr'];

@@ -40,7 +40,7 @@ it('gives every realm its own first-party client', function (): void {
 
     expect($partners->wasCreated)->toBeTrue()
         ->and($partners->client->is($admin->client))->toBeFalse()
-        ->and($partners->client->realm_id)->toBe('partners')
+        ->and($partners->client->realm)->toBe('partners')
         ->and($admin->client->refresh()->name)->toBe('Admin console');
 });
 

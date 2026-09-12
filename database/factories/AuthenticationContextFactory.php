@@ -20,7 +20,7 @@ class AuthenticationContextFactory extends Factory
     public function definition(): array
     {
         return [
-            'realm_id' => AuthenticationContext::currentRealm(),
+            'realm' => AuthenticationContext::currentRealm(),
             'user_id' => self::newUserId(...),
             'amr' => ['pwd'],
             'auth_time' => now()->getTimestamp(),

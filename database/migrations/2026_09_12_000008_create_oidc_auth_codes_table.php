@@ -19,7 +19,7 @@ return new class extends Migration
         Schema::create('oidc_auth_codes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->char('code', 80)->unique();
-            $table->string('realm_id');
+            $table->string('realm');
             $table->foreignUuid('user_id')->index();
             $table->foreignUuid('client_id');
             $table->json('scopes')->nullable();
@@ -34,9 +34,9 @@ return new class extends Migration
             $table->timestamps();
             $table->timestamp('expires_at')->nullable()->index();
 
-            $table->index(['realm_id', 'client_id']);
+            $table->index(['realm', 'client_id']);
 
-            $table->foreign(['realm_id', 'client_id'])->references(['realm_id', 'id'])->on('oidc_clients')->cascadeOnDelete();
+            $table->foreign(['realm', 'client_id'])->references(['realm', 'id'])->on('oidc_clients')->cascadeOnDelete();
             ForeignKeys::realm($table);
             ForeignKeys::user($table);
         });

@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * resource server says nothing about `read` at another.
  *
  * @property string $id
- * @property string $realm_id
+ * @property string $realm
  * @property string $user_id
  * @property string $client_id The client's primary key.
  * @property string $resource The resource identifier the scopes were approved for.

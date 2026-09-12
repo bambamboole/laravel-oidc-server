@@ -54,9 +54,9 @@ function packageRowCounts(?string $realm = null): array
     return collect(Schema::getTables())
         ->pluck('name')
         ->filter(fn (string $table): bool => str_starts_with($table, 'oidc_'))
-        ->reject(fn (string $table): bool => $realm !== null && ! Schema::hasColumn($table, 'realm_id'))
+        ->reject(fn (string $table): bool => $realm !== null && ! Schema::hasColumn($table, 'realm'))
         ->sort()
-        ->mapWithKeys(fn (string $table): array => [$table => DB::table($table)->when($realm !== null, fn ($query) => $query->where('realm_id', $realm))->count()])
+        ->mapWithKeys(fn (string $table): array => [$table => DB::table($table)->when($realm !== null, fn ($query) => $query->where('realm', $realm))->count()])
         ->all();
 }
 

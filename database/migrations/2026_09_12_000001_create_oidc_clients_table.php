@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Schema;
  * without rewriting its tokens. A `client_id` only has to be unique within
  * its realm.
  *
- * `realm_id` (here and on every other scoped table) is an opaque identifier
+ * `realm` (here and on every other scoped table) is an opaque identifier
  * the application owns — there is no realm table and no foreign key, exactly
  * as with `user_id`. A string rather than a uuid so a host-derived slug can be
  * stored without a lookup.
@@ -24,7 +24,7 @@ return new class extends Migration
     {
         Schema::create('oidc_clients', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->string('realm_id');
+            $table->string('realm');
             $table->string('client_id');
             $table->nullableUuidMorphs('owner');
             $table->string('name');
@@ -43,9 +43,9 @@ return new class extends Migration
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['realm_id', 'client_id']);
-            $table->unique(['realm_id', 'id']);
-            $table->unique(['realm_id', 'provisioning_key']);
+            $table->unique(['realm', 'client_id']);
+            $table->unique(['realm', 'id']);
+            $table->unique(['realm', 'provisioning_key']);
 
             ForeignKeys::realm($table);
         });

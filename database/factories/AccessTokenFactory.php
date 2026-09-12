@@ -23,7 +23,7 @@ class AccessTokenFactory extends Factory
     {
         return [
             'id' => bin2hex(random_bytes(40)),
-            'realm_id' => AccessToken::currentRealm(),
+            'realm' => AccessToken::currentRealm(),
             'user_id' => self::newUserId(...),
             'client_id' => fn (): string => (string) Client::factory()->create()->getKey(),
             'scopes' => ['openid'],

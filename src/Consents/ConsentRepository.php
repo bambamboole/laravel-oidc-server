@@ -51,7 +51,7 @@ class ConsentRepository implements ConsentStore
     {
         foreach ($resources as $resource) {
             $consent = $this->findByKey($userId, $clientKey, $resource) ?? new Consent([
-                'realm_id' => Consent::currentRealm(),
+                'realm' => Consent::currentRealm(),
                 'user_id' => $userId,
                 'client_id' => $clientKey,
                 'resource' => $resource,

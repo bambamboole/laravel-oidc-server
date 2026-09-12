@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
- * @property string $realm_id
+ * @property string $realm
  * @property string $client_id
  * @property string $name
  * @property ?string $secret

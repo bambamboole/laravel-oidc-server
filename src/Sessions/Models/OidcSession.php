@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property string $id
- * @property string $realm_id
+ * @property string $realm
  * @property string $user_id
  * @property ?string $browser_session_id The id of the browser session the login happened in.
  * @property CarbonInterface $created_at

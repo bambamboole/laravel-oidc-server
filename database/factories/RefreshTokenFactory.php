@@ -19,7 +19,7 @@ class RefreshTokenFactory extends Factory
     {
         return [
             'id' => bin2hex(random_bytes(40)),
-            'realm_id' => RefreshToken::currentRealm(),
+            'realm' => RefreshToken::currentRealm(),
             'access_token_id' => AccessToken::factory(),
             'expires_at' => now()->addDays(14),
         ];
@@ -27,7 +27,7 @@ class RefreshTokenFactory extends Factory
 
     public function forAccessToken(AccessToken $accessToken): static
     {
-        return $this->state(['access_token_id' => $accessToken->getKey(), 'realm_id' => $accessToken->realm_id]);
+        return $this->state(['access_token_id' => $accessToken->getKey(), 'realm' => $accessToken->realm]);
     }
 
     public function revoked(): static

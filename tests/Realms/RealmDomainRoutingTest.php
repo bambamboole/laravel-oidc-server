@@ -82,7 +82,7 @@ it('scopes rows to the realm the host names', function (): void {
     $this->get('https://acme.id.test/.well-known/openid-configuration');
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
 
-    expect($client->realm_id)->toBe('acme');
+    expect($client->realm)->toBe('acme');
 
     $this->get('https://globex.id.test/.well-known/openid-configuration');
 
@@ -134,7 +134,7 @@ it('serves code run in another realm from that realm, whatever host the request 
         'realm' => app(RealmResolver::class)->current()->identifier(),
         'issuer' => app(IssuerResolver::class)->url(),
         'login_url' => route('identity.login'),
-        'client_realm' => app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb'])->realm_id,
+        'client_realm' => app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb'])->realm,
     ]);
 
     expect($inGlobex)->toBe([

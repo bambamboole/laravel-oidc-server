@@ -22,7 +22,7 @@ return new class extends Migration
     {
         Schema::create('oidc_consents', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->string('realm_id');
+            $table->string('realm');
             $table->uuid('user_id');
             $table->foreignUuid('client_id');
             $table->string('resource');
@@ -31,11 +31,11 @@ return new class extends Migration
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['realm_id', 'user_id', 'client_id', 'resource']);
+            $table->unique(['realm', 'user_id', 'client_id', 'resource']);
 
-            $table->index(['realm_id', 'client_id']);
+            $table->index(['realm', 'client_id']);
 
-            $table->foreign(['realm_id', 'client_id'])->references(['realm_id', 'id'])->on('oidc_clients')->cascadeOnDelete();
+            $table->foreign(['realm', 'client_id'])->references(['realm', 'id'])->on('oidc_clients')->cascadeOnDelete();
             ForeignKeys::realm($table);
             ForeignKeys::user($table);
         });

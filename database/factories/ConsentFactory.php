@@ -23,7 +23,7 @@ class ConsentFactory extends Factory
     public function definition(): array
     {
         return [
-            'realm_id' => Consent::currentRealm(),
+            'realm' => Consent::currentRealm(),
             'user_id' => self::newUserId(...),
             'client_id' => fn (): string => (string) Client::factory()->create()->getKey(),
             'resource' => fn (): string => app(IssuerResolver::class)->url(),

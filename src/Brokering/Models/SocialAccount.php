@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property string $id
- * @property string $realm_id
+ * @property string $realm
  * @property string $user_id
  * @property string $provider
  * @property string $provider_user_id

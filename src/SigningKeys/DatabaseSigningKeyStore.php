@@ -58,7 +58,7 @@ final class DatabaseSigningKeyStore implements SigningKeyStore
             SigningKey::query()->inRealm()->whereNull('retired_at')->update(['retired_at' => now()]);
 
             SigningKey::query()->create([
-                'realm_id' => SigningKey::currentRealm(),
+                'realm' => SigningKey::currentRealm(),
                 'kid' => $keys->kid,
                 'public_key' => $keys->publicKeyPem,
                 'private_key' => $keys->privateKeyPem,

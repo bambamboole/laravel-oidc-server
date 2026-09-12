@@ -149,6 +149,6 @@ it('installs a first-party client per realm and leaves the other realms alone', 
     $this->artisan('oidc:install-self', ['--force' => true, '--fresh' => true])->assertSuccessful();
 
     expect($admin->refresh()->getAttributes())->toBe($adminAttributes)
-        ->and(Client::query()->where('realm_id', 'partners')->sole()->getRawOriginal('provisioning_key'))
+        ->and(Client::query()->where('realm', 'partners')->sole()->getRawOriginal('provisioning_key'))
         ->toBe('first-party');
 });

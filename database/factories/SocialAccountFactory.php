@@ -21,7 +21,7 @@ class SocialAccountFactory extends Factory
     public function definition(): array
     {
         return [
-            'realm_id' => SocialAccount::currentRealm(),
+            'realm' => SocialAccount::currentRealm(),
             'user_id' => self::newUserId(...),
             'provider' => 'github',
             'provider_user_id' => (string) Str::uuid(),

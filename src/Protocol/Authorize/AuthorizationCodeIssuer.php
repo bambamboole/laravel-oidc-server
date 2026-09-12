@@ -51,7 +51,7 @@ final readonly class AuthorizationCodeIssuer
         $code = bin2hex(random_bytes(40));
 
         AuthorizationCode::query()->forceCreate([
-            'realm_id' => AuthorizationCode::currentRealm(),
+            'realm' => AuthorizationCode::currentRealm(),
             'code' => $code,
             'user_id' => $userId,
             'client_id' => $client->getKey(),

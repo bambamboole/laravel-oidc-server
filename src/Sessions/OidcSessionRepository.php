@@ -15,7 +15,7 @@ class OidcSessionRepository
     public function start(string $userId, ?string $browserSessionId = null): string
     {
         $session = new OidcSession;
-        $session->realm_id = OidcSession::currentRealm();
+        $session->realm = OidcSession::currentRealm();
         $session->user_id = $userId;
         $session->browser_session_id = $browserSessionId;
         $session->expires_at = now()->add($this->realms->current()->sessions()->absolute());

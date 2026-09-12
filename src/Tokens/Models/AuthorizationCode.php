@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property string $id
  * @property string $code The secret the browser carries back from the redirect.
- * @property string $realm_id
+ * @property string $realm
  * @property string $user_id
  * @property string $client_id
  * @property array<int, string> $scopes

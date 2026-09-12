@@ -24,7 +24,7 @@ class AuthorizationCodeFactory extends Factory
     {
         return [
             'code' => bin2hex(random_bytes(40)),
-            'realm_id' => AuthorizationCode::currentRealm(),
+            'realm' => AuthorizationCode::currentRealm(),
             'user_id' => self::newUserId(...),
             'client_id' => fn (): string => (string) Client::factory()->create()->getKey(),
             'scopes' => ['openid'],

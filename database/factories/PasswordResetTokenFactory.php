@@ -22,7 +22,7 @@ class PasswordResetTokenFactory extends Factory
     public function definition(): array
     {
         return [
-            'realm_id' => PasswordResetToken::currentRealm(),
+            'realm' => PasswordResetToken::currentRealm(),
             'user_id' => self::newUserId(...),
             'token' => hash('sha256', Str::random(64)),
             'created_at' => now(),

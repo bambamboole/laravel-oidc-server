@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
- * @property string $realm_id
+ * @property string $realm
  * @property string $access_token_id
  * @property ?CarbonInterface $revoked_at
  * @property ?CarbonInterface $expires_at

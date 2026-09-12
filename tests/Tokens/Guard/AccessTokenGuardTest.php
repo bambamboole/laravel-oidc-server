@@ -62,7 +62,7 @@ function bearerIssuedElsewhere(mixed $test): string
         ->toString();
 
     (new AccessToken)->forceFill([
-        'realm_id' => AccessToken::currentRealm(),
+        'realm' => AccessToken::currentRealm(),
         'id' => $jti,
         'user_id' => $test->user->id,
         'client_id' => $test->client->id,

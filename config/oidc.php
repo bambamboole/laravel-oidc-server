@@ -231,7 +231,7 @@ return [
     */
     'resources' => [],
 
-    // Read only while migrating. The package's `user_id` and `realm_id`
+    // Read only while migrating. The package's `user_id` and `realm`
     // columns point at tables the application owns, so where they point — and
     // whether a foreign key is written at all — is configured rather than
     // assumed. A null table leaves the columns unconstrained.

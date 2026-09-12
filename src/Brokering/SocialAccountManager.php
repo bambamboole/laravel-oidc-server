@@ -69,7 +69,7 @@ class SocialAccountManager
         }
 
         $account = $this->findAccount($provider, $socialUser->id) ?? (new SocialAccount)->forceFill([
-            'realm_id' => $this->realms->current()->identifier(),
+            'realm' => $this->realms->current()->identifier(),
             'provider' => $provider,
             'provider_user_id' => $socialUser->id,
         ]);

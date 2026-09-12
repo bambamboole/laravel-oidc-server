@@ -19,7 +19,7 @@ trait BelongsToRealm
      */
     public function scopeInRealm(Builder $query, ?string $realm = null): Builder
     {
-        return $query->where($this->getTable().'.realm_id', $realm ?? self::currentRealm());
+        return $query->where($this->getTable().'.realm', $realm ?? self::currentRealm());
     }
 
     public static function currentRealm(): string

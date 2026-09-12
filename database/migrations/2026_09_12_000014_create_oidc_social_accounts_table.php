@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('oidc_social_accounts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->string('realm_id');
+            $table->string('realm');
             $table->uuid('user_id')->index();
             $table->string('provider');
             $table->string('provider_user_id');
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->json('raw')->nullable();
             $table->timestamps();
 
-            $table->unique(['realm_id', 'provider', 'provider_user_id']);
+            $table->unique(['realm', 'provider', 'provider_user_id']);
 
             ForeignKeys::realm($table);
             ForeignKeys::user($table);

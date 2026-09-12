@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('oidc_refresh_tokens', function (Blueprint $table): void {
             $table->char('id', 80)->primary();
-            $table->string('realm_id')->index();
+            $table->string('realm')->index();
             $table->char('access_token_id', 80)->index();
             $table->timestamp('revoked_at')->nullable();
             $table->timestamps();

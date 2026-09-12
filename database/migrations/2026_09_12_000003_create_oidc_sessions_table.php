@@ -18,7 +18,7 @@ return new class extends Migration
     {
         Schema::create('oidc_sessions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->string('realm_id')->index();
+            $table->string('realm')->index();
             $table->uuid('user_id')->index();
             $table->string('browser_session_id')->nullable()->index();
             $table->timestamps();
