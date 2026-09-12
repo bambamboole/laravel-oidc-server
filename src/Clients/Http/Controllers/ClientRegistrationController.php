@@ -13,9 +13,8 @@ use Illuminate\Support\Carbon;
 
 /**
  * RFC 7591 dynamic client registration endpoint. The response echoes every
- * registered metadata value (§3.2.1); `client_secret` appears once, on the
- * registration response of a confidential client, with
- * `client_secret_expires_at` 0 (never).
+ * registered metadata value (§3.2.1); a confidential client's response also
+ * carries `client_secret` with `client_secret_expires_at` 0 (never).
  */
 class ClientRegistrationController
 {
@@ -37,8 +36,8 @@ class ClientRegistrationController
             'client_id_issued_at' => Carbon::now()->getTimestamp(),
         ];
 
-        if ($client->plainSecret !== null) {
-            $response['client_secret'] = $client->plainSecret;
+        if ($client->secret !== null) {
+            $response['client_secret'] = $client->secret;
             $response['client_secret_expires_at'] = 0;
         }
 

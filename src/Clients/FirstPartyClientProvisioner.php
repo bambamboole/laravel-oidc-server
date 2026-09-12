@@ -7,7 +7,6 @@ namespace Bambamboole\LaravelOidc\Server\Clients;
 use Bambamboole\LaravelOidc\Server\Clients\Events\ClientProvisioned;
 use Bambamboole\LaravelOidc\Server\Clients\Exceptions\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
-use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use SensitiveParameter;
@@ -18,10 +17,7 @@ final readonly class FirstPartyClientProvisioner
 
     private const string TokenExchangeGrant = 'urn:ietf:params:oauth:grant-type:token-exchange';
 
-    public function __construct(
-        private ClientRepository $clients,
-        private Hasher $hasher,
-    ) {}
+    public function __construct(private ClientRepository $clients) {}
 
     /**
      * @param  string[]  $redirectUris
@@ -156,7 +152,7 @@ final readonly class FirstPartyClientProvisioner
 
             if (! $created
                 && $existingClientSecret !== null
-                && ! $this->hasher->check($existingClientSecret, (string) $client->getRawOriginal('secret'))) {
+                && ! hash_equals((string) $client->secret, $existingClientSecret)) {
                 throw new FirstPartyClientProvisioningException('The existing first-party client secret does not match.');
             }
 
@@ -176,12 +172,11 @@ final readonly class FirstPartyClientProvisioner
                 ...$scopes,
             ])->save();
 
-            $secret = $created ? $client->plainSecret : $existingClientSecret;
-
             if ($rotateSecret) {
                 $this->clients->regenerateSecret($client);
-                $secret = $client->plainSecret;
             }
+
+            $secret = $created || $rotateSecret ? $client->secret : $existingClientSecret;
 
             return new FirstPartyClientProvisioningResult(
                 client: $client->refresh(),

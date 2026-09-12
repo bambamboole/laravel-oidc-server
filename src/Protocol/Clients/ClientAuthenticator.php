@@ -10,7 +10,6 @@ use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Protocol\Events\ClientAuthenticationFailed;
 use Bambamboole\LaravelOidc\Server\Shared\Context\OidcContext;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
-use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Http\Request;
 
 /**
@@ -22,10 +21,7 @@ use Illuminate\Http\Request;
  */
 final readonly class ClientAuthenticator
 {
-    public function __construct(
-        private ClientRepository $clients,
-        private Hasher $hasher,
-    ) {}
+    public function __construct(private ClientRepository $clients) {}
 
     /**
      * @param  string|null  $grantType  when given, the client must also be registered for this grant
@@ -92,9 +88,10 @@ final readonly class ClientAuthenticator
 
     private function secretMatches(Client $client, ?string $secret): bool
     {
-        $hash = $client->getAttributes()['secret'] ?? null;
+        $registered = $client->secret;
 
-        return $secret !== null && $secret !== '' && is_string($hash) && $hash !== '' && $this->hasher->check($secret, $hash);
+        return $secret !== null && $secret !== '' && $registered !== null && $registered !== ''
+            && hash_equals($registered, $secret);
     }
 
     private function fail(Request $request, string $clientId, string $reason): never

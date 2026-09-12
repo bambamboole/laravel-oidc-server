@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Clients\Enums\TokenEndpointAuthMethod;
 use Bambamboole\LaravelOidc\Server\Database\Factories\ClientFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -46,10 +45,11 @@ class Client extends Model
 
     protected $guarded = [];
 
+    /**
+     * The secret is encrypted at rest, so it stays readable for an admin UI or
+     * API; hiding it keeps it out of incidental serialization all the same.
+     */
     protected $hidden = ['secret'];
-
-    /** Readable only on the instance that set it; the column holds a hash. */
-    public ?string $plainSecret = null;
 
     protected static function newFactory(): ClientFactory
     {
@@ -63,6 +63,7 @@ class Client extends Model
             'redirect_uris' => 'array',
             'post_logout_redirect_uris' => 'array',
             'grant_types' => 'array',
+            'secret' => 'encrypted',
             'token_endpoint_auth_method' => TokenEndpointAuthMethod::class,
             'default_scopes' => 'array',
             'optional_scopes' => 'array',
@@ -77,18 +78,6 @@ class Client extends Model
     public function owner(): MorphTo
     {
         return $this->morphTo('owner');
-    }
-
-    /** @return Attribute<never, ?string> */
-    protected function secret(): Attribute
-    {
-        return Attribute::make(
-            set: function (?string $value): ?string {
-                $this->plainSecret = $value;
-
-                return $this->castAttributeAsHashedString('secret', $value);
-            },
-        );
     }
 
     public function isRevoked(): bool

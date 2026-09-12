@@ -6,7 +6,6 @@ use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Hash;
 
 function clientCommandEnv(string $contents = "APP_NAME=Testing\n"): string
 {
@@ -43,7 +42,7 @@ it('creates and prints first-party credentials without changing env', function (
             'OIDC_RP_CLIENT_ID='.$clientId,
             'OIDC_RP_CLIENT_SECRET='.$plainSecret,
         ]))
-        ->and(Hash::check($plainSecret, (string) $client->getRawOriginal('secret')))->toBeTrue()
+        ->and($client->secret)->toBe($plainSecret)
         ->and($client->getAttribute('redirect_uris'))->toBe([
             'https://app.test/login/callback',
             'https://app.test/oauth/callback',

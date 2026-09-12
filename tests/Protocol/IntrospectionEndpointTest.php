@@ -16,7 +16,7 @@ use Workbench\App\Models\User;
 beforeEach(function (): void {
     $this->user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     $this->client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/callback']);
-    $this->secret = $this->client->plainSecret;
+    $this->secret = $this->client->secret;
 });
 
 /**

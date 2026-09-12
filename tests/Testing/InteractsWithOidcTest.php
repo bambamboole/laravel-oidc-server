@@ -46,7 +46,7 @@ it('creates an authorization-code grant client with sane defaults', function ():
     expect($client->exists)->toBeTrue()
         ->and($client->redirect_uris)->toBe(['https://rp.test/callback'])
         ->and($client->confidential())->toBeTrue()
-        ->and($client->plainSecret)->toBeString();
+        ->and($client->secret)->toBeString();
 });
 
 it('configures a trusted first-party client', function (): void {
@@ -129,7 +129,7 @@ it('scopes the CSRF exemption to the authorizeAndApprove flow', function (): voi
 
 it('returns the raw token error response for a broken token leg', function (): void {
     $confidential = $this->createOidcClient();
-    $confidential->plainSecret = 'wrong-secret';
+    $confidential->secret = 'wrong-secret';
 
     $result = $this->authorizeAndApprove($this->user, $confidential);
 

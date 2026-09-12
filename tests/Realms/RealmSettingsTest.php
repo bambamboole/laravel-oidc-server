@@ -147,7 +147,7 @@ it('issues tokens with the lifetime of the realm they are issued in', function (
         return (int) $this->post("/realms/{$realm}/oauth/token", [
             'grant_type' => 'client_credentials',
             'client_id' => $clients[$realm]->id,
-            'client_secret' => $clients[$realm]->plainSecret,
+            'client_secret' => $clients[$realm]->secret,
             'scope' => '',
         ])->assertOk()->json('expires_in');
     };

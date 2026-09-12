@@ -29,7 +29,7 @@ function requestClientCredentials(TestCase $test, array $extra = []): TestRespon
     return $test->post('/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $test->client->id,
-        'client_secret' => $test->client->plainSecret,
+        'client_secret' => $test->client->secret,
         'scope' => '',
         ...$extra,
     ]);

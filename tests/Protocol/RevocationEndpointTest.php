@@ -32,7 +32,7 @@ function revoke(mixed $test, array $parameters, mixed $client = null): TestRespo
 
     return $test->postJson('/oauth/revoke', [
         'client_id' => $client->id,
-        'client_secret' => $client->plainSecret,
+        'client_secret' => $client->secret,
         ...$parameters,
     ]);
 }

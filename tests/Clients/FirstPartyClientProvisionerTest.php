@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Tests\TestCase;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
-use Illuminate\Support\Facades\Hash;
 use Workbench\App\Models\User;
 
 it('creates a confidential managed client and returns its plain secret once', function (): void {
@@ -21,7 +20,7 @@ it('creates a confidential managed client and returns its plain secret once', fu
 
     expect($result->wasCreated)->toBeTrue()
         ->and($result->clientSecret)->toBeString()->not->toBeEmpty()
-        ->and(Hash::check($result->clientSecret, (string) $result->client->getRawOriginal('secret')))->toBeTrue()
+        ->and($result->client->secret)->toBe($result->clientSecret)
         ->and($result->client->getRawOriginal('provisioning_key'))->toBe('first-party')
         ->and($result->client->getAttribute('redirect_uris'))->toBe(['https://app.test/login/callback'])
         ->and(json_decode((string) $result->client->getRawOriginal('post_logout_redirect_uris'), true, flags: JSON_THROW_ON_ERROR))->toBe(['https://app.test'])
@@ -128,7 +127,7 @@ it('rejects a mismatched managed client credential without mutating the client',
 it('adopts an explicit eligible client and then rotates only when requested', function (): void {
     $existing = app(ClientRepository::class)
         ->createAuthorizationCodeGrantClient('Existing', ['https://existing.test/callback']);
-    $oldHash = $existing->getRawOriginal('secret');
+    $oldSecret = $existing->secret;
 
     $adopted = app(FirstPartyClientProvisioner::class)->provision(
         'Adopted',
@@ -146,7 +145,7 @@ it('adopts an explicit eligible client and then rotates only when requested', fu
         ->and($adopted->clientSecret)->toBeNull()
         ->and($rotated->secretRotated)->toBeTrue()
         ->and($rotated->clientSecret)->toBeString()->not->toBeEmpty()
-        ->and($rotated->client->getRawOriginal('secret'))->not->toBe($oldHash);
+        ->and($rotated->client->secret)->not->toBe($oldSecret);
 });
 
 it('rejects a mismatched adoption credential without mutating the client', function (): void {
@@ -167,7 +166,7 @@ it('rejects a mismatched adoption credential without mutating the client', funct
 it('verifies the existing credential before rotating it', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('Original name', ['https://original.test/callback']);
-    $originalHash = $created->client->getRawOriginal('secret');
+    $originalSecret = $created->client->secret;
 
     expect(fn () => $provisioner->provision(
         name: 'Changed name',
@@ -177,7 +176,7 @@ it('verifies the existing credential before rotating it', function (): void {
     ))->toThrow(FirstPartyClientProvisioningException::class, 'secret does not match');
 
     expect($created->client->refresh()->getAttribute('name'))->toBe('Original name')
-        ->and($created->client->getRawOriginal('secret'))->toBe($originalHash);
+        ->and($created->client->secret)->toBe($originalSecret);
 
     $rotated = $provisioner->provision(
         name: 'Changed name',
@@ -188,7 +187,7 @@ it('verifies the existing credential before rotating it', function (): void {
 
     expect($rotated->secretRotated)->toBeTrue()
         ->and($rotated->clientSecret)->toBeString()->not->toBeEmpty()->not->toBe($created->clientSecret)
-        ->and(Hash::check($rotated->clientSecret, (string) $rotated->client->getRawOriginal('secret')))->toBeTrue();
+        ->and($rotated->client->secret)->toBe($rotated->clientSecret);
 });
 
 it('rejects unsafe adoption targets', function (Closure $mutate, string $message): void {

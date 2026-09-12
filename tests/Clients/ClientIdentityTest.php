@@ -59,20 +59,20 @@ it('issues, introspects and revokes under the wire client_id while storing the k
 
     $this->postJson('/oauth/introspect', [
         'client_id' => 'my-app',
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
         'token' => $result->accessToken,
     ])->assertOk()->assertJsonPath('active', true)->assertJsonPath('client_id', 'my-app');
 
     $this->postJson('/oauth/introspect', [
         'client_id' => 'my-app',
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
         'token' => $result->refreshToken,
         'token_type_hint' => 'refresh_token',
     ])->assertOk()->assertJsonPath('active', true)->assertJsonPath('client_id', 'my-app');
 
     $this->postJson('/oauth/revoke', [
         'client_id' => 'my-app',
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
         'token' => $result->accessToken,
     ])->assertOk();
 
@@ -87,7 +87,7 @@ it('exchanges a token issued under the wire client_id and names it in the act cl
     $response = $this->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => 'my-app',
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
         'subject_token' => $subject,
         'subject_token_type' => 'urn:ietf:params:oauth:token-type:access_token',
         'audience' => 'https://api.internal/orders',

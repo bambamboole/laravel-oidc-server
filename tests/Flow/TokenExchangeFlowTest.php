@@ -53,7 +53,7 @@ function exchange(TestCase $test, array $parameters = [], array $subjectScopes =
     return $test->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $test->client->id,
-        'client_secret' => $test->client->plainSecret,
+        'client_secret' => $test->client->secret,
         'subject_token' => $subjectToken,
         'subject_token_type' => ACCESS_TOKEN_URN,
         ...$parameters,

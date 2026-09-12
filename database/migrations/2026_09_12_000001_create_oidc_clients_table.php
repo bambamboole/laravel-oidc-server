@@ -28,7 +28,7 @@ return new class extends Migration
             $table->string('client_id');
             $table->nullableUuidMorphs('owner');
             $table->string('name');
-            $table->string('secret')->nullable();
+            $table->text('secret')->nullable();
             $table->string('token_endpoint_auth_method');
             $table->json('redirect_uris');
             $table->json('post_logout_redirect_uris')->nullable();

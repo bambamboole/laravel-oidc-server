@@ -81,7 +81,7 @@ it('audits a refresh token grant as token issuance', function (): void {
         'grant_type' => 'refresh_token',
         'refresh_token' => $result->response->json('refresh_token'),
         'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
     ])->assertOk();
 
     $sink->assertRecorded(AuditEventType::TokenIssued, fn (AuditRecord $record): bool => $record->context['grant_type'] === 'refresh_token'
@@ -102,7 +102,7 @@ it('audits a refresh denied after the session ended', function (): void {
         'grant_type' => 'refresh_token',
         'refresh_token' => $result->response->json('refresh_token'),
         'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
     ])->assertStatus(400);
 
     $sink->assertRecorded(AuditEventType::TokenIssuanceFailed, fn (AuditRecord $record): bool => $record->context['grant_type'] === 'refresh_token'
@@ -117,7 +117,7 @@ it('audits a client credentials token issuance', function (): void {
     $this->post('/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $client->id,
-        'client_secret' => $client->plainSecret,
+        'client_secret' => $client->secret,
         'scope' => '',
     ])->assertOk();
 
@@ -139,7 +139,7 @@ it('audits a token exchange and its failure paths', function (): void {
     $this->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
         'subject_token' => $subject,
         'subject_token_type' => 'urn:ietf:params:oauth:token-type:access_token',
         'audience' => 'https://api.internal/orders',
@@ -155,7 +155,7 @@ it('audits a token exchange and its failure paths', function (): void {
     $this->post('/oauth/token', [
         'grant_type' => TestCase::TOKEN_EXCHANGE_GRANT,
         'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
         'subject_token' => $revoked,
         'subject_token_type' => 'urn:ietf:params:oauth:token-type:access_token',
         'audience' => 'https://api.internal/orders',
@@ -189,7 +189,7 @@ it('audits an access token revocation', function (): void {
 
     $this->postJson('/oauth/revoke', [
         'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
         'token' => $result->accessToken,
     ])->assertOk();
 

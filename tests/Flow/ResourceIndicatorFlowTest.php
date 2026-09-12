@@ -94,7 +94,7 @@ function redeem(mixed $test, string $code, PkcePair $pkce, array $overrides = []
     return $test->post('/oauth/token', array_merge([
         'grant_type' => 'authorization_code',
         'client_id' => $test->client->client_id,
-        'client_secret' => $test->client->plainSecret,
+        'client_secret' => $test->client->secret,
         'redirect_uri' => 'https://rp.test/callback',
         'code' => $code,
         'code_verifier' => $pkce->verifier,
@@ -110,7 +110,7 @@ function refreshWith(mixed $test, string $refreshToken, array $overrides = []): 
     return $test->post('/oauth/token', array_merge([
         'grant_type' => 'refresh_token',
         'client_id' => $test->client->client_id,
-        'client_secret' => $test->client->plainSecret,
+        'client_secret' => $test->client->secret,
         'refresh_token' => $refreshToken,
     ], $overrides));
 }

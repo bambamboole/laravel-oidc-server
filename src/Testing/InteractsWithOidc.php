@@ -351,8 +351,8 @@ trait InteractsWithOidc
                 'code_verifier' => $pkce->verifier,
             ];
 
-            if ($client->plainSecret !== null) {
-                $tokenRequest['client_secret'] = $client->plainSecret;
+            if ($client->secret !== null) {
+                $tokenRequest['client_secret'] = $client->secret;
             }
 
             return AuthorizationCodeResult::fromResponse($this->post(route('oidc.token'), $tokenRequest));

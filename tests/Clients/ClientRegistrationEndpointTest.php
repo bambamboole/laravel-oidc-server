@@ -8,7 +8,6 @@ declare(strict_types=1);
  */
 
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
-use Illuminate\Support\Facades\Hash;
 
 /**
  * @param  array<string, mixed>  $overrides
@@ -95,7 +94,7 @@ it('issues a secret to a client registering a secret-based token_endpoint_auth_m
     expect($response->json('client_secret'))->toBeString()->not->toBeEmpty()
         ->and($client->confidential())->toBeTrue()
         ->and($client->token_endpoint_auth_method->value)->toBe($method)
-        ->and(Hash::check($response->json('client_secret'), $client->getAttributes()['secret']))->toBeTrue();
+        ->and($client->secret)->toBe($response->json('client_secret'));
 })->with(['client_secret_basic', 'client_secret_post']);
 
 // RFC 7591 §2 — grant_types ⊆ {authorization_code, refresh_token}, response_types == [code]

@@ -58,7 +58,7 @@ function codeRedemption(TestCase $test, string $code, PkcePair $pkce, array $ove
     return array_merge([
         'grant_type' => 'authorization_code',
         'client_id' => $test->client->id,
-        'client_secret' => $test->client->plainSecret,
+        'client_secret' => $test->client->secret,
         'redirect_uri' => 'https://rp.test/callback',
         'code' => $code,
         'code_verifier' => $pkce->verifier,
@@ -81,7 +81,7 @@ it('authenticates a client through HTTP Basic credentials and forbids caching th
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
     $client->forceFill(['token_endpoint_auth_method' => TokenEndpointAuthMethod::ClientSecretBasic])->save();
 
-    $response = $this->withBasicAuth($client->client_id, (string) $client->plainSecret)
+    $response = $this->withBasicAuth($client->client_id, (string) $client->secret)
         ->post('/oauth/token', ['grant_type' => 'client_credentials'])
         ->assertOk();
 
@@ -94,17 +94,17 @@ it('authenticates a client through HTTP Basic credentials and forbids caching th
 it('rejects a client that presents its secret through both Basic and body credentials', function (): void {
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
-    $this->withBasicAuth($client->client_id, (string) $client->plainSecret)
+    $this->withBasicAuth($client->client_id, (string) $client->secret)
         ->post('/oauth/token', [
             'grant_type' => 'client_credentials',
-            'client_secret' => $client->plainSecret,
+            'client_secret' => $client->secret,
         ])->assertStatus(400)->assertJsonPath('error', 'invalid_request');
 });
 
 it('rejects a client that authenticates with a method it is not registered for', function (): void {
     $client = app(ClientRepository::class)->createClientCredentialsGrantClient('M2M');
 
-    $this->withBasicAuth($client->client_id, (string) $client->plainSecret)
+    $this->withBasicAuth($client->client_id, (string) $client->secret)
         ->post('/oauth/token', ['grant_type' => 'client_credentials'])
         ->assertStatus(401)
         ->assertJsonPath('error', 'invalid_client');
@@ -142,7 +142,7 @@ it('rejects a client that is not registered for the grant', function (): void {
     $this->post('/oauth/token', [
         'grant_type' => 'client_credentials',
         'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
     ])->assertStatus(400)->assertJsonPath('error', 'unauthorized_client');
 });
 
@@ -175,7 +175,7 @@ it('rejects a replayed code and revokes the tokens it produced', function (): vo
     $this->post('/oauth/token', [
         'grant_type' => 'refresh_token',
         'client_id' => $this->client->id,
-        'client_secret' => $this->client->plainSecret,
+        'client_secret' => $this->client->secret,
         'refresh_token' => $first->json('refresh_token'),
     ])->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 });
@@ -187,14 +187,14 @@ it('rejects a code presented by another client and leaves it usable for its righ
 
     $this->post('/oauth/token', codeRedemption($this, $code, $pkce, [
         'client_id' => $other->id,
-        'client_secret' => $other->plainSecret,
+        'client_secret' => $other->secret,
     ]))->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 
     $first = $this->post('/oauth/token', codeRedemption($this, $code, $pkce))->assertOk();
 
     $this->post('/oauth/token', codeRedemption($this, $code, $pkce, [
         'client_id' => $other->id,
-        'client_secret' => $other->plainSecret,
+        'client_secret' => $other->secret,
     ]))->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 
     $accessToken = parseAccessToken((string) $first->json('access_token'));

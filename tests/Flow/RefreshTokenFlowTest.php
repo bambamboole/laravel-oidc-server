@@ -58,7 +58,7 @@ function refresh(TestCase $test, string $refreshToken, ?string $scope = null, mi
     return $test->post('/oauth/token', array_filter([
         'grant_type' => 'refresh_token',
         'client_id' => $client->id,
-        'client_secret' => $client->plainSecret,
+        'client_secret' => $client->secret,
         'refresh_token' => $refreshToken,
         'scope' => $scope,
     ]));
