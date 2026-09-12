@@ -17,7 +17,7 @@ final class LogAuditSink implements AuditSink
 
         Log::channel(is_string($channel) && $channel !== '' ? $channel : null)->log(
             $record->failure ? 'warning' : 'info',
-            'oidc: audit '.$record->type,
+            'oidc: audit '.$record->type->value,
             [
                 ...array_filter([
                     'user_id' => $record->userId,

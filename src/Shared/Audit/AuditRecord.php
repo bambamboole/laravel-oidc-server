@@ -8,14 +8,12 @@ use DateTimeImmutable;
 
 /**
  * The payload an AuditSink receives. The type is the dispatching event's type,
- * a dotted string whose first segment is the category (auth, oauth, admin); a
- * backed enum is stored as its value so sinks and filters stay string-based.
- * Null context values are dropped so sinks only see keys that carry a value.
+ * whose value is a dotted string with the category (auth, oauth, admin) as its
+ * first segment. Null context values are dropped so sinks only see keys that
+ * carry a value.
  */
 final readonly class AuditRecord
 {
-    public string $type;
-
     /** @var array<string, mixed> */
     public array $context;
 
@@ -23,7 +21,7 @@ final readonly class AuditRecord
      * @param  array<string, mixed>  $context
      */
     public function __construct(
-        string|\BackedEnum $type,
+        public \BackedEnum $type,
         public ?string $userId = null,
         public ?string $clientId = null,
         public ?string $sid = null,
@@ -33,13 +31,12 @@ final readonly class AuditRecord
         public ?string $userAgent = null,
         public DateTimeImmutable $occurredAt = new DateTimeImmutable,
     ) {
-        $this->type = $type instanceof \BackedEnum ? (string) $type->value : $type;
         $this->context = array_filter($context, static fn (mixed $value): bool => $value !== null);
     }
 
     public function category(): string
     {
-        return explode('.', $this->type)[0];
+        return explode('.', (string) $this->type->value)[0];
     }
 
     public function withRequestContext(?string $ip, ?string $userAgent, ?string $sid): self

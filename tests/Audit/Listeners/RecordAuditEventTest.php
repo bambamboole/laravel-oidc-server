@@ -36,7 +36,7 @@ it('records any event implementing the audit contract, including host-defined on
 
     event(new class implements AuditEvent
     {
-        public string|BackedEnum $type { get => 'app.export.downloaded'; }
+        public BackedEnum $type { get => HostAuditType::ExportDownloaded; }
 
         public function auditRecord(): AuditRecord
         {
@@ -44,25 +44,9 @@ it('records any event implementing the audit contract, including host-defined on
         }
     });
 
-    expect($sink->assertRecorded('app.export.downloaded')->context)->toBe(['file' => 'report.csv']);
-});
-
-it('stores a backed enum type as its value', function (): void {
-    $sink = fakeAudit();
-
-    event(new class implements AuditEvent
-    {
-        public string|BackedEnum $type { get => HostAuditType::ExportDownloaded; }
-
-        public function auditRecord(): AuditRecord
-        {
-            return new AuditRecord($this->type, userId: '7');
-        }
-    });
-
     $record = $sink->assertRecorded(HostAuditType::ExportDownloaded);
 
-    expect($record->type)->toBe('app.export.downloaded')
+    expect($record->context)->toBe(['file' => 'report.csv'])
         ->and($record->category())->toBe('app');
 });
 
