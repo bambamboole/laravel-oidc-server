@@ -8,7 +8,6 @@ use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenRevoker;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\SignedJwtParser;
-use Bambamboole\LaravelOidc\Server\Tokens\Commands\PurgeTokensCommand;
 use Bambamboole\LaravelOidc\Server\Tokens\Contracts\ExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\AllowlistExchangePolicy;
 use Bambamboole\LaravelOidc\Server\Tokens\Exchange\TokenExchanger;
@@ -56,13 +55,6 @@ class TokensServiceProvider extends ServiceProvider
                 $handler->renderable($this->renderBearerChallenge(...));
             }
         });
-    }
-
-    public function boot(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->commands([PurgeTokensCommand::class]);
-        }
     }
 
     /**

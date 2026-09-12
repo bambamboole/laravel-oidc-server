@@ -6,7 +6,6 @@ namespace Bambamboole\LaravelOidc\Server\Sessions;
 
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifier;
 use Bambamboole\LaravelOidc\Server\Sessions\Commands\DispatchExpiredSessionLogoutsCommand;
-use Bambamboole\LaravelOidc\Server\Sessions\Commands\PruneSessionsCommand;
 use Bambamboole\LaravelOidc\Server\Sessions\Listeners\EndOidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\Listeners\EstablishSessionToken;
 use Bambamboole\LaravelOidc\Server\Sessions\Listeners\ForgetSessionToken;
@@ -37,7 +36,7 @@ class SessionsServiceProvider extends ServiceProvider
         Event::listen(Logout::class, EndOidcSession::class);
 
         if ($this->app->runningInConsole()) {
-            $this->commands([DispatchExpiredSessionLogoutsCommand::class, PruneSessionsCommand::class]);
+            $this->commands([DispatchExpiredSessionLogoutsCommand::class]);
         }
     }
 }

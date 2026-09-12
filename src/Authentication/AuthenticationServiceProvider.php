@@ -6,7 +6,6 @@ namespace Bambamboole\LaravelOidc\Server\Authentication;
 
 use Bambamboole\LaravelOidc\Server\Authentication\Actions\ResetPassword as ResetPasswordAction;
 use Bambamboole\LaravelOidc\Server\Authentication\Actions\SendPasswordResetLink;
-use Bambamboole\LaravelOidc\Server\Authentication\Commands\PruneAuthenticationContextsCommand;
 use Bambamboole\LaravelOidc\Server\Authentication\Context\AuthenticationContextStore;
 use Bambamboole\LaravelOidc\Server\Authentication\Listeners\DispatchLoggedOut;
 use Bambamboole\LaravelOidc\Server\Authentication\Pipeline\InteractiveLoginFinalizer;
@@ -22,6 +21,7 @@ use Bambamboole\LaravelOidc\Server\Authentication\Views\PasswordUpdateView;
 use Bambamboole\LaravelOidc\Server\Authentication\Views\RegisterView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\DeviceRecognizer;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\IdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\LoginFinalizer;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
@@ -42,7 +42,7 @@ class AuthenticationServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $identityGuard = (string) config('oidc.auth.guard', 'identity');
+        $identityGuard = IdentityGuard::name();
 
         if (! config()->has("auth.guards.{$identityGuard}")) {
             config()->set("auth.guards.{$identityGuard}", [
@@ -83,10 +83,6 @@ class AuthenticationServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(Logout::class, DispatchLoggedOut::class);
-
-        if ($this->app->runningInConsole()) {
-            $this->commands([PruneAuthenticationContextsCommand::class]);
-        }
 
         ResetPassword::createUrlUsing(fn (mixed $notifiable, string $token): string => route(
             'identity.password.reset',

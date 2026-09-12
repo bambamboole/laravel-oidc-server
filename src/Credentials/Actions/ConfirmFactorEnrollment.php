@@ -10,10 +10,10 @@ use Bambamboole\LaravelOidc\Server\Credentials\Events\FactorConfirmed;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-final readonly class ConfirmFactorEnrollment
+readonly class ConfirmFactorEnrollment
 {
     public function __construct(
-        private EnrollmentPolicy $policy,
+        protected EnrollmentPolicy $policy,
     ) {}
 
     /**

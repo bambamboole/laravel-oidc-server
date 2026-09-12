@@ -16,7 +16,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * and it never reports for a realm with nothing to enroll — there the demand
  * is unsatisfiable and the login sequence denies it outright.
  */
-final readonly class ConfigureMfaAction implements RequiredAction
+readonly class ConfigureMfaAction implements RequiredAction
 {
     public function __construct(private FactorRegistry $factors) {}
 

@@ -10,7 +10,7 @@ use Illuminate\Contracts\Auth\PasswordBroker;
  * Sends the reset link of the realm it runs in; wrap the call in
  * CurrentRealm::runAs() to send one for another realm's user.
  */
-final readonly class SendPasswordResetLink
+readonly class SendPasswordResetLink
 {
     public function __construct(private PasswordBroker $broker) {}
 

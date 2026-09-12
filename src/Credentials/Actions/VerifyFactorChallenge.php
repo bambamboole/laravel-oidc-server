@@ -19,10 +19,10 @@ use Illuminate\Contracts\Auth\Authenticatable;
  * against the enrollment the challenge was issued for. Every outcome is
  * audited here; establishing the session afterwards is the caller's job.
  */
-final readonly class VerifyFactorChallenge
+readonly class VerifyFactorChallenge
 {
     public function __construct(
-        private FactorRegistry $factors,
+        protected FactorRegistry $factors,
     ) {}
 
     /**
@@ -61,7 +61,7 @@ final readonly class VerifyFactorChallenge
         return $verification;
     }
 
-    private function pendingEnrollment(Authenticatable $user, string $providerKey, string $id): ?FactorEnrollment
+    protected function pendingEnrollment(Authenticatable $user, string $providerKey, string $id): ?FactorEnrollment
     {
         foreach ($this->factors->get($providerKey)->enrollments($user) as $enrollment) {
             if ($id === '' || $enrollment->id === $id) {

@@ -23,15 +23,15 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
  * `application_type`, `software_id`, and similar. PKCE is enforced by the
  * grant for every client.
  */
-final readonly class RegisterClient
+readonly class RegisterClient
 {
-    private const array GRANT_TYPES = ['authorization_code', 'refresh_token'];
+    protected const array GRANT_TYPES = ['authorization_code', 'refresh_token'];
 
-    private const array RESPONSE_TYPES = ['code'];
+    protected const array RESPONSE_TYPES = ['code'];
 
     public function __construct(
-        private ClientRepository $clients,
-        private RealmResolver $realms,
+        protected ClientRepository $clients,
+        protected RealmResolver $realms,
     ) {}
 
     /**
@@ -75,7 +75,7 @@ final readonly class RegisterClient
     /**
      * @return list<string>
      */
-    private function normalizedUris(mixed $uris, string $field, string $error, bool $required): array
+    protected function normalizedUris(mixed $uris, string $field, string $error, bool $required): array
     {
         if ($uris === null && ! $required) {
             return [];
@@ -107,7 +107,7 @@ final readonly class RegisterClient
         return array_values($normalized);
     }
 
-    private function tokenEndpointAuthMethod(mixed $method): TokenEndpointAuthMethod
+    protected function tokenEndpointAuthMethod(mixed $method): TokenEndpointAuthMethod
     {
         if ($method === null) {
             return TokenEndpointAuthMethod::None;
@@ -128,7 +128,7 @@ final readonly class RegisterClient
      *
      * @return list<string>
      */
-    private function grantTypes(mixed $grantTypes): array
+    protected function grantTypes(mixed $grantTypes): array
     {
         if ($grantTypes === null) {
             return self::GRANT_TYPES;
@@ -151,7 +151,7 @@ final readonly class RegisterClient
         return $normalized;
     }
 
-    private function assertResponseTypes(mixed $responseTypes): void
+    protected function assertResponseTypes(mixed $responseTypes): void
     {
         if ($responseTypes === null) {
             return;
@@ -165,7 +165,7 @@ final readonly class RegisterClient
     }
 
     /** OIDC Back-Channel Logout 1.0 §2.2: an absolute https URL, which may carry port, path and query but no fragment. */
-    private function backChannelLogoutUri(mixed $uri): ?string
+    protected function backChannelLogoutUri(mixed $uri): ?string
     {
         if ($uri === null) {
             return null;
@@ -191,7 +191,7 @@ final readonly class RegisterClient
      * @param  array<string, mixed>  $metadata
      * @param  list<string>  $redirectUris
      */
-    private function clientName(array $metadata, array $redirectUris): string
+    protected function clientName(array $metadata, array $redirectUris): string
     {
         foreach (['client_name', 'name'] as $key) {
             $name = $metadata[$key] ?? null;
@@ -206,7 +206,7 @@ final readonly class RegisterClient
         return is_string($host) && $host !== '' ? $host : 'Dynamically Registered Client';
     }
 
-    private function rejectRedirectUri(string $uri): ?string
+    protected function rejectRedirectUri(string $uri): ?string
     {
         $parts = parse_url($uri);
 

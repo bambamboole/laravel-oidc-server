@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Authentication\Http\Middleware;
 
 use Bambamboole\LaravelOidc\Server\Authentication\LoginDestination;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\IdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\RequiredActionSubject;
 use Closure;
 use Illuminate\Auth\AuthenticationException;
@@ -29,7 +30,7 @@ class RequireActionSubject
     {
         if (! $this->subject->current($request) instanceof Authenticatable) {
             throw new AuthenticationException(
-                guards: [(string) config('oidc.auth.guard', 'identity')],
+                guards: [IdentityGuard::name()],
                 redirectTo: $this->loginDestination->url(),
             );
         }

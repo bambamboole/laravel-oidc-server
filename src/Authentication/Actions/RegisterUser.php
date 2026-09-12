@@ -17,11 +17,11 @@ use Illuminate\Contracts\Container\Container;
  * validate. Signing the new user in is the caller's job
  * (InteractiveLoginFinalizer).
  */
-final readonly class RegisterUser
+readonly class RegisterUser
 {
     public function __construct(
-        private Container $container,
-        private PasswordCredential $passwords,
+        protected Container $container,
+        protected PasswordCredential $passwords,
     ) {}
 
     public function enabled(): bool

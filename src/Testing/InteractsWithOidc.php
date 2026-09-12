@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentPrompt;
 use Bambamboole\LaravelOidc\Server\Consents\Views\ConsentView;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AcrResolver;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\IdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
 use Bambamboole\LaravelOidc\Server\Shared\Tokens\AccessTokenMinter;
@@ -94,7 +95,7 @@ trait InteractsWithOidc
         ?int $authTime = null,
         ?string $guard = null,
     ): static {
-        $this->actingAs($user, $guard ?? (string) config('oidc.auth.guard', 'identity'));
+        $this->actingAs($user, $guard ?? IdentityGuard::name());
 
         // withSession() starts the session store the typed writers below target.
         $this->withSession($amr === [] ? [] : [AuthSessionState::AMR_KEY => $amr]);
@@ -299,7 +300,7 @@ trait InteractsWithOidc
         $this->withoutMiddleware($csrfMiddleware);
 
         try {
-            $guard = (string) config('oidc.auth.guard', 'identity');
+            $guard = IdentityGuard::name();
 
             if (! Auth::guard($guard)->check()) {
                 $this->actingAsIdentity($user, guard: $guard);

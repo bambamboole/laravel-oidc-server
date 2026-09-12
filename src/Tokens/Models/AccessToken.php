@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Database\Factories\AccessTokenFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Tokens\Concerns\PrunesSpentRecords;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +34,8 @@ class AccessToken extends Model
 
     /** @use HasFactory<AccessTokenFactory> */
     use HasFactory;
+
+    use PrunesSpentRecords;
 
     protected $table = 'oidc_access_tokens';
 

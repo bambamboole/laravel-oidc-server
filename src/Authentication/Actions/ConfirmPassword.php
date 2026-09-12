@@ -10,7 +10,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Session\Session;
 use SensitiveParameter;
 
-final readonly class ConfirmPassword
+readonly class ConfirmPassword
 {
     public function __construct(private PasswordCredential $passwords) {}
 

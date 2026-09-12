@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Model;
  * An identity already linked to a different local user is refused rather
  * than moved.
  */
-final readonly class LinkSocialAccount
+readonly class LinkSocialAccount
 {
     public function __construct(private SocialAccountManager $accounts) {}
 

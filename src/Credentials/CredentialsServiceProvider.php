@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Credentials;
 use Bambamboole\LaravelOidc\Server\Credentials\Contracts\FactorProvider;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\FactorSetupView;
 use Bambamboole\LaravelOidc\Server\Credentials\Views\TwoFactorChallengeView;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\IdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\PasswordCredential;
 use Bambamboole\LaravelOidc\Server\Shared\Credentials\SecondFactorGate;
@@ -57,7 +58,7 @@ class CredentialsServiceProvider extends ServiceProvider
     {
         Passkeys::ignoreRoutes();
 
-        config()->set('passkeys.guard', (string) config('oidc.auth.guard', 'identity'));
+        config()->set('passkeys.guard', IdentityGuard::name());
         config()->set('passkeys.redirect', config('oidc.login.home', '/dashboard'));
         config()->set('passkeys.middleware', ['web']);
         config()->set('passkeys.management_middleware', []);

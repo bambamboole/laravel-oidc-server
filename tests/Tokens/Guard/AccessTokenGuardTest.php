@@ -20,7 +20,6 @@ use Illuminate\Support\Str;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
-use SensitiveParameter;
 use Workbench\App\Models\User;
 
 const GUARD_RESOURCE_METADATA = 'resource_metadata="http://localhost/.well-known/oauth-protected-resource"';

@@ -199,7 +199,6 @@ it('walks the user through several open actions in registration order', function
 
     $this->get(verificationUrl($user));
 
-    // The terms action still derives as open, so the login stays parked.
     $this->assertGuest('identity');
     expect(app(PendingActions::class)->for($user->fresh()))->toBe(['read_the_terms']);
 });

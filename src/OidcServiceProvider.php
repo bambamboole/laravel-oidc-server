@@ -16,11 +16,13 @@ use Bambamboole\LaravelOidc\Server\Credentials\ConfigureMfaAction;
 use Bambamboole\LaravelOidc\Server\Credentials\CredentialsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Installation\InstallationServiceProvider;
 use Bambamboole\LaravelOidc\Server\Protocol\ProtocolServiceProvider;
+use Bambamboole\LaravelOidc\Server\Purge\Commands\PruneCommand;
 use Bambamboole\LaravelOidc\Server\Realms\Enums\RealmRouting;
 use Bambamboole\LaravelOidc\Server\Realms\RealmsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Scopes\ScopesServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionsServiceProvider;
 use Bambamboole\LaravelOidc\Server\Sessions\SessionTokenGuard;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\IdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\RequiredActionRegistry;
 use Bambamboole\LaravelOidc\Server\Shared\Installation\EnvironmentFile;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\SigningKeyStore;
@@ -89,8 +91,8 @@ class OidcServiceProvider extends ServiceProvider
     {
         $this->mergeConfig();
 
-        // Written by the Keys, Clients and Installation commands alike, so it
-        // is bound where all of them are wired.
+        // Written by both the Clients and Installation commands, so it is bound
+        // where the two are wired.
         $this->app->singleton(EnvironmentFile::class);
 
         // The built-in required actions come from two domains and the order a
@@ -129,9 +131,13 @@ class OidcServiceProvider extends ServiceProvider
             __DIR__.'/../database/migrations' => database_path('migrations'),
         ], 'oidc-migrations');
 
+        if ($this->app->runningInConsole()) {
+            $this->commands([PruneCommand::class]);
+        }
+
         AboutCommand::add('OIDC', fn (): array => [
             'Issuer' => config('oidc.issuer') ?? 'not set',
-            'Auth Guard' => config('oidc.auth.guard', 'identity'),
+            'Auth Guard' => IdentityGuard::name(),
             'Session Token Guard' => SessionTokenGuard::name() ?? 'not set',
             'Self-SSO Client' => FirstPartyClientConfig::fromConfig()->isConfigured() ? 'configured' : 'not configured',
             'Signing Key Store' => class_basename((string) config('oidc.keys.store', DatabaseSigningKeyStore::class)),

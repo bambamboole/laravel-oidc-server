@@ -135,13 +135,13 @@ final class OAuthServerException extends HttpResponseException
         return new self('consent_required', 'The authorization server requires end-user consent.', 401, $redirectUri, $state);
     }
 
-    /** OpenID Connect Core §3.1.2.6 / §6: the request parameter is not supported. */
+    /** OpenID Connect Core §3.1.2.6 / §6. */
     public static function requestNotSupported(string $redirectUri, ?string $state): self
     {
         return new self('request_not_supported', 'The authorization server does not support the request parameter.', 400, $redirectUri, $state);
     }
 
-    /** OpenID Connect Core §3.1.2.6 / §6: the request_uri parameter is not supported. */
+    /** OpenID Connect Core §3.1.2.6 / §6. */
     public static function requestUriNotSupported(string $redirectUri, ?string $state): self
     {
         return new self('request_uri_not_supported', 'The authorization server does not support the request_uri parameter.', 400, $redirectUri, $state);

@@ -10,6 +10,7 @@ use Bambamboole\LaravelOidc\Server\Sessions\Actions\EndSession;
 use Bambamboole\LaravelOidc\Server\Sessions\LogoutConfirmation;
 use Bambamboole\LaravelOidc\Server\Sessions\Views\LogoutConfirmationView;
 use Bambamboole\LaravelOidc\Server\Sessions\Views\LogoutPrompt;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\IdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\MissingAuthViewException;
 use Bambamboole\LaravelOidc\Server\Shared\Http\RespondsToInertiaExternalRedirects;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\OAuthServerException;
@@ -123,7 +124,7 @@ class EndSessionController
 
     private function currentUser(): ?Authenticatable
     {
-        return Auth::guard((string) config('oidc.auth.guard', 'identity'))->user();
+        return Auth::guard(IdentityGuard::name())->user();
     }
 
     /** A hint is proof for the signed-in user only; a signed-out browser has nobody it could contradict. */

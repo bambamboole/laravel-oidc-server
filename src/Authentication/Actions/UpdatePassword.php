@@ -19,11 +19,11 @@ use Illuminate\Support\Str;
  * application owns the column either way, and rotating the remember token
  * cuts loose the other browsers holding the old one.
  */
-final readonly class UpdatePassword
+readonly class UpdatePassword
 {
     public function __construct(
-        private Container $container,
-        private PasswordCredential $passwords,
+        protected Container $container,
+        protected PasswordCredential $passwords,
     ) {}
 
     public function enabled(): bool

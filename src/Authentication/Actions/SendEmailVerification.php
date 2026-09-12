@@ -6,7 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Actions;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-final class SendEmailVerification
+class SendEmailVerification
 {
     public function __invoke(MustVerifyEmail $user): bool
     {

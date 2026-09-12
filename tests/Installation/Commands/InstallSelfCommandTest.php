@@ -138,17 +138,17 @@ it('fails when the relying-party package is not installed', function (): void {
     expect(File::get($env))->toBe($before);
 });
 
-it('refuses to change the first-party client belonging to another realm', function (): void {
-    $env = installSelfEnv();
+it('installs a first-party client per realm and leaves the other realms alone', function (): void {
+    installSelfEnv();
     config(['oidc-client' => [], 'app.url' => 'https://app.test', 'oidc.realm' => 'admin']);
     $this->artisan('oidc:install-self', ['--force' => true])->assertSuccessful();
-    $client = Client::query()->sole();
-    $attributes = $client->getAttributes();
-    $environment = File::get($env);
+    $admin = Client::query()->sole();
+    $adminAttributes = $admin->getAttributes();
 
     config(['oidc.realm' => 'partners']);
-    $this->artisan('oidc:install-self', ['--force' => true, '--fresh' => true])->assertFailed();
+    $this->artisan('oidc:install-self', ['--force' => true, '--fresh' => true])->assertSuccessful();
 
-    expect($client->refresh()->getAttributes())->toBe($attributes);
-    expect(File::get($env))->toBe($environment);
+    expect($admin->refresh()->getAttributes())->toBe($adminAttributes)
+        ->and(Client::query()->where('realm_id', 'partners')->sole()->getRawOriginal('provisioning_key'))
+        ->toBe('first-party');
 });

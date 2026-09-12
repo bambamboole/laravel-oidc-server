@@ -7,8 +7,10 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Models;
 use Bambamboole\LaravelOidc\Server\Database\Factories\PasswordResetTokenFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -21,6 +23,7 @@ use Illuminate\Database\Eloquent\Model;
 class PasswordResetToken extends Model
 {
     use BelongsToRealm, HasUuids;
+    use MassPrunable;
 
     public $timestamps = false;
 
@@ -42,5 +45,19 @@ class PasswordResetToken extends Model
     protected function casts(): array
     {
         return ['created_at' => 'datetime'];
+    }
+
+    /**
+     * The table carries no expiry column — a link is valid for the realm's
+     * `tokens.password_reset` window from when it was minted, and this prunes
+     * on the deployment-wide default. It is a floor, not the authority:
+     * PasswordResetTokens checks the realm's own window on every lookup.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()
+            ->where('created_at', '<', now()->subSeconds((int) config('oidc.tokens.password_reset', 3600)));
     }
 }

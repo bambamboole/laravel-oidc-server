@@ -7,8 +7,10 @@ namespace Bambamboole\LaravelOidc\Server\Authentication\Models;
 use Bambamboole\LaravelOidc\Server\Database\Factories\AuthenticationContextFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -30,6 +32,8 @@ class AuthenticationContext extends Model
 
     /** @use HasFactory<AuthenticationContextFactory> */
     use HasFactory;
+
+    use MassPrunable;
 
     public $timestamps = false;
 
@@ -53,5 +57,16 @@ class AuthenticationContext extends Model
             'created_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The context outlives nothing: once it has expired, the tokens that read
+     * it are spent too.
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->where('expires_at', '<', now());
     }
 }

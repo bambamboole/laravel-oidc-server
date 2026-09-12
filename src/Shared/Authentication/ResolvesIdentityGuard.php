@@ -17,7 +17,7 @@ trait ResolvesIdentityGuard
 {
     private function guardName(): string
     {
-        return (string) config('oidc.auth.guard', 'identity');
+        return IdentityGuard::name();
     }
 
     private function homeUrl(): string

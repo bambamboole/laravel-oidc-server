@@ -7,6 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Database\Factories\AuthorizationCodeFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Tokens\Concerns\PrunesSpentRecords;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -38,6 +39,8 @@ class AuthorizationCode extends Model
 
     /** @use HasFactory<AuthorizationCodeFactory> */
     use HasFactory;
+
+    use PrunesSpentRecords;
 
     protected $table = 'oidc_auth_codes';
 

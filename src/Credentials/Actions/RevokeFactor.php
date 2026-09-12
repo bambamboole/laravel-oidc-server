@@ -10,10 +10,10 @@ use Bambamboole\LaravelOidc\Server\Credentials\Events\FactorRevoked;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-final readonly class RevokeFactor
+readonly class RevokeFactor
 {
     public function __construct(
-        private EnrollmentPolicy $policy,
+        protected EnrollmentPolicy $policy,
     ) {}
 
     public function __invoke(Authenticatable $user, EnrollableFactorProvider $provider, FactorEnrollment $enrollment): void

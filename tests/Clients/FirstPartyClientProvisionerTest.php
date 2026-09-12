@@ -30,6 +30,35 @@ it('creates a confidential managed client and returns its plain secret once', fu
         ->and($result->secretRotated)->toBeFalse();
 });
 
+it('gives every realm its own first-party client', function (): void {
+    $provisioner = app(FirstPartyClientProvisioner::class);
+
+    config(['oidc.realm' => 'admin']);
+    $admin = $provisioner->provision('Admin console', ['https://admin.test/callback']);
+
+    config(['oidc.realm' => 'partners']);
+    $partners = $provisioner->provision('Partner portal', ['https://partners.test/callback']);
+
+    expect($partners->wasCreated)->toBeTrue()
+        ->and($partners->client->is($admin->client))->toBeFalse()
+        ->and($partners->client->realm_id)->toBe('partners')
+        ->and($admin->client->refresh()->name)->toBe('Admin console');
+});
+
+it('reconciles the managed client within its own realm only', function (): void {
+    $provisioner = app(FirstPartyClientProvisioner::class);
+
+    config(['oidc.realm' => 'admin']);
+    $provisioner->provision('Admin console', ['https://admin.test/callback']);
+
+    config(['oidc.realm' => 'partners']);
+    $provisioner->provision('Partner portal', ['https://partners.test/callback']);
+    $reconciled = $provisioner->provision('Partner portal renamed', ['https://partners.test/callback']);
+
+    expect($reconciled->wasCreated)->toBeFalse()
+        ->and(Client::query()->where('provisioning_key', 'first-party')->count())->toBe(2);
+});
+
 it('reconciles the managed client without rotating its secret', function (): void {
     $provisioner = app(FirstPartyClientProvisioner::class);
     $created = $provisioner->provision('Old name', ['https://old.test/callback']);

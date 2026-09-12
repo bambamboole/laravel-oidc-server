@@ -6,6 +6,7 @@ namespace Bambamboole\LaravelOidc\Server\Tokens\Models;
 
 use Bambamboole\LaravelOidc\Server\Database\Factories\RefreshTokenFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
+use Bambamboole\LaravelOidc\Server\Tokens\Concerns\PrunesSpentRecords;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,8 @@ class RefreshToken extends Model
 
     /** @use HasFactory<RefreshTokenFactory> */
     use HasFactory;
+
+    use PrunesSpentRecords;
 
     protected $table = 'oidc_refresh_tokens';
 

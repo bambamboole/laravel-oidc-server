@@ -12,6 +12,7 @@ use Bambamboole\LaravelOidc\Server\Protocol\Grants\ClientCredentialsGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Grants\RefreshTokenGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Grants\TokenExchangeGrant;
 use Bambamboole\LaravelOidc\Server\Protocol\Http\Controllers\AuthorizeController;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\IdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingAuthorization;
 use Bambamboole\LaravelOidc\Server\Shared\Protocol\AuthorizationCompleter;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
@@ -29,7 +30,7 @@ class ProtocolServiceProvider extends ServiceProvider
 
         $this->app->when(AuthorizeController::class)
             ->needs(StatefulGuard::class)
-            ->give(fn () => Auth::guard((string) config('oidc.auth.guard', 'identity')));
+            ->give(fn () => Auth::guard(IdentityGuard::name()));
 
         // Built per request: the grants on offer follow the current realm's settings.
         $this->app->bind(TokenEndpoint::class, function (Application $app): TokenEndpoint {

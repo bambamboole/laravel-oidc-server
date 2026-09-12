@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioner;
 use Bambamboole\LaravelOidc\Server\Clients\FirstPartyClientProvisioningResult;
 use SensitiveParameter;
 
-final readonly class ProvisionFirstPartyClient
+readonly class ProvisionFirstPartyClient
 {
     public function __construct(private FirstPartyClientProvisioner $provisioner) {}
 

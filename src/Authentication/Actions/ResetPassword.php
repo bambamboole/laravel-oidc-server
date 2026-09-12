@@ -23,12 +23,12 @@ use RuntimeException;
  * app's ResetUserPassword binding, which owns persistence. Signing the user
  * in afterwards is the caller's job.
  */
-final readonly class ResetPassword
+readonly class ResetPassword
 {
     public function __construct(
-        private Container $container,
-        private PasswordCredential $passwords,
-        private PasswordBroker $broker,
+        protected Container $container,
+        protected PasswordCredential $passwords,
+        protected PasswordBroker $broker,
     ) {}
 
     /**

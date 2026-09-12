@@ -38,7 +38,7 @@ final class CurrentAccessToken
         return $this->token->context ?? [];
     }
 
-    /** The wire client_id, resolved from the token's client. */
+    /** The wire client_id, not the primary key. */
     public function clientId(): ?string
     {
         return $this->clientId ??= $this->token->client?->client_id;

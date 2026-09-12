@@ -29,7 +29,7 @@ enum RealmRouting: string
             ?? throw new ValueError('oidc.routes.realms must be "single", "path" or "domain".');
     }
 
-    /** The route prefix every package route is registered below. */
+    /** The prefix the realm's routes sit below; the well-known metadata routes carry the realm behind the well-known segment instead. */
     public function prefix(): string
     {
         return $this === self::Path ? self::SEGMENT.'/{realm}' : '';
@@ -56,7 +56,6 @@ enum RealmRouting: string
         return $this === self::Path ? '/'.self::SEGMENT.'/'.$realm : '/';
     }
 
-    /** What the realm adds to the issuer origin. */
     public function issuerPath(string $realm): string
     {
         return $this === self::Path ? '/'.self::SEGMENT.'/'.$realm : '';

@@ -15,6 +15,7 @@ use Bambamboole\LaravelOidc\Server\Protocol\Authorize\AuthorizeRequestValidator;
 use Bambamboole\LaravelOidc\Server\Scopes\Contracts\ScopeRepository;
 use Bambamboole\LaravelOidc\Server\Scopes\Scope;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\AuthSessionState;
+use Bambamboole\LaravelOidc\Server\Shared\Authentication\IdentityGuard;
 use Bambamboole\LaravelOidc\Server\Shared\Authentication\PendingActions;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\AuthorizationViewResponse;
 use Bambamboole\LaravelOidc\Server\Shared\Consents\ConsentStore;
@@ -185,7 +186,7 @@ class AuthorizeController
         $request->session()->put('oidc.prompted_for_login', true);
 
         throw new AuthenticationException(
-            guards: [(string) config('oidc.auth.guard', 'identity')],
+            guards: [IdentityGuard::name()],
             redirectTo: $this->loginDestination->url(),
         );
     }

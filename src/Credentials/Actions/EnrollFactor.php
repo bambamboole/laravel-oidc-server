@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\Events\FactorEnrollmentStarted;
 use Bambamboole\LaravelOidc\Server\Credentials\FactorEnrollment;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-final readonly class EnrollFactor
+readonly class EnrollFactor
 {
     public function __invoke(
         Authenticatable $user,

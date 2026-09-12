@@ -8,7 +8,7 @@ use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Auth\Authenticatable;
 
-final class UnlinkSocialAccount
+class UnlinkSocialAccount
 {
     /**
      * @throws AuthorizationException when the account belongs to someone else

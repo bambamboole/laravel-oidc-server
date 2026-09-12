@@ -12,6 +12,11 @@ namespace Bambamboole\LaravelOidc\Server\Sessions;
  */
 final class SessionTokenGuard
 {
+    /**
+     * Not IdentityGuard::name(): an explicitly null `oidc.auth.guard` has to
+     * fall through to the application's default guard, which that method's
+     * string cast would turn into an empty name instead.
+     */
     public static function name(): ?string
     {
         $guard = config('oidc.session.token.guard')

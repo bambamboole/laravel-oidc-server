@@ -16,10 +16,10 @@ use SensitiveParameter;
  * password's history when the package has not tracked it yet, so the
  * realm's rotation clock runs from the first login after the upgrade.
  */
-final readonly class AuthenticateWithPassword
+readonly class AuthenticateWithPassword
 {
     public function __construct(
-        private PasswordCredential $passwords,
+        protected PasswordCredential $passwords,
     ) {}
 
     public function __invoke(

@@ -7,7 +7,6 @@ namespace Bambamboole\LaravelOidc\Server\Clients;
 use Bambamboole\LaravelOidc\Server\Clients\Events\ClientProvisioned;
 use Bambamboole\LaravelOidc\Server\Clients\Exceptions\FirstPartyClientProvisioningException;
 use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
-use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Hashing\Hasher;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +21,6 @@ final readonly class FirstPartyClientProvisioner
     public function __construct(
         private ClientRepository $clients,
         private Hasher $hasher,
-        private RealmResolver $realms,
     ) {}
 
     /**
@@ -77,7 +75,7 @@ final readonly class FirstPartyClientProvisioner
             ));
         } catch (QueryException $exception) {
             if ($this->isUniqueConstraint($exception)
-                && Client::query()->where('provisioning_key', self::ProvisioningKey)->exists()) {
+                && Client::query()->inRealm()->where('provisioning_key', self::ProvisioningKey)->exists()) {
                 return $this->recordProvisioned($this->transactionalProvision(
                     $name,
                     $redirectUris,
@@ -128,12 +126,10 @@ final readonly class FirstPartyClientProvisioner
             $existingClientSecret,
         ): FirstPartyClientProvisioningResult {
             $client = Client::query()
+                ->inRealm()
                 ->where('provisioning_key', self::ProvisioningKey)
                 ->lockForUpdate()
                 ->first();
-            if ($client !== null && $client->realm_id !== $this->realms->current()->identifier()) {
-                throw new FirstPartyClientProvisioningException('Self-SSO is already provisioned for another realm. Its client cannot be reassigned.');
-            }
 
             $created = false;
 
