@@ -71,7 +71,7 @@ it('mints a real signed access token with a persisted row', function (): void {
     expect($token)->not->toBeNull()
         ->and((string) $token?->getAttribute('user_id'))->toBe((string) $this->user->id)
         ->and($token?->getAttribute('scopes'))->toBe(['openid', 'email'])
-        ->and($token?->getAttribute('revoked'))->toBeFalse();
+        ->and($token?->isRevoked())->toBeFalse();
 
     $bearerJwt = $this->issueTokenFor($this->user, scopes: ['openid', 'email']);
 

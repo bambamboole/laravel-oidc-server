@@ -11,6 +11,8 @@ use Bambamboole\LaravelOidc\Server\Shared\Realms\IssuerResolver;
 use Bambamboole\LaravelOidc\Server\Shared\SigningKeys\Jwk;
 use Bambamboole\LaravelOidc\Server\Tokens\Guard\ClientPrincipal;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -18,6 +20,7 @@ use Illuminate\Support\Str;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
+use SensitiveParameter;
 use Workbench\App\Models\User;
 
 const GUARD_RESOURCE_METADATA = 'resource_metadata="http://localhost/.well-known/oauth-protected-resource"';
@@ -65,7 +68,6 @@ function bearerIssuedElsewhere(mixed $test): string
         'user_id' => $test->user->id,
         'client_id' => $test->client->id,
         'scopes' => ['openid'],
-        'revoked' => false,
         'expires_at' => now()->addHour(),
     ])->save();
 
@@ -133,7 +135,7 @@ it('rejects a userless token whose client is revoked or gone', function (string 
     $jwt = clientCredentialsBearer($machine);
 
     $case === 'revoked'
-        ? $machine->forceFill(['revoked' => true])->save()
+        ? $machine->forceFill(['revoked_at' => now()])->save()
         : $machine->delete();
 
     $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
@@ -163,7 +165,6 @@ it('answers a rejected bearer token with invalid_token', function (string $case)
         'revoked' => resourceServerBearer($this, revoked: true),
         'expired' => resourceServerBearer($this, expired: true),
         'foreign issuer' => bearerIssuedElsewhere($this),
-        'unknown subject' => resourceServerBearer($this, subjectId: '999999'),
         'id_token as bearer' => persistedIdTokenAsBearer($this),
         'revoked machine token' => clientCredentialsBearer(app(ClientRepository::class)->createClientCredentialsGrantClient('M2M'), revoked: true),
         'machine token for another resource' => clientCredentialsBearer(app(ClientRepository::class)->createClientCredentialsGrantClient('M2M'), audience: ['https://other.example/api']),
@@ -179,7 +180,6 @@ it('answers a rejected bearer token with invalid_token', function (string $case)
     'revoked',
     'expired',
     'foreign issuer',
-    'unknown subject',
     'id_token as bearer',
     'revoked machine token',
     'machine token for another resource',
@@ -210,4 +210,50 @@ it('leaves the default guard to Laravel when it is a session guard', function ()
         ->assertUnauthorized()
         ->assertHeaderMissing('WWW-Authenticate')
         ->assertJson(['message' => 'Unauthenticated.']);
+});
+
+/**
+ * The subject of a persisted token can stop resolving without the row going
+ * away — a provider that scopes by tenant or hides soft-deleted users returns
+ * null for a user_id the foreign key still considers valid.
+ */
+it('rejects a bearer whose subject the user provider no longer resolves', function (): void {
+    $jwt = resourceServerBearer($this);
+
+    Auth::provider('resolves-nobody', fn (): UserProvider => new class implements UserProvider
+    {
+        public function retrieveById($identifier): ?Authenticatable
+        {
+            return null;
+        }
+
+        public function retrieveByToken($identifier, #[SensitiveParameter] $token): ?Authenticatable
+        {
+            return null;
+        }
+
+        public function updateRememberToken(Authenticatable $user, #[SensitiveParameter] $token): void {}
+
+        /** @param  array<string, mixed>  $credentials */
+        public function retrieveByCredentials(#[SensitiveParameter] array $credentials): ?Authenticatable
+        {
+            return null;
+        }
+
+        /** @param  array<string, mixed>  $credentials */
+        public function validateCredentials(Authenticatable $user, #[SensitiveParameter] array $credentials): bool
+        {
+            return false;
+        }
+
+        /** @param  array<string, mixed>  $credentials */
+        public function rehashPasswordIfRequired(Authenticatable $user, #[SensitiveParameter] array $credentials, bool $force = false): void {}
+    });
+
+    config(['auth.providers.users.driver' => 'resolves-nobody']);
+    Auth::forgetGuards();
+
+    $this->getJson('/guarded', ['Authorization' => "Bearer $jwt"])
+        ->assertUnauthorized()
+        ->assertJsonPath('error', 'invalid_token');
 });

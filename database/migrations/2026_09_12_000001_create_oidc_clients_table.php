@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Database\ForeignKeys;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -23,7 +24,7 @@ return new class extends Migration
     {
         Schema::create('oidc_clients', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->string('realm_id')->default((string) config('oidc.realm', 'default'))->index();
+            $table->string('realm_id');
             $table->string('client_id');
             $table->nullableUuidMorphs('owner');
             $table->string('name');
@@ -39,10 +40,13 @@ return new class extends Migration
             $table->boolean('backchannel_logout_session_required')->default(false);
             $table->boolean('consent_required')->default(true);
             $table->string('provisioning_key', 64)->nullable()->unique();
-            $table->boolean('revoked')->default(false);
+            $table->timestamp('revoked_at')->nullable();
             $table->timestamps();
 
             $table->unique(['realm_id', 'client_id']);
+            $table->unique(['realm_id', 'id']);
+
+            ForeignKeys::realm($table);
         });
     }
 

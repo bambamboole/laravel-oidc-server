@@ -220,6 +220,23 @@ return [
     */
     'resources' => [],
 
+    // Read only while migrating. The package's `user_id` and `realm_id`
+    // columns point at tables the application owns, so where they point — and
+    // whether a foreign key is written at all — is configured rather than
+    // assumed. A null table leaves the columns unconstrained.
+    'migrations' => [
+        'users' => [
+            'table' => env('OIDC_MIGRATIONS_USERS_TABLE', 'users'),
+            'column' => env('OIDC_MIGRATIONS_USERS_COLUMN', 'id'),
+        ],
+        // Off by default: a realm is an opaque identifier the application
+        // owns, and there need not be a table behind it.
+        'realms' => [
+            'table' => env('OIDC_MIGRATIONS_REALMS_TABLE'),
+            'column' => env('OIDC_MIGRATIONS_REALMS_COLUMN', 'slug'),
+        ],
+    ],
+
     // The guards the package authenticates against. Deployment-wide: a realm
     // cannot override them.
     'auth' => [

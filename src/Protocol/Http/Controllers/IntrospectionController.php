@@ -58,7 +58,7 @@ class IntrospectionController
         $expiresAt = $token->expires_at;
 
         if (! $jwt instanceof Plain
-            || $token->revoked
+            || $token->isRevoked()
             || ($expiresAt instanceof CarbonInterface && $expiresAt->isPast())
             || (! $token->issuedTo($client) && ! $this->callerInAudience($client, $jwt))) {
             return $this->inactive();
@@ -87,7 +87,7 @@ class IntrospectionController
 
         if (! $refreshToken instanceof RefreshToken
             || ! $accessToken->issuedTo($client)
-            || $refreshToken->revoked
+            || $refreshToken->isRevoked()
             || ! $refreshToken->expires_at instanceof CarbonInterface
             || $refreshToken->expires_at->isPast()) {
             return $this->inactive();

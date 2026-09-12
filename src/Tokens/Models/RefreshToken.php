@@ -15,8 +15,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $id
  * @property string $realm_id
  * @property string $access_token_id
- * @property bool $revoked
+ * @property ?CarbonInterface $revoked_at
  * @property ?CarbonInterface $expires_at
+ * @property CarbonInterface $created_at
+ * @property CarbonInterface $updated_at
  */
 class RefreshToken extends Model
 {
@@ -33,8 +35,6 @@ class RefreshToken extends Model
 
     public $incrementing = false;
 
-    public $timestamps = false;
-
     protected $guarded = [];
 
     protected static function newFactory(): RefreshTokenFactory
@@ -46,7 +46,7 @@ class RefreshToken extends Model
     protected function casts(): array
     {
         return [
-            'revoked' => 'bool',
+            'revoked_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
     }
@@ -55,5 +55,10 @@ class RefreshToken extends Model
     public function accessToken(): BelongsTo
     {
         return $this->belongsTo(AccessToken::class, 'access_token_id');
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->revoked_at !== null;
     }
 }

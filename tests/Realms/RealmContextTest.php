@@ -117,7 +117,7 @@ it('sends a back-channel logout for the realm the job was dispatched from', func
     $this->get('/realms/acme/.well-known/openid-configuration')->assertOk();
     generateRealmSigningKey();
 
-    $sid = app(OidcSessionRepository::class)->start('9');
+    $sid = app(OidcSessionRepository::class)->start((string) User::factory()->create()->getKey());
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('RP', ['https://rp.test/cb']);
     $client->forceFill(['backchannel_logout_uri' => 'https://rp.test/bclo'])->save();
 

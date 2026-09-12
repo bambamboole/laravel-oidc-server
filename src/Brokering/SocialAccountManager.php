@@ -37,9 +37,7 @@ class SocialAccountManager
         if ($account instanceof SocialAccount) {
             $this->sync($account, $socialUser);
 
-            $user = $account->authenticatable;
-
-            return $user instanceof Authenticatable ? $user : null;
+            return $users->retrieveById($account->user_id);
         }
 
         $brokering = $this->realms->current()->brokering();
@@ -76,7 +74,7 @@ class SocialAccountManager
             'provider_user_id' => $socialUser->id,
         ]);
 
-        $account->authenticatable()->associate($user);
+        $account->user_id = (string) $user->getAuthIdentifier();
 
         $this->sync($account, $socialUser);
 

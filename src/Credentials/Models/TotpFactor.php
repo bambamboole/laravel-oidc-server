@@ -4,41 +4,39 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Credentials\Models;
 
+use Bambamboole\LaravelOidc\Server\Database\Factories\TotpFactorFactory;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
+ * @property string $user_id
  * @property string $name
  * @property string $secret
  * @property int|null $last_used_timestep
  * @property CarbonInterface|null $confirmed_at
  * @property CarbonInterface|null $last_used_at
- * @property-read Model $authenticatable
  */
 class TotpFactor extends Model
 {
+    /** @use HasFactory<TotpFactorFactory> */
+    use HasFactory;
+
     use HasUuids;
 
     protected $table = 'oidc_totp_factors';
 
-    protected $fillable = [
-        'name',
-        'secret',
-    ];
+    protected $guarded = [];
 
     protected $hidden = [
         'secret',
     ];
 
-    /**
-     * @return MorphTo<Model, $this>
-     */
-    public function authenticatable(): MorphTo
+    protected static function newFactory(): TotpFactorFactory
     {
-        return $this->morphTo();
+        return TotpFactorFactory::new();
     }
 
     /**

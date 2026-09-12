@@ -132,5 +132,5 @@ it('re-associates an existing link instead of duplicating it', function (): void
     $manager->link($userB, 'corp', socialUser(['id' => 'upstream-1']));
 
     expect(SocialAccount::query()->count())->toBe(1)
-        ->and(SocialAccount::query()->sole()->authenticatable->is($userB))->toBeTrue();
+        ->and(SocialAccount::query()->sole()->user_id)->toBe((string) $userB->id);
 });

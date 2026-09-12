@@ -50,6 +50,10 @@ it('publishes OIDC and passkeys migrations once and migrates a fresh database', 
             '--database' => 'published',
             '--path' => [
                 dirname(__DIR__, 3).'/vendor/orchestra/testbench-core/laravel/migrations',
+                // The package's `user_id` columns are uuids and now carry a
+                // foreign key, so the skeleton's auto-increment users table is
+                // not a table they can point at.
+                dirname(__DIR__, 3).'/workbench/database/migrations',
                 $migrationPath,
             ],
             '--realpath' => true,

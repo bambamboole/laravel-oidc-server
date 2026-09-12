@@ -17,7 +17,7 @@ class AuthenticationContextStore
         $context = new AuthenticationContext;
         $context->realm_id = AuthenticationContext::currentRealm();
         $context->user_id = $attributes['user_id'];
-        $context->sid = $attributes['sid'];
+        $context->session_id = $attributes['sid'];
         $context->amr = $attributes['amr'];
         $context->acr = $attributes['acr'];
         $context->auth_time = $attributes['auth_time'];

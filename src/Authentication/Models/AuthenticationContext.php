@@ -15,13 +15,13 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $id
  * @property string $realm_id
  * @property string $user_id
- * @property ?string $sid
+ * @property ?string $session_id
  * @property list<string> $amr
  * @property ?string $acr
  * @property ?int $auth_time
  * @property array<string, mixed> $id_token_claims
  * @property array<string, mixed> $access_token_claims
- * @property ?CarbonInterface $created_at
+ * @property CarbonInterface $created_at
  * @property ?CarbonInterface $expires_at
  */
 class AuthenticationContext extends Model

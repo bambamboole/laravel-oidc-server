@@ -2,19 +2,26 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Database\ForeignKeys;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * `id` is what descendant tokens are labelled with; `code` is the secret the
+ * browser carries back from the redirect. Keeping them apart keeps a 320-bit
+ * credential out of every row that merely points at this one.
+ */
 return new class extends Migration
 {
     public function up(): void
     {
         Schema::create('oidc_auth_codes', function (Blueprint $table): void {
-            $table->char('id', 80)->primary();
-            $table->string('realm_id')->default((string) config('oidc.realm', 'default'))->index();
+            $table->uuid('id')->primary();
+            $table->char('code', 80)->unique();
+            $table->string('realm_id');
             $table->foreignUuid('user_id')->index();
-            $table->foreignUuid('client_id')->index();
+            $table->foreignUuid('client_id');
             $table->json('scopes')->nullable();
             $table->json('audience')->nullable();
             $table->string('redirect_uri', 2048)->nullable();
@@ -23,8 +30,15 @@ return new class extends Migration
             $table->string('nonce')->nullable();
             $table->unsignedBigInteger('auth_time')->nullable();
             $table->uuid('context_id')->nullable();
-            $table->boolean('revoked')->default(false);
-            $table->dateTime('expires_at')->nullable()->index();
+            $table->timestamp('revoked_at')->nullable();
+            $table->timestamps();
+            $table->timestamp('expires_at')->nullable()->index();
+
+            $table->index(['realm_id', 'client_id']);
+
+            $table->foreign(['realm_id', 'client_id'])->references(['realm_id', 'id'])->on('oidc_clients')->cascadeOnDelete();
+            ForeignKeys::realm($table);
+            ForeignKeys::user($table);
         });
     }
 

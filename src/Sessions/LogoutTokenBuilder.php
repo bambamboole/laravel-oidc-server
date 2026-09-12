@@ -33,7 +33,7 @@ class LogoutTokenBuilder
             ->issuedAt($now)
             ->expiresAt($now->modify('+120 seconds'))
             ->relatedTo($session->user_id)
-            ->withClaim('sid', $session->sid)
+            ->withClaim('sid', $session->id)
             ->withClaim('events', (object) [self::EVENT => (object) []])
             ->getToken($config->signer(), $config->signingKey());
 

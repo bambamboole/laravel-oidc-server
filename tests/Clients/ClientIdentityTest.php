@@ -76,7 +76,7 @@ it('issues, introspects and revokes under the wire client_id while storing the k
         'token' => $result->accessToken,
     ])->assertOk();
 
-    expect($record->refresh()->revoked)->toBeTrue();
+    expect($record->refresh()->isRevoked())->toBeTrue();
     $sink->assertRecorded(AuditEventType::TokenRevoked, fn (AuditRecord $record): bool => $record->clientId === 'my-app');
 });
 

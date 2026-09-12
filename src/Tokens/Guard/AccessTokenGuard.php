@@ -112,7 +112,7 @@ class AccessTokenGuard implements Guard
 
         $client = $token->client;
 
-        return $client instanceof Client && ! $client->revoked ? new ClientPrincipal($client) : null;
+        return $client instanceof Client && ! $client->isRevoked() ? new ClientPrincipal($client) : null;
     }
 
     /**
@@ -136,7 +136,7 @@ class AccessTokenGuard implements Guard
 
         $token = $this->inspector->tokenForParsed($parsed);
 
-        if (! $token instanceof AccessToken || $token->getAttribute('revoked')) {
+        if (! $token instanceof AccessToken || $token->isRevoked()) {
             return null;
         }
 

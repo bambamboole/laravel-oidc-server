@@ -22,9 +22,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property ?array<string, mixed> $context Host-defined facts a personal access token was issued with, e.g. the tenant it is bound to.
  * @property array<int, string> $scopes
  * @property ?array<int, string> $audience The `aud` the token was minted with.
- * @property ?string $auth_code_id The authorization code this token, or the refresh chain it sits in, descends from.
+ * @property ?string $auth_code_id The authorization code this token, or the refresh chain it sits in, descends from. Not a foreign key: the chain outlives the code row.
  * @property ?string $context_id The authentication context the token was issued under; null for a non-interactive grant.
- * @property bool $revoked
+ * @property ?CarbonInterface $revoked_at
  * @property ?CarbonInterface $expires_at
  */
 class AccessToken extends Model
@@ -56,7 +56,7 @@ class AccessToken extends Model
             'scopes' => 'array',
             'audience' => 'array',
             'context' => 'array',
-            'revoked' => 'bool',
+            'revoked_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
     }
@@ -78,9 +78,14 @@ class AccessToken extends Model
         return $this->hasOne(RefreshToken::class, 'access_token_id');
     }
 
+    public function isRevoked(): bool
+    {
+        return $this->revoked_at !== null;
+    }
+
     public function isValid(): bool
     {
-        return ! $this->revoked && ($this->expires_at === null || $this->expires_at->isFuture());
+        return ! $this->isRevoked() && ($this->expires_at === null || $this->expires_at->isFuture());
     }
 
     public function hasScope(string $scope): bool

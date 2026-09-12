@@ -17,12 +17,11 @@ class OidcSessionRepository
         $session = new OidcSession;
         $session->realm_id = OidcSession::currentRealm();
         $session->user_id = $userId;
-        $session->session_id = $browserSessionId;
-        $session->created_at = now();
+        $session->browser_session_id = $browserSessionId;
         $session->expires_at = now()->add($this->realms->current()->sessions()->absolute());
         $session->save();
 
-        return $session->sid;
+        return $session->id;
     }
 
     public function find(string $sid): ?OidcSession
@@ -32,12 +31,12 @@ class OidcSessionRepository
 
     public function findByBrowserSession(string $browserSessionId): ?OidcSession
     {
-        return OidcSession::query()->inRealm()->where('session_id', $browserSessionId)->first();
+        return OidcSession::query()->inRealm()->where('browser_session_id', $browserSessionId)->first();
     }
 
     /**
      * createOrFirst (not updateOrInsert) so the model's creating hook runs —
-     * it generates the uuid key — while the unique (sid, client_id) index
+     * it generates the uuid key — while the unique (session_id, client_id) index
      * still absorbs concurrent inserts.
      *
      * @param  string  $clientKey  the client's primary key
@@ -45,7 +44,7 @@ class OidcSessionRepository
     public function recordParticipant(string $sid, string $clientKey): void
     {
         SessionParticipant::query()->createOrFirst(
-            ['sid' => $sid, 'client_id' => $clientKey],
+            ['session_id' => $sid, 'client_id' => $clientKey],
             ['created_at' => now()],
         );
     }
@@ -53,7 +52,7 @@ class OidcSessionRepository
     /** @return array<int, string> the participating clients' primary keys */
     public function participantClientIds(string $sid): array
     {
-        return SessionParticipant::query()->where('sid', $sid)->pluck('client_id')->all();
+        return SessionParticipant::query()->where('session_id', $sid)->pluck('client_id')->all();
     }
 
     public function revoke(string $sid): void

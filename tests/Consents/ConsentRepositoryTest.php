@@ -88,7 +88,7 @@ it('keeps the consent when the tokens are revoked', function (): void {
 
     app(AccessTokenRevoker::class)->revoke((string) parseAccessToken($result->accessToken)->claims()->get('jti'));
 
-    expect(AccessToken::query()->where('revoked', false)->exists())->toBeFalse();
+    expect(AccessToken::query()->whereNull('revoked_at')->exists())->toBeFalse();
 
     authorizeExpectingDecision($this)->assertRedirect();
 });

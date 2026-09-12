@@ -57,7 +57,7 @@ it('emits a signed RFC 9068 at+jwt access token with a persisted record', functi
         ->and((string) $record?->getAttribute('user_id'))->toBe((string) $this->user->id)
         ->and((string) $record?->getAttribute('client_id'))->toBe((string) $this->client->getKey())
         ->and($record?->getAttribute('scopes'))->toBe(['openid', 'email'])
-        ->and((bool) $record?->getAttribute('revoked'))->toBeFalse();
+        ->and($record?->isRevoked())->toBeFalse();
 });
 
 // RFC 9068 §3 — aud is the requested resource, or the realm issuer as the default resource indicator
@@ -112,7 +112,7 @@ it('emits the given actor as the act claim', function (): void {
 });
 
 it('refuses to mint for a revoked client', function (): void {
-    $this->client->forceFill(['revoked' => true])->save();
+    $this->client->forceFill(['revoked_at' => now()])->save();
 
     expect(fn (): MintedAccessToken => mintAccessToken($this->client, $this->user))->toThrow(RuntimeException::class);
 });

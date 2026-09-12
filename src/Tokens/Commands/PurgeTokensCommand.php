@@ -29,11 +29,13 @@ class PurgeTokensCommand extends Command
         $purgeRevoked = $revokedOnly || ! $expiredOnly;
         $purgeExpired = $expiredOnly || ! $revokedOnly;
 
-        foreach ([AccessToken::class, RefreshToken::class, AuthorizationCode::class] as $model) {
+        // Refresh tokens first: they cascade with the access token they belong
+        // to, and a table purged from under this loop would report nothing.
+        foreach ([RefreshToken::class, AccessToken::class, AuthorizationCode::class] as $model) {
             $deleted = $model::query()
                 ->where(function (Builder $query) use ($purgeRevoked, $purgeExpired, $cutoff): void {
                     if ($purgeRevoked) {
-                        $query->orWhere('revoked', true);
+                        $query->orWhereNotNull('revoked_at');
                     }
 
                     if ($purgeExpired) {

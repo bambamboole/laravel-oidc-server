@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property string $id
- * @property string $sid
+ * @property string $session_id
  * @property string $client_id The client's primary key.
- * @property ?CarbonInterface $created_at
+ * @property CarbonInterface $created_at
  */
 class SessionParticipant extends Model
 {

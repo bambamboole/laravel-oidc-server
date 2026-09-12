@@ -26,10 +26,10 @@ class PruneSessionsCommand extends Command
         $sids = OidcSession::query()
             ->where('expires_at', '<', $grace)
             ->where('logout_notified_at', '<', $grace)
-            ->pluck('sid');
+            ->pluck('id');
 
-        $sessions = OidcSession::query()->whereIn('sid', $sids)->delete();
-        SessionParticipant::query()->whereIn('sid', $sids)->delete();
+        $sessions = OidcSession::query()->whereKey($sids)->delete();
+        SessionParticipant::query()->whereIn('session_id', $sids)->delete();
 
         $this->info("Pruned {$sessions} session(s).");
 

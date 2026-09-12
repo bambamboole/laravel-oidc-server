@@ -105,7 +105,7 @@ final readonly class InteractiveTokenIssuer
                 authTime: $authTime,
                 amr: $context instanceof AuthenticationContext ? $context->amr : [],
                 idTokenClaims: $context instanceof AuthenticationContext ? $context->id_token_claims : [],
-                sid: $context?->sid,
+                sid: $context?->session_id,
             ))
             : null;
 
@@ -115,7 +115,7 @@ final readonly class InteractiveTokenIssuer
             scopes: $scopes,
             clientId: $client->client_id,
             userId: $userId,
-            sid: $context?->sid,
+            sid: $context?->session_id,
             audiences: $audiences,
         ));
 
@@ -153,7 +153,6 @@ final readonly class InteractiveTokenIssuer
             'realm_id' => $this->realms->current()->identifier(),
             'id' => $id,
             'access_token_id' => $accessToken->jti,
-            'revoked' => false,
             'expires_at' => (new DateTimeImmutable)->add($this->realms->current()->tokens()->refreshToken()),
         ]);
 

@@ -101,8 +101,8 @@ it('rotates the refresh token and revokes the whole chain when a rotated-out tok
 
     $current = parseAccessToken((string) $rotated->json('access_token'));
 
-    expect(RefreshToken::query()->find($rotated->json('refresh_token'))->revoked)->toBeTrue()
-        ->and(AccessToken::query()->find($current->claims()->get('jti'))->revoked)->toBeTrue();
+    expect(RefreshToken::query()->find($rotated->json('refresh_token'))->isRevoked())->toBeTrue()
+        ->and(AccessToken::query()->find($current->claims()->get('jti'))->isRevoked())->toBeTrue();
 
     refresh($this, $rotated->json('refresh_token'))->assertStatus(400)->assertJsonPath('error', 'invalid_grant');
 });

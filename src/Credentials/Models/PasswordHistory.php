@@ -4,22 +4,26 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Credentials\Models;
 
+use Bambamboole\LaravelOidc\Server\Database\Factories\PasswordHistoryFactory;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
+ * @property string $user_id
  * @property string $hash
  * @property CarbonInterface $created_at
- * @property-read Model $authenticatable
  */
 class PasswordHistory extends Model
 {
+    /** @use HasFactory<PasswordHistoryFactory> */
+    use HasFactory;
+
     use HasUuids;
 
-    protected $table = 'oidc_password_history';
+    protected $table = 'oidc_password_histories';
 
     public $timestamps = false;
 
@@ -27,12 +31,9 @@ class PasswordHistory extends Model
 
     protected $hidden = ['hash'];
 
-    /**
-     * @return MorphTo<Model, $this>
-     */
-    public function authenticatable(): MorphTo
+    protected static function newFactory(): PasswordHistoryFactory
     {
-        return $this->morphTo();
+        return PasswordHistoryFactory::new();
     }
 
     /**

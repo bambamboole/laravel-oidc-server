@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Bambamboole\LaravelOidc\Server\Clients\Models;
 
 use Bambamboole\LaravelOidc\Server\Clients\Enums\TokenEndpointAuthMethod;
+use Bambamboole\LaravelOidc\Server\Database\Factories\ClientFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\AccessToken;
-use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -31,13 +31,16 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property bool $backchannel_logout_session_required
  * @property bool $consent_required
  * @property ?string $provisioning_key
- * @property bool $revoked
+ * @property ?CarbonInterface $revoked_at
  * @property ?string $owner_type
  * @property ?string $owner_id
  */
 class Client extends Model
 {
     use BelongsToRealm, HasUuids;
+
+    /** @use HasFactory<ClientFactory> */
+    use HasFactory;
 
     protected $table = 'oidc_clients';
 
@@ -47,6 +50,11 @@ class Client extends Model
 
     /** Readable only on the instance that set it; the column holds a hash. */
     public ?string $plainSecret = null;
+
+    protected static function newFactory(): ClientFactory
+    {
+        return ClientFactory::new();
+    }
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -61,7 +69,7 @@ class Client extends Model
             'allowed_exchange_audiences' => 'array',
             'backchannel_logout_session_required' => 'bool',
             'consent_required' => 'bool',
-            'revoked' => 'bool',
+            'revoked_at' => 'datetime',
         ];
     }
 
@@ -69,18 +77,6 @@ class Client extends Model
     public function owner(): MorphTo
     {
         return $this->morphTo('owner');
-    }
-
-    /** @return HasMany<AccessToken, $this> */
-    public function tokens(): HasMany
-    {
-        return $this->hasMany(AccessToken::class, 'client_id');
-    }
-
-    /** @return HasMany<AuthorizationCode, $this> */
-    public function authCodes(): HasMany
-    {
-        return $this->hasMany(AuthorizationCode::class, 'client_id');
     }
 
     /** @return Attribute<never, ?string> */
@@ -93,6 +89,11 @@ class Client extends Model
                 return $this->castAttributeAsHashedString('secret', $value);
             },
         );
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->revoked_at !== null;
     }
 
     public function firstParty(): bool

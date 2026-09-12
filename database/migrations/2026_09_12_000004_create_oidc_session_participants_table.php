@@ -12,10 +12,14 @@ return new class extends Migration
     {
         Schema::create('oidc_session_participants', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('sid')->index();
-            $table->string('client_id');
-            $table->timestamp('created_at')->nullable();
-            $table->unique(['sid', 'client_id']);
+            $table->uuid('session_id');
+            $table->uuid('client_id');
+            $table->timestamp('created_at');
+            $table->unique(['session_id', 'client_id']);
+            $table->index('client_id');
+
+            $table->foreign('session_id')->references('id')->on('oidc_sessions')->cascadeOnDelete();
+            $table->foreign('client_id')->references('id')->on('oidc_clients')->cascadeOnDelete();
         });
     }
 

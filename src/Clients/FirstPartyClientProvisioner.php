@@ -199,7 +199,7 @@ final readonly class FirstPartyClientProvisioner
 
     private function assertEligible(Client $client): void
     {
-        if ($client->getAttribute('revoked') === true) {
+        if ($client->isRevoked()) {
             throw new FirstPartyClientProvisioningException('The first-party client is revoked.');
         }
 

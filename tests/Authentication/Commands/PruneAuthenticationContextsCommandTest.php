@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 use Bambamboole\LaravelOidc\Server\Authentication\Models\AuthenticationContext;
 use Carbon\CarbonInterface;
+use Workbench\App\Models\User;
 
-function pruneTestContext(string $userId, CarbonInterface $expiresAt): AuthenticationContext
+function pruneTestContext(CarbonInterface $expiresAt): AuthenticationContext
 {
+    $userId = (string) User::factory()->create()->getKey();
+
     $context = new AuthenticationContext;
+    $context->realm_id = AuthenticationContext::currentRealm();
     $context->user_id = $userId;
     $context->amr = ['pwd'];
     $context->acr = '1';
@@ -22,8 +26,8 @@ function pruneTestContext(string $userId, CarbonInterface $expiresAt): Authentic
 }
 
 it('prunes expired contexts and keeps live ones', function (): void {
-    $live = pruneTestContext('1', now()->addDay());
-    pruneTestContext('2', now()->subDay());
+    $live = pruneTestContext(now()->addDay());
+    pruneTestContext(now()->subDay());
 
     $this->artisan('oidc:prune-authentication-contexts')->assertExitCode(0);
 

@@ -87,7 +87,7 @@ it('links a provider to the authenticated user', function (): void {
     $account = SocialAccount::query()->sole();
     expect($account->provider)->toBe('corp')
         ->and($account->provider_user_id)->toBe('upstream-1')
-        ->and($account->authenticatable->is($user))->toBeTrue();
+        ->and($account->user_id)->toBe((string) $user->id);
 });
 
 it('refuses to link an identity already attached to another user', function (): void {
@@ -103,7 +103,7 @@ it('refuses to link an identity already attached to another user', function (): 
 
     linkCallbackFor($this)->assertRedirect('/dashboard')->assertSessionHasErrors('social');
 
-    expect(SocialAccount::query()->sole()->authenticatable->is($other))->toBeTrue();
+    expect(SocialAccount::query()->sole()->user_id)->toBe((string) $other->id);
 });
 
 it('rejects a link-intent callback when the identity session is gone', function (): void {

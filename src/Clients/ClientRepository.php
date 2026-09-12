@@ -34,7 +34,7 @@ class ClientRepository
     {
         $client = $this->find($clientId);
 
-        return $client instanceof Client && ! $client->revoked ? $client : null;
+        return $client instanceof Client && ! $client->isRevoked() ? $client : null;
     }
 
     /**
@@ -133,7 +133,6 @@ class ClientRepository
             'optional_scopes' => $optionalScopes ?? $settings->optionalScopes,
             'token_endpoint_auth_method' => $confidential ? TokenEndpointAuthMethod::ClientSecretPost : TokenEndpointAuthMethod::None,
             'allowed_exchange_audiences' => [],
-            'revoked' => false,
             'owner_type' => $user instanceof Authenticatable ? $user::class : null,
             'owner_id' => $user?->getAuthIdentifier(),
         ]);

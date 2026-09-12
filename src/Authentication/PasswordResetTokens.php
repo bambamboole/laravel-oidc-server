@@ -17,7 +17,7 @@ use SensitiveParameter;
 /**
  * The reset links a realm has handed out, one per user. A link only works in
  * the realm that sent it, and only for the realm's `tokens.password_reset`
- * lifetime.
+ * lifetime; a request in one realm leaves another realm's pending link alone.
  */
 final readonly class PasswordResetTokens implements TokenRepositoryInterface
 {
@@ -60,7 +60,7 @@ final readonly class PasswordResetTokens implements TokenRepositoryInterface
 
     public function delete(CanResetPassword $user): void
     {
-        PasswordResetToken::query()->whereKey($this->userId($user))->delete();
+        $this->forUser($user)->delete();
     }
 
     public function deleteExpired(): void
@@ -73,7 +73,7 @@ final readonly class PasswordResetTokens implements TokenRepositoryInterface
      */
     private function forUser(CanResetPassword $user): Builder
     {
-        return PasswordResetToken::query()->inRealm()->whereKey($this->userId($user));
+        return PasswordResetToken::query()->inRealm()->where('user_id', $this->userId($user));
     }
 
     private function userId(CanResetPassword $user): string

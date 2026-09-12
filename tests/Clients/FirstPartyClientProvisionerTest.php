@@ -173,7 +173,7 @@ it('rejects unsafe adoption targets', function (Closure $mutate, string $message
         adoptClientId: (string) $client->getKey(),
     ))->toThrow(FirstPartyClientProvisioningException::class, $message);
 })->with([
-    'revoked' => [fn (Client $client) => $client->forceFill(['revoked' => true])->save(), 'revoked'],
+    'revoked' => [fn (Client $client) => $client->forceFill(['revoked_at' => now()])->save(), 'revoked'],
     'public' => [fn (Client $client) => $client->forceFill(['secret' => null])->save(), 'confidential'],
     'user-owned' => [fn (Client $client, User $owner) => $client->forceFill(['owner_type' => $owner::class, 'owner_id' => $owner->getKey()])->save(), 'must not be owned'],
 ]);
@@ -201,7 +201,7 @@ it('does not revoke existing tokens when rotating the client secret', function (
         rotateSecret: true,
     );
 
-    expect($token->refresh()->getAttribute('revoked'))->toBeFalse();
+    expect($token->refresh()->isRevoked())->toBeFalse();
 });
 
 it('rejects invalid provisioning input before writing', function (

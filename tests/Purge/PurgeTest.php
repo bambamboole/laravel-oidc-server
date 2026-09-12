@@ -21,7 +21,6 @@ use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\RefreshToken;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
 use Workbench\App\Models\User;
 
 function purgeTestUser(string $name): User
@@ -43,10 +42,10 @@ function seedHoldings(User $user, Client $client): void
     AuthenticationContext::factory()->forUser($user)->create();
     SessionParticipant::factory()->inSession(OidcSession::factory()->forUser($user)->create())->forClient($client)->create();
     passwordResetToken($user);
-    $user->morphMany(SocialAccount::class, 'authenticatable')->forceCreate(['realm_id' => SocialAccount::currentRealm(), 'provider' => 'github', 'provider_user_id' => Str::uuid()->toString()]);
-    $user->morphMany(PasswordHistory::class, 'authenticatable')->create(['hash' => 'hash', 'created_at' => now()]);
-    $user->morphMany(TotpFactor::class, 'authenticatable')->create(['name' => 'Phone', 'secret' => 'secret']);
-    $user->morphMany(RecoveryCode::class, 'authenticatable')->create(['code' => 'code']);
+    SocialAccount::factory()->forUser($user)->create();
+    PasswordHistory::factory()->forUser($user)->create();
+    TotpFactor::factory()->forUser($user)->create();
+    RecoveryCode::factory()->forUser($user)->create();
 }
 
 /** @return array<string, int> */
@@ -93,7 +92,7 @@ it('purges a client with everything issued to it, and nothing of another client'
     RefreshToken::factory()->forAccessToken(AccessToken::factory()->forClient($client)->forUser($user)->create())->create();
     AuthorizationCode::factory()->forClient($client)->forUser($user)->create();
     Consent::factory()->forClient($client)->forUser($user)->create();
-    SessionParticipant::factory()->forClient($client)->create(['sid' => OidcSession::query()->value('sid')]);
+    SessionParticipant::factory()->forClient($client)->create(['session_id' => OidcSession::query()->value('id')]);
 
     app(PurgeClient::class)($client);
 
@@ -115,5 +114,5 @@ it('purges every row kept under a realm, and nothing of another realm', function
 
     expect(packageRowCounts('acme'))->each->toBe(0)
         ->and(packageRowCounts('globex'))->toBe($globex)
-        ->and(SessionParticipant::query()->whereNotIn('sid', OidcSession::query()->select('sid'))->exists())->toBeFalse();
+        ->and(SessionParticipant::query()->whereNotIn('session_id', OidcSession::query()->select('id'))->exists())->toBeFalse();
 });

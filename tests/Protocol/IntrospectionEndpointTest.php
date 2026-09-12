@@ -100,7 +100,7 @@ it('reports inactive without leaking why', function (string $case): void {
     $token = match ($case) {
         'revoked' => (function (): string {
             [$jwt, $token] = issueIntrospectableToken($this);
-            $token->forceFill(['revoked' => true])->save();
+            $token->forceFill(['revoked_at' => now()])->save();
 
             return $jwt;
         })(),
@@ -111,7 +111,7 @@ it('reports inactive without leaking why', function (string $case): void {
         )[0],
         'revoked refresh token' => (function (): string {
             [$value, $refreshToken] = issueRefreshToken($this);
-            $refreshToken->forceFill(['revoked' => true])->save();
+            $refreshToken->forceFill(['revoked_at' => now()])->save();
 
             return $value;
         })(),

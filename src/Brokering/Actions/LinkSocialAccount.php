@@ -28,7 +28,7 @@ final readonly class LinkSocialAccount
     {
         $existing = $this->accounts->findAccount($providerKey, $socialUser->id);
 
-        if ($existing instanceof SocialAccount && ! $existing->authenticatable->is($user)) {
+        if ($existing instanceof SocialAccount && $existing->user_id !== (string) $user->getAuthIdentifier()) {
             throw new SocialAccountAlreadyLinkedException;
         }
 

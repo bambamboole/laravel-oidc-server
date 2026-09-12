@@ -215,7 +215,7 @@ function mintExchangeSubjectToken(
     );
 
     if ($revoked) {
-        AccessToken::query()->whereKey($minted->jti)->update(['revoked' => true]);
+        AccessToken::query()->whereKey($minted->jti)->update(['revoked_at' => now()]);
     }
 
     return $minted->jwt;
@@ -244,7 +244,7 @@ function resourceServerBearer(
     );
 
     if ($revoked) {
-        AccessToken::query()->whereKey($minted->jti)->update(['revoked' => true]);
+        AccessToken::query()->whereKey($minted->jti)->update(['revoked_at' => now()]);
     }
 
     return $minted->jwt;
@@ -272,7 +272,7 @@ function clientCredentialsBearer(
     );
 
     if ($revoked) {
-        AccessToken::query()->whereKey($minted->jti)->update(['revoked' => true]);
+        AccessToken::query()->whereKey($minted->jti)->update(['revoked_at' => now()]);
     }
 
     return $minted->jwt;

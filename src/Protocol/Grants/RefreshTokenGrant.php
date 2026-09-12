@@ -71,7 +71,7 @@ final readonly class RefreshTokenGrant implements Grant
             throw OAuthServerException::invalidGrant('The refresh token was not issued to this client.');
         }
 
-        if ($refreshToken->revoked) {
+        if ($refreshToken->isRevoked()) {
             if ($accessToken->auth_code_id !== null) {
                 $this->revoker->revokeChain($accessToken->auth_code_id);
             }
@@ -163,11 +163,11 @@ final readonly class RefreshTokenGrant implements Grant
         $context = $this->contexts->find($contextId)
             ?? $this->deny('context_expired', 'The authentication session has expired; re-authentication is required.');
 
-        if ($context->sid !== null) {
-            $session = $this->sessions->find($context->sid);
+        if ($context->session_id !== null) {
+            $session = $this->sessions->find($context->session_id);
 
             if (! $session instanceof OidcSession || ! $session->isActive()) {
-                $this->deny('session_ended', 'The authentication session has ended; re-authentication is required.', $context->sid);
+                $this->deny('session_ended', 'The authentication session has ended; re-authentication is required.', $context->session_id);
             }
         } elseif ($context->expires_at !== null && $context->expires_at->isPast()) {
             $this->deny('context_expired', 'The authentication session has expired; re-authentication is required.');

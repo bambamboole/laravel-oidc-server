@@ -54,7 +54,7 @@ class TokenExchanger
         $parsed = $this->inspector->parse($subjectToken);
         $dbToken = $parsed instanceof Plain ? $this->inspector->tokenForParsed($parsed) : null;
 
-        if (! $parsed instanceof Plain || ! $dbToken instanceof AccessToken || (bool) $dbToken->getAttribute('revoked')) {
+        if (! $parsed instanceof Plain || ! $dbToken instanceof AccessToken || $dbToken->isRevoked()) {
             $this->deny($requestingClient, 'subject_token_invalid', 'The subject token is invalid.');
         }
 

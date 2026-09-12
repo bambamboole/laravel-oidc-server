@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Database\ForeignKeys;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,11 +13,12 @@ return new class extends Migration
     {
         Schema::create('oidc_recovery_codes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuidMorphs('authenticatable', 'oidc_recovery_authenticatable_index');
+            $table->uuid('user_id')->index();
             $table->text('code');
             $table->timestamp('used_at')->nullable();
             $table->timestamps();
 
+            ForeignKeys::user($table);
         });
     }
 

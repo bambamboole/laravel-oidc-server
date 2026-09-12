@@ -43,5 +43,5 @@ it('ties the OIDC session to the browser session the login ended in', function (
 
     $this->post(route('identity.login.store'), ['email' => 'm@example.com', 'password' => 'password'])->assertRedirect();
 
-    expect(app(OidcSessionRepository::class)->findByBrowserSession(session()->getId())?->sid)->toBe(session('oidc.sid'));
+    expect(app(OidcSessionRepository::class)->findByBrowserSession(session()->getId())?->id)->toBe(session('oidc.sid'));
 });

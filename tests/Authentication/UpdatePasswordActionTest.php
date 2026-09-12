@@ -28,7 +28,7 @@ function userWithPasswordChangedAt(string $ago): User
 {
     $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => Hash::make('password')]);
 
-    $user->morphMany(PasswordHistory::class, 'authenticatable')
+    $user->hasMany(PasswordHistory::class, 'user_id')
         ->create(['hash' => $user->getAuthPassword(), 'created_at' => now()->sub($ago)]);
 
     return $user;

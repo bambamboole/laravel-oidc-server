@@ -88,7 +88,7 @@ it('enrolls and confirms a TOTP factor, storing the secret encrypted and backfil
     $factor = TotpFactor::query()->firstOrFail();
 
     expect($enrollment['provider'])->toBe('totp')
-        ->and($factor->authenticatable->is($this->user))->toBeTrue()
+        ->and($factor->user_id)->toBe((string) $this->user->id)
         ->and($factor->confirmed_at)->toBeNull()
         ->and($enrollment['metadata']['secret'])->toBe($factor->secret)
         ->and($enrollment['metadata']['qr_svg'])->toContain('<svg')

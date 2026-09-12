@@ -21,7 +21,6 @@ class RefreshTokenFactory extends Factory
             'id' => bin2hex(random_bytes(40)),
             'realm_id' => RefreshToken::currentRealm(),
             'access_token_id' => AccessToken::factory(),
-            'revoked' => false,
             'expires_at' => now()->addDays(14),
         ];
     }
@@ -33,6 +32,6 @@ class RefreshTokenFactory extends Factory
 
     public function revoked(): static
     {
-        return $this->state(['revoked' => true]);
+        return $this->state(['revoked_at' => now()]);
     }
 }

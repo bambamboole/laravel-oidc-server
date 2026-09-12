@@ -8,12 +8,14 @@ use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Database\Factories\AuthorizationCodeFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property string $id
+ * @property string $code The secret the browser carries back from the redirect.
  * @property string $realm_id
  * @property string $user_id
  * @property string $client_id
@@ -25,27 +27,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ?string $nonce
  * @property ?int $auth_time
  * @property ?string $context_id
- * @property bool $revoked
+ * @property ?CarbonInterface $revoked_at
  * @property ?CarbonInterface $expires_at
+ * @property CarbonInterface $created_at
+ * @property CarbonInterface $updated_at
  */
 class AuthorizationCode extends Model
 {
-    use BelongsToRealm;
+    use BelongsToRealm, HasUuids;
 
     /** @use HasFactory<AuthorizationCodeFactory> */
     use HasFactory;
 
     protected $table = 'oidc_auth_codes';
 
-    protected $primaryKey = 'id';
-
-    protected $keyType = 'string';
-
-    public $incrementing = false;
-
-    public $timestamps = false;
-
     protected $guarded = [];
+
+    protected $hidden = ['code'];
 
     protected static function newFactory(): AuthorizationCodeFactory
     {
@@ -58,8 +56,8 @@ class AuthorizationCode extends Model
         return [
             'scopes' => 'array',
             'audience' => 'array',
-            'auth_time' => 'int',
-            'revoked' => 'bool',
+            'auth_time' => 'integer',
+            'revoked_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
     }
@@ -73,5 +71,10 @@ class AuthorizationCode extends Model
     public function issuedTo(Client $client): bool
     {
         return (string) $this->client_id === (string) $client->getKey();
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->revoked_at !== null;
     }
 }

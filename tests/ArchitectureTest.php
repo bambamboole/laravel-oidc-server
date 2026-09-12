@@ -39,7 +39,5 @@ foreach ($dependencies as $domain => $allowed) {
 
     arch("{$domain} only depends on ".($allowedWithShared === [] ? 'nothing' : implode(', ', $allowedWithShared)))
         ->expect("{$server}\\{$domain}")
-        ->not->toUse(array_map(fn (string $forbiddenDomain): string => "{$server}\\{$forbiddenDomain}", $forbidden))
-        // The Client model owns its token relations; that is the one edge back into Tokens.
-        ->ignoring($domain === 'Clients' ? ["{$server}\\Tokens\\Models\\AccessToken", "{$server}\\Tokens\\Models\\AuthorizationCode"] : []);
+        ->not->toUse(array_map(fn (string $forbiddenDomain): string => "{$server}\\{$forbiddenDomain}", $forbidden));
 }

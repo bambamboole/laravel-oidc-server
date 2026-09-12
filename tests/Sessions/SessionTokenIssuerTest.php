@@ -31,7 +31,7 @@ function sessionTokenIsRevoked(string $jwt): bool
 {
     $token = app(TokenInspector::class)->accessToken($jwt);
 
-    return $token === null || (bool) $token->getAttribute('revoked');
+    return $token === null || $token->isRevoked();
 }
 
 it('establishes a persisted, signed root token for the user on login', function (): void {
@@ -103,5 +103,5 @@ it('revokes the superseded root token when re-establishing', function (): void {
 
     app(SessionTokenProvider::class)->establish($this->user);
 
-    expect((bool) AccessToken::query()->whereKey($firstJti)->firstOrFail()->getAttribute('revoked'))->toBeTrue();
+    expect(AccessToken::query()->whereKey($firstJti)->firstOrFail()->isRevoked())->toBeTrue();
 });

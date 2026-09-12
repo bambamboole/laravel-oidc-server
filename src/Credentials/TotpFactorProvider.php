@@ -16,7 +16,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\Models\TotpFactor;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 use PragmaRX\Google2FA\Google2FA;
@@ -218,15 +218,15 @@ class TotpFactorProvider implements EnrollableFactorProvider
      * model needs no factor-specific methods — any Eloquent authenticatable
      * works.
      *
-     * @return MorphMany<TotpFactor, covariant Model>
+     * @return HasMany<TotpFactor, covariant Model>
      */
-    private function factors(Authenticatable $user): MorphMany
+    private function factors(Authenticatable $user): HasMany
     {
         if (! $user instanceof Model) {
             throw new LogicException('The authenticatable must be an Eloquent model to store TOTP factors.');
         }
 
-        return $user->morphMany(TotpFactor::class, 'authenticatable');
+        return $user->hasMany(TotpFactor::class, 'user_id');
     }
 
     private function toEnrollment(TotpFactor $factor): FactorEnrollment

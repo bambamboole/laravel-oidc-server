@@ -17,6 +17,7 @@ use Bambamboole\LaravelOidc\Server\Tokens\Events\TokenIssuanceFailed;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
 use Bambamboole\LaravelOidc\Server\Tokens\TokenRevoker;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Date;
 
 /**
  * OAuth 2.1 §4.1.3 with RFC 7636 verification. A code is single use: the
@@ -48,7 +49,7 @@ final readonly class AuthorizationCodeGrant implements Grant
             throw OAuthServerException::invalidRequest('The code parameter is missing.');
         }
 
-        $authCode = AuthorizationCode::query()->inRealm()->find($code)
+        $authCode = AuthorizationCode::query()->inRealm()->where('code', $code)->first()
             ?? throw OAuthServerException::invalidGrant('The authorization code is invalid.');
 
         // Ownership before replay detection: only the client the code was
@@ -57,7 +58,7 @@ final readonly class AuthorizationCodeGrant implements Grant
             throw OAuthServerException::invalidGrant('The authorization code was not issued to this client.');
         }
 
-        if ($authCode->revoked) {
+        if ($authCode->isRevoked()) {
             $this->replayed($authCode, $client);
         }
 
@@ -70,7 +71,7 @@ final readonly class AuthorizationCodeGrant implements Grant
 
         // Consuming before minting makes the code single use under concurrent
         // redemptions: only the request that flips the flag proceeds.
-        $consumed = AuthorizationCode::query()->whereKey($authCode->id)->where('revoked', false)->update(['revoked' => true]) === 1;
+        $consumed = AuthorizationCode::query()->whereKey($authCode->id)->whereNull('revoked_at')->update(['revoked_at' => Date::now()]) === 1;
 
         if (! $consumed) {
             $this->replayed($authCode, $client);

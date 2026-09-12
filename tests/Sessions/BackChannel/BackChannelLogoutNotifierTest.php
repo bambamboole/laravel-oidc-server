@@ -7,10 +7,11 @@ use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\BackChannelLogoutNotifie
 use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\SendBackChannelLogout;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Illuminate\Support\Facades\Bus;
+use Workbench\App\Models\User;
 
 it('dispatches a job only for participants with a backchannel_logout_uri', function (): void {
     Bus::fake();
-    $sid = app(OidcSessionRepository::class)->start('7');
+    $sid = app(OidcSessionRepository::class)->start((string) User::factory()->create()->getKey());
 
     $withUri = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
     $withUri->forceFill(['backchannel_logout_uri' => 'https://a.test/bclo'])->save();

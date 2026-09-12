@@ -29,6 +29,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property list<string> $scopes
  * @property CarbonInterface $granted_at
  * @property ?CarbonInterface $revoked_at
+ * @property CarbonInterface $created_at
+ * @property CarbonInterface $updated_at
  */
 class Consent extends Model
 {
@@ -38,8 +40,6 @@ class Consent extends Model
     use HasFactory;
 
     protected $table = 'oidc_consents';
-
-    public $timestamps = false;
 
     protected $guarded = [];
 

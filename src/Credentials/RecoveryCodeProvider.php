@@ -10,7 +10,7 @@ use Bambamboole\LaravelOidc\Server\Credentials\Models\RecoveryCode;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\RealmResolver;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -174,14 +174,14 @@ class RecoveryCodeProvider implements EnrollableFactorProvider
      * model needs no factor-specific methods — any Eloquent authenticatable
      * works.
      *
-     * @return MorphMany<RecoveryCode, covariant Model>
+     * @return HasMany<RecoveryCode, covariant Model>
      */
-    private function recoveryCodes(Authenticatable $user): MorphMany
+    private function recoveryCodes(Authenticatable $user): HasMany
     {
         if (! $user instanceof Model) {
             throw new LogicException('The authenticatable must be an Eloquent model to store recovery codes.');
         }
 
-        return $user->morphMany(RecoveryCode::class, 'authenticatable');
+        return $user->hasMany(RecoveryCode::class, 'user_id');
     }
 }

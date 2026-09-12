@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Authentication\PasswordResetTokens;
 use Bambamboole\LaravelOidc\Server\Brokering\Models\SocialAccount;
 use Bambamboole\LaravelOidc\Server\Brokering\SocialAccountManager;
 use Bambamboole\LaravelOidc\Server\Clients\ClientRepository;
@@ -148,7 +149,7 @@ it('keeps social accounts per realm, so one upstream identity may link to a diff
     $acmeUser = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
     app(SocialAccountManager::class)->link($acmeUser, 'google', $socialUser);
 
-    expect(app(SocialAccountManager::class)->findAccount('google', 'g-123')?->authenticatable->is($acmeUser))->toBeTrue();
+    expect(app(SocialAccountManager::class)->findAccount('google', 'g-123')?->user_id)->toBe((string) $acmeUser->id);
 
     enterRealm('globex');
 
@@ -157,7 +158,7 @@ it('keeps social accounts per realm, so one upstream identity may link to a diff
     $globexUser = User::create(['name' => 'G', 'email' => 'g@example.com', 'password' => 'x']);
     app(SocialAccountManager::class)->link($globexUser, 'google', $socialUser);
 
-    expect(app(SocialAccountManager::class)->findAccount('google', 'g-123')?->authenticatable->is($globexUser))->toBeTrue()
+    expect(app(SocialAccountManager::class)->findAccount('google', 'g-123')?->user_id)->toBe((string) $globexUser->id)
         ->and(SocialAccount::query()->count())->toBe(2);
 });
 
@@ -175,4 +176,20 @@ it('keeps consents per realm', function (): void {
     enterRealm('globex');
 
     expect(app(ConsentRepository::class)->covers((string) $user->id, (string) $client->getKey(), ['openid'], $resource))->toBeFalse();
+});
+
+it('keeps a pending password reset per realm, so requesting one does not cancel another realm\'s', function (): void {
+    enterRealm('acme');
+    $user = User::create(['name' => 'M', 'email' => 'm@example.com', 'password' => 'x']);
+    $acmeToken = app(PasswordResetTokens::class)->create($user);
+
+    enterRealm('globex');
+    $globexToken = app(PasswordResetTokens::class)->create($user);
+
+    expect(app(PasswordResetTokens::class)->exists($user, $globexToken))->toBeTrue()
+        ->and(app(PasswordResetTokens::class)->exists($user, $acmeToken))->toBeFalse();
+
+    enterRealm('acme');
+
+    expect(app(PasswordResetTokens::class)->exists($user, $acmeToken))->toBeTrue();
 });

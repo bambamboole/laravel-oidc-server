@@ -85,7 +85,6 @@ final readonly class JwtAccessTokenMinter implements AccessTokenMinter
             'client_id' => $client->getKey(),
             'scopes' => $scopeIds,
             'audience' => $audience,
-            'revoked' => false,
             'expires_at' => $expiresAt,
         ]);
 

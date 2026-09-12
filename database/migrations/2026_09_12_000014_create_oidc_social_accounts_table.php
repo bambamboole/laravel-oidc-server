@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Database\ForeignKeys;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('oidc_social_accounts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->string('realm_id')->default((string) config('oidc.realm', 'default'))->index();
-            $table->uuidMorphs('authenticatable', 'oidc_social_authenticatable_index');
+            $table->string('realm_id');
+            $table->uuid('user_id')->index();
             $table->string('provider');
             $table->string('provider_user_id');
             $table->string('email')->nullable();
@@ -27,6 +28,9 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['realm_id', 'provider', 'provider_user_id']);
+
+            ForeignKeys::realm($table);
+            ForeignKeys::user($table);
         });
     }
 

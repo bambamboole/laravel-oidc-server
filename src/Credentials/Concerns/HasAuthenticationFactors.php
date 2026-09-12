@@ -7,7 +7,7 @@ namespace Bambamboole\LaravelOidc\Server\Credentials\Concerns;
 use Bambamboole\LaravelOidc\Server\Credentials\Models\RecoveryCode;
 use Bambamboole\LaravelOidc\Server\Credentials\Models\TotpFactor;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Passkeys\PasskeyAuthenticatable;
 
 /**
@@ -20,24 +20,24 @@ trait HasAuthenticationFactors
     protected static function bootHasAuthenticationFactors(): void
     {
         static::deleting(function (Model $authenticatable): void {
-            $authenticatable->morphMany(TotpFactor::class, 'authenticatable')->delete();
-            $authenticatable->morphMany(RecoveryCode::class, 'authenticatable')->delete();
+            $authenticatable->hasMany(TotpFactor::class, 'user_id')->delete();
+            $authenticatable->hasMany(RecoveryCode::class, 'user_id')->delete();
         });
     }
 
     /**
-     * @return MorphMany<TotpFactor, $this>
+     * @return HasMany<TotpFactor, $this>
      */
-    public function totpFactors(): MorphMany
+    public function totpFactors(): HasMany
     {
-        return $this->morphMany(TotpFactor::class, 'authenticatable');
+        return $this->hasMany(TotpFactor::class, 'user_id');
     }
 
     /**
-     * @return MorphMany<RecoveryCode, $this>
+     * @return HasMany<RecoveryCode, $this>
      */
-    public function recoveryCodes(): MorphMany
+    public function recoveryCodes(): HasMany
     {
-        return $this->morphMany(RecoveryCode::class, 'authenticatable');
+        return $this->hasMany(RecoveryCode::class, 'user_id');
     }
 }

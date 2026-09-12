@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Brokering\Models;
 
+use Bambamboole\LaravelOidc\Server\Database\Factories\SocialAccountFactory;
 use Bambamboole\LaravelOidc\Server\Shared\Realms\BelongsToRealm;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
  * @property string $realm_id
+ * @property string $user_id
  * @property string $provider
  * @property string $provider_user_id
  * @property string|null $email
@@ -23,38 +25,26 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $refresh_token
  * @property CarbonInterface|null $token_expires_at
  * @property array<string, mixed>|null $raw
- * @property-read Model $authenticatable
  */
 class SocialAccount extends Model
 {
     use BelongsToRealm, HasUuids;
 
+    /** @use HasFactory<SocialAccountFactory> */
+    use HasFactory;
+
     protected $table = 'oidc_social_accounts';
 
-    protected $fillable = [
-        'provider',
-        'provider_user_id',
-        'email',
-        'name',
-        'nickname',
-        'avatar',
-        'access_token',
-        'refresh_token',
-        'token_expires_at',
-        'raw',
-    ];
+    protected $guarded = [];
 
     protected $hidden = [
         'access_token',
         'refresh_token',
     ];
 
-    /**
-     * @return MorphTo<Model, $this>
-     */
-    public function authenticatable(): MorphTo
+    protected static function newFactory(): SocialAccountFactory
     {
-        return $this->morphTo();
+        return SocialAccountFactory::new();
     }
 
     /**

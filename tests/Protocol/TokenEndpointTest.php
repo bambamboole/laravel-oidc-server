@@ -169,8 +169,8 @@ it('rejects a replayed code and revokes the tokens it produced', function (): vo
 
     $accessToken = parseAccessToken((string) $first->json('access_token'));
 
-    expect(AccessToken::query()->find($accessToken->claims()->get('jti'))->revoked)->toBeTrue()
-        ->and(RefreshToken::query()->find($first->json('refresh_token'))->revoked)->toBeTrue();
+    expect(AccessToken::query()->find($accessToken->claims()->get('jti'))->isRevoked())->toBeTrue()
+        ->and(RefreshToken::query()->find($first->json('refresh_token'))->isRevoked())->toBeTrue();
 
     $this->post('/oauth/token', [
         'grant_type' => 'refresh_token',
@@ -199,14 +199,14 @@ it('rejects a code presented by another client and leaves it usable for its righ
 
     $accessToken = parseAccessToken((string) $first->json('access_token'));
 
-    expect(AccessToken::query()->find($accessToken->claims()->get('jti'))->revoked)->toBeFalse()
-        ->and(RefreshToken::query()->find($first->json('refresh_token'))->revoked)->toBeFalse();
+    expect(AccessToken::query()->find($accessToken->claims()->get('jti'))->isRevoked())->toBeFalse()
+        ->and(RefreshToken::query()->find($first->json('refresh_token'))->isRevoked())->toBeFalse();
 });
 
 it('rejects an expired authorization code', function (): void {
     $pkce = $this->pkce();
     $code = obtainAuthorizationCode($this, $pkce);
-    AuthorizationCode::query()->whereKey($code)->update(['expires_at' => now()->subMinute()]);
+    AuthorizationCode::query()->where('code', $code)->update(['expires_at' => now()->subMinute()]);
 
     $this->post('/oauth/token', codeRedemption($this, $code, $pkce))
         ->assertStatus(400)

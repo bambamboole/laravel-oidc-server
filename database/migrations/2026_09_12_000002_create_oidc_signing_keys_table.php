@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Bambamboole\LaravelOidc\Server\Database\ForeignKeys;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -12,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('oidc_signing_keys', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->string('realm_id')->default((string) config('oidc.realm', 'default'))->index();
+            $table->string('realm_id')->index();
             $table->string('kid')->unique();
             $table->text('public_key');
             $table->text('private_key')->nullable();
             $table->timestamp('retired_at')->nullable()->index();
             $table->timestamps();
+
+            ForeignKeys::realm($table);
         });
     }
 

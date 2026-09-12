@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bambamboole\LaravelOidc\Server\Database\Factories;
 
+use Bambamboole\LaravelOidc\Server\Clients\Models\Client;
 use Bambamboole\LaravelOidc\Server\Database\Factories\Concerns\ForClient;
 use Bambamboole\LaravelOidc\Server\Database\Factories\Concerns\ForUser;
 use Bambamboole\LaravelOidc\Server\Tokens\Models\AuthorizationCode;
@@ -22,14 +23,13 @@ class AuthorizationCodeFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => bin2hex(random_bytes(40)),
+            'code' => bin2hex(random_bytes(40)),
             'realm_id' => AuthorizationCode::currentRealm(),
-            'user_id' => (string) Str::uuid(),
-            'client_id' => (string) Str::uuid(),
+            'user_id' => self::newUserId(...),
+            'client_id' => fn (): string => (string) Client::factory()->create()->getKey(),
             'scopes' => ['openid'],
             'code_challenge' => Str::random(43),
             'code_challenge_method' => 'S256',
-            'revoked' => false,
             'expires_at' => now()->addMinutes(10),
         ];
     }

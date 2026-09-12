@@ -7,10 +7,11 @@ use Bambamboole\LaravelOidc\Server\Sessions\BackChannel\SendBackChannelLogout;
 use Bambamboole\LaravelOidc\Server\Sessions\Models\OidcSession;
 use Bambamboole\LaravelOidc\Server\Sessions\OidcSessionRepository;
 use Illuminate\Support\Facades\Bus;
+use Workbench\App\Models\User;
 
 it('dispatches logout for expired un-notified sessions exactly once', function (): void {
     Bus::fake();
-    $sid = app(OidcSessionRepository::class)->start('5');
+    $sid = app(OidcSessionRepository::class)->start((string) User::factory()->create()->getKey());
     OidcSession::query()->whereKey($sid)->update(['expires_at' => now()->subMinute()]);
 
     $client = app(ClientRepository::class)->createAuthorizationCodeGrantClient('A', ['https://a.test/cb']);
